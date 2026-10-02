@@ -19,7 +19,7 @@ void main() {
             ...allAssets,
             'test_pkg|lib/deck_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final slideSchema = Ack.object({
@@ -29,7 +29,7 @@ final slideSchema = Ack.object({
 ''',
             'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schemas.dart';
 
 @AckType()
@@ -70,7 +70,7 @@ final deckToolArgsSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/deck_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final slideSchema = Ack.object({
@@ -79,7 +79,7 @@ final slideSchema = Ack.object({
 ''',
           'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schemas.dart' as deck;
 
 @AckType()
@@ -112,7 +112,7 @@ final deckToolArgsSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/deck_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final slideSchema = Ack.object({
@@ -124,7 +124,7 @@ export 'deck_schemas.dart';
 ''',
           'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schema_exports.dart';
 
 @AckType()
@@ -157,7 +157,7 @@ final deckToolArgsSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -169,7 +169,7 @@ final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
           'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart';
 
 @AckType()
@@ -207,7 +207,7 @@ final themeSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -222,7 +222,7 @@ export 'palette_schemas.dart';
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schema_exports.dart';
 
 @AckType()
@@ -261,7 +261,7 @@ final themeSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -273,7 +273,7 @@ final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
           'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart' as palette;
 
 @AckType()
@@ -320,7 +320,7 @@ final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart' as palette;
 
 @AckType()
@@ -363,7 +363,7 @@ class HiddenColor {
 ''',
             'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 import 'hidden_types.dart';
 
@@ -373,7 +373,7 @@ final hiddenColorSchema = Ack.string()
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart';
 
 @AckType()
@@ -397,7 +397,7 @@ final themeSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -415,7 +415,7 @@ final boxedColorSchema =
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart' as palette;
 
 class Color {
@@ -469,7 +469,7 @@ final themeSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -481,7 +481,7 @@ final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart';
 
 class Color {
@@ -512,7 +512,7 @@ final themeSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Color {
   final String value;
@@ -530,7 +530,7 @@ class Color {
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'alt_color_types.dart';
 import 'palette_schemas.dart';
 
@@ -563,7 +563,7 @@ class HiddenColor {
 ''',
             'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 import 'hidden_types.dart';
 
@@ -573,7 +573,7 @@ final hiddenColorSchema = Ack.string()
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart' as palette;
 
 @AckType()
@@ -606,7 +606,7 @@ class HiddenColor {
 ''',
             'test_pkg|lib/palette_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 import 'hidden_types.dart' as dep;
 
@@ -616,7 +616,7 @@ final hiddenColorSchema = Ack.string()
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette_schemas.dart' as palette;
 
 @AckType()
@@ -638,7 +638,7 @@ final themeSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/deck_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final slideSchema = Ack.object({
@@ -647,7 +647,7 @@ final slideSchema = Ack.object({
 ''',
           'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schemas.dart';
 
 @AckType()
@@ -684,7 +684,7 @@ final deckToolArgsSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/deck_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final slideSchema = Ack.object({
@@ -693,7 +693,7 @@ final slideSchema = Ack.object({
 ''',
             'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schemas.dart';
 
 @AckType()
@@ -747,7 +747,7 @@ final slideSchema = Ack.object({
 ''',
             'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schemas.dart' as deck;
 
 @AckType()
@@ -775,7 +775,7 @@ final deckToolArgsSchema = Ack.object({
               ...allAssets,
               'test_pkg|lib/a_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final aOnlySchema = Ack.object({
@@ -784,7 +784,7 @@ final aOnlySchema = Ack.object({
 ''',
               'test_pkg|lib/b_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final slideSchema = Ack.object({
@@ -793,7 +793,7 @@ final slideSchema = Ack.object({
 ''',
               'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'a_schemas.dart' as a;
 import 'b_schemas.dart';
 
@@ -829,7 +829,7 @@ final slideSchema = Ack.object({
 ''',
             'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schemas.dart';
 
 @AckType()
@@ -867,7 +867,7 @@ final colorSchema = Ack.string().transform<Color>((value) => Color(value));
 ''',
             'test_pkg|lib/theme_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'palette.dart' as palette;
 
 @AckType()
@@ -910,7 +910,7 @@ final slideSchema = Ack.object({
 ''',
               'test_pkg|lib/deck_tools_schemas.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'deck_schemas.dart';
 
 @AckType()

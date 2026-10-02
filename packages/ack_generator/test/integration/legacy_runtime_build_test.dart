@@ -42,8 +42,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -52,13 +50,11 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'lib', 'legacy.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'legacy.g.dart';
 
@@ -111,8 +107,8 @@ void main() {
         expect(
           diagnostics,
           contains(
-            'Use @AckInfer() for schema-first models or @AckModel() for '
-            'class-first models. AckType will be removed in 2.0.0.',
+            'Use @Schemable() for schema-first or class-first models. AckType '
+            'will be removed in 2.0.0.',
           ),
         );
       } finally {

@@ -9,7 +9,6 @@ environment:
 
 workspace:
   - packages/ack
-  - packages/ack_annotations
   - packages/ack_generator
   - packages/ack_firebase_ai
   - packages/ack_json_schema_builder
@@ -59,7 +58,6 @@ melos:
           - ack_json_schema_builder
           - ack_mcp_dart
           - ack_example
-          - ack_annotations
 
     fix:
       run: dart run melos exec -- "dart fix --apply"

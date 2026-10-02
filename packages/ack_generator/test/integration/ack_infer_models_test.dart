@@ -27,7 +27,7 @@ Future<void> _build(
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 ''';
 
 void main() {
@@ -42,7 +42,7 @@ $_imports
 part 'empty.ack.dart';
 part 'empty.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final emptySchema = Ack.object({});
 ''',
         },
@@ -50,7 +50,7 @@ final emptySchema = Ack.object({});
           'test_pkg|lib/empty.ack.dart': decodedMatches(
             allOf([
               contains('Empty()'),
-              contains('@AckInfer.jsonSerializable'),
+              contains('@Schemable.generatedJson'),
               contains(r'_$EmptyFromJson'),
               contains(r'_$EmptyToJson'),
               isNot(contains('\n  ,')),
@@ -72,7 +72,7 @@ part 'user.ack.g.dart';
 
 const allowExtras = true;
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object(
   {'name': Ack.string()},
   additionalProperties: allowExtras,
@@ -105,7 +105,7 @@ $_imports
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'nickname': Ack.string().optional(),
@@ -141,7 +141,7 @@ part 'values.ack.g.dart';
 
 enum Role { admin, member }
 
-@AckInfer()
+@Schemable()
 final metricsSchema = Ack.object({
   'amount': Ack.number(),
   'state': Ack.literal('ready'),
@@ -174,7 +174,7 @@ $_imports
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
         'exports.dart': "export 'address.dart';",
@@ -186,7 +186,7 @@ import 'exports.dart' as exported;
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({
   'home': direct.addressSchema,
   'history': Ack.list(exported.addressSchema),
@@ -223,7 +223,7 @@ import 'types.dart' as types;
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'role': Ack.enumValues(types.Role.values),
 });
@@ -246,7 +246,7 @@ $_imports
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
         'person.dart':
@@ -257,7 +257,7 @@ import 'address.dart' show Address;
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({'address': addressSchema});
 ''',
       },
@@ -286,7 +286,7 @@ $_imports
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -301,7 +301,7 @@ import 'address.dart' show AddressSchema;
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({'address': AddressSchema.schema});
 ''',
         },
@@ -327,7 +327,7 @@ $_imports
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -342,7 +342,7 @@ import 'exports.dart';
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({'address': AddressSchema.schema});
 ''',
       },
@@ -369,7 +369,7 @@ $_imports
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
           'person.dart':
@@ -379,7 +379,7 @@ import 'address.dart' show addressSchema;
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({'address': addressSchema});
 ''',
         },
@@ -405,7 +405,7 @@ $_imports
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
         'exports.dart': "export 'address.dart' show addressSchema;",
@@ -416,7 +416,7 @@ import 'exports.dart';
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({'address': addressSchema});
 ''',
       },
@@ -440,13 +440,13 @@ $_imports
 part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({'kind': Ack.literal('cat'), 'lives': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final dogSchema = Ack.object({'bark': Ack.boolean()}).passthrough();
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema, 'dog': dogSchema},
@@ -459,8 +459,8 @@ final petSchema = Ack.discriminated(
             contains('sealed class Pet'),
             contains('final class Cat extends Pet'),
             contains('final class Dog extends Pet'),
-            isNot(contains('@AckInfer.jsonSerializable\nsealed class Pet')),
-            contains('@AckInfer.jsonSerializable\nfinal class Cat extends Pet'),
+            isNot(contains('@Schemable.generatedJson\nsealed class Pet')),
+            contains('@Schemable.generatedJson\nfinal class Cat extends Pet'),
             contains("String get kind => 'cat';"),
             contains("'kind': 'dog'"),
             contains('additionalProperties.entries'),
@@ -482,7 +482,7 @@ $_imports
 part 'bad.ack.dart';
 part 'bad.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final badSchema = Ack.object({'toJson': Ack.string()});
 ''',
       },
@@ -506,7 +506,7 @@ $_imports
 part 'bad.ack.dart';
 part 'bad.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 
 final class \$UserCopyWith {}
@@ -534,7 +534,7 @@ $_imports
 part 'bad.ack.dart';
 part 'bad.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final badSchema = Ack.object({'class': Ack.string()});
 ''',
       },
@@ -558,10 +558,10 @@ $_imports
 part 'bad.ack.dart';
 part 'bad.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'toJson',
   schemas: {'cat': catSchema},
@@ -587,13 +587,13 @@ $_imports
 part 'bad.ack.dart';
 part 'bad.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({
   'kind': Ack.string(),
   'lives': Ack.integer(),
 });
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema},
@@ -619,7 +619,7 @@ part 'bad.ack.g.dart';
 
 Object? _ackImmutableCopyValue(Object? value) => value;
 
-@AckInfer()
+@Schemable()
 final bagSchema = Ack.object({}).passthrough();
 ''',
       },
@@ -634,29 +634,29 @@ final bagSchema = Ack.object({}).passthrough();
     );
   });
 
-  test('preserves a prefixed AckInfer qualifier on the JSON marker', () async {
+  test('preserves a prefixed Schemable qualifier on the JSON marker', () async {
     await _build(
       {
         'schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
+import 'package:ack/annotations.dart' as annotations;
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@annotations.AckInfer()
+@annotations.Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
       },
       outputs: {
         'test_pkg|lib/schema.ack.dart': decodedMatches(
-          contains('@annotations.AckInfer.jsonSerializable'),
+          contains('@annotations.Schemable.generatedJson'),
         ),
       },
     );
   });
 
-  test('preserves a direct AckInfer qualifier on the JSON marker', () async {
+  test('preserves a direct Schemable qualifier on the JSON marker', () async {
     await _build(
       {
         'schema.dart':
@@ -665,25 +665,24 @@ $_imports
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
       },
       outputs: {
         'test_pkg|lib/schema.ack.dart': decodedMatches(
-          contains('@AckInfer.jsonSerializable'),
+          contains('@Schemable.generatedJson'),
         ),
       },
     );
   });
 
   test(
-    'preserves an unprefixed barrel AckInfer qualifier on the JSON marker',
+    'preserves an unprefixed barrel Schemable qualifier on the JSON marker',
     () async {
       await _build(
         {
-          'annotations.dart':
-              "export 'package:ack_annotations/ack_annotations.dart';",
+          'annotations.dart': "export 'package:ack/annotations.dart';",
           'schema.dart': '''
 import 'package:ack/ack.dart';
 import 'annotations.dart';
@@ -691,13 +690,13 @@ import 'annotations.dart';
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         },
         outputs: {
           'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@AckInfer.jsonSerializable'),
+            contains('@Schemable.generatedJson'),
           ),
         },
       );
@@ -705,25 +704,25 @@ final userSchema = Ack.object({'name': Ack.string()});
   );
 
   test(
-    'prefers a prefixed AckInfer qualifier when both imports are visible',
+    'prefers a prefixed Schemable qualifier when both imports are visible',
     () async {
       await _build(
         {
           'schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
+import 'package:ack/annotations.dart';
+import 'package:ack/annotations.dart' as annotations;
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         },
         outputs: {
           'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@annotations.AckInfer.jsonSerializable'),
+            contains('@annotations.Schemable.generatedJson'),
           ),
         },
       );
@@ -731,26 +730,25 @@ final userSchema = Ack.object({'name': Ack.string()});
   );
 
   test(
-    'preserves a prefixed barrel AckInfer qualifier on the JSON marker',
+    'preserves a prefixed barrel Schemable qualifier on the JSON marker',
     () async {
       await _build(
         {
-          'annotations.dart':
-              "export 'package:ack_annotations/ack_annotations.dart';",
+          'annotations.dart': "export 'package:ack/annotations.dart';",
           'schema.dart': '''
 import 'package:ack/ack.dart';
-import 'annotations.dart' as annotations show AckInfer;
+import 'annotations.dart' as annotations show Schemable;
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@annotations.AckInfer()
+@annotations.Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         },
         outputs: {
           'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@annotations.AckInfer.jsonSerializable'),
+            contains('@annotations.Schemable.generatedJson'),
           ),
         },
       );
@@ -762,7 +760,7 @@ final userSchema = Ack.object({'name': Ack.string()});
       {
         'support.dart': '''
 export 'package:ack/ack.dart';
-export 'package:ack_annotations/ack_annotations.dart';
+export 'package:ack/annotations.dart';
 ''',
         'schema.dart': '''
 import 'support.dart' as support;
@@ -770,7 +768,7 @@ import 'support.dart' as support;
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@support.AckInfer()
+@support.Schemable()
 final userSchema = support.Ack.object({'name': support.Ack.string()});
 ''',
       },
@@ -795,7 +793,7 @@ $_imports
 part 'bad.ack.dart';
 part 'bad.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final valuesSchema = Ack.string().codec<Map<int, String>>(
   decode: (value) => {1: value},
   encode: (value) => value.values.single,
@@ -820,7 +818,7 @@ $_imports
 part 'bad.ack.dart';
 part 'bad.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final badSchema = Ack.object({
   'name': Ack.string(),
   'Name': Ack.string(),
@@ -848,7 +846,7 @@ part 'bad.ack.g.dart';
 
 void _\$UserFromJson() {}
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
       },
@@ -878,7 +876,7 @@ import 'other.dart';
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'payload': payloadUnion,
 });
@@ -912,7 +910,7 @@ import 'other.dart';
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'payload': payloadAny.nullable(),
 });
@@ -927,7 +925,7 @@ final userSchema = Ack.object({
     },
   );
 
-  test('rejects a cross-library @AckInfer alias root', () async {
+  test('rejects a cross-library @Schemable alias root', () async {
     final messages = <String>{};
     await _build(
       {
@@ -937,7 +935,7 @@ $_imports
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         'admin.dart':
@@ -947,7 +945,7 @@ import 'user.dart' as other;
 part 'admin.ack.dart';
 part 'admin.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final adminSchema = other.userSchema;
 ''',
       },
@@ -975,7 +973,7 @@ $_imports
 part 'cat.ack.dart';
 part 'cat.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({
   'kind': Ack.literal('cat'),
   'lives': Ack.integer(),
@@ -988,7 +986,7 @@ import 'cat.dart';
 part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema},

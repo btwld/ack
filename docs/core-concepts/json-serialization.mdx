@@ -86,7 +86,7 @@ if (result.isOk) {
 
 ## Parsing JSON into generated models
 
-Once a schema is annotated with `@AckInfer()` (see [Model Code Generation](./typesafe-schemas.mdx) for setup), parse JSON into a generated immutable model. Public `fromJson` / `toJson` still cross the source Ack schema; `json_serializable` only maps the already-validated runtime value onto stored fields.
+Once a schema is annotated with `@Schemable()` (see [Model Code Generation](./typesafe-schemas.mdx) for setup), parse JSON into a generated immutable model. Public `fromJson` / `toJson` still cross the source Ack schema; `json_serializable` only maps the already-validated runtime value onto stored fields.
 
 ```dart
 import 'dart:convert';
@@ -149,4 +149,4 @@ conversions.
   validates values and encodes codec runtime values back to their boundary
   representation.
 - **Type safety:** `jsonDecode` produces `dynamic`, but successful validation guarantees the structure and types of the resulting `Map<String, Object?>`.
-- **Model conversion:** After validation, how you convert the validated map into an app model is up to you. Generated models still parse and encode through an Ack schema; `json_serializable` only maps that runtime value onto stored fields. `@AckInfer()` starts from the schema, while `@AckModel()` starts from your class.
+- **Model conversion:** After validation, how you convert the validated map into an app model is up to you. Generated models still parse and encode through an Ack schema; `json_serializable` only maps that runtime value onto stored fields. `@Schemable()` on a top-level schema starts from the schema, while `@Schemable()` on a class starts from your class.

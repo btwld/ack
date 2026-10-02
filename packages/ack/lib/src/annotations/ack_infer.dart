@@ -31,9 +31,11 @@ import 'ack_generated_json.dart';
 /// - Classes
 /// - Instance members
 /// - Local variables
+@Deprecated('Use @Schemable(). AckInfer will be removed in 2.0.0.')
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 final class AckInfer {
-  /// Internal marker used on generated model classes.
+  /// Marker on model classes generated with `@AckInfer`; new output uses
+  /// `Schemable.generatedJson`.
   ///
   /// Typed as [Object] so generated code only needs a constant annotation
   /// expression. The generator inspects the actual [AckGeneratedJson] type.

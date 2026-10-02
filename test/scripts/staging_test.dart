@@ -112,16 +112,16 @@ dependencies:
   ack: ^1.2.0
   analyzer: ^10.0.0
 dev_dependencies:
-  ack_annotations: ^1.2.0
+  ack_json_schema_builder: ^1.2.0
 ''';
 
     expect(
       directDependenciesAmong(pubspec, const [
         'ack',
-        'ack_annotations',
+        'ack_json_schema_builder',
         'ack_firebase_ai',
       ]),
-      ['ack', 'ack_annotations'],
+      ['ack', 'ack_json_schema_builder'],
     );
   });
 

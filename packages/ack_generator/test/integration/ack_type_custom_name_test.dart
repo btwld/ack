@@ -16,7 +16,7 @@ void main() {
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 // Primitive schemas - extension types ARE generated
 @AckType()
@@ -70,7 +70,7 @@ final customUserSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType(name: 'customUser')
 final customUserSchema = Ack.object({
@@ -99,7 +99,7 @@ final customUserSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType(name: 'bad-name')
 final invalidSchema = Ack.string();
@@ -126,7 +126,7 @@ final invalidSchema = Ack.string();
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType(name: '')
 final invalidSchema = Ack.string();
@@ -154,7 +154,7 @@ final invalidSchema = Ack.string();
           {
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 class User {
@@ -189,7 +189,7 @@ class User {
             'test_pkg|lib/schema.dart':
                 '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 class Schemas {
   @AckType()
@@ -250,7 +250,7 @@ final ordinaryValue = 1;
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
+import 'package:ack/annotations.dart' as annotations;
 
 class AckType {
   const AckType();
@@ -286,7 +286,7 @@ final userSchema = Ack.object({'nested': impostorSchema});
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 // Non-nullable object schema - extension type IS generated
 @AckType()

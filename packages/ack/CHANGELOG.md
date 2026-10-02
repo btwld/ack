@@ -1,3 +1,44 @@
+## Unreleased
+
+### Breaking
+
+* The `ack_annotations` package is removed and its annotations ship in `ack`.
+  Remove `ack_annotations` from `pubspec.yaml`. `package:ack/ack.dart`
+  exports `@Schemable()` and the model annotations (`AckField`, `Optional`,
+  `Required`, `NotNull`, `AckCaseStyle`, `AckUnknownPropertyPolicy`, and the
+  deprecated `AckFieldPresence`). Replace
+  `package:ack_annotations/ack_annotations.dart` with
+  `package:ack/annotations.dart`, which exports the model annotations, the
+  constraints and the deprecated spellings, and
+  `package:ack_annotations/format_annotations.dart` with
+  `package:ack/format_annotations.dart`.
+* `@Pattern` is renamed `@Matches`, matching `Ack.string().matches(...)`.
+  `Pattern` remains a deprecated alias in `package:ack/annotations.dart` only.
+  Until 2.0.0, an unprefixed import of that library hides `dart:core`'s
+  `Pattern` in the file; import it `as ack`, or with `hide Pattern`, where the
+  file needs `dart:core`'s `Pattern`.
+* Names exported from `package:ack/ack.dart` or `package:ack/annotations.dart`
+  can clash with same-named classes from other libraries, such as
+  `package:uuid`'s `Uuid` or `package:meta`'s `Required`. Import
+  `package:ack/annotations.dart` with a prefix (`as ack`, then `@ack.Uuid()`),
+  or `hide` the name from one import.
+* `ack` no longer depends on `json_annotation` and no longer re-exports
+  `JsonKey`. To rename one field with `@JsonKey(name: ...)`, import
+  `package:json_annotation/json_annotation.dart` and add `json_annotation` to
+  the app's `dependencies`; `caseStyle` needs neither.
+  `AckModel.jsonSerializable` and `AckGeneratedJson.config` are removed.
+
+### Added
+
+* `@Schemable()` is the single code-generation annotation: on a top-level
+  schema it generates a model, and on a class it generates a schema.
+  `Schemable.generatedJson` marks generated schema-first models.
+
+### Deprecated
+
+* `@AckInfer()` and `@AckModel()`; use `@Schemable()` with the same options.
+  They will be removed in 2.0.0.
+
 ## 1.7.0-beta.2
 
 ### Added

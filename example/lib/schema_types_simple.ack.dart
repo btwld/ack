@@ -11,7 +11,7 @@ part of 'schema_types_simple.dart';
 // **************************************************************************
 
 /// Immutable model generated from `userSchema`.
-@AckInfer.jsonSerializable
+@Schemable.generatedJson
 final class User {
   /// Creates a model without validating it.
   ///

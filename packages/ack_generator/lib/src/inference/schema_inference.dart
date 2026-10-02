@@ -1,5 +1,7 @@
-import 'package:ack_annotations/ack_annotations.dart' as annotations;
-import 'package:ack_annotations/format_annotations.dart' as formats;
+import 'package:ack/annotations.dart' as annotations;
+import 'package:ack/format_annotations.dart' as formats;
+import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
@@ -18,87 +20,76 @@ final class AckSchemaInference {
 
   final String? ackPrefix;
 
-  static const _min = TypeChecker.typeNamed(
-    annotations.Min,
-    inPackage: 'ack_annotations',
-  );
-  static const _max = TypeChecker.typeNamed(
-    annotations.Max,
-    inPackage: 'ack_annotations',
-  );
+  static const _min = TypeChecker.typeNamed(annotations.Min, inPackage: 'ack');
+  static const _max = TypeChecker.typeNamed(annotations.Max, inPackage: 'ack');
   static const _multipleOf = TypeChecker.typeNamed(
     annotations.MultipleOf,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _positive = TypeChecker.typeNamed(
     annotations.Positive,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _negative = TypeChecker.typeNamed(
     annotations.Negative,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _minLength = TypeChecker.typeNamed(
     annotations.MinLength,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _maxLength = TypeChecker.typeNamed(
     annotations.MaxLength,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
-  static const _pattern = TypeChecker.typeNamed(
-    annotations.Pattern,
-    inPackage: 'ack_annotations',
+  static const _matches = TypeChecker.typeNamed(
+    annotations.Matches,
+    inPackage: 'ack',
   );
   static const _email = TypeChecker.typeNamed(
     annotations.Email,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
-  static const _url = TypeChecker.typeNamed(
-    annotations.Url,
-    inPackage: 'ack_annotations',
-  );
-  static const _uri = TypeChecker.typeNamed(
-    formats.Uri,
-    inPackage: 'ack_annotations',
-  );
+  static const _url = TypeChecker.typeNamed(annotations.Url, inPackage: 'ack');
+  static const _uri = TypeChecker.typeNamed(formats.Uri, inPackage: 'ack');
   static const _uuid = TypeChecker.typeNamed(
     annotations.Uuid,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _date = TypeChecker.typeNamed(
     annotations.Date,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _dateTime = TypeChecker.typeNamed(
     formats.DateTime,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _notEmpty = TypeChecker.typeNamed(
     annotations.NotEmpty,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _minItems = TypeChecker.typeNamed(
     annotations.MinItems,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _maxItems = TypeChecker.typeNamed(
     annotations.MaxItems,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _uniqueItems = TypeChecker.typeNamed(
     annotations.UniqueItems,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackField = TypeChecker.typeNamed(
     annotations.AckField,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
 
   /// Infers a schema expression for [type].
   ///
-  /// [resolveNamed] returns a schema expression for an application type.
-  /// Return null when the type has no supported model contract.
+  /// [resolveNamed] returns a schema expression for an application type,
+  /// including an enum that declares its own schema. Return null when the type
+  /// has no supported model contract; an enum then uses `Ack.enumValues`.
   Future<String> inferType(
     DartType type, {
     required String Function(InterfaceType) visibleTypeName,
@@ -112,7 +103,8 @@ final class AckSchemaInference {
     final scalar = _scalar(type);
     if (scalar != null) return scalar;
     if (type.element is EnumElement) {
-      return '${_ack('Ack')}.enumValues(${visibleTypeName(type)}.values)';
+      return await resolveNamed(type) ??
+          '${_ack('Ack')}.enumValues(${visibleTypeName(type)}.values)';
     }
     if (type.isDartCoreList && type.typeArguments.length == 1) {
       final item = type.typeArguments.single;
@@ -168,13 +160,14 @@ final class AckSchemaInference {
       if (value == null || valueType == null) continue;
       if (_min.isExactlyType(valueType)) {
         _require(declaration, type, '@Min', isNumeric, '@MinLength');
-        output = '$output.min(${_number(value, 'value')})';
+        output = '$output.min(${_number(declaration, '@Min', value)})';
       } else if (_max.isExactlyType(valueType)) {
         _require(declaration, type, '@Max', isNumeric, '@MaxLength');
-        output = '$output.max(${_number(value, 'value')})';
+        output = '$output.max(${_number(declaration, '@Max', value)})';
       } else if (_multipleOf.isExactlyType(valueType)) {
         _require(declaration, type, '@MultipleOf', isNumeric, 'numeric field');
-        output = '$output.multipleOf(${_number(value, 'value')})';
+        output =
+            '$output.multipleOf(${_number(declaration, '@MultipleOf', value)})';
       } else if (_positive.isExactlyType(valueType)) {
         _require(declaration, type, '@Positive', isNumeric, 'numeric field');
         output = '$output.positive()';
@@ -187,8 +180,8 @@ final class AckSchemaInference {
       } else if (_maxLength.isExactlyType(valueType)) {
         _require(declaration, type, '@MaxLength', isString, '@Max');
         output = '$output.maxLength(${value.getField('length')!.toIntValue()})';
-      } else if (_pattern.isExactlyType(valueType)) {
-        _require(declaration, type, '@Pattern', isString, 'String field');
+      } else if (_matches.isExactlyType(valueType)) {
+        _require(declaration, type, '@Matches', isString, 'String field');
         output =
             '$output.matches(${dartStringLiteral(value.getField('pattern')!.toStringValue()!)})';
       } else if (_email.isExactlyType(valueType)) {
@@ -264,13 +257,28 @@ final class AckSchemaInference {
         // boundary with the same cardinality before the codec runs.
         setConstraints.add('.unique()');
       }
-      final codec = output.lastIndexOf('.codec<');
-      output = codec < 0
-          ? '$output${setConstraints.join()}'
-          : '${output.substring(0, codec)}${setConstraints.join()}'
-                '${output.substring(codec)}';
+      output = _beforeOuterCodec(output, setConstraints.join());
     }
     return output;
+  }
+
+  /// Inserts [modifiers] before the codec that ends [schema], or appends them
+  /// when [schema] is the list schema that the set codec will wrap.
+  String _beforeOuterCodec(String schema, String modifiers) {
+    const prefix = 'final schema = ';
+    final unit = parseString(
+      content: '$prefix$schema;',
+      throwIfDiagnostics: false,
+    ).unit;
+    final declaration = unit.declarations.single as TopLevelVariableDeclaration;
+    final expression = declaration.variables.variables.single.initializer;
+    if (expression is MethodInvocation &&
+        expression.methodName.name == 'codec' &&
+        expression.target != null) {
+      final end = expression.target!.end - prefix.length;
+      return '${schema.substring(0, end)}$modifiers${schema.substring(end)}';
+    }
+    return '$schema$modifiers';
   }
 
   /// Adds an explicit Ack description or a tagged documentation description.
@@ -339,9 +347,17 @@ final class AckSchemaInference {
     return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
   }
 
-  String _number(DartObject value, String name) {
-    final number = value.getField(name)!;
-    return (number.toIntValue() ?? number.toDoubleValue())!.toString();
+  String _number(Element declaration, String annotation, DartObject value) {
+    final field = value.getField('value')!;
+    final number = (field.toIntValue() ?? field.toDoubleValue())!;
+    if (!number.isFinite) {
+      throw InvalidGenerationSource(
+        '${declaration.enclosingElement?.name}.${declaration.name} has '
+        '$annotation($number); the value must be a finite number.',
+        element: declaration,
+      );
+    }
+    return number.toString();
   }
 
   void _require(

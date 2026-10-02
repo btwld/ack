@@ -56,20 +56,182 @@ Future<void> _expectWarning(String body, List<String> messages) async {
 
 const _head = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'model.ack.dart';
 part 'model.ack.g.dart';
 ''';
 
+const _aliasHead = '''
+import 'package:ack/ack.dart';
+import 'aliases.dart';
+
+part 'model.ack.dart';
+part 'model.ack.g.dart';
+''';
+
 void main() {
+  test('rejects a JsonConverter on a field or class', () async {
+    const converter = '''
+final class UriText implements JsonConverter<Uri, String> {
+  const UriText();
+  @override
+  Uri fromJson(String json) => Uri.parse(json);
+  @override
+  String toJson(Uri object) => object.toString();
+}
+''';
+    await _expectFailure(
+      '''
+$converter
+@Schemable()
+final class Link with _\$LinkAck {
+  const Link({required this.target});
+
+  @UriText()
+  final Uri target;
+}
+''',
+      [
+        'Link.target uses the JsonConverter UriText, which would bypass Ack '
+            'validation in the JSON part. Give the type a static schema or '
+            'use @AckField(schema: ...) instead.',
+      ],
+    );
+    await _expectFailure(
+      '''
+$converter
+@Schemable()
+@UriText()
+final class Link with _\$LinkAck {
+  const Link({required this.target});
+
+  final Uri target;
+}
+''',
+      [
+        'Link uses the JsonConverter UriText, which would bypass Ack '
+            'validation in the JSON part. Give the type a static schema or '
+            'use @AckField(schema: ...) instead.',
+      ],
+    );
+  });
+
+  test('rejects non-finite numeric constraint values', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+final class Range with _\$RangeAck {
+  const Range({required this.limit});
+
+  @Max(double.infinity)
+  final double limit;
+}
+''',
+      ['Range.limit has @Max(Infinity); the value must be a finite number.'],
+    );
+    await _expectFailure(
+      '''
+@Schemable()
+final class Range with _\$RangeAck {
+  const Range({required this.step});
+
+  @MultipleOf(double.nan)
+  final double step;
+}
+''',
+      ['Range.step has @MultipleOf(NaN); the value must be a finite number.'],
+    );
+  });
+
+  test('rejects a field type that is visible only through a typedef', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+final class Person with _\$PersonAck {
+  const Person({required this.home, required this.shade});
+  final Addr home;
+  final Shade shade;
+}
+''',
+      [
+        'Person.home uses Address, which is not visible in this library. '
+            'Import package:test_pkg/address.dart.',
+      ],
+      head: _aliasHead,
+      allowedOutputs: {
+        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+      },
+      extraSources: {
+        'aliases.dart': '''
+import 'address.dart';
+import 'shade.dart';
+
+typedef Addr = Address;
+typedef Shade = Color;
+''',
+        'address.dart': '''
+import 'package:ack/ack.dart';
+
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@Schemable()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+  final String city;
+}
+''',
+        'shade.dart': 'enum Color { red, blue }',
+      },
+    );
+    await _expectFailure(
+      '''
+@Schemable()
+final class Swatch with _\$SwatchAck {
+  const Swatch({required this.shade});
+  final Shade shade;
+}
+''',
+      [
+        'Swatch.shade uses Color, which is not visible in this library. '
+            'Import package:test_pkg/shade.dart.',
+      ],
+      head: _aliasHead,
+      extraSources: {
+        'aliases.dart': '''
+import 'shade.dart';
+
+typedef Shade = Color;
+''',
+        'shade.dart': 'enum Color { red, blue }',
+      },
+    );
+  });
+
+  test('rejects @Schemable(name:) on a class', () async {
+    await _expectFailure(
+      '''
+@Schemable(name: 'IgnoredName')
+final class Account with _\$AccountAck {
+  const Account({required this.id});
+  final String id;
+}
+''',
+      [
+        'Account sets @Schemable(name: ...), which applies only to top-level '
+            'schemas. Use schemaName to name the generated schema facade.',
+      ],
+    );
+  });
+
   test(
     'rejects a local declaration named like the copyWith implementation',
     () async {
       await _expectFailure(
         '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -86,17 +248,17 @@ final class _\$UserCopyWith {}
   test('rejects blank annotation descriptions', () async {
     await _expectFailure(
       '''
-@AckModel(description: ' ')
+@Schemable(description: ' ')
 final class Item with _\$ItemAck {
   const Item({required this.value});
   final String value;
 }
 ''',
-      ['Item @AckModel.description must not be blank.'],
+      ['Item @Schemable.description must not be blank.'],
     );
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Item with _\$ItemAck {
   const Item({required this.value});
   @AckField(description: '')
@@ -112,7 +274,7 @@ final class Item with _\$ItemAck {
       '''
 /// @description First.
 /// @description Second.
-@AckModel()
+@Schemable()
 final class Item with _\$ItemAck {
   const Item({required this.value});
   final String value;
@@ -125,7 +287,7 @@ final class Item with _\$ItemAck {
   test('rejects a blank field description tag at the field', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Item with _\$ItemAck {
   const Item({required this.value});
   /// @description
@@ -139,7 +301,7 @@ final class Item with _\$ItemAck {
   test('rejects numeric sugar on a String field', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -154,7 +316,7 @@ final class User with _\$UserAck {
   test('rejects string sugar on a numeric field', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.age});
 
@@ -169,7 +331,7 @@ final class User with _\$UserAck {
   test('rejects collection sugar on a scalar field', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -186,7 +348,7 @@ final class User with _\$UserAck {
     () async {
       await _expectFailure(
         '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.tags});
 
@@ -203,7 +365,7 @@ final class User with _\$UserAck {
     () async {
       await _expectFailure(
         '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.tags});
 
@@ -222,7 +384,7 @@ final class Schemas {
   static AckSchema<String, String> name() => Ack.string();
 }
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -234,12 +396,64 @@ final class User with _\$UserAck {
     );
   });
 
+  test(
+    'rejects an AckField schema whose runtime type is not the field type',
+    () async {
+      await _expectFailure(
+        '''
+AckSchema<int, int> countSchema() => Ack.integer();
+
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckField(schema: countSchema)
+  final String name;
+}
+''',
+        [
+          'User.name @AckField schema function countSchema produces int, but '
+              'the field type is String.',
+        ],
+      );
+    },
+  );
+
+  test('rejects a generic AckField schema function', () async {
+    await _expectFailure(
+      '''
+final class Box<T> {
+  const Box(this.value);
+  final T value;
+}
+
+AckSchema<Object, Box<T>> boxSchema<T extends Object>() =>
+    Ack.any().codec<Box<T>>(
+      decode: (value) => Box(value as T),
+      encode: (box) => box.value,
+    );
+
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.box});
+
+  @AckField(schema: boxSchema<String>)
+  final Box<String> box;
+}
+''',
+      [
+        'User.box @AckField schema function boxSchema is generic, and the '
+            'generated call cannot keep its type arguments.',
+      ],
+    );
+  });
+
   test('rejects an AckField function that does not return AckSchema', () async {
     await _expectFailure(
       '''
 String nameSchema() => 'not a schema';
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -256,7 +470,7 @@ final class User with _\$UserAck {
       '''
 AckSchema<String, String> normalizedSchema() => Ack.string().trim();
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -274,7 +488,7 @@ final class User with _\$UserAck {
 final normalized = Ack.string().trim();
 AckSchema<String, String> normalizedSchema() => normalized;
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -289,7 +503,7 @@ final class User with _\$UserAck {
   test('rejects dynamic map values and points to Object?', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Stats with _\$StatsAck {
   const Stats({required this.values});
 
@@ -303,7 +517,7 @@ final class Stats with _\$StatsAck {
   test('rejects nullable Object list elements', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Envelope with _\$EnvelopeAck {
   const Envelope({required this.items});
 
@@ -317,7 +531,7 @@ final class Envelope with _\$EnvelopeAck {
   test('rejects nested non-String map keys', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Stats with _\$StatsAck {
   const Stats({required this.scores});
 
@@ -331,7 +545,7 @@ final class Stats with _\$StatsAck {
   test('rejects non-String map keys', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Stats with _\$StatsAck {
   const Stats({required this.scores});
 
@@ -345,7 +559,7 @@ final class Stats with _\$StatsAck {
   test('rejects dynamic fields and points to Object?', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Payload with _\$PayloadAck {
   const Payload({required this.value});
 
@@ -359,7 +573,7 @@ final class Payload with _\$PayloadAck {
   test('rejects private annotated classes', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class _User {
   const _User({required this.name});
 
@@ -370,10 +584,10 @@ final class _User {
     );
   });
 
-  test('requires final concrete AckModel classes', () async {
+  test('requires final concrete Schemable classes', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 class User with _\$UserAck {
   const User({required this.name});
 
@@ -384,10 +598,28 @@ class User with _\$UserAck {
     );
   });
 
+  test('rejects a redirecting private-factory model', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+abstract class HabitDto with _\$HabitDtoAck {
+  const HabitDto._();
+  const factory HabitDto({required String name}) = _HabitDto;
+}
+''',
+      [
+        '@Schemable HabitDto redirects its unnamed constructor to _HabitDto. '
+            'Redirecting factory models are not supported; declare a final '
+            'class whose unnamed generative constructor initializes its '
+            'fields.',
+      ],
+    );
+  });
+
   test('requires final concrete union branches', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
@@ -403,7 +635,7 @@ class Cat extends Pet with _\$CatAck {
   test('rejects mutable stored fields', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   User({required this.name});
 
@@ -417,7 +649,7 @@ final class User with _\$UserAck {
   test('rejects private constructor-backed fields', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this._secret});
 
@@ -431,7 +663,7 @@ final class User with _\$UserAck {
   test('requires the default capture field when capture is enabled', () async {
     await _expectFailure(
       '''
-@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
 final class Config with _\$ConfigAck {
   const Config({required this.name});
 
@@ -445,7 +677,7 @@ final class Config with _\$ConfigAck {
   test('requires the exact capture field type', () async {
     await _expectFailure(
       '''
-@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
 final class Config with _\$ConfigAck {
   const Config({required this.additionalProperties});
 
@@ -459,7 +691,7 @@ final class Config with _\$ConfigAck {
   test('names invalid unknown-property capture fields correctly', () async {
     await _expectFailure(
       '''
-@AckModel(
+@Schemable(
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: '_extras',
 )
@@ -476,7 +708,7 @@ final class Config with _\$ConfigAck {
   test('rejects captureField without the capture policy', () async {
     await _expectFailure(
       '''
-@AckModel(captureField: 'args')
+@Schemable(captureField: 'args')
 final class Config with _\$ConfigAck {
   const Config({required this.name});
 
@@ -490,7 +722,7 @@ final class Config with _\$ConfigAck {
   test('requires discriminatorKey on annotated sealed classes', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 sealed class Pet with _\$PetAck {
   const Pet();
 }
@@ -506,17 +738,17 @@ final class Cat extends Pet with _\$CatAck {
   test('rejects duplicate branch discriminator values', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
 
-@AckModel(discriminatorValue: 'pet')
+@Schemable(discriminatorValue: 'pet')
 final class Cat extends Pet with _\$CatAck {
   const Cat();
 }
 
-@AckModel(discriminatorValue: 'pet')
+@Schemable(discriminatorValue: 'pet')
 final class Dog extends Pet with _\$DogAck {
   const Dog();
 }
@@ -528,7 +760,7 @@ final class Dog extends Pet with _\$DogAck {
   test('rejects abstract intermediate union branches', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
@@ -548,7 +780,7 @@ final class Cat extends Mammal {
   test('rejects wrong-typed declared discriminator members', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
@@ -566,12 +798,12 @@ final class Cat extends Pet with _\$CatAck {
   test('rejects mismatched literal discriminator members', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
 
-@AckModel(discriminatorValue: 'cat')
+@Schemable(discriminatorValue: 'cat')
 final class Cat extends Pet with _\$CatAck {
   const Cat();
 
@@ -582,10 +814,10 @@ final class Cat extends Pet with _\$CatAck {
     );
   });
 
-  test('rejects AckModel and JsonSerializable on the same class', () async {
+  test('rejects Schemable and JsonSerializable on the same class', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 @JsonSerializable()
 final class User with _\$UserAck {
   const User({required this.name});
@@ -593,7 +825,7 @@ final class User with _\$UserAck {
   final String name;
 }
 ''',
-      ['User', '@AckModel', '@JsonSerializable'],
+      ['User', '@Schemable', '@JsonSerializable'],
     );
   });
 
@@ -606,7 +838,7 @@ Role decodeRole(Object? value) => Role.member;
 String encodeRole(Role value) => value.name;
 Object? readRole(Map<dynamic, dynamic> map, String key) => map[key];
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.role});
 
@@ -650,7 +882,7 @@ final class User with _\$UserAck {
   test('requires JsonKey name overrides on the field', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({@JsonKey(name: 'wire_name') required this.name});
 
@@ -664,7 +896,7 @@ final class User with _\$UserAck {
   test('requires the schema-model extension to be visible', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User();
 }
@@ -673,7 +905,7 @@ final class User with _\$UserAck {
       head: '''
 import 'package:ack/ack.dart'
     show Ack, AckSchema, AckSchemaModel, SchemaResult;
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'model.ack.dart';
 part 'model.ack.g.dart';
@@ -684,12 +916,12 @@ part 'model.ack.g.dart';
   test('rejects duplicate generated schema names', () async {
     await _expectFailure(
       '''
-@AckModel(schemaName: 'PersonSchema')
+@Schemable(schemaName: 'PersonSchema')
 final class User with _\$UserAck {
   const User();
 }
 
-@AckModel(schemaName: 'PersonSchema')
+@Schemable(schemaName: 'PersonSchema')
 final class Admin with _\$AdminAck {
   const Admin();
 }
@@ -701,7 +933,7 @@ final class Admin with _\$AdminAck {
   test('rejects a lower-camel schema facade override', () async {
     await _expectFailure(
       '''
-@AckModel(schemaName: 'personSchema')
+@Schemable(schemaName: 'personSchema')
 final class User with _\$UserAck {
   const User();
 }
@@ -713,7 +945,7 @@ final class User with _\$UserAck {
   test('rejects a local schema facade collision', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User();
 }
@@ -727,7 +959,7 @@ abstract final class UserSchema {}
   test('rejects a local private backing schema collision', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User();
 }
@@ -741,7 +973,7 @@ final _userSchema = Ack.string();
   test('rejects an implicit union branch facade collision', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
@@ -794,7 +1026,7 @@ abstract final class CatSchema {}
     test('rejects local ${collision.name} helper collisions', () async {
       await _expectFailure(
         '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -811,7 +1043,7 @@ ${collision.declaration}
   test('rejects a local raw union object helper collision', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
@@ -829,17 +1061,17 @@ final _catObject = Ack.object({});
   test('rejects case-only branch backing schema collisions', () async {
     await _expectFailure(
       '''
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet();
 }
 
-@AckModel(schemaName: 'UpperCatSchema')
+@Schemable(schemaName: 'UpperCatSchema')
 final class Cat extends Pet with _\$CatAck {
   const Cat();
 }
 
-@AckModel(schemaName: 'LowerCatSchema')
+@Schemable(schemaName: 'LowerCatSchema')
 final class cat extends Pet with _\$catAck {
   const cat();
 }
@@ -851,7 +1083,7 @@ final class cat extends Pet with _\$catAck {
   test('rejects a directly recursive class-first model', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Node with _\$NodeAck {
   const Node({this.child});
 
@@ -865,14 +1097,14 @@ final class Node with _\$NodeAck {
   test('rejects mutually recursive class-first models', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Parent with _\$ParentAck {
   const Parent({required this.child});
 
   final Child child;
 }
 
-@AckModel()
+@Schemable()
 final class Child with _\$ChildAck {
   const Child({required this.parent});
 
@@ -886,7 +1118,7 @@ final class Child with _\$ChildAck {
   test('rejects class-first cycles across libraries', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Parent with _\$ParentAck {
   const Parent({required this.child});
 
@@ -896,7 +1128,7 @@ final class Parent with _\$ParentAck {
       ['Child.parent', 'recursive class-first', 'Ack.lazy', 'schema-first'],
       head: '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'child.dart';
 
 part 'model.ack.dart';
@@ -904,13 +1136,13 @@ part 'model.ack.g.dart';
 ''',
       extraSources: {
         'child.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'model.dart';
 
 part 'child.ack.dart';
 part 'child.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Child with _\$ChildAck {
   const Child({required this.parent});
 
@@ -926,7 +1158,7 @@ final class Child with _\$ChildAck {
     () async {
       await _expectFailure(
         '''
-@AckModel()
+@Schemable()
 final class Order with _\$OrderAck {
   const Order({required this.address});
 
@@ -936,7 +1168,7 @@ final class Order with _\$OrderAck {
         ['AddressSchema', 'hidden', 'show Address, AddressSchema'],
         head: '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 
 part 'model.ack.dart';
@@ -945,12 +1177,12 @@ part 'model.ack.g.dart';
         extraSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -973,14 +1205,14 @@ final class Address with _\$AddressAck {
       {
         'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 import 'address.dart' show AddressSchema;
 
 part 'model.ack.dart';
 part 'model.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Order with _\$OrderAck {
   const Order({required this.address});
 
@@ -989,12 +1221,12 @@ final class Order with _\$OrderAck {
 ''',
         'test_pkg|lib/address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -1019,7 +1251,7 @@ final class Address with _\$AddressAck {
   test('rejects a class-first facade hidden by a barrel export', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class Order with _\$OrderAck {
   const Order({required this.address});
 
@@ -1029,7 +1261,7 @@ final class Order with _\$OrderAck {
       ['AddressSchema', 'export combinator'],
       head: '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'exports.dart';
 
 part 'model.ack.dart';
@@ -1039,12 +1271,12 @@ part 'model.ack.g.dart';
         'exports.dart': "export 'address.dart' show Address;",
         'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -1061,7 +1293,7 @@ final class Address with _\$AddressAck {
   test('rejects case-style key collisions', () async {
     await _expectFailure(
       '''
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class Collision with _\$CollisionAck {
   const Collision({required this.fooBar, required this.foo_bar});
 
@@ -1076,7 +1308,7 @@ final class Collision with _\$CollisionAck {
   test('rejects a missing generated mixin', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User {
   const User({required this.name});
 
@@ -1090,7 +1322,7 @@ final class User {
   test('rejects a no-op AckField', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -1107,7 +1339,7 @@ final class User with _\$UserAck {
     () async {
       await _expectFailure(
         '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -1123,7 +1355,7 @@ final class User with _\$UserAck {
   test('rejects @Optional() on a required constructor parameter', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
@@ -1138,7 +1370,7 @@ final class User with _\$UserAck {
   test('rejects combining @Optional() and @Required()', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({this.name});
 
@@ -1154,7 +1386,7 @@ final class User with _\$UserAck {
   test('rejects conflicting legacy and new presence declarations', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({this.name});
 
@@ -1170,7 +1402,7 @@ final class User with _\$UserAck {
   test('warns when legacy AckField presence is used', () async {
     await _expectWarning(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({this.name});
 
@@ -1187,7 +1419,7 @@ final class User with _\$UserAck {
     () async {
       await _expectWarning(
         '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({this.name});
 
@@ -1204,7 +1436,7 @@ final class User with _\$UserAck {
   test('rejects an unmapped constructor parameter', () async {
     await _expectFailure(
       '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User(this.name, String extra) : label = extra;
 

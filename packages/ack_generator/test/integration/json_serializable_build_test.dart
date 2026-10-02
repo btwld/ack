@@ -54,8 +54,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -63,17 +61,14 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'createdAt': Ack.datetime(),
@@ -93,7 +88,7 @@ final userSchema = Ack.object({
           p.join(temporary.path, 'lib', 'user.ack.g.dart'),
         ).readAsStringSync();
 
-        expect(ackPart, contains('@AckInfer.jsonSerializable'));
+        expect(ackPart, contains('@Schemable.generatedJson'));
         expect(ackPart, contains(r'_$UserFromJson'));
         expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
         expect(jsonPart, contains('JsonSerializableGenerator'));
@@ -131,8 +126,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
   json_annotation: ^4.12.0
 dev_dependencies:
   ack_generator:
@@ -143,8 +136,6 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
 targets:
@@ -161,14 +152,13 @@ targets:
 ''');
         File(p.join(temporary.path, 'lib', 'same.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'same.ack.dart';
 part 'same.ack.g.dart';
 part 'same.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'nickname': Ack.string().optional(),
@@ -240,7 +230,7 @@ void main() {
   );
 
   test(
-    'prefixed barrel AckInfer imports compile through the JSON phase',
+    'prefixed barrel Schemable imports compile through the JSON phase',
     () async {
       final projectRoot = _projectRoot();
       final temporary = await Directory.systemTemp.createTemp(
@@ -257,8 +247,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -267,15 +255,13 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(
           p.join(temporary.path, 'lib', 'role.dart'),
         ).writeAsStringSync('enum Role { admin, member }\n');
         File(p.join(temporary.path, 'lib', 'support.dart')).writeAsStringSync(
           "export 'package:ack/ack.dart';\n"
-          "export 'package:ack_annotations/ack_annotations.dart';\n"
+          "export 'package:ack/annotations.dart';\n"
           "export 'role.dart';\n",
         );
         File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
@@ -284,7 +270,7 @@ import 'support.dart' as support;
 part 'user.ack.dart';
 part 'user.ack.g.dart';
 
-@support.AckInfer()
+@support.Schemable()
 final userSchema = support.Ack.object({
   'name': support.Ack.string(),
   'role': support.Ack.enumValues(support.Role.values),
@@ -319,7 +305,7 @@ void main() {
         final ackPart = File(
           p.join(temporary.path, 'lib', 'user.ack.dart'),
         ).readAsStringSync();
-        expect(ackPart, contains('@support.AckInfer.jsonSerializable'));
+        expect(ackPart, contains('@support.Schemable.generatedJson'));
         expect(ackPart, contains('support.AckModelAdapter'));
         expect(ackPart, contains('final support.Role role;'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');

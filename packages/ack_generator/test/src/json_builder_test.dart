@@ -49,4 +49,29 @@ void main() {
       outputs: const {},
     );
   });
+
+  test('JSON builder writes nothing when the Ack part is missing', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      ackModelJsonBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': r'''
+import 'package:ack/ack.dart';
+
+part 'model.ack.dart';
+part 'model.ack.g.dart';
+
+@Schemable()
+final class User with _$UserAck {
+  const User({required this.name});
+  final String name;
+}
+''',
+      },
+      generateFor: const {'test_pkg|lib/model.dart'},
+      readerWriter: readerWriter,
+      outputs: const {},
+    );
+  });
 }

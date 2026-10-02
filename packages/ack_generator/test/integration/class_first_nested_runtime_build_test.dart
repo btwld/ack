@@ -55,8 +55,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -65,18 +63,15 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckModel(schemaName: 'PostalAddressSchema')
+@Schemable(schemaName: 'PostalAddressSchema')
 final class Address with _$AddressAck {
   const Address({required this.city});
 
@@ -85,26 +80,33 @@ final class Address with _$AddressAck {
   static final fromJson = PostalAddressSchema.fromJson;
 }
 
-@AckModel()
+@Schemable()
 final class AddressBook with _$AddressBookAck {
   const AddressBook({required this.primary, this.secondary});
 
   final Address primary;
   final Address? secondary;
 }
+
+@Schemable(caseStyle: AckCaseStyle.kebab)
+final class Label with _$LabelAck {
+  const Label({required this.postCode, this.lineCount = 1});
+
+  final String postCode;
+  final int lineCount;
+}
 ''',
         );
         File(p.join(temporary.path, 'lib', 'customer.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' show Address, PostalAddressSchema;
 
 part 'customer.ack.dart';
 part 'customer.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Customer with _$CustomerAck {
   const Customer({
     this.primary = const Address(city: 'Default City'),
@@ -122,14 +124,13 @@ final class Customer with _$CustomerAck {
         File(p.join(temporary.path, 'lib', 'parcel.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'models.dart' as models;
 
 part 'parcel.ack.dart';
 part 'parcel.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Parcel with _$ParcelAck {
   const Parcel({required this.destination});
 
@@ -139,12 +140,11 @@ final class Parcel with _$ParcelAck {
         );
         File(p.join(temporary.path, 'lib', 'north.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'north.ack.dart';
 part 'north.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Place with _$PlaceAck {
   const Place({required this.name});
 
@@ -153,12 +153,11 @@ final class Place with _$PlaceAck {
 ''');
         File(p.join(temporary.path, 'lib', 'south.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'south.ack.dart';
 part 'south.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Place with _$PlaceAck {
   const Place({required this.name});
 
@@ -168,7 +167,6 @@ final class Place with _$PlaceAck {
         File(p.join(temporary.path, 'lib', 'itinerary.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'north.dart' as north;
 import 'south.dart' as south;
@@ -176,7 +174,7 @@ import 'south.dart' as south;
 part 'itinerary.ack.dart';
 part 'itinerary.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Itinerary with _$ItineraryAck {
   const Itinerary({required this.start, required this.finish});
 
@@ -187,12 +185,11 @@ final class Itinerary with _$ItineraryAck {
         );
         File(p.join(temporary.path, 'lib', 'pet.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
   const Pet({required this.id});
 
@@ -207,7 +204,6 @@ final class Cat extends Pet with _$CatAck {
 ''');
         File(p.join(temporary.path, 'lib', 'order.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as address;
 import 'pet.dart' as pets;
@@ -215,7 +211,7 @@ import 'pet.dart' as pets;
 part 'order.ack.dart';
 part 'order.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Order with _$OrderAck {
   const Order({
     required this.shipping,
@@ -235,26 +231,24 @@ final class Order with _$OrderAck {
         File(p.join(temporary.path, 'lib', 'legacy.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'legacy.ack.dart';
 part 'legacy.ack.g.dart';
 
-@AckInfer(name: 'LegacyAddress')
+@Schemable(name: 'LegacyAddress')
 final legacyAddressContract = Ack.object({'city': Ack.string()});
 ''',
         );
         File(p.join(temporary.path, 'lib', 'holder.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'legacy.dart' as legacy;
 
 part 'holder.ack.dart';
 part 'holder.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Holder with _$HolderAck {
   const Holder({
     required this.primary,
@@ -276,14 +270,13 @@ final class Holder with _$HolderAck {
           p.join(temporary.path, 'lib', 'address_envelope.dart'),
         ).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as address;
 
 part 'address_envelope.ack.dart';
 part 'address_envelope.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressEnvelopeSchema = Ack.object({
   'primary': address.PostalAddressSchema.schema,
   'optional': address.PostalAddressSchema.schema.optional(),
@@ -369,6 +362,13 @@ void main() {
     expect(itinerary.finish.name, 'South');
   });
 
+  test('a case style renames keys without json_annotation', () {
+    final label = LabelSchema.parse({'post-code': '1012'});
+
+    expect(label.postCode, '1012');
+    expect(label.toJson(), {'post-code': '1012', 'line-count': 1});
+  });
+
   test('schema-first and class-first models reuse each other', () {
     final holder = HolderSchema.parse({
       'primary': {'city': 'Rome'},
@@ -450,6 +450,14 @@ void main() {
 ''');
 
         _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        final runtimeDependencies = await _run(temporary, [
+          'pub',
+          'deps',
+          '--no-dev',
+          '--style=list',
+        ]);
+        _expectSuccess(runtimeDependencies, 'dart pub deps --no-dev');
+        expect(runtimeDependencies.stdout, isNot(contains('json_annotation')));
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'clean build_runner build',

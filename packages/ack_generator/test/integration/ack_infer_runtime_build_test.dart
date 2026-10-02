@@ -64,7 +64,7 @@ Future<void> _expectCopyWithRejects(Directory project, String misuse) async {
 
 void main() {
   test(
-    'clean generated models compile and preserve the AckInfer runtime contract',
+    'clean generated models compile and preserve the Schemable runtime contract',
     () async {
       var projectRoot = Directory.current;
       while (!Directory(
@@ -86,8 +86,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 dev_dependencies:
   ack_generator:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
@@ -96,8 +94,6 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
           '''
@@ -110,7 +106,6 @@ linter:
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'models.ack.dart';
 part 'models.ack.g.dart';
@@ -125,7 +120,7 @@ final class RuntimeUser {
   final String name;
 }
 
-@AckInfer(name: 'UserRecord')
+@Schemable(name: 'UserRecord')
 final userRecordSchema = Ack.object({
   'name': Ack.string(),
 }).codec<RuntimeUser>(
@@ -133,7 +128,7 @@ final userRecordSchema = Ack.object({
   encode: (user) => {'name': user.name},
 );
 
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   'label': Ack.string(),
   'children': Ack.list(
@@ -141,12 +136,12 @@ final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   ).optional(),
 });
 
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> authorSchema = Ack.object({
   'books': Ack.list(Ack.lazy('book', () => bookSchema)),
 });
 
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
   'title': Ack.string(),
   'author': Ack.lazy('author', () => authorSchema).optional(),
@@ -154,7 +149,7 @@ final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
 
 const allowExtras = true;
 
-@AckInfer()
+@Schemable()
 final extrasSchema = Ack.object({
   'name': Ack.string(),
   'maybe': Ack.string().nullable(),
@@ -167,30 +162,30 @@ final extrasSchema = Ack.object({
   ),
 }, additionalProperties: allowExtras);
 
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final dogSchema = Ack.object({'friendly': Ack.boolean()}).passthrough();
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema, 'dog': dogSchema},
 );
 
-@AckInfer(name: 'MemberType')
+@Schemable(name: 'MemberType')
 final memberSchema = Ack.string();
 
-@AckInfer()
+@Schemable()
 final emptySchema = Ack.object({});
 
-@AckInfer()
+@Schemable()
 final scoresSchema = Ack.list(Ack.integer());
 
 final looseAny = Ack.any();
 
-@AckInfer()
+@Schemable()
 final envelopeSchema = Ack.object({
   'kind': Ack.any(),
   'payload': Ack.any().nullable().optional(),
@@ -203,7 +198,7 @@ final envelopeSchema = Ack.object({
 
 final nullableLabel = Ack.string().nullable();
 
-@AckInfer()
+@Schemable()
 final labelsSchema = Ack.object({
   'byKey': Ack.map(nullableLabel),
   'groups': Ack.map(Ack.list(Ack.string()).nullable()),
@@ -224,34 +219,34 @@ final class Counted {
   }
 }
 
-@AckInfer()
+@Schemable()
 final documentSchema = Ack.object({'schema': Ack.string()});
 
-@AckInfer(name: 'Settings')
+@Schemable(name: 'Settings')
 final schema = Ack.object({'theme': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final draftSchema = Ack.object({'body': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final revisionSchema = Ack.discriminated(
   discriminatorKey: 'schema',
   schemas: {'draft': draftSchema},
 );
 
-@AckInfer()
+@Schemable()
 final circleSchema = Ack.object({'radius': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final ruleSchema = Ack.object({'schema': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final shapeSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {'circle': circleSchema, 'rule': ruleSchema},
 );
 
-@AckInfer(name: 'CountedModel')
+@Schemable(name: 'CountedModel')
 final countedSchema = Ack.object({
   'item': Ack.string().codec<Counted>(
     decode: Counted.decode,
@@ -269,12 +264,11 @@ final countedSchema = Ack.object({
         File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
         );
@@ -284,7 +278,6 @@ final addressSchema = Ack.object({'city': Ack.string()});
         File(p.join(temporary.path, 'lib', 'person.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
 
 import 'address.dart' as direct;
 import 'exports.dart' as exported;
@@ -292,7 +285,7 @@ import 'exports.dart' as exported;
 part 'person.ack.dart';
 part 'person.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final personSchema = Ack.object({
   'home': direct.addressSchema,
   'history': Ack.list(exported.addressSchema),

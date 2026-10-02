@@ -1,6 +1,6 @@
 # Publishing Guide
 
-ACK uses a coordinated release: all six publishable packages share one version
+ACK uses a coordinated release: all five publishable packages share one version
 and a single `v<version>` tag. GitHub Actions publishes dependencies before their
 consumers using pub.dev OIDC credentials and the protected `Production`
 environment. A release-preparation PR does not publish anything.
@@ -13,11 +13,11 @@ The next candidate is **1.7.0-beta.2**. It previews shared inference, model
 adapter schemas, codec introspection, typed generated `copyWith`, stricter
 constrained-`Set` validation, static model schema shorthand, and explicit
 description controls. The API check compares
-all six packages against 1.6.2; generator compatibility also requires the
+all five packages against 1.6.2; generator compatibility also requires the
 consumer build and runtime tests because the API check cannot inspect
 generated consumer code.
 
-The shared API baseline for this release is 1.6.2. Confirm that all six
+The shared API baseline for this release is 1.6.2. Confirm that all five
 packages have published 1.6.2 versions before preparing the release.
 
 Melos **8.x** is configured with `mode: fixed` and `workspaceTag: true`, matching
@@ -31,7 +31,7 @@ Keep hosted version constraints on sibling dependencies and `resolution:
 workspace` in members; do not add local path overrides to publishable manifests.
 Keep explicit workspace paths because glob patterns require Dart 3.11 and this
 repository supports Dart 3.9. The root and `ack_example` are private and are not
-part of the six-package release.
+part of the five-package release.
 
 References: [Melos versioning](https://melos.invertase.dev/commands/version),
 [pub workspaces](https://dart.dev/tools/pub/workspaces), and
@@ -140,7 +140,7 @@ Pushing the tag triggers `.github/workflows/release.yml`; there is no Melos
 publish/release script. The workflow verifies the tag, reruns release preflight,
 and publishes in dependency order:
 
-1. `ack`, `ack_annotations`
+1. `ack`
 2. `ack_generator`
 3. `ack_json_schema_builder`, `ack_mcp_dart`, `ack_firebase_ai`
 
@@ -159,7 +159,7 @@ release. Network/server failures stop the job instead of being mistaken for a
 missing version. Rerun failed jobs on the **same tag**; never move a published tag
 or republish different contents under an existing version.
 
-After all six exact versions are visible, create the GitHub Release from the
+After all five exact versions are visible, create the GitHub Release from the
 existing tag using the prepared release notes and mark it as a prerelease for
 beta versions. Before the first subsequent code
 change, begin a new unreleased changelog section instead of editing the

@@ -57,7 +57,7 @@ void main() {
       ),
       {
         'test_pkg|lib/widget.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 void widget({
   /// The item title.
@@ -85,7 +85,7 @@ void widget({
       ),
       {
         'test_pkg|lib/widget.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 void widget({
   @AckField(description: 'Explicit text.')
@@ -132,7 +132,7 @@ void widget({required List<Priority> priorities}) {}
       const _InferenceProbe(parameterName: 'tags'),
       {
         'test_pkg|lib/widget.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 void widget({@MinItems(2) required Set<String> tags}) {}
 ''',
@@ -142,6 +142,33 @@ void widget({@MinItems(2) required Set<String> tags}) {}
       outputs: {
         'test_pkg|lib/widget.probe': decodedMatches(
           'Ack.list(Ack.string()).minItems(2).unique().codec<Set<String>>('
+          'decode: (list) => list.toSet(), '
+          'encode: (set) => set.toList(growable: false),)',
+        ),
+      },
+    );
+  });
+
+  test('a second generator constrains the outer Set of a nested Set', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      const _InferenceProbe(parameterName: 'cells'),
+      {
+        'test_pkg|lib/widget.dart': '''
+import 'package:ack/annotations.dart';
+
+void widget({@MaxItems(3) required Set<Set<String>> cells}) {}
+''',
+      },
+      generateFor: const {'test_pkg|lib/widget.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/widget.probe': decodedMatches(
+          'Ack.list(Ack.list(Ack.string()).codec<Set<String>>('
+          'decode: (list) => list.toSet(), '
+          'encode: (set) => set.toList(growable: false),))'
+          '.maxItems(3).unique().codec<Set<Set<String>>>('
           'decode: (list) => list.toSet(), '
           'encode: (set) => set.toList(growable: false),)',
         ),

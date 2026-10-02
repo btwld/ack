@@ -5,9 +5,9 @@
 - This is a Melos-managed Dart/Flutter monorepo. Primary packages live under `/packages/*`.
 
 ## Repository layout
-- `packages/ack`: core runtime validation library.
-- `packages/ack_annotations`: annotations for schema-first `@AckInfer()`,
-  class-first `@AckModel()`, and frozen legacy `@AckType()` generation.
+- `packages/ack`: core runtime validation library and the schema-generation
+  annotations (`@Schemable()`, deprecated `@AckInfer()`/`@AckModel()`, and
+  frozen legacy `@AckType()`).
 - `packages/ack_generator`: build_runner generator + unit/integration tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.

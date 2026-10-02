@@ -26,7 +26,7 @@ void main() {
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final listSchema = Ack.object({
@@ -74,7 +74,7 @@ final listSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final listSchema = Ack.object({
@@ -116,7 +116,7 @@ final listSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final nestedListSchema = Ack.object({
@@ -172,7 +172,7 @@ final nestedListSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final statusSchema = Ack.string().minLength(1);
@@ -203,7 +203,7 @@ final statusesSchema = Ack.list(statusSchema);
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final schemaASchema = Ack.list(schemaBSchema);
@@ -235,7 +235,7 @@ final schemaBSchema = Ack.list(schemaASchema);
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final usersSchema = Ack.list(Ack.object({
@@ -268,7 +268,7 @@ final usersSchema = Ack.list(Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 schemaFactory() => Ack.string();
 
@@ -300,7 +300,7 @@ final usersSchema = Ack.list(schemaFactory());
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart' as ack;
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final statusSchema = ack.Ack.string();
@@ -333,7 +333,7 @@ final statusesSchema = ack.Ack.list(ack.Ack.string().minLength(2));
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final schemaASchema = schemaBSchema;
@@ -373,7 +373,7 @@ final schemaBSchema = schemaASchema;
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final addressSchema = Ack.object({
@@ -420,7 +420,7 @@ final userSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final addressSchema = Ack.object({'street': Ack.string()});
@@ -465,7 +465,7 @@ final contactSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final chainedSchema = Ack.object({
@@ -516,7 +516,7 @@ final chainedSchema = Ack.object({
           'test_pkg|lib/schema.dart':
               '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final deepSchema = Ack.object({
@@ -556,7 +556,7 @@ final deepSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final testSchema = Ack.object({
@@ -597,7 +597,7 @@ final testSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final testSchema = Ack.object({
@@ -638,7 +638,7 @@ final testSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final testSchema = Ack.object({
@@ -681,7 +681,7 @@ final testSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 schemaFactory() => Ack.string();
 
@@ -720,7 +720,7 @@ final testSchema = Ack.object({
           'test_pkg|lib/schema.dart':
               '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final testSchema = Ack.object({
@@ -754,7 +754,7 @@ final testSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final testSchema = Ack.object({
@@ -786,7 +786,7 @@ final testSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final testSchema = Ack.object({
@@ -820,7 +820,7 @@ final testSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final itemSchema = Ack.object({
@@ -866,7 +866,7 @@ final containerSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final addressSchema = Ack.object({
@@ -929,7 +929,7 @@ final userSchema = Ack.object({
         'test_pkg|lib/schema.dart':
             '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final keywordSchema = Ack.object({
@@ -964,7 +964,7 @@ $properties
           'test_pkg|lib/schema.dart':
               '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final keywordSchema = Ack.object({
@@ -999,7 +999,7 @@ final keywordSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final reviewSchema = Ack.object({
@@ -1037,7 +1037,7 @@ final reviewSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final formSchema = Ack.object({
@@ -1074,7 +1074,7 @@ final formSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final eventSchema = Ack.object({
@@ -1108,7 +1108,7 @@ final eventSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum UserRole { admin, editor, viewer }
 
@@ -1148,7 +1148,7 @@ final userSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum Priority { low, medium, high, critical }
 
@@ -1188,7 +1188,7 @@ final taskSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final configSchema = Ack.object({
@@ -1225,7 +1225,7 @@ final configSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum UserRole { admin, editor, viewer }
 
@@ -1267,7 +1267,7 @@ final teamSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final actionSchema = Ack.object({
@@ -1307,7 +1307,7 @@ final actionSchema = Ack.object({
         ...allAssets,
         'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum UserRole { admin, editor, viewer }
 

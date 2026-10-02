@@ -84,6 +84,6 @@ for the supported subset, recursive bundles, and round-trip guarantees.
 
 ## Related Packages
 
-- [ack_generator](https://pub.dev/packages/ack_generator) — Generates models from `@AckInfer()` schemas and schemas from `@AckModel()` classes
+- [ack_generator](https://pub.dev/packages/ack_generator) — Generates models from `@Schemable()` schemas and schemas from `@Schemable()` classes
 - [ack_firebase_ai](https://pub.dev/packages/ack_firebase_ai) — Firebase AI (Gemini) schema converter
 - [ack_json_schema_builder](https://pub.dev/packages/ack_json_schema_builder) — bidirectional JSON Schema bridge

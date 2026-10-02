@@ -39,20 +39,92 @@ Future<void> _expectFailure(String source, List<String> messages) async {
 
 const _head = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects a codec type the library cannot name', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    final errors = <String>[];
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'money_schema.dart';
+
+part 'schema.ack.dart';
+part 'schema.ack.g.dart';
+
+@Schemable()
+final orderSchema = Ack.object({'price': moneySchema});
+''',
+        'test_pkg|lib/money_schema.dart': '''
+import 'package:ack/ack.dart';
+import 'money.dart';
+
+final moneySchema = Ack.integer().codec<Money>(
+  decode: Money.new,
+  encode: (money) => money.cents,
+);
+''',
+        'test_pkg|lib/money.dart': '''
+class Money {
+  const Money(this.cents);
+  final int cents;
+}
+''',
+      },
+      generateFor: const {'test_pkg|lib/schema.dart'},
+      readerWriter: readerWriter,
+      outputs: const {},
+      onLog: (LogRecord log) {
+        if (log.level == Level.SEVERE) errors.add(log.message);
+      },
+    );
+
+    expect(
+      errors,
+      contains(
+        contains(
+          'orderSchema.price(→ moneySchema) uses Money, which is not visible '
+          'in this library. Import package:test_pkg/money.dart.',
+        ),
+      ),
+    );
+  });
+
+  test('rejects @Schemable options that apply only to classes', () async {
+    await _expectFailure(
+      '''
+$_head
+@Schemable(
+  caseStyle: AckCaseStyle.snake,
+  description: 'A user.',
+  schemaName: 'UserWire',
+)
+final userSchema = Ack.object({'firstName': Ack.string()});
+''',
+      [
+        'userSchema sets @Schemable options that apply only to classes: '
+            'schemaName, description, caseStyle.',
+        'Configure a top-level schema in its Ack expression; describe it '
+            'with .describe(...).',
+      ],
+    );
+  });
+
   test('rejects dynamic additionalProperties expressions', () async {
     await _expectFailure(
       '''
 $_head
 bool get allowExtras => true;
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object(
   {'name': Ack.string()},
   additionalProperties: allowExtras,
@@ -78,13 +150,13 @@ final class TagList {
   final List<String> values;
 }
 
-@AckInfer(name: 'UserIdModel')
+@Schemable(name: 'UserIdModel')
 final userIdSchema = Ack.integer().codec<UserId>(
   decode: UserId.new,
   encode: (id) => id.value,
 );
 
-@AckInfer()
+@Schemable()
 final profileSchema = Ack.object({
   'tags': Ack.list(Ack.string()).codec<TagList>(
     decode: TagList.new,
@@ -112,7 +184,7 @@ final class UserRecord {
   final String name;
 }
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
 }).codec<UserRecord>(
@@ -134,7 +206,7 @@ final userSchema = Ack.object({
     await _expectOutput(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   'name': Ack.string(),
   'children': Ack.list(
@@ -154,12 +226,12 @@ final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
     await _expectOutput(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> authorSchema = Ack.object({
   'books': Ack.list(Ack.lazy('book', () => bookSchema)),
 });
 
-@AckInfer()
+@Schemable()
 final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
   'author': Ack.lazy('author', () => authorSchema),
 });
@@ -175,7 +247,7 @@ final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final payloadSchema = Ack.any();
 ''',
       ['payloadSchema', 'Ack.any()'],
@@ -191,7 +263,7 @@ final payloadSchema = Ack.any();
       await _expectFailure(
         '''
 $_head
-@AckInfer()
+@Schemable()
 final payloadSchema = ${unsupported.key};
 ''',
         ['payloadSchema', unsupported.value],
@@ -203,7 +275,7 @@ final payloadSchema = ${unsupported.key};
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'nick': Ack.string().trim(),
 });
@@ -220,7 +292,7 @@ final userSchema = Ack.object({
 $_head
 final ageFromString = Ack.string().transform(int.parse);
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'age': ageFromString,
 });
@@ -236,7 +308,7 @@ final userSchema = Ack.object({
 $_head
 final ageFromString = Ack.string().transform(int.parse);
 
-@AckInfer()
+@Schemable()
 final ageSchema = ageFromString;
 ''',
       ['ageSchema', 'ageFromString', '.transform()'],
@@ -249,7 +321,7 @@ final ageSchema = ageFromString;
 $_head
 final normalized = Ack.string().trim();
 
-@AckInfer()
+@Schemable()
 final valueSchema = normalized.codec<String>(
   decode: (value) => value,
   encode: (value) => value,
@@ -265,7 +337,7 @@ final valueSchema = normalized.codec<String>(
 $_head
 AckSchema<String, String> normalized() => Ack.string().trim();
 
-@AckInfer()
+@Schemable()
 final valueSchema = normalized().codec<String>(
   decode: (value) => value,
   encode: (value) => value,
@@ -281,7 +353,7 @@ final valueSchema = normalized().codec<String>(
 $_head
 final normalized = Ack.string().trim();
 
-@AckInfer()
+@Schemable()
 final valueSchema = (normalized).codec<String>(
   decode: (value) => value,
   encode: (value) => value,
@@ -297,7 +369,7 @@ final valueSchema = (normalized).codec<String>(
       await _expectFailure(
         '''
 $_head
-@AckInfer()
+@Schemable()
 final valueSchema = (Ack.string().trim()).codec<String>(
   decode: (value) => value,
   encode: (value) => value,
@@ -314,7 +386,7 @@ final valueSchema = (Ack.string().trim()).codec<String>(
 $_head
 final payloadAny = Ack.any();
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'payload': payloadAny,
   'kind': Ack.any(),
@@ -343,7 +415,7 @@ final userSchema = Ack.object({
 $_head
 final nullableAny = Ack.any().nullable();
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'metadata': Ack.map(nullableAny)});
 ''', contains('final Map<String, Object?> metadata;'));
   });
@@ -352,7 +424,7 @@ final userSchema = Ack.object({'metadata': Ack.map(nullableAny)});
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'items': Ack.list(Ack.any().nullable()),
 });
@@ -367,7 +439,7 @@ final userSchema = Ack.object({
 $_head
 final payloadAny = Ack.any();
 
-@AckInfer()
+@Schemable()
 final payloadSchema = payloadAny;
 ''',
       ['payloadSchema', 'Ack.any()'],
@@ -382,7 +454,7 @@ final payloadSchema = payloadAny;
       await _expectFailure(
         '''
 $_head
-@AckInfer()
+@Schemable()
 final scoresSchema = $source;
 ''',
         ['scoresSchema', 'Ack.map() root'],
@@ -396,7 +468,7 @@ final scoresSchema = $source;
 $_head
 final scoresMap = Ack.map(Ack.integer());
 
-@AckInfer()
+@Schemable()
 final scoresSchema = scoresMap;
 ''',
       ['scoresSchema', 'Ack.map() root'],
@@ -409,12 +481,12 @@ final scoresSchema = scoresMap;
 $_head
 final address = Ack.object({'city': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'home': address,
 });
 ''',
-      ['userSchema.home', "'address'", '@AckInfer'],
+      ['userSchema.home', "'address'", '@Schemable'],
     );
   });
 
@@ -422,7 +494,7 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   '_id': Ack.string(),
 });
@@ -435,10 +507,10 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: '_kind',
   schemas: {'cat': catSchema},
@@ -452,7 +524,7 @@ final petSchema = Ack.discriminated(
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'home': Ack.object({'city': Ack.string()}),
 });
@@ -465,7 +537,7 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final bagSchema = Ack.object({
   'items': Ack.list(Ack.object({'n': Ack.string()})),
 });
@@ -478,7 +550,7 @@ final bagSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final tagsSchema = Ack.list(Ack.string().nullable());
 ''',
       ['tagsSchema[]', 'nullable collection elements', 'Ack.list'],
@@ -491,7 +563,7 @@ final tagsSchema = Ack.list(Ack.string().nullable());
 $_head
 final itemSchema = Ack.string().nullable();
 
-@AckInfer()
+@Schemable()
 final tagsSchema = Ack.list(itemSchema);
 ''',
       [
@@ -509,7 +581,7 @@ final tagsSchema = Ack.list(itemSchema);
 $_head
 AckSchema make() => Ack.string();
 
-@AckInfer()
+@Schemable()
 final payloadSchema = make();
 ''',
       ['payloadSchema', 'unresolvable dynamic schema factory'],
@@ -520,13 +592,13 @@ final payloadSchema = make();
     await _expectFailure(
       '''
 $_head
-@AckInfer(name: 'User')
+@Schemable(name: 'User')
 final firstSchema = Ack.object({'a': Ack.string()});
 
-@AckInfer(name: 'User')
+@Schemable(name: 'User')
 final secondSchema = Ack.object({'b': Ack.string()});
 ''',
-      ['User', 'Multiple @AckInfer'],
+      ['User', 'Multiple @Schemable'],
     );
   });
 
@@ -546,7 +618,7 @@ final color = Ack.string().codec<Color>(
 
 final tags = Ack.list(Ack.string());
 
-@AckInfer()
+@Schemable()
 final profileSchema = Ack.object({
   'color': color,
   'tags': tags,
@@ -569,7 +641,7 @@ final class Color {
   final String value;
 }
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'color': Ack.string().codec<Color>(
     decode: Color.new,
@@ -583,10 +655,10 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckInfer()
+@Schemable()
 final firstSchema = secondSchema;
 
-@AckInfer()
+@Schemable()
 final secondSchema = firstSchema;
 ''',
       ['alias cycle', 'firstSchema'],

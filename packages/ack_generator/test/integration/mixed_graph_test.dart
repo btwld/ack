@@ -29,7 +29,7 @@ Future<void> _build(
 
 const _parts = """
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'models.g.dart';
 part 'models.ack.dart';
@@ -46,7 +46,7 @@ $_parts
 @AckType()
 final legacySchema = Ack.object({'id': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final modernSchema = Ack.object({'name': Ack.string()});
 """;
 
@@ -77,10 +77,10 @@ final modernSchema = Ack.object({'name': Ack.string()});
       ackModelBuilder(BuilderOptions.empty),
       '''
 $_parts
-@AckInfer(name: 'AddressSchema')
+@Schemable(name: 'AddressSchema')
 final valueSchema = Ack.string();
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -91,8 +91,8 @@ final class Address with _\$AddressAck {
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
             log.message.contains('AddressSchema') &&
-            log.message.contains('@AckInfer') &&
-            log.message.contains('@AckModel')) {
+            log.message.contains('schema-first class') &&
+            log.message.contains('class-first facade')) {
           sawDiagnostic = true;
         }
       },
@@ -112,10 +112,10 @@ final class Address with _\$AddressAck {
         ackModelBuilder(BuilderOptions.empty),
         '''
 $_parts
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -136,15 +136,82 @@ final class User with _\$UserAck {
     });
   }
 
+  test(
+    'class-first models explain an unsupported future-generated Map value',
+    () async {
+      final errors = <String>[];
+      await _build(
+        ackModelBuilder(BuilderOptions.empty),
+        '''
+$_parts
+@Schemable()
+final tagSchema = Ack.object({'label': Ack.string()});
+
+@Schemable()
+final class Board with _\$BoardAck {
+  const Board({required this.tags, required this.list});
+
+  final Map<String, Tag> tags;
+  final List<Tag> list;
+}
+''',
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE') errors.add(log.message);
+        },
+      );
+      expect(
+        errors,
+        contains(
+          contains(
+            'Board.tags uses Map<String, Tag>. A model generated from a '
+            '@Schemable schema in this build can be a field type directly or a '
+            'List or Set item, but not a Map value.',
+          ),
+        ),
+      );
+      expect(errors, everyElement(isNot(contains('InvalidType'))));
+    },
+  );
+
+  test('class-first models report an unresolvable field type', () async {
+    final errors = <String>[];
+    await _build(
+      ackModelBuilder(BuilderOptions.empty),
+      '''
+$_parts
+@Schemable()
+final class Board with _\$BoardAck {
+  const Board({required this.owner});
+
+  final Missing owner;
+}
+''',
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') errors.add(log.message);
+      },
+    );
+    expect(
+      errors,
+      contains(
+        contains(
+          'Board.owner uses Missing, which does not resolve. Check that it is '
+          'imported.',
+        ),
+      ),
+    );
+  });
+
   test('class-first models allow a direct nullable future-generated model', () {
     return _build(
       ackModelBuilder(BuilderOptions.empty),
       '''
 $_parts
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({this.address});
 
@@ -175,10 +242,10 @@ AckSchema<Object?, List<Address?>> addressListSchema() =>
       encode: (value) => value,
     );
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -202,13 +269,13 @@ final class User with _\$UserAck {
         ackModelBuilder(BuilderOptions.empty),
         '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'exports.dart';
 
 part 'models.ack.dart';
 part 'models.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -218,12 +285,12 @@ final class User with _\$UserAck {
         supportingSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
           'exports.dart': "export 'address.dart' show addressSchema, Address;",
@@ -249,13 +316,13 @@ final addressSchema = Ack.object({'city': Ack.string()});
         ackModelBuilder(BuilderOptions.empty),
         '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'exports.dart';
 
 part 'models.ack.dart';
 part 'models.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -265,12 +332,12 @@ final class User with _\$UserAck {
         supportingSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'address.ack.dart';
 part 'address.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
           'exports.dart': "export 'address.dart' show addressSchema;",
@@ -298,7 +365,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'address': addressSchema});
 """,
       outputs: const {},
@@ -319,7 +386,7 @@ final userSchema = Ack.object({'address': addressSchema});
       ackGenerator(BuilderOptions.empty),
       """
 $_parts
-@AckInfer()
+@Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
 
 @AckType()
@@ -346,7 +413,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -374,7 +441,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -400,7 +467,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.addresses});
 
@@ -455,7 +522,7 @@ $_parts
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.address});
 
@@ -509,7 +576,7 @@ final class User with _\$UserAck {
       ackGenerator(BuilderOptions.empty),
       """
 $_parts
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -546,7 +613,7 @@ final userSchema = Ack.object({
           ackGenerator(BuilderOptions.empty),
           '''
 $_parts
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
 
@@ -576,7 +643,7 @@ final userSchema = Ack.object({'address': ${entry.value}});
       ackGenerator(BuilderOptions.empty),
       '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'address_models.dart';
 
 part 'models.g.dart';
@@ -589,9 +656,9 @@ final userSchema = Ack.object({'address': AddressSchema.schema});
       supportingSources: const {
         'address_models.dart': "export 'address.dart';\n",
         'address.dart': '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
-@AckModel()
+@Schemable()
 final class Address {
   const Address({required this.city});
 

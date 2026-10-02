@@ -17,7 +17,7 @@ void main() {
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 StringSchema get statusSchema => Ack.string();
@@ -57,7 +57,7 @@ ObjectSchema get userSchema => Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType(name: 'CustomAddress')
 ObjectSchema get addressSchema {
@@ -100,7 +100,7 @@ ObjectSchema get userSchema {
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart' as ack;
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 ack.StringSchema get statusSchema => ack.Ack.string();
@@ -130,7 +130,7 @@ ack.StringSchema get statusSchema => ack.Ack.string();
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 ObjectSchema get userSchema => Ack.object({
@@ -163,7 +163,7 @@ ObjectSchema get userSchema => Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 ObjectSchema get userSchema => Ack.object({
@@ -185,7 +185,7 @@ ObjectSchema get userSchema => Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 final tagSchema = Ack.string().nullable();
 

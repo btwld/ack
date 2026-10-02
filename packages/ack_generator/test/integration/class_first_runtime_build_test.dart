@@ -104,8 +104,6 @@ environment:
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
   json_annotation: ^4.11.0
 dev_dependencies:
   ack_generator:
@@ -116,8 +114,6 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-  ack_annotations:
-    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
           '''
@@ -147,7 +143,7 @@ targets:
         File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'coexist.g.dart';
 part 'coexist.ack.dart';
@@ -157,10 +153,10 @@ part 'coexist.ack.g.dart';
 @AckType()
 final frozenSchema = Ack.object({'id': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final modernSchema = Ack.object({'name': Ack.string()});
 
-@AckModel()
+@Schemable()
 final class Handwritten with _$HandwrittenAck {
   const Handwritten({required this.enabled});
 
@@ -171,8 +167,9 @@ final class Handwritten with _$HandwrittenAck {
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
+import 'package:ack/annotations.dart';
+import 'package:json_annotation/json_annotation.dart'
+    show JsonKey, JsonSerializable;
 
 import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;
@@ -212,7 +209,7 @@ AckSchema<Map<String, Object?>, Map<String, List<String>>> groupsSchema() =>
           encode: (value) => value,
         );
 
-@AckModel()
+@Schemable()
 final class Profile with _$ProfileAck {
   const Profile({
     required this.name,
@@ -235,7 +232,7 @@ final class Profile with _$ProfileAck {
   static final fromJson = ProfileSchema.fromJson;
 }
 
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
   final String firstName;
@@ -245,7 +242,7 @@ final class Account with _$AccountAck {
   static final fromJson = AccountSchema.fromJson;
 }
 
-@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
 final class Config with _$ConfigAck {
   const Config({
     required this.name,
@@ -255,7 +252,7 @@ final class Config with _$ConfigAck {
   final Map<String, Object?> additionalProperties;
 }
 
-@AckModel(
+@Schemable(
   caseStyle: AckCaseStyle.snake,
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: 'extraValues',
@@ -269,13 +266,13 @@ final class CaseStyledExtras with _$CaseStyledExtrasAck {
   final Map<String, Object?> extraValues;
 }
 
-@AckModel(unknownProperties: AckUnknownPropertyPolicy.discard)
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.discard)
 final class Loose with _$LooseAck {
   const Loose({required this.name});
   final String name;
 }
 
-@AckModel()
+@Schemable()
 final class Normalized with _$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
@@ -283,21 +280,21 @@ final class Normalized with _$NormalizedAck {
   final String value;
 }
 
-@AckModel()
+@Schemable()
 final class NullableDefault with _$NullableDefaultAck {
   const NullableDefault({this.label = 'fallback'});
 
   final String? label;
 }
 
-@AckModel()
+@Schemable()
 final class NullDefault with _$NullDefaultAck {
   const NullDefault({this.label = null});
 
   final String? label;
 }
 
-@AckModel()
+@Schemable()
 final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
   @AckField(schema: alphaItemSchema)
@@ -306,7 +303,7 @@ final class ImportedPair with _$ImportedPairAck {
   final beta.Item right;
 }
 
-@AckModel()
+@Schemable()
 final class ImmutableCollections with _$ImmutableCollectionsAck {
   const ImmutableCollections({
     required this.matrix,
@@ -321,7 +318,7 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
   final Map<String, List<String>> groups;
 }
 
-@AckModel()
+@Schemable()
 final class Example with _$ExampleAck {
   const Example({this.label, this.title});
 
@@ -337,14 +334,14 @@ final class Example with _$ExampleAck {
   static final fromJson = ExampleSchema.fromJson;
 }
 
-@AckModel()
+@Schemable()
 final class ExampleHolder with _$ExampleHolderAck {
   const ExampleHolder({required this.example});
 
   final Example example;
 }
 
-@AckModel()
+@Schemable()
 final class OptionalNullable with _$OptionalNullableAck {
   const OptionalNullable({this.note});
 
@@ -352,7 +349,7 @@ final class OptionalNullable with _$OptionalNullableAck {
   final String? note;
 }
 
-@AckModel()
+@Schemable()
 final class InferredNotNull with _$InferredNotNullAck {
   const InferredNotNull({this.label});
 
@@ -362,7 +359,7 @@ final class InferredNotNull with _$InferredNotNullAck {
 
 AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
 
-@AckModel()
+@Schemable()
 final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
@@ -371,7 +368,7 @@ final class OverrideNotNull with _$OverrideNotNullAck {
   final String? name;
 }
 
-@AckModel()
+@Schemable()
 final class RequiredNotNull with _$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
@@ -397,7 +394,7 @@ parameterMapSchema() =>
       },
     );
 
-@AckModel()
+@Schemable()
 final class CapabilityBinding with _$CapabilityBindingAck {
   CapabilityBinding({
     required this.name,
@@ -416,7 +413,7 @@ final class CapabilityBinding with _$CapabilityBindingAck {
 AckSchema<Map<String, int?>, Map<String, int?>> scoresSchema() =>
     Ack.map(Ack.integer().min(0));
 
-@AckModel()
+@Schemable()
 final class Envelope with _$EnvelopeAck {
   const Envelope({
     required this.kind,
@@ -443,12 +440,12 @@ final class Envelope with _$EnvelopeAck {
   final Map<String, int> scores;
 }
 
-@AckModel()
+@Schemable()
 final class Declined with _$DeclinedAck {
   const Declined();
 }
 
-@AckModel()
+@Schemable()
 final class OptionalCollections with _$OptionalCollectionsAck {
   const OptionalCollections({this.headers, this.aliases, this.tags});
 
@@ -457,13 +454,13 @@ final class OptionalCollections with _$OptionalCollectionsAck {
   final Set<String>? tags;
 }
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
   const Pet({required this.id});
   final String id;
 }
 
-@AckModel(discriminatorValue: 'cat')
+@Schemable(discriminatorValue: 'cat')
 final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
   final int lives;
@@ -475,7 +472,7 @@ final class Dog extends Pet with _$DogAck {
   String get type => 'Dog';
 }
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Animal with _$AnimalAck {
   const Animal({required this.id});
   final String id;
@@ -491,19 +488,19 @@ final class BabyRabbit extends Rabbit with _$BabyRabbitAck {
   final String? note;
 }
 
-@AckModel()
+@Schemable()
 final class Parent with _$ParentAck {
   const Parent({required this.id});
   final String id;
 }
 
-@AckModel()
+@Schemable()
 final class Child extends Parent with _$ChildAck {
   const Child({required super.id, this.note});
   final String? note;
 }
 
-@AckModel()
+@Schemable()
 final class ImplementingChild with _$ImplementingChildAck implements Parent {
   const ImplementingChild({required this.id, this.note});
   final String id;
@@ -512,7 +509,7 @@ final class ImplementingChild with _$ImplementingChildAck implements Parent {
 
 /// A task the person can complete.
 /// @description This tag has lower priority.
-@AckModel(description: 'A task the person can complete.')
+@Schemable(description: 'A task the person can complete.')
 final class Task with _$TaskAck {
   const Task({required this.id, required this.title});
 
@@ -528,7 +525,7 @@ final class Task with _$TaskAck {
  * related tasks.
  * @description A board that groups related tasks.
  */
-@AckModel()
+@Schemable()
 final class Board with _$BoardAck {
   const Board({required this.focus, required this.backlog, this.pinned});
 
@@ -540,7 +537,7 @@ final class Board with _$BoardAck {
   final Task? pinned;
 }
 
-@AckModel()
+@Schemable()
 final class Undocumented with _$UndocumentedAck {
   const Undocumented({required this.value});
 
@@ -550,13 +547,13 @@ final class Undocumented with _$UndocumentedAck {
 
 /// A shape to draw.
 /// @description A shape to draw.
-@AckModel(discriminatorKey: 'kind')
+@Schemable(discriminatorKey: 'kind')
 sealed class Shape with _$ShapeAck {
   const Shape();
 }
 
 /// A circle, sized by its radius.
-@AckModel(
+@Schemable(
   discriminatorValue: 'circle',
   description: 'A circle, sized by its radius.',
 )
@@ -572,7 +569,7 @@ final class Square extends Shape with _$SquareAck {
   final double side;
 }
 
-@AckInfer()
+@Schemable()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
 
 @JsonSerializable()

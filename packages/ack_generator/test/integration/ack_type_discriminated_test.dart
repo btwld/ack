@@ -19,7 +19,7 @@ void main() {
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -87,7 +87,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -125,7 +125,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -164,7 +164,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -196,7 +196,7 @@ final petSchema = Ack.discriminated(
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -229,7 +229,7 @@ final petSchema = Ack.discriminated(
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -260,7 +260,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final petSchema = Ack.discriminated(
@@ -287,7 +287,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 final catSchema = Ack.object({
   'kind': Ack.literal('cat'),
@@ -316,7 +316,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.string();
@@ -344,7 +344,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/branches.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -354,7 +354,7 @@ final catSchema = Ack.object({
 ''',
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'branches.dart';
 
 @AckType()
@@ -379,7 +379,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -409,7 +409,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final petSchema = Ack.discriminated(
@@ -431,7 +431,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -461,7 +461,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -500,7 +500,7 @@ final petSchema = Ack.discriminated(
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -534,7 +534,7 @@ final petSchema = Ack.discriminated(
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final dogSchema = Ack.object({
@@ -565,7 +565,7 @@ final petSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -603,7 +603,7 @@ final anotherPetSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -647,7 +647,7 @@ final anotherPetSchema = Ack.discriminated(
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final catSchema = Ack.object({

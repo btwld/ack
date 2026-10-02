@@ -41,7 +41,7 @@ Future<void> _expectFailure(String body, List<String> messages) async {
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'model.ack.dart';
 part 'model.ack.g.dart';
@@ -54,7 +54,7 @@ void main() {
       await _build(
         '''
 $_imports
-@AckModel()
+@Schemable()
 final class Point with _\$PointAck {
   const Point(this.x, {required this.y, this.label = 'origin'});
   final int x;
@@ -83,19 +83,19 @@ final class Point with _\$PointAck {
     await _build(
       '''
 $_imports
-@AckModel()
+@Schemable()
 final class Strict with _\$StrictAck {
   const Strict({required this.name});
   final String name;
 }
 
-@AckModel(unknownProperties: AckUnknownPropertyPolicy.discard)
+@Schemable(unknownProperties: AckUnknownPropertyPolicy.discard)
 final class Loose with _\$LooseAck {
   const Loose({required this.name});
   final String name;
 }
 
-@AckModel(
+@Schemable(
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: 'args',
 )
@@ -133,7 +133,7 @@ final class Bag with _\$BagAck {
     () async {
       await _expectFailure(
         '''
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
   User copyWith({String? name}) => User(name: name ?? this.name);
@@ -151,14 +151,14 @@ final class User with _\$UserAck {
       await _build(
         '''
 $_imports
-@AckModel()
+@Schemable()
 final class User with _\$UserAck {
   const User({this.nickname});
   @AckField(presence: AckFieldPresence.required)
   final String? nickname;
 }
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet({required this.id});
   final String id;
@@ -190,7 +190,7 @@ final class Cat extends Pet with _\$CatAck {
       await _build(
         '''
 $_imports
-@AckModel()
+@Schemable()
 final class Normalized with _\$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
@@ -219,7 +219,7 @@ final class Normalized with _\$NormalizedAck {
     await _build(
       '''
 $_imports
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'tags': Ack.list(Ack.string()),

@@ -16,7 +16,7 @@ void main() {
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final reviewSchema = Ack.object({
@@ -51,7 +51,7 @@ final reviewSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final eventSchema = Ack.object({
@@ -83,7 +83,7 @@ final eventSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum UserRole { admin, editor, viewer }
 
@@ -118,7 +118,7 @@ final userSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final formSchema = Ack.object({
@@ -150,7 +150,7 @@ final formSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum Priority { low, medium, high, critical }
 
@@ -183,7 +183,7 @@ final taskSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 @AckType()
 final configSchema = Ack.object({
@@ -214,7 +214,7 @@ final configSchema = Ack.object({
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum UserRole { admin, editor, viewer }
 
@@ -252,7 +252,7 @@ enum UserRole { admin, editor, viewer }
 ''',
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'enums.dart' as models;
 
 @AckType()
@@ -288,7 +288,7 @@ enum UserRole { admin, editor, viewer }
 ''',
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'enums.dart' as models;
 
 @AckType()
@@ -324,7 +324,7 @@ enum UserRole { admin, editor, viewer }
 ''',
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 import 'enums.dart' as models;
 
 @AckType()
@@ -356,7 +356,7 @@ final teamSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum Color { red, green, blue }
 
@@ -401,7 +401,7 @@ final widgetSchema = Ack.object({
             ...allAssets,
             'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 enum UserRole { admin, editor, viewer }
 

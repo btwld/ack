@@ -75,9 +75,9 @@ void main() {
         {
           'test_pkg|lib/widget.dart':
               '''
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
-void widget({@Pattern(${example.literal}) required String value}) {}
+void widget({@Matches(${example.literal}) required String value}) {}
 ''',
         },
         generateFor: const {'test_pkg|lib/widget.dart'},
@@ -100,4 +100,26 @@ void widget({@Pattern(${example.literal}) required String value}) {}
       );
     });
   }
+
+  test('the deprecated @Pattern spelling still adds matches', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      const _PatternProbe(),
+      {
+        'test_pkg|lib/widget.dart': '''
+import 'package:ack/annotations.dart';
+
+void widget({@Pattern('^a') required String value}) {}
+''',
+      },
+      generateFor: const {'test_pkg|lib/widget.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/widget.probe': decodedMatches(
+          "Ack.string().matches('^a')",
+        ),
+      },
+    );
+  });
 }

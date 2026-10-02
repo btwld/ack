@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart'
     show AckSchema, AnyOfSchema, AnySchema, InstanceSchema, MapSchema;
-import 'package:ack_annotations/ack_annotations.dart'
-    hide AckUnknownPropertyPolicy;
+import 'package:ack/annotations.dart' hide AckUnknownPropertyPolicy;
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -148,17 +147,23 @@ final class SchemaModelGraphBuilder {
   static const _maxReferenceDepth = 16;
 
   static const _ackInferChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     AckInfer,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
+  );
+  static const _schemableChecker = TypeChecker.typeNamed(
+    Schemable,
+    inPackage: 'ack',
   );
   static const _legacyAckTypeChecker = TypeChecker.typeNamed(
     // ignore: deprecated_member_use
     AckType,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackModelChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
     AckModel,
-    inPackage: 'ack_annotations',
+    inPackage: 'ack',
   );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
     AckSchema,
@@ -203,6 +208,7 @@ final class SchemaModelGraphBuilder {
     _resolvedByUri[libraryElement.uri] = resolved;
 
     for (final element in annotatedElements) {
+      _rejectClassOnlyOptions(element);
       final expression = _declarationExpression(resolved, element);
       final declarationName = element.name;
       if (declarationName == null || expression == null) {
@@ -239,6 +245,33 @@ final class SchemaModelGraphBuilder {
     }
     _validateDelegatedHelperNames();
     return _graph;
+  }
+
+  void _rejectClassOnlyOptions(Element element) {
+    final annotation = _schemableChecker.firstAnnotationOfExact(
+      _propertyDeclaration(element),
+    );
+    if (annotation == null) return;
+    final reader = ConstantReader(annotation);
+    int index(String option) =>
+        reader.read(option).objectValue.getField('index')!.toIntValue()!;
+    final configured = [
+      if (!reader.read('schemaName').isNull) 'schemaName',
+      if (!reader.read('description').isNull) 'description',
+      if (index('caseStyle') != 0) 'caseStyle',
+      if (!reader.read('discriminatorKey').isNull) 'discriminatorKey',
+      if (!reader.read('discriminatorValue').isNull) 'discriminatorValue',
+      if (index('unknownProperties') != 0) 'unknownProperties',
+      if (reader.read('captureField').stringValue != 'additionalProperties')
+        'captureField',
+    ];
+    if (configured.isEmpty) return;
+    throw InvalidGenerationSource(
+      '${element.name} sets @Schemable options that apply only to classes: '
+      '${configured.join(', ')}. Configure a top-level schema in its Ack '
+      'expression; describe it with .describe(...).',
+      element: element,
+    );
   }
 
   void _registerElement(Element element, _Declaration declaration) {
@@ -340,8 +373,9 @@ final class SchemaModelGraphBuilder {
     } else if (chain.reference != null &&
         _isCrossLibraryAckInfer(chain.reference!)) {
       throw InvalidGenerationSource(
-        '$path aliases a cross-library @AckInfer schema. Use the original '
-        'model directly.',
+        '$path aliases a cross-library '
+        '${_annotationLabel(_referencedElement(chain.reference!)!)} schema. '
+        'Use the original model directly.',
         element: declaration.element,
       );
     } else {
@@ -503,7 +537,7 @@ final class SchemaModelGraphBuilder {
         throw InvalidGenerationSource(
           '$fieldPath uses an anonymous inline Ack.object(...).',
           element: declaration.element,
-          todo: 'Extract it to a named @AckInfer schema declaration.',
+          todo: 'Extract it to a named @Schemable schema declaration.',
         );
       }
       fields.add(
@@ -602,7 +636,8 @@ final class SchemaModelGraphBuilder {
       final branch = _graph.nodeFor(target.id);
       if (branch is! AckObjectModelNode) {
         throw InvalidGenerationSource(
-          '$path.$value must reference an @AckInfer object schema.',
+          '$path.$value must reference an '
+          '${_annotationLabel(declaration.element)} object schema.',
           element: declaration.element,
         );
       }
@@ -691,7 +726,7 @@ final class SchemaModelGraphBuilder {
         if (followedName != null) {
           throw InvalidGenerationSource(
             "$path references '$followedName', an Ack.object schema without "
-            '@AckInfer. Annotate it to generate a model.',
+            '@Schemable. Annotate it to generate a model.',
             element: context,
           );
         }
@@ -753,7 +788,7 @@ final class SchemaModelGraphBuilder {
         if (valuesType is InterfaceType &&
             valuesType.isDartCoreList &&
             valuesType.typeArguments.length == 1) {
-          return _typeRef(valuesType.typeArguments.single, context);
+          return _typeRef(valuesType.typeArguments.single, path, context);
         }
         throw InvalidGenerationSource(
           '$path Ack.enumValues(...) enum type is not statically resolvable.',
@@ -765,7 +800,7 @@ final class SchemaModelGraphBuilder {
         if (followedName != null) {
           throw InvalidGenerationSource(
             "$path references '$followedName', an Ack.discriminated schema "
-            'without @AckInfer. Annotate it to generate a model.',
+            'without @Schemable. Annotate it to generate a model.',
             element: context,
           );
         }
@@ -779,6 +814,19 @@ final class SchemaModelGraphBuilder {
     if (reference != null) {
       final classFirst = _classFirstModelReference(reference, context);
       if (classFirst != null) return classFirst;
+      final member = _memberElement(reference);
+      if (_isTypeOwnedSchema(member)) {
+        final owner = member!.enclosingElement! as InterfaceElement;
+        // A class-first model's own schema may point at a facade generated
+        // in this build, so its type is the model rather than the static's.
+        if (owner is ClassElement && _classFirstFacadeName(owner) != null) {
+          return AckExternalTypeRef(
+            name: owner.name!,
+            importPrefix: _visiblePrefix(owner, path, context),
+          );
+        }
+        return _schemaTypes(reference, path, context).runtime;
+      }
       final model = await _modelReference(
         reference,
         path: path,
@@ -934,7 +982,8 @@ final class SchemaModelGraphBuilder {
     );
     if (model == null) {
       throw InvalidGenerationSource(
-        '$path Ack.lazy must resolve to a named @AckInfer schema.',
+        '$path Ack.lazy must resolve to a named ${_annotationLabel(context)} '
+        'schema.',
         element: context,
       );
     }
@@ -1135,7 +1184,9 @@ final class SchemaModelGraphBuilder {
   }
 
   String? _classFirstFacadeName(ClassElement element) {
-    final annotation = _ackModelChecker.firstAnnotationOfExact(element);
+    final annotation =
+        _ackModelChecker.firstAnnotationOfExact(element) ??
+        _schemableChecker.firstAnnotationOfExact(element);
     if (annotation != null) {
       final value = ConstantReader(annotation).read('schemaName');
       return ackClassSchemaFacadeName(
@@ -1148,7 +1199,8 @@ final class SchemaModelGraphBuilder {
       return base is ClassElement &&
           base.library == element.library &&
           base.isSealed &&
-          _ackModelChecker.hasAnnotationOfExact(base);
+          (_ackModelChecker.hasAnnotationOfExact(base) ||
+              _schemableChecker.hasAnnotationOfExact(base));
     });
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)
@@ -1178,8 +1230,8 @@ final class SchemaModelGraphBuilder {
       );
     }
     return (
-      boundary: _typeRef(ackInfer.typeArguments[0], context),
-      runtime: _typeRef(ackInfer.typeArguments[1], context),
+      boundary: _typeRef(ackInfer.typeArguments[0], path, context),
+      runtime: _typeRef(ackInfer.typeArguments[1], path, context),
     );
   }
 
@@ -1187,7 +1239,7 @@ final class SchemaModelGraphBuilder {
     return _ackSchemaChecker.isExactlyType(type);
   }
 
-  AckInferRef _typeRef(DartType type, Element context) {
+  AckInferRef _typeRef(DartType type, String path, Element context) {
     if (type is DynamicType) {
       return const AckNullableTypeRef(AckScalarTypeRef('Object'));
     }
@@ -1204,9 +1256,13 @@ final class SchemaModelGraphBuilder {
     final name = type.element.name ?? type.getDisplayString();
     AckInferRef result;
     if (type.isDartCoreList && type.typeArguments.length == 1) {
-      result = AckListTypeRef(_typeRef(type.typeArguments.single, context));
+      result = AckListTypeRef(
+        _typeRef(type.typeArguments.single, path, context),
+      );
     } else if (type.isDartCoreSet && type.typeArguments.length == 1) {
-      result = AckSetTypeRef(_typeRef(type.typeArguments.single, context));
+      result = AckSetTypeRef(
+        _typeRef(type.typeArguments.single, path, context),
+      );
     } else if (type.isDartCoreMap && type.typeArguments.length == 2) {
       final keyType = type.typeArguments.first;
       if (keyType is! InterfaceType || !keyType.isDartCoreString) {
@@ -1219,7 +1275,7 @@ final class SchemaModelGraphBuilder {
               'runtime type before generating the model.',
         );
       }
-      result = AckMapTypeRef(_typeRef(type.typeArguments[1], context));
+      result = AckMapTypeRef(_typeRef(type.typeArguments[1], path, context));
     } else if (type.element.library.uri.toString() == 'dart:core' &&
         const {
           'String',
@@ -1233,20 +1289,30 @@ final class SchemaModelGraphBuilder {
     } else {
       result = AckExternalTypeRef(
         name: name,
-        importPrefix: _visiblePrefix(type.element),
+        importPrefix: _visiblePrefix(type.element, path, context),
         typeArguments: [
           for (final argument in type.typeArguments)
-            _typeRef(argument, context),
+            _typeRef(argument, path, context),
         ],
       );
     }
     return nullable ? AckNullableTypeRef(result) : result;
   }
 
-  String? _visiblePrefix(InterfaceElement target) {
+  /// The import prefix that names [target] in this library, or null when an
+  /// unprefixed name reaches it.
+  ///
+  /// Throws when [target] is not visible, because a part cannot add imports.
+  String? _visiblePrefix(
+    InterfaceElement target,
+    String path,
+    Element context,
+  ) {
+    if (target.library == library.element) return null;
     final name = target.name;
     if (name == null) return null;
     String? prefixed;
+    var unprefixed = false;
     for (final import in library.element.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) {
         continue;
@@ -1258,9 +1324,19 @@ final class SchemaModelGraphBuilder {
       if (candidate != target) continue;
       if (prefix != null && prefix.isNotEmpty) {
         prefixed ??= prefix;
+      } else {
+        unprefixed = true;
       }
     }
-    return prefixed;
+    if (prefixed != null || unprefixed) return prefixed;
+    if (library.element.firstFragment.scope.lookup(name).getter == target) {
+      return null;
+    }
+    throw InvalidGenerationSource(
+      '$path uses $name, which is not visible in this library. Import '
+      '${target.library.uri}.',
+      element: context,
+    );
   }
 
   _SchemaChain _chain(Expression expression) {
@@ -1290,7 +1366,8 @@ final class SchemaModelGraphBuilder {
       defaulted |= name == 'withDefault';
       transform |= _oneWayTransformMethods.contains(name);
       codec |= name == 'codec';
-      if (current.methodName.element is TopLevelFunctionElement) {
+      if (current.methodName.element is TopLevelFunctionElement ||
+          _isTypeOwnedSchema(current.methodName.element)) {
         reference = current;
         break;
       }
@@ -1349,6 +1426,21 @@ final class SchemaModelGraphBuilder {
     return null;
   }
 
+  /// Whether [element] is a static `schema` member that a type declares.
+  bool _isTypeOwnedSchema(Element? element) =>
+      (element is GetterElement || element is MethodElement) &&
+      element is ExecutableElement &&
+      element.isStatic &&
+      element.name == 'schema' &&
+      element.enclosingElement is InterfaceElement;
+
+  Element? _memberElement(Expression expression) => switch (expression) {
+    PrefixedIdentifier() => expression.identifier.element,
+    PropertyAccess() => expression.propertyName.element,
+    MethodInvocation() => expression.methodName.element,
+    _ => null,
+  };
+
   Element _propertyDeclaration(Element element) {
     if (element is GetterElement && element.isOriginVariable) {
       return element.variable.baseElement;
@@ -1377,8 +1469,16 @@ final class SchemaModelGraphBuilder {
   }
 
   bool _hasAckInfer(Element element) {
-    return _ackInferChecker.hasAnnotationOfExact(_propertyDeclaration(element));
+    final declaration = _propertyDeclaration(element);
+    return _ackInferChecker.hasAnnotationOfExact(declaration) ||
+        _schemableChecker.hasAnnotationOfExact(declaration);
   }
+
+  /// The annotation spelling that marks the declaration behind [element].
+  String _annotationLabel(Element element) =>
+      _ackInferChecker.hasAnnotationOfExact(_propertyDeclaration(element))
+      ? '@AckInfer'
+      : '@Schemable';
 
   bool _hasLegacyAckType(Element element) {
     return _legacyAckTypeChecker.hasAnnotationOfExact(
@@ -1387,9 +1487,10 @@ final class SchemaModelGraphBuilder {
   }
 
   String? _annotationName(Element element) {
-    final annotation = _ackInferChecker.firstAnnotationOfExact(
-      _propertyDeclaration(element),
-    );
+    final declaration = _propertyDeclaration(element);
+    final annotation =
+        _ackInferChecker.firstAnnotationOfExact(declaration) ??
+        _schemableChecker.firstAnnotationOfExact(declaration);
     final field = annotation == null
         ? null
         : ConstantReader(annotation).peek('name');
@@ -1437,7 +1538,8 @@ final class SchemaModelGraphBuilder {
       if (customName.trim() != customName ||
           !RegExp(r'^[A-Z][A-Za-z0-9]*$').hasMatch(customName)) {
         throw InvalidGenerationSource(
-          'Invalid @AckInfer name "$customName". Names must be unchanged UpperCamelCase identifiers.',
+          'Invalid ${_annotationLabel(element)} name "$customName". Names must '
+          'be unchanged UpperCamelCase identifiers.',
           element: element,
         );
       }
@@ -1466,7 +1568,8 @@ final class SchemaModelGraphBuilder {
       final name = declaration.className;
       if (!generated.add(name)) {
         throw InvalidGenerationSource(
-          'Multiple @AckInfer declarations generate "$name".',
+          'Multiple ${_annotationLabel(declaration.element)} declarations '
+          'generate "$name".',
           element: declaration.element,
         );
       }

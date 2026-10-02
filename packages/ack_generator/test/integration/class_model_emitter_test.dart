@@ -36,10 +36,116 @@ String _compact(String code) => code
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 ''';
 
 void main() {
+  test(
+    'prefixed constraint annotations sit beside same-named app types',
+    () async {
+      await _build(
+        {
+          'contact.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart' as ack;
+
+part 'contact.ack.dart';
+part 'contact.ack.g.dart';
+
+final class Email {
+  const Email(this.address);
+  final String address;
+}
+
+@Schemable()
+final class Contact with _\$ContactAck {
+  const Contact({required this.address, required this.id});
+
+  @ack.Email()
+  final String address;
+
+  @ack.Uuid()
+  final String id;
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/contact.ack.dart': decodedMatches(
+            _containsCode(
+              "Ack.object({'address': Ack.string().email(), "
+              "'id': Ack.string().uuid()})",
+            ),
+          ),
+        },
+      );
+    },
+  );
+
+  test('an Ack.map schema function backs a Map field', () async {
+    await _build(
+      {
+        'scores.dart':
+            '''
+$_imports
+part 'scores.ack.dart';
+part 'scores.ack.g.dart';
+
+MapSchema<int, int> scoresSchema() => Ack.map(Ack.integer().min(0));
+
+@Schemable()
+final class Board with _\$BoardAck {
+  const Board({required this.scores});
+
+  @AckField(schema: scoresSchema)
+  final Map<String, int> scores;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/scores.ack.dart': decodedMatches(
+          _containsCode("Ack.object({'scores': scoresSchema()})"),
+        ),
+      },
+    );
+  });
+
+  test(
+    'collection constraints on a nested Set land on the outer set',
+    () async {
+      await _build(
+        {
+          'grid.dart':
+              '''
+$_imports
+part 'grid.ack.dart';
+part 'grid.ack.g.dart';
+
+@Schemable()
+final class Grid with _\$GridAck {
+  const Grid({required this.cells});
+
+  @MinItems(2)
+  final Set<Set<int>> cells;
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/grid.ack.dart': decodedMatches(
+            allOf(
+              _containsCode(
+                'Ack.list(Ack.list(Ack.integer()).codec<Set<int>>('
+                'decode: (list) => list.toSet(), '
+                'encode: (set) => set.toList(growable: false),'
+                ')).minItems(2).unique().codec<Set<Set<int>>>(',
+              ),
+              isNot(_containsCode('Ack.list(Ack.integer()).minItems(2)')),
+            ),
+          ),
+        },
+      );
+    },
+  );
+
   test('a field description tag describes the inferred schema', () async {
     await _build(
       {
@@ -49,7 +155,7 @@ $_imports
 part 'documented.ack.dart';
 part 'documented.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Documented with _\$DocumentedAck {
   const Documented({required this.title});
 
@@ -81,7 +187,7 @@ part 'documented.ack.g.dart';
 /// @description A task the person's \$team can complete.
 ///
 /// Shown in the task list.
-@AckModel()
+@Schemable()
 final class Task with _\$TaskAck {
   const Task({required this.title});
 
@@ -95,7 +201,7 @@ final class Task with _\$TaskAck {
  * without fields.
  * @description A note without fields.
  */
-@AckModel()
+@Schemable()
 final class Note with _\$NoteAck {
   const Note();
 }
@@ -138,7 +244,7 @@ part 'plain.ack.dart';
 part 'plain.ack.g.dart';
 
 /// Ordinary class prose is not schema data.
-@AckModel()
+@Schemable()
 final class Plain with _\$PlainAck {
   const Plain({required this.title, this.note});
 
@@ -167,7 +273,7 @@ $_imports
 part 'escaped.ack.dart';
 part 'escaped.ack.g.dart';
 
-@AckModel(description: 'First\\nsecond')
+@Schemable(description: 'First\\nsecond')
 final class Escaped with _\$EscapedAck {
   const Escaped({required this.value});
 
@@ -198,14 +304,14 @@ part 'shapes.ack.g.dart';
 
 /// A shape to draw.
 /// @description A shape to draw.
-@AckModel(discriminatorKey: 'kind')
+@Schemable(discriminatorKey: 'kind')
 sealed class Shape with _\$ShapeAck {
   const Shape();
 }
 
 /// A circle.
 /// @description A circle.
-@AckModel(discriminatorValue: 'circle')
+@Schemable(discriminatorValue: 'circle')
 final class Circle extends Shape with _\$CircleAck {
   const Circle({required this.radius});
 
@@ -249,11 +355,11 @@ final class Square extends Shape with _\$SquareAck {
         'formats.dart':
             '''
 $_imports
-import 'package:ack_annotations/format_annotations.dart' as formats;
+import 'package:ack/format_annotations.dart' as formats;
 part 'formats.ack.dart';
 part 'formats.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Formats with _\$FormatsAck {
   const Formats({
     required this.url,
@@ -299,7 +405,7 @@ $_imports
 part 'defaults.ack.dart';
 part 'defaults.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Defaults with _\$DefaultsAck {
   const Defaults({this.fallback = 'fallback', this.empty = null});
 
@@ -333,7 +439,7 @@ $_imports
 part 'envelope.ack.dart';
 part 'envelope.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Envelope with _\$EnvelopeAck {
   const Envelope({
     required this.kind,
@@ -385,7 +491,7 @@ $_imports
 part 'profile.ack.dart';
 part 'profile.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Profile with _\$ProfileAck {
   const Profile({
     required this.bio,
@@ -502,7 +608,7 @@ AckSchema<Map<String, Object?>, Map<String, int>> scoresSchema() =>
 
 enum Role { admin, member }
 
-@AckModel()
+@Schemable()
 final class Record with _\$RecordAck {
   const Record({
     required this.color,
@@ -556,10 +662,11 @@ final class Record with _\$RecordAck {
         'account.dart':
             '''
 $_imports
+import 'package:json_annotation/json_annotation.dart' show JsonKey;
 part 'account.ack.dart';
 part 'account.ack.g.dart';
 
-@AckModel(caseStyle: AckCaseStyle.snake)
+@Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _\$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
 
@@ -593,7 +700,7 @@ $_imports
 part 'a.ack.dart';
 part 'a.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Address with _\$AddressAck {
   const Address({required this.city});
   final String city;
@@ -612,7 +719,7 @@ import 'b.dart' as b;
 part 'order.ack.dart';
 part 'order.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Order with _\$OrderAck {
   const Order({required this.shipping});
   final a.Address shipping;
@@ -652,13 +759,13 @@ $_imports
 part 'pet.ack.dart';
 part 'pet.ack.g.dart';
 
-@AckModel(discriminatorKey: 'type')
+@Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
   const Pet({required this.id});
   final String id;
 }
 
-@AckModel(discriminatorValue: 'cat')
+@Schemable(discriminatorValue: 'cat')
 final class Cat extends Pet with _\$CatAck {
   const Cat({required super.id, required this.lives});
   @Min(1)
@@ -722,7 +829,7 @@ $_imports
 part 'account.ack.dart';
 part 'account.ack.g.dart';
 
-@AckModel(schemaName: 'WireAccountSchema')
+@Schemable(schemaName: 'WireAccountSchema')
 final class Account with _\$AccountAck {
   const Account({required this.id});
   final String id;
@@ -755,7 +862,7 @@ $_imports
 part 'fields.ack.dart';
 part 'fields.ack.g.dart';
 
-@AckModel()
+@Schemable()
 final class Example with _\$ExampleAck {
   const Example({this.label, this.nickname, this.title});
 
@@ -772,7 +879,7 @@ final class Example with _\$ExampleAck {
   final String? title;
 }
 
-@AckModel()
+@Schemable()
 final class InferredNotNull with _\$InferredNotNullAck {
   const InferredNotNull({this.label});
 
@@ -782,7 +889,7 @@ final class InferredNotNull with _\$InferredNotNullAck {
 
 AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
 
-@AckModel()
+@Schemable()
 final class OverrideNotNull with _\$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
@@ -791,7 +898,7 @@ final class OverrideNotNull with _\$OverrideNotNullAck {
   final String? name;
 }
 
-@AckModel()
+@Schemable()
 final class RequiredNotNull with _\$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
@@ -800,7 +907,7 @@ final class RequiredNotNull with _\$RequiredNotNullAck {
   final String? value;
 }
 
-@AckModel()
+@Schemable()
 final class Forced with _\$ForcedAck {
   const Forced({this.summary});
 
@@ -808,7 +915,7 @@ final class Forced with _\$ForcedAck {
   final String? summary;
 }
 
-@AckModel()
+@Schemable()
 final class LegacyOptional with _\$LegacyOptionalAck {
   const LegacyOptional({this.note});
 
@@ -834,7 +941,7 @@ parameterMapSchema() =>
           },
         );
 
-@AckModel()
+@Schemable()
 final class CapabilityBinding with _\$CapabilityBindingAck {
   CapabilityBinding({
     required this.name,
@@ -892,13 +999,13 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
 import 'package:ack/ack.dart' as ack
     show Ack, AckSchema, AckSchemaModel, AckSchemaModelExtension, SchemaResult,
         deepEquals, deepHashCode;
-import 'package:ack_annotations/ack_annotations.dart' as annotations
-    show AckModel;
+import 'package:ack/annotations.dart' as annotations
+    show Schemable;
 
 part 'account.ack.dart';
 part 'account.ack.g.dart';
 
-@annotations.AckModel()
+@annotations.Schemable()
 final class Account with _\$AccountAck {
   const Account();
 }

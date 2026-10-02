@@ -1,4 +1,5 @@
-import 'package:ack_annotations/ack_annotations.dart' show AckModel;
+// ignore: deprecated_member_use
+import 'package:ack/annotations.dart' show AckModel, Schemable;
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:json_serializable/type_helper.dart';
@@ -14,10 +15,9 @@ import 'helper_names.dart';
 final class AckRuntimeTypeHelper extends TypeHelper<TypeHelperContext> {
   const AckRuntimeTypeHelper();
 
-  static const _model = TypeChecker.typeNamed(
-    AckModel,
-    inPackage: 'ack_annotations',
-  );
+  // ignore: deprecated_member_use
+  static const _model = TypeChecker.typeNamed(AckModel, inPackage: 'ack');
+  static const _schemable = TypeChecker.typeNamed(Schemable, inPackage: 'ack');
 
   @override
   Object? serialize(
@@ -50,7 +50,10 @@ final class AckRuntimeTypeHelper extends TypeHelper<TypeHelperContext> {
 
   bool _isClassFirst(ClassElement element) =>
       _model.hasAnnotationOfExact(element) ||
+      _schemable.hasAnnotationOfExact(element) ||
       element.allSupertypes.any(
-        (type) => _model.hasAnnotationOfExact(type.element),
+        (type) =>
+            _model.hasAnnotationOfExact(type.element) ||
+            _schemable.hasAnnotationOfExact(type.element),
       );
 }

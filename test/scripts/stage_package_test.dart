@@ -56,21 +56,18 @@ void main() {
         loadYaml(File('$staged/pubspec.yaml').readAsStringSync()) as Map;
     expect(pubspec['dependency_overrides'], {
       'ack': {'path': '../ack'},
-      'ack_annotations': {'path': '../ack_annotations'},
     });
 
-    for (final sibling in const ['ack', 'ack_annotations']) {
-      final siblingPubspec = File(
-        '${output.path}/staged/packages/$sibling/pubspec.yaml',
-      );
-      expect(siblingPubspec.existsSync(), isTrue);
-      expect(
-        (loadYaml(siblingPubspec.readAsStringSync()) as Map).containsKey(
-          'resolution',
-        ),
-        isFalse,
-      );
-    }
+    final siblingPubspec = File(
+      '${output.path}/staged/packages/ack/pubspec.yaml',
+    );
+    expect(siblingPubspec.existsSync(), isTrue);
+    expect(
+      (loadYaml(siblingPubspec.readAsStringSync()) as Map).containsKey(
+        'resolution',
+      ),
+      isFalse,
+    );
   });
 
   test('an unknown package reports the usage', () {

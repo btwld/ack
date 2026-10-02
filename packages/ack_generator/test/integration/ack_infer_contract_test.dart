@@ -24,7 +24,7 @@ Future<TestBuilderResult> _generate(
 
 const _imports = '''
 import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
@@ -47,12 +47,12 @@ Matcher _schemaShorthandOn(String className, {required bool present}) =>
 
 void main() {
   test(
-    'object models expose only the AckInfer parse and JSON contract',
+    'object models expose only the Schemable parse and JSON contract',
     () async {
       await _generate(
         '''
 $_imports
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'nickname': Ack.string().optional(),
@@ -64,7 +64,7 @@ final userSchema = Ack.object({
           'test_pkg|lib/schema.ack.dart': decodedMatches(
             allOf([
               contains('final class User'),
-              contains('@AckInfer.jsonSerializable'),
+              contains('@Schemable.generatedJson'),
               contains('factory User.parse(Object? input)'),
               contains('factory User.fromJson(Map<String, dynamic> json)'),
               contains(r'static final $ack = AckModelAdapter'),
@@ -99,14 +99,14 @@ final userSchema = Ack.object({
     await _generate(
       '''
 $_imports
-@AckInfer()
+@Schemable()
 final occurredAtSchema = Ack.datetime();
 ''',
       outputs: {
         'test_pkg|lib/schema.ack.dart': decodedMatches(
           allOf([
             contains('final DateTime value;'),
-            contains('@AckInfer.jsonSerializable'),
+            contains('@Schemable.generatedJson'),
             contains('factory OccurredAt.fromJson(String json)'),
             contains('String toJson()'),
             contains('SchemaResult<String> safeToJson()'),
@@ -124,10 +124,10 @@ final occurredAtSchema = Ack.datetime();
     await _generate(
       '''
 $_imports
-@AckInfer()
+@Schemable()
 final memberTypeSchema = Ack.string();
 
-@AckInfer(name: 'IntentionalType')
+@Schemable(name: 'IntentionalType')
 final customSchema = Ack.string();
 ''',
       outputs: {
@@ -146,16 +146,16 @@ final customSchema = Ack.string();
     await _generate(
       '''
 $_imports
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final occurredAtSchema = Ack.datetime();
 
-@AckInfer()
+@Schemable()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema},
@@ -179,28 +179,28 @@ final petSchema = Ack.discriminated(
     await _generate(
       '''
 $_imports
-@AckInfer()
+@Schemable()
 final documentSchema = Ack.object({'schema': Ack.string()});
 
-@AckInfer(name: 'Settings')
+@Schemable(name: 'Settings')
 final schema = Ack.object({'theme': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final draftSchema = Ack.object({'body': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final revisionSchema = Ack.discriminated(
   discriminatorKey: 'schema',
   schemas: {'draft': draftSchema},
 );
 
-@AckInfer()
+@Schemable()
 final circleSchema = Ack.object({'radius': Ack.integer()});
 
-@AckInfer()
+@Schemable()
 final ruleSchema = Ack.object({'schema': Ack.string()});
 
-@AckInfer()
+@Schemable()
 final shapeSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {'circle': circleSchema, 'rule': ruleSchema},
@@ -230,12 +230,12 @@ final shapeSchema = Ack.discriminated(
     await _generate(
       '''
 import 'package:ack/ack.dart' as schema;
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/annotations.dart';
 
 part 'schema.ack.dart';
 part 'schema.ack.g.dart';
 
-@AckInfer()
+@Schemable()
 final userSchema = schema.Ack.object({'name': schema.Ack.string()});
 ''',
       outputs: {
@@ -254,7 +254,7 @@ final userSchema = schema.Ack.object({'name': schema.Ack.string()});
     await _generate(
       '''
 $_imports
-@AckInfer()
+@Schemable()
 final userSchema = Ack.object({
   'age': Ack.string().transform(int.parse),
 });
@@ -276,7 +276,7 @@ final userSchema = Ack.object({
     await _generate(
       '''
 $_imports
-@AckInfer(name: ' User')
+@Schemable(name: ' User')
 final userSchema = Ack.string();
 ''',
       outputs: const {},
