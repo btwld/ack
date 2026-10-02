@@ -223,7 +223,9 @@ Upgrading from 1.7.0-beta.2: drop `ack_annotations`, import
 `package:ack/annotations.dart` (and `.../format_annotations.dart` with
 `package:ack/format_annotations.dart`) where you use constraint annotations.
 Rename `@Pattern` to `@Matches`, and replace the deprecated `@AckInfer()` /
-`@AckModel()` with `@Schemable()`.
+`@AckModel()` with `@Schemable()`. A field renamed with `@JsonKey(name: ...)`
+now imports `JsonKey` from `package:json_annotation`, with `json_annotation`
+in the app's dependencies.
 
 ## Codecs
 

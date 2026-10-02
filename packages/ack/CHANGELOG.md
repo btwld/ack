@@ -5,8 +5,8 @@
 * The `ack_annotations` package is removed and its annotations ship in `ack`.
   Remove `ack_annotations` from `pubspec.yaml`. `package:ack/ack.dart`
   exports `@Schemable()` and the model annotations (`AckField`, `Optional`,
-  `Required`, `NotNull`, `JsonKey`, `AckCaseStyle`,
-  `AckUnknownPropertyPolicy`, and the deprecated `AckFieldPresence`). Replace
+  `Required`, `NotNull`, `AckCaseStyle`, `AckUnknownPropertyPolicy`, and the
+  deprecated `AckFieldPresence`). Replace
   `package:ack_annotations/ack_annotations.dart` with
   `package:ack/annotations.dart`, which exports the model annotations, the
   constraints and the deprecated spellings, and
@@ -22,6 +22,11 @@
   `package:uuid`'s `Uuid` or `package:meta`'s `Required`. Import
   `package:ack/annotations.dart` with a prefix (`as ack`, then `@ack.Uuid()`),
   or `hide` the name from one import.
+* `ack` no longer depends on `json_annotation` and no longer re-exports
+  `JsonKey`. To rename one field with `@JsonKey(name: ...)`, import
+  `package:json_annotation/json_annotation.dart` and add `json_annotation` to
+  the app's `dependencies`; `caseStyle` needs neither.
+  `AckModel.jsonSerializable` and `AckGeneratedJson.config` are removed.
 
 ### Added
 

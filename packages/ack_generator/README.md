@@ -177,7 +177,8 @@ Ack owns schema validation, defaults, codecs, union dispatch, and the public
 `parse` / `fromJson` / `toJson` methods. `json_serializable` generates the
 structural `_$ClassFromJson` / `_$ClassToJson` helpers into the Ack JSON
 part. Ack-only apps do not add `json_annotation` or `json_serializable`;
-`ack_generator` activates that second phase itself.
+`ack_generator` activates that second phase itself and supplies its
+configuration.
 
 When a modern-only target also uses an ordinary source-gen builder that owns
 `.g.dart`, disable the unused legacy builder in that target so it remains the
@@ -235,7 +236,9 @@ generated companion (`Address` plus `AddressSchema` for class-first, or
 across multiple imports that use the same prefix.
 
 Class-first wire-name overrides support `@JsonKey(name: 'wire_name')` on the
-field. Other `JsonKey` options and constructor-parameter placement fail
+field, with `JsonKey` imported from `package:json_annotation/json_annotation.dart`
+and `json_annotation` in the app's dependencies. Other `JsonKey` options,
+constructor-parameter placement, and `JsonConverter` annotations fail
 generation so schema validation and JSON mapping remain identical.
 
 ## Deprecated AckType compatibility

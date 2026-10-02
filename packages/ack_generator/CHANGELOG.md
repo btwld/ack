@@ -7,6 +7,12 @@
   `package:ack/annotations.dart` where they use constraint annotations.
 * Generated schema-first models carry `@Schemable.generatedJson` instead of
   `@AckInfer.jsonSerializable`. Regenerate after upgrading.
+* The generator supplies the `json_serializable` configuration itself, from
+  `caseStyle`; `ack` carries no `json_annotation` types. `@JsonKey(name: ...)`
+  keeps working with `JsonKey` imported from `package:json_annotation`.
+* A `JsonConverter` annotation on a class-first model or field is rejected,
+  because `json_serializable` would apply it in place of Ack's validated
+  runtime bridge.
 
 ### Added
 

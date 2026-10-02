@@ -308,7 +308,7 @@ Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
 either direction with one annotation, `@Schemable()`: on a top-level schema it
 generates a model, and on a class it generates a schema. `package:ack/ack.dart`
 exports `@Schemable` and the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`, `@JsonKey`). Constraint annotations come from
+`@Required`, `@NotNull`). Constraint annotations come from
 `package:ack/annotations.dart`, imported with a prefix (`as ack`, then
 `@ack.Email()`) where a name clashes with another type, and `@Uri()` /
 `@DateTime()` from `package:ack/format_annotations.dart`. `@AckInfer()` and
@@ -387,8 +387,10 @@ constructors remain responsible for defensively copying direct inputs.
 Ack infers schema fields from constructor-backed fields. Required parameters,
 nullable types, optional parameters, and constructor defaults determine field
 presence. Use `caseStyle` for model-wide JSON naming and `@JsonKey(name: ...)`
-on the field for an override. Other `JsonKey` options and constructor-parameter
-placement are rejected. Instantiable models and implicit union branches must
+on the field for an override; `JsonKey` comes from
+`package:json_annotation/json_annotation.dart`, which the app then depends on.
+Other `JsonKey` options, constructor-parameter placement, and `JsonConverter`
+annotations are rejected. Instantiable models and implicit union branches must
 apply the generated mixin. In `copyWith`, omission keeps the current value and
 explicit `null` clears a nullable field. `copyWith` returns a typed interface,
 so a wrongly typed argument is a compile-time error.

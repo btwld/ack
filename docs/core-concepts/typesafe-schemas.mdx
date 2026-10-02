@@ -11,7 +11,7 @@ and generate a Dart model, or start with a Dart model and generate its schema.
 | A Dart class | `@Schemable()` | An Ack codec schema and JSON helpers |
 
 `@Schemable()` and the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`, `@JsonKey`) come from `package:ack/ack.dart`.
+`@Required`, `@NotNull`) come from `package:ack/ack.dart`.
 Constraint annotations such as `@MinLength` and `@Email` come from
 `package:ack/annotations.dart`. Where a constraint name clashes with another
 type, such as `package:uuid`'s `Uuid` or your own `Email`, import it with a
@@ -358,11 +358,15 @@ constraint values must be finite. On a `Set<Set<T>>` field the collection
 constraints apply to the outer set.
 
 Use `caseStyle` for model-wide JSON names. Supported values are `none`,
-`snake`, `kebab`, `pascal`, and `screamingSnake`. Use the re-exported
-`@JsonKey(name: 'wire_name')` on the field for a single override. Ack resolves
+`snake`, `kebab`, `pascal`, and `screamingSnake`. Use
+`@JsonKey(name: 'wire_name')` on the field for a single override. `JsonKey`
+comes from `package:json_annotation/json_annotation.dart`, so a library that
+uses it imports that library and lists `json_annotation` in its app's
+`dependencies`; `caseStyle` needs neither. Ack resolves
 each wire key once and uses it for both validation and JSON mapping. Other
-`JsonKey` options and constructor-parameter placement are rejected so the Ack
-schema and generated JSON mapping cannot diverge.
+`JsonKey` options, constructor-parameter placement, and `JsonConverter`
+annotations are rejected so the Ack schema and generated JSON mapping cannot
+diverge.
 
 ### Types that own their schema
 
@@ -692,5 +696,12 @@ Both entries must cover the same annotated libraries.
   `package:uuid`'s `Uuid`, your own `Email` type, or `package:meta`'s
   `Required`. Import `package:ack/annotations.dart` with a prefix
   (`as ack`, then `@ack.Uuid()`), or `hide` the name from one import.
+- `ack` no longer depends on `json_annotation` or re-exports `JsonKey`. A
+  file that renames a field with `@JsonKey(name: ...)` adds
+  `import 'package:json_annotation/json_annotation.dart';` and the app lists
+  `json_annotation` in its `dependencies`. `caseStyle` needs neither.
+- `Schemable.jsonSerializable`, `AckModel.jsonSerializable`, and
+  `AckGeneratedJson.config` are removed; `ack_generator` owns the JSON
+  configuration.
 - Regenerate: generated schema-first models now carry
   `@Schemable.generatedJson`.

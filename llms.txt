@@ -6,7 +6,7 @@ Ack validates untrusted boundary data with schemas built through the `Ack`
 factory. Annotate a top-level schema with `@Schemable()` to generate a model, or
 annotate a hand-written class with `@Schemable()` to generate its schema and
 JSON helpers. `package:ack/ack.dart` exports `@Schemable` and the model
-annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`, `@JsonKey`).
+annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`).
 Constraint annotations such as `@MinLength` and `@Email` come from
 `package:ack/annotations.dart`; import it with a prefix (`as ack`, then
 `@ack.Email()`) where a name clashes with another type. `@Uri()` and
@@ -184,8 +184,11 @@ Schema-first objects may reference the same members (`'header': Slot.schema`),
 except that a `void` type argument is supported only in class-first fields.
 
 For a single wire-name override, put `@JsonKey(name: 'wire_name')` on the
-field. Other `JsonKey` options and constructor-parameter placement are rejected
-so Ack validation and JSON serialization cannot diverge.
+field, importing `JsonKey` from `package:json_annotation/json_annotation.dart`
+(add `json_annotation` to the app's dependencies; `caseStyle` needs neither).
+Other `JsonKey` options, constructor-parameter placement, and `JsonConverter`
+annotations are rejected so Ack validation and JSON serialization cannot
+diverge.
 
 Nested class-first models compose through `AddressSchema.schema`, preserving
 import prefixes. Import combinators and barrels must expose both `Address` and
@@ -298,6 +301,10 @@ validates through the union's effective branch.
 - Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`. A library that
   keeps `@AckInfer()` must still have `Schemable` in scope, because generated
   models carry `@Schemable.generatedJson`.
+- `ack` no longer re-exports `JsonKey`. A file that uses `@JsonKey(name: ...)`
+  imports `package:json_annotation/json_annotation.dart`, and the app depends
+  on `json_annotation`. `Schemable.jsonSerializable`,
+  `AckModel.jsonSerializable`, and `AckGeneratedJson.config` are removed.
 - Regenerate the `.ack.dart` parts.
 
 ## Runtime API reminders
