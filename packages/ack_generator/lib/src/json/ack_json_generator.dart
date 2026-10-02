@@ -86,9 +86,16 @@ final class AckJsonSerializableGenerator extends Generator {
     final configs = await buildStep.resolver.libraryFor(_configs);
     final output = <String>[];
     for (final request in requests) {
-      final config = configs
-          .getTopLevelVariable(request.caseStyle.name)!
-          .computeConstantValue();
+      final name = request.caseStyle.name;
+      final config = configs.getTopLevelVariable(name)?.computeConstantValue();
+      if (config == null) {
+        throw InvalidGenerationSource(
+          'ack_generator has no JSON configuration named "$name" for '
+          'AckCaseStyle.$name. Declare it as a const JsonSerializable in '
+          'package:ack_generator/src/json/json_configs.dart.',
+          element: request.element,
+        );
+      }
       output.addAll(
         _delegate.generateForAnnotatedElement(
           request.element,
