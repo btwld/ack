@@ -72,6 +72,52 @@ part 'model.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects a JsonConverter on a field or class', () async {
+    const converter = '''
+final class UriText implements JsonConverter<Uri, String> {
+  const UriText();
+  @override
+  Uri fromJson(String json) => Uri.parse(json);
+  @override
+  String toJson(Uri object) => object.toString();
+}
+''';
+    await _expectFailure(
+      '''
+$converter
+@Schemable()
+final class Link with _\$LinkAck {
+  const Link({required this.target});
+
+  @UriText()
+  final Uri target;
+}
+''',
+      [
+        'Link.target uses the JsonConverter UriText, which would bypass Ack '
+            'validation in the JSON part. Give the type a static schema or '
+            'use @AckField(schema: ...) instead.',
+      ],
+    );
+    await _expectFailure(
+      '''
+$converter
+@Schemable()
+@UriText()
+final class Link with _\$LinkAck {
+  const Link({required this.target});
+
+  final Uri target;
+}
+''',
+      [
+        'Link uses the JsonConverter UriText, which would bypass Ack '
+            'validation in the JSON part. Give the type a static schema or '
+            'use @AckField(schema: ...) instead.',
+      ],
+    );
+  });
+
   test('rejects non-finite numeric constraint values', () async {
     await _expectFailure(
       '''

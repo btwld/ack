@@ -180,6 +180,10 @@ final class ClassModelGraphBuilder {
     JsonKey,
     inPackage: 'json_annotation',
   );
+  static const _jsonConverterChecker = TypeChecker.typeNamed(
+    JsonConverter,
+    inPackage: 'json_annotation',
+  );
 
   static const _optionalChecker = TypeChecker.typeNamed(
     annotations.Optional,
@@ -386,6 +390,31 @@ final class ClassModelGraphBuilder {
     );
   }
 
+  /// json_serializable applies a `JsonConverter` before Ack's runtime bridge,
+  /// so the JSON part would skip the schema for that field.
+  void _rejectJsonConverters(
+    ClassElement element,
+    Iterable<FieldElement> fields,
+  ) {
+    for (final (owner, path) in [
+      (element as Element, '${element.name}'),
+      for (final field in fields) (field, '${element.name}.${field.name}'),
+    ]) {
+      for (final annotation in owner.metadata.annotations) {
+        final type = annotation.computeConstantValue()?.type;
+        if (type == null || !_jsonConverterChecker.isAssignableFromType(type)) {
+          continue;
+        }
+        throw InvalidGenerationSource(
+          '$path uses the JsonConverter ${type.getDisplayString()}, which '
+          'would bypass Ack validation in the JSON part. Give the type a '
+          'static schema or use @AckField(schema: ...) instead.',
+          element: owner,
+        );
+      }
+    }
+  }
+
   void _rejectRedirectingFactory(ClassElement element) {
     final constructor = element.unnamedConstructor;
     if (constructor == null || !constructor.isFactory) return;
@@ -530,6 +559,7 @@ final class ClassModelGraphBuilder {
     _rejectGeneratedMemberCollisions(element, includeValueMembers: true);
 
     final fields = _instanceFields(element);
+    _rejectJsonConverters(element, fields.values);
     for (final field in fields.values) {
       if (field.isFinal) continue;
       throw InvalidGenerationSource(
