@@ -1,3 +1,4 @@
+import 'package:ack/annotations.dart' show AckCaseStyle;
 import 'package:ack_generator/src/builder.dart';
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
@@ -118,4 +119,34 @@ Object? _ackCatToRuntimeLivesLeft(int value) => value;
       ]),
     );
   });
+
+  for (final style in AckCaseStyle.values) {
+    test('JSON phase renames keys for caseStyle ${style.name}', () async {
+      final key = switch (style) {
+        AckCaseStyle.none => 'firstName',
+        AckCaseStyle.snake => 'first_name',
+        AckCaseStyle.kebab => 'first-name',
+        AckCaseStyle.pascal => 'FirstName',
+        AckCaseStyle.screamingSnake => 'FIRST_NAME',
+      };
+      await _expectJsonOutput(
+        '''
+$_head
+@Schemable(caseStyle: AckCaseStyle.${style.name})
+final class User {
+  const User({required this.firstName});
+
+  final String firstName;
+}
+
+String _ackUserFromRuntimeFirstName(Object? value) => value as String;
+Object? _ackUserToRuntimeFirstName(String value) => value;
+''',
+        allOf([
+          contains("firstName: _ackUserFromRuntimeFirstName(json['$key'])"),
+          contains("'$key': _ackUserToRuntimeFirstName(instance.firstName)"),
+        ]),
+      );
+    });
+  }
 }
