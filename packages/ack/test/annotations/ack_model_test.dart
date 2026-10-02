@@ -1,4 +1,4 @@
-// These tests also cover the deprecated AckModel and AckField.presence API.
+// These tests also cover the deprecated AckField.presence API.
 // ignore_for_file: deprecated_member_use_from_same_package
 
 import 'package:ack/annotations.dart';
@@ -47,11 +47,6 @@ void main() {
       ]);
     },
   );
-
-  test('deprecated AckModel keeps the case style it is given', () {
-    const model = AckModel(caseStyle: AckCaseStyle.kebab);
-    expect(model.caseStyle, AckCaseStyle.kebab);
-  });
 
   test('AckField accepts a schema tear-off and a presence override', () {
     const inferred = AckField(schema: _customSchema);
