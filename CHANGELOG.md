@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.7.0-beta.3
+
+* Remove the `ack_annotations` package; the annotations ship in `ack`. Models
+  import `package:ack/ack.dart` (`@Schemable`, `@AckField`, `@Optional`,
+  `@Required`, `@NotNull`). Files that use constraint annotations or the
+  deprecated spellings also import `package:ack/annotations.dart`, with a
+  prefix (`as ack`) where a name clashes with another type. Format
+  annotations move to `package:ack/format_annotations.dart`.
+* `@Schemable()` is the single annotation for schema-first and class-first
+  generation. `@AckInfer()` and `@AckModel()` are deprecated and will be
+  removed in 2.0.0.
+* Rename `@Pattern` to `@Matches`. The deprecated `Pattern` alias stays in
+  `package:ack/annotations.dart`; an unprefixed import of that library hides
+  `dart:core`'s `Pattern`.
+* `ack` no longer depends on `json_annotation` or re-exports `JsonKey`. A field
+  renamed with `@JsonKey(name: ...)` imports `JsonKey` from
+  `package:json_annotation` and the app depends on `json_annotation`.
+  `AckModel.jsonSerializable` and `AckGeneratedJson.config` are removed.
+* A class-first field whose type declares a static `schema` resolves to it with
+  no annotation, including extension types, enums, and generic types through a
+  static `schema<A>()` method that can receive each type argument's schema.
+* The generator rejects input that used to produce wrong or non-compiling
+  output: types the annotated library cannot name, mismatched or generic
+  `@AckField(schema:)` functions, non-finite constraint values, `@Schemable`
+  options for the other target, and `JsonConverter` annotations on class-first
+  models.
+* Align all five publishable packages at 1.7.0-beta.3. The generator requires
+  `ack` 1.7.0-beta.3.
+
 ## 1.7.0-beta.2
 
 * Add `AckModelAdapter.modelSchema`, function-parameter annotations, string
