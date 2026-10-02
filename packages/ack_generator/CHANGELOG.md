@@ -1,7 +1,8 @@
-## Unreleased
+## 1.7.0-beta.3
 
 ### Breaking
 
+* Requires `ack` 1.7.0-beta.3, which owns the annotations.
 * Annotations are read from `package:ack`; the `ack_annotations` package is
   removed. Import `package:ack/ack.dart` in annotated libraries, and
   `package:ack/annotations.dart` where they use constraint annotations.
