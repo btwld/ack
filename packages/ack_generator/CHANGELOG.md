@@ -1,3 +1,11 @@
+## 1.7.0-beta.4
+
+### Changed
+
+* Align with coordinated Ack 1.7.0-beta.4. This package has no source or
+  public API changes from 1.7.0-beta.3; its minimum `ack` dependency remains
+  at the first beta that supplies the required annotations.
+
 ## 1.7.0-beta.3
 
 ### Breaking

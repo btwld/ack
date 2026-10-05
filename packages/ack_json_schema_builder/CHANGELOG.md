@@ -1,3 +1,11 @@
+## 1.7.0-beta.4
+
+### Changed
+
+* When paired with `ack` 1.7.0-beta.4 or later, builder models with
+  `format: date-time` validate timestamps on import. The bridge's public API
+  and compatible `ack` dependency minimum are unchanged.
+
 ## 1.7.0-beta.3
 
 ### Changed

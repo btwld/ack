@@ -16,7 +16,7 @@ Transport, negotiation, cancellation, and lifecycle remain in `mcp_dart`.
 ```yaml
 dependencies:
   ack: ^1.2.0
-  ack_mcp_dart: ^1.7.0-beta.3
+  ack_mcp_dart: ^1.7.0-beta.4
   mcp_dart: ^2.4.2
 ```
 
