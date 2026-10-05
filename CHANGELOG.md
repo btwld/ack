@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.7.0-beta.4
+
+* Strict Ack JSON Schema import now asserts the supported `date-time` format.
+  Unsupported format labels still produce diagnostics; valid timestamps retain
+  their source text, including precision, offset, and announced leap seconds.
+* Native `Ack.string().datetime()` accepts lowercase `t` and `z` on announced
+  leap seconds. The `ack_json_schema_builder` bridge inherits date-time import
+  validation when paired with `ack` 1.7.0-beta.4 or later, without a new API or
+  dependency minimum.
+* Align all five publishable packages at 1.7.0-beta.4. No new generator or
+  annotation migration is introduced in beta.4. The beta.3 breaking migrations
+  still apply when upgrading from beta.2 or an earlier version; see below.
+
 ## 1.7.0-beta.3
 
 * Remove the `ack_annotations` package; the annotations ship in `ack`. Models
