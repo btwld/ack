@@ -57,9 +57,6 @@ final class _ImportedNode {
 }
 
 final class _JsonSchemaCompiler {
-  _JsonSchemaCompiler(this.assertFormats);
-
-  final bool assertFormats;
   final diagnostics = <JsonSchemaImportDiagnostic>[];
   final locations = <(Uri, String), _ImportedNode>{};
   final resources = <Uri, _ImportedNode>{};
@@ -477,20 +474,12 @@ final class _JsonSchemaCompiler {
         }
         node.keywords[key] = value;
       } else if (key == 'format') {
-        if (!assertFormats) {
-          _unsupported(node, key, 'Keyword "format" is not supported.');
-          continue;
-        }
         if (value is! String) {
           _fail(node, key, 'Expected a format string.');
         }
         if (value != 'date-time') {
-          _fail(
-            node,
-            key,
-            'Format "$value" cannot be asserted by this importer.',
-            code: 'unsupported_format',
-          );
+          _unsupported(node, key, 'Format "$value" is not supported.');
+          continue;
         }
         node.keywords[key] = value;
       } else {

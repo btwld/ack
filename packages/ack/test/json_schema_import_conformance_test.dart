@@ -45,9 +45,7 @@ void main() {
               ).readAsStringSync(),
             )
             as List<dynamic>;
-    final imported = Ack.fromJsonSchema({
-      'format': 'date-time',
-    }, assertFormats: true);
+    final imported = Ack.fromJsonSchema({'format': 'date-time'});
     final native = Ack.string().datetime();
     var count = 0;
     for (final group in fixture.cast<Map<String, dynamic>>()) {

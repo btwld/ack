@@ -14,9 +14,8 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     Object document, {
     Uri? baseUri,
     Map<Uri, Object> documents = const {},
-    bool assertFormats = false,
   }) {
-    final compiler = _JsonSchemaCompiler(assertFormats);
+    final compiler = _JsonSchemaCompiler();
     final base = baseUri ?? Uri.parse('ack-import:///root.json');
     final root = compiler.addDocument(document, base);
     for (final entry in documents.entries) {

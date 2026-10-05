@@ -36,9 +36,10 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
 - `Ack.fromJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object>
-  documents = const {}, bool assertFormats = false})`: Strictly imports a decoded draft 2020-12
+  documents = const {}})`: Strictly imports a decoded draft 2020-12
   JSON Schema. Referenced documents must be supplied explicitly; Ack never
-  fetches files or URLs. See [date-time format import](../guides/json-schema-integration.mdx#importing-format).
+  fetches files or URLs. The supported `date-time` format is asserted; see
+  [format import](../guides/json-schema-integration.mdx#importing-format).
 - `Ack.map(AckSchema valueSchema)`: Creates a `MapSchema` for a JSON object
   with arbitrary string keys whose values all match `valueSchema`. Use
   `Ack.map(Ack.any().nullable())` for a `JsonMap`.

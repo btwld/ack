@@ -2,10 +2,10 @@
 
 ### Added
 
-* JSON Schema import can assert `date-time` with `assertFormats: true`.
-  The default still rejects `format`. Assertion mode reports unsupported
-  formats at their schema location and
-  preserves the original timestamp string, including announced leap seconds.
+* Strict JSON Schema import now asserts the supported `date-time` format.
+  Other format labels remain unsupported and are reported at their schema
+  location. Parsing preserves the original timestamp string, including
+  announced leap seconds.
 
 ### Fixed
 

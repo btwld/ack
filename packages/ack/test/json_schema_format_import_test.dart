@@ -3,17 +3,10 @@ import 'package:test/test.dart';
 
 void main() {
   group('JSON Schema date-time format import', () {
-    test('default still rejects format', () {
-      expect(
-        () => Ack.fromJsonSchema({'format': 'date-time'}),
-        throwsA(
-          isA<JsonSchemaImportException>().having(
-            (error) => error.diagnostics.single.code,
-            'code',
-            'unsupported_keyword',
-          ),
-        ),
-      );
+    test('strict import asserts date-time without an option', () {
+      final schema = Ack.fromJsonSchema({'format': 'date-time'});
+      expect(schema.safeParse('2024-02-29T00:00:00Z').isOk, isTrue);
+      expect(schema.safeParse('2024-02-30T00:00:00Z').isFail, isTrue);
     });
 
     test('unsupported assertion reports its source pointer', () {
@@ -33,12 +26,11 @@ void main() {
               },
             },
           },
-          assertFormats: true,
         );
         fail('Expected an unsupported format diagnostic.');
       } on JsonSchemaImportException catch (error) {
         final issue = error.diagnostics.single;
-        expect(issue.code, 'unsupported_format');
+        expect(issue.code, 'unsupported_keyword');
         expect(issue.keyword, 'format');
         expect(issue.pointer, r'#/$defs/stamp/format');
         expect(issue.documentUri, base.resolve('formats.json'));
@@ -50,14 +42,14 @@ void main() {
           r'$defs': {
             'unused': {'format': 'email'},
           },
-        }, assertFormats: true).safeParse('anything').isOk,
+        }).safeParse('anything').isOk,
         isTrue,
       );
     });
 
-    test('non-string format values are invalid when assertion is enabled', () {
+    test('non-string format values are invalid schema input', () {
       expect(
-        () => Ack.fromJsonSchema({'format': 17}, assertFormats: true),
+        () => Ack.fromJsonSchema({'format': 17}),
         throwsA(
           isA<JsonSchemaImportException>().having(
             (error) => error.diagnostics.single.pointer,
@@ -69,9 +61,7 @@ void main() {
     });
 
     test('format applies only to strings and preserves valid input', () {
-      final schema = Ack.fromJsonSchema({
-        'format': 'date-time',
-      }, assertFormats: true);
+      final schema = Ack.fromJsonSchema({'format': 'date-time'});
       for (final value in [
         null,
         true,
@@ -89,7 +79,7 @@ void main() {
       final typed = Ack.fromJsonSchema({
         'type': 'string',
         'format': 'date-time',
-      }, assertFormats: true);
+      });
       expect(typed.safeParse(4).isFail, isTrue);
       expect(typed.safeParse(original).isOk, isTrue);
     });
@@ -110,9 +100,9 @@ void main() {
             },
           },
         },
-      }, assertFormats: true);
+      });
       final exported = schema.toJsonSchema();
-      final roundTrip = Ack.fromJsonSchema(exported, assertFormats: true);
+      final roundTrip = Ack.fromJsonSchema(exported);
       for (final imported in [schema, roundTrip]) {
         expect(
           imported.safeParse({
@@ -133,27 +123,18 @@ void main() {
           isTrue,
         );
       }
-      expect(
-        () => Ack.fromJsonSchema(exported),
-        throwsA(isA<JsonSchemaImportException>()),
-      );
     });
 
     test('native date-time export can be asserted on import', () {
       final native = Ack.string().datetime();
-      final imported = Ack.fromJsonSchema(
-        native.toJsonSchema(),
-        assertFormats: true,
-      );
+      final imported = Ack.fromJsonSchema(native.toJsonSchema());
       expect(imported.safeParse('2024-02-29T00:00:00Z').isOk, isTrue);
       expect(imported.safeParse('2024-02-30T00:00:00Z').isFail, isTrue);
       expect(imported.safeParse(4).isFail, isTrue);
     });
 
     test('checks dates, offsets and leap seconds in UTC', () {
-      final schema = Ack.fromJsonSchema({
-        'format': 'date-time',
-      }, assertFormats: true);
+      final schema = Ack.fromJsonSchema({'format': 'date-time'});
       for (final value in [
         '2023-02-29T00:00:00Z',
         '2024-02-29T00:00:00',
