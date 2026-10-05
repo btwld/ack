@@ -180,7 +180,7 @@ class PatternConstraint extends Constraint<String>
 
   static PatternConstraint dateTimeIso8601() => PatternConstraint(
     type: PatternType.format,
-    formatValidator: _isValidIso8601DateTime,
+    formatValidator: isValidRfc3339DateTime,
     constraintKey: 'string_format_datetime',
     description: 'Must be a valid ISO 8601 date-time string.',
     example: '2023-10-27T10:30:00Z',
@@ -359,7 +359,11 @@ bool isDateTimeSecondRepresentableByDart(String value) {
   return match != null && match[6] != '60';
 }
 
-bool _isValidIso8601DateTime(String value) {
+/// Validates the date-time format shared by native strings and JSON Schema.
+///
+/// The bundled leap-second dates must be updated when IERS announces another
+/// positive leap second; validation never fetches a list at runtime.
+bool isValidRfc3339DateTime(String value) {
   final match = _iso8601DateTimePattern.firstMatch(value);
   if (match == null) return false;
 
@@ -383,7 +387,10 @@ bool _isValidIso8601DateTime(String value) {
 }
 
 bool _isAnnouncedLeapSecond(String value) {
-  final normalized = DateTime.tryParse(value)?.toUtc();
+  // RFC 3339 permits lowercase separators, while DateTime.tryParse expects T.
+  final normalized = DateTime.tryParse(
+    value.replaceFirst('t', 'T').replaceFirst('z', 'Z'),
+  )?.toUtc();
   if (normalized == null) return false;
 
   final precedingSecond = normalized.subtract(const Duration(seconds: 1));

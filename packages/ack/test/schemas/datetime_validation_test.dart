@@ -132,11 +132,18 @@ void main() {
 
         final utc = schema.safeParse('1990-12-31T23:59:60Z');
         final offset = schema.safeParse('1990-12-31T15:59:60-08:00');
+        final lowercase = schema.safeParse('1998-12-31t23:59:60z');
 
         expect(utc.isOk, isTrue);
         expect(offset.isOk, isTrue);
+        expect(lowercase.isOk, isTrue);
+        expect(
+          schema.safeParse('2030-06-30t23:59:60z').isFail,
+          isTrue,
+        );
         expect(utc.getOrThrow(), '1990-12-31T23:59:60Z');
         expect(offset.getOrThrow(), '1990-12-31T15:59:60-08:00');
+        expect(lowercase.getOrThrow(), '1998-12-31t23:59:60z');
       });
 
       test('datetime codec rejects unrepresentable leap seconds', () {

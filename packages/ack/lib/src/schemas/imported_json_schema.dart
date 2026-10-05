@@ -14,8 +14,9 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     Object document, {
     Uri? baseUri,
     Map<Uri, Object> documents = const {},
+    JsonSchemaFormatPolicy formatPolicy = JsonSchemaFormatPolicy.reject,
   }) {
-    final compiler = _JsonSchemaCompiler();
+    final compiler = _JsonSchemaCompiler(formatPolicy);
     final base = baseUri ?? Uri.parse('ack-import:///root.json');
     final root = compiler.addDocument(document, base);
     for (final entry in documents.entries) {
@@ -240,6 +241,9 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
     }
   }
   if (value is String) {
+    if (node.assertDateTimeFormat && !isValidRfc3339DateTime(value)) {
+      return fail('format');
+    }
     if (keywords['pattern'] case final String source) {
       if (!RegExp(source).hasMatch(value)) return fail('pattern');
     }

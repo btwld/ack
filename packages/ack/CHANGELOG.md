@@ -1,3 +1,17 @@
+## Unreleased
+
+### Added
+
+* JSON Schema import can retain `format` annotations or assert `date-time`
+  with an explicit `formatPolicy`. The default still rejects `format`.
+  Assertion mode reports unsupported formats at their schema location and
+  preserves the original timestamp string, including announced leap seconds.
+
+### Fixed
+
+* Date-time string validation accepts lowercase `t` and `z` on announced leap
+  seconds, as it already did on ordinary RFC 3339 timestamps.
+
 ## 1.7.0-beta.3
 
 ### Breaking
