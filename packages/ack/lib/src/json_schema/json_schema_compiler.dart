@@ -15,7 +15,6 @@ final class _ImportedNode {
   final maps = <String, Map<String, _ImportedNode>>{};
   final lists = <String, List<_ImportedNode>>{};
   _ImportedNode? reference;
-  bool assertDateTimeFormat = false;
   Iterable<_ImportedNode> get dependencies sync* {
     if (reference case final target?) yield target;
     yield* children.values;
@@ -58,9 +57,9 @@ final class _ImportedNode {
 }
 
 final class _JsonSchemaCompiler {
-  _JsonSchemaCompiler(this.formatPolicy);
+  _JsonSchemaCompiler(this.assertFormats);
 
-  final JsonSchemaFormatPolicy formatPolicy;
+  final bool assertFormats;
   final diagnostics = <JsonSchemaImportDiagnostic>[];
   final locations = <(Uri, String), _ImportedNode>{};
   final resources = <Uri, _ImportedNode>{};
@@ -478,23 +477,20 @@ final class _JsonSchemaCompiler {
         }
         node.keywords[key] = value;
       } else if (key == 'format') {
-        if (formatPolicy == JsonSchemaFormatPolicy.reject) {
+        if (!assertFormats) {
           _unsupported(node, key, 'Keyword "format" is not supported.');
           continue;
         }
         if (value is! String) {
           _fail(node, key, 'Expected a format string.');
         }
-        if (formatPolicy == JsonSchemaFormatPolicy.assertSupported) {
-          if (value != 'date-time') {
-            _fail(
-              node,
-              key,
-              'Format "$value" cannot be asserted by this importer.',
-              code: 'unsupported_format',
-            );
-          }
-          node.assertDateTimeFormat = true;
+        if (value != 'date-time') {
+          _fail(
+            node,
+            key,
+            'Format "$value" cannot be asserted by this importer.',
+            code: 'unsupported_format',
+          );
         }
         node.keywords[key] = value;
       } else {

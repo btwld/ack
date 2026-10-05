@@ -387,10 +387,9 @@ bool isValidRfc3339DateTime(String value) {
 }
 
 bool _isAnnouncedLeapSecond(String value) {
-  // RFC 3339 permits lowercase separators, while DateTime.tryParse expects T.
-  final normalized = DateTime.tryParse(
-    value.replaceFirst('t', 'T').replaceFirst('z', 'Z'),
-  )?.toUtc();
+  // DateTime.tryParse expects uppercase separators; only this lookup is
+  // normalized. Validation and parsing preserve the original input string.
+  final normalized = DateTime.tryParse(value.toUpperCase())?.toUtc();
   if (normalized == null) return false;
 
   final precedingSecond = normalized.subtract(const Duration(seconds: 1));

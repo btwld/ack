@@ -68,25 +68,22 @@ Exports containing unsupported keywords are rejected.
 
 ### Importing `format`
 
-The default `formatPolicy: JsonSchemaFormatPolicy.reject` keeps strict imports
-unchanged: `format` is reported as an unsupported keyword. Select a policy for
-each import when the document uses `format`:
+By default, `assertFormats` is `false` and strict import reports `format` as an
+unsupported keyword. Set it to `true` to assert `date-time`:
 
 ```dart
 final timestamp = Ack.fromJsonSchema(
-  {'format': 'date-time'},
-  formatPolicy: JsonSchemaFormatPolicy.assertSupported,
+  {'type': 'string', 'format': 'date-time'},
+  assertFormats: true,
 );
 timestamp.parse('2024-02-29T12:34:56.123456789+02:00');
 ```
 
-`JsonSchemaFormatPolicy.annotate` accepts any string format label and retains it
-on export without validating it. `assertSupported` validates `date-time` and
-rejects every other format with an `unsupported_format` diagnostic at the
-source keyword. This is a focused opt-in assertion, not support for the full
-JSON Schema Format-Assertion vocabulary. An invalid date-time string fails;
-a non-string value passes a format-only schema because `format` does not imply
-`type: string`. Add that type explicitly if needed.
+With `assertFormats: true`, every other format fails import with an
+`unsupported_format` diagnostic at the source keyword. This is a focused
+opt-in assertion, not support for the full JSON Schema Format-Assertion
+vocabulary. A format-only schema still accepts non-string values because
+`format` does not imply `type: string`; add the type when needed.
 
 Date-time validation uses RFC 3339 syntax, calendar dates, offsets, and the
 bundled list of announced positive leap-second dates. The list is updated in
@@ -94,8 +91,8 @@ Ack releases when IERS announces new leap seconds; validation never fetches
 data at runtime. Parsing preserves the original string, including its
 fractional precision and offset. It does not convert it to a Dart `DateTime`.
 
-Export retains `format` in imported schemas. Reimport with the same policy to
-keep validation behavior. External JSON Schema validators may treat `format`
+Export retains `format` in imported schemas. Reimport with `assertFormats: true`
+to keep validation behavior. External JSON Schema validators may treat `format`
 as an annotation unless configured to assert it.
 
 ### Supported import subset
@@ -110,8 +107,8 @@ as an annotation unless configured to assert it.
 | Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
-| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated`; `format` with the annotation policy |
-| Optional assertion | `date-time` format with the assertion policy |
+| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
+| Optional assertion | `date-time` format with `assertFormats: true` |
 
 `pattern` compiles without ECMA-262's `u` flag, matching the default
 `RegExp`. Unicode property escapes (`\p{...}`, `\P{...}`) are therefore
@@ -125,8 +122,8 @@ This is deliberately not a complete JSON Schema validator. Unsupported
 keywords include `multipleOf`, `patternProperties`, `prefixItems`,
 `contains`, conditional/dependent/unevaluated keywords, dynamic references,
 and custom vocabulary declarations. Unknown extension keywords are also
-reported. `format` is rejected by default; the policies above opt into
-annotation or the supported date-time assertion. References to the 2020-12
+reported. `format` is rejected by default; `assertFormats: true` opts into the
+supported date-time assertion. References to the 2020-12
 meta-schema fail strict import.
 The meta-schema itself is not validated.
 
@@ -197,8 +194,8 @@ final builderSchema = ackSchema.toJsonSchemaBuilder();
 
 `toAckSchema({baseUri, documents})` is strict and returns the validator directly.
 It accepts `Map<Uri, jsb.Schema>` bundles.
-For an explicit format policy, pass a builder model's decoded `value` to
-`Ack.fromJsonSchema(model.value, formatPolicy: JsonSchemaFormatPolicy.assertSupported)`.
+To assert date-time in a builder model, pass its decoded `value` to
+`Ack.fromJsonSchema(model.value, assertFormats: true)`.
 
 MCP registration compatibility is deferred to separate work; importing a
 schema does not establish compatibility with a tool-registration API.

@@ -47,13 +47,6 @@ typedef Refinement<T> = ({bool Function(T value) validate, String message});
 /// of widening them to [AnyAckSchema].
 typedef AnyAckSchema = AckSchema<Object, Object>;
 
-/// How [Ack.fromJsonSchema] handles the JSON Schema `format` keyword.
-///
-/// [reject] preserves Ack's strict import behavior. [annotate] retains format
-/// labels without validating them. [assertSupported] validates `date-time` and
-/// rejects other format labels until their assertions are implemented.
-enum JsonSchemaFormatPolicy { reject, annotate, assertSupported }
-
 /// Indicates whether a schema operation is parsing inbound data or encoding
 /// runtime values back to the boundary representation.
 enum SchemaOperation { parse, encode }

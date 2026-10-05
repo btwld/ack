@@ -11,21 +11,19 @@ final class Ack {
   ///
   /// [document] must be a map or boolean, not a JSON string. Referenced
   /// [documents] are supplied by retrieval URI; no files or URLs are fetched.
-  /// [formatPolicy] defaults to rejecting `format`. Choose
-  /// [JsonSchemaFormatPolicy.annotate] to retain labels without validation, or
-  /// [JsonSchemaFormatPolicy.assertSupported] to assert `date-time` and reject
-  /// unsupported formats.
+  /// [assertFormats] opts into `date-time` assertions. Other formats remain
+  /// unsupported; the default preserves strict rejection of `format`.
   /// Unsupported semantics throw [JsonSchemaImportException].
   static AckSchema<Object, Object> fromJsonSchema(
     Object document, {
     Uri? baseUri,
     Map<Uri, Object> documents = const {},
-    JsonSchemaFormatPolicy formatPolicy = JsonSchemaFormatPolicy.reject,
+    bool assertFormats = false,
   }) => ImportedJsonSchema.fromDocument(
     document,
     baseUri: baseUri,
     documents: documents,
-    formatPolicy: formatPolicy,
+    assertFormats: assertFormats,
   );
 
   /// Creates a string schema. Boundary and runtime are both `String`.
