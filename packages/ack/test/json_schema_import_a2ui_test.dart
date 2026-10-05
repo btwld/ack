@@ -49,16 +49,26 @@ void main() {
     },
   );
 
-  test('client events reject the unsupported date-time format', () {
-    expect(
-      () => load('client_to_server.json'),
-      throwsA(
-        isA<JsonSchemaImportException>().having(
-          (error) => error.diagnostics.single.keyword,
-          'keyword',
-          'format',
-        ),
-      ),
-    );
+  test('client events assert the action timestamp format', () {
+    final schema = load('client_to_server.json');
+    final event = {
+      'version': 'v0.9',
+      'action': {
+        'name': 'submit',
+        'surfaceId': 'surface-1',
+        'sourceComponentId': 'button-1',
+        'timestamp': '2024-02-29T01:02:03Z',
+        'context': <String, Object?>{},
+      },
+    };
+    expect(schema.safeParse(event).isOk, isTrue);
+    final invalid = {
+      ...event,
+      'action': {
+        ...(event['action']! as Map<String, Object?>),
+        'timestamp': '2024-02-30T01:02:03Z',
+      },
+    };
+    expect(schema.safeParse(invalid).isFail, isTrue);
   });
 }

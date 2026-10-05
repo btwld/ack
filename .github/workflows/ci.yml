@@ -50,7 +50,8 @@ jobs:
             test/schemas/extensions/list_schema_extensions_test.dart \
             test/utils/collection_utils_test.dart \
             test/json_schema_import_test.dart \
-            test/json_schema_import_api_test.dart
+            test/json_schema_import_api_test.dart \
+            test/json_schema_format_import_test.dart
 
       - name: Test JSON Schema import bridge in Chrome
         working-directory: packages/ack_json_schema_builder

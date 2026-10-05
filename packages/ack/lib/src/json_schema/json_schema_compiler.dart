@@ -473,6 +473,15 @@ final class _JsonSchemaCompiler {
           _fail(node, key, 'Invalid regular expression: ${e.message}');
         }
         node.keywords[key] = value;
+      } else if (key == 'format') {
+        if (value is! String) {
+          _fail(node, key, 'Expected a format string.');
+        }
+        if (value != 'date-time') {
+          _unsupported(node, key, 'Format "$value" is not supported.');
+          continue;
+        }
+        node.keywords[key] = value;
       } else {
         _unsupported(node, key, 'Keyword "$key" is not supported.');
       }

@@ -240,6 +240,9 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
     }
   }
   if (value is String) {
+    if (keywords['format'] == 'date-time' && !isValidRfc3339DateTime(value)) {
+      return fail('format');
+    }
     if (keywords['pattern'] case final String source) {
       if (!RegExp(source).hasMatch(value)) return fail('pattern');
     }

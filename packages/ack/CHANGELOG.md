@@ -1,3 +1,17 @@
+## Unreleased
+
+### Added
+
+* Strict JSON Schema import now asserts the supported `date-time` format.
+  Other format labels remain unsupported and are reported at their schema
+  location. Parsing preserves the original timestamp string, including
+  announced leap seconds.
+
+### Fixed
+
+* Date-time string validation accepts lowercase `t` and `z` on announced leap
+  seconds, as it already did on ordinary RFC 3339 timestamps.
+
 ## 1.7.0-beta.3
 
 ### Breaking

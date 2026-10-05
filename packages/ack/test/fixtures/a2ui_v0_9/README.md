@@ -8,6 +8,6 @@ The five schemas used by the importer tests are copied unchanged from
 `client_data_model.json`, `client_to_server.json`, `common_types.json`, and
 `server_capabilities.json`.
 
-The tests cover strict imports of supported protocol documents and diagnostics
-for unsupported meta-schema references and the `date-time` format. They are not
-a claim of full A2UI conformance.
+The tests cover strict imports of supported protocol documents, action
+timestamp validation, and diagnostics for unsupported meta-schema references.
+They are not a claim of full A2UI conformance.

@@ -66,6 +66,34 @@ not the original Dart declaration: JSON cannot recover codecs, Dart model
 types, custom callbacks, or refinements that were absent from the export.
 Exports containing unsupported keywords are rejected.
 
+### Importing `format`
+
+Ack's strict supported-subset importer recognizes `date-time` and validates it
+automatically:
+
+```dart
+final timestamp = Ack.fromJsonSchema(
+  {'type': 'string', 'format': 'date-time'},
+);
+timestamp.parse('2024-02-29T12:34:56.123456789+02:00');
+```
+
+Other format labels remain unsupported and produce an `unsupported_keyword`
+diagnostic at their source location. This is Ack's strict import subset, not a
+claim that draft 2020-12 requires format assertions or that Ack implements the
+full Format-Assertion vocabulary. A format-only schema still accepts non-string
+values because `format` does not imply `type: string`; add the type when needed.
+
+Date-time validation uses RFC 3339 syntax, calendar dates, offsets, and the
+bundled list of announced positive leap-second dates. The list is updated in
+Ack releases when IERS announces new leap seconds; validation never fetches
+data at runtime. Parsing preserves the original string, including its
+fractional precision and offset. It does not convert it to a Dart `DateTime`.
+
+Export retains `format` in imported schemas. Reimport through the same strict
+Ack importer to keep validation behavior. External JSON Schema validators may
+treat `format` as an annotation unless configured to assert it.
+
 ### Supported import subset
 
 | Area | Keywords |
@@ -79,6 +107,7 @@ Exports containing unsupported keywords are rejected.
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
 | Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
+| Format | `date-time` (asserted for strings) |
 
 `pattern` compiles without ECMA-262's `u` flag, matching the default
 `RegExp`. Unicode property escapes (`\p{...}`, `\P{...}`) are therefore
@@ -89,11 +118,11 @@ by default: `pattern: "^.$"` rejects `"😀"` here but accepts it with `u`.
 Test patterns in both validators if their results must agree.
 
 This is deliberately not a complete JSON Schema validator. Unsupported
-keywords include `format`, `multipleOf`, `patternProperties`, `prefixItems`,
+keywords include `multipleOf`, `patternProperties`, `prefixItems`,
 `contains`, conditional/dependent/unevaluated keywords, dynamic references,
 and custom vocabulary declarations. Unknown extension keywords are also
-reported. `format` is not enforced, even for formats Ack's native string
-schemas can validate. References to the 2020-12 meta-schema fail strict import.
+reported. `date-time` is the only supported format label. References to the
+2020-12 meta-schema fail strict import.
 The meta-schema itself is not validated.
 
 ### References and bundles
@@ -162,7 +191,8 @@ final builderSchema = ackSchema.toJsonSchemaBuilder();
 ```
 
 `toAckSchema({baseUri, documents})` is strict and returns the validator directly.
-It accepts `Map<Uri, jsb.Schema>` bundles.
+It accepts `Map<Uri, jsb.Schema>` bundles and asserts supported `date-time`
+formats through Ack's importer.
 
 MCP registration compatibility is deferred to separate work; importing a
 schema does not establish compatibility with a tool-registration API.
@@ -175,14 +205,16 @@ to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`.
 The basic catalog is **not an exact supported import**: it additionally uses
 unevaluated-property checks, conditionals, formats, and an extension
 keyword. Import therefore fails with diagnostics. The client event schema
-reports its date-time format, and client capabilities report the three
-meta-schema references. Test the specific catalog your application uses;
-successful validation of examples does not prove complete catalog conformance.
+imports successfully and validates its action timestamp as `date-time`, while
+client capabilities report the three meta-schema references. Test the specific
+catalog your application uses; successful validation of examples does not prove
+complete catalog conformance.
 
-The committed conformance tests contain 631 upstream JSON Schema instance cases
-across 186 groups in the supported subset, including supplied remote documents.
-They check parse, encode, and re-imported exports without network access.
-Unsupported cases are not silently skipped within those fixtures.
+The supported-subset fixture contains 631 upstream JSON Schema instance cases
+across 186 groups, including supplied remote documents. A separate optional
+date-time fixture adds 43 cases. The supported-subset tests check parse,
+encode, and re-imported exports without network access. Unsupported cases are
+not silently skipped within that fixture.
 
 ## Generating JSON schemas
 

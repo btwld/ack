@@ -11,7 +11,8 @@ final class Ack {
   ///
   /// [document] must be a map or boolean, not a JSON string. Referenced
   /// [documents] are supplied by retrieval URI; no files or URLs are fetched.
-  /// Unsupported semantics throw [JsonSchemaImportException].
+  /// The supported `date-time` format is asserted. Other formats remain
+  /// unsupported. Unsupported semantics throw [JsonSchemaImportException].
   static AckSchema<Object, Object> fromJsonSchema(
     Object document, {
     Uri? baseUri,

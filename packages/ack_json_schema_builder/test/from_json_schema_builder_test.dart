@@ -32,4 +32,11 @@ void main() {
       ),
     );
   });
+
+  test('builder bridge asserts supported date-time on import', () {
+    final model = jsb.Schema.fromMap({'type': 'string', 'format': 'date-time'});
+    final schema = model.toAckSchema();
+    expect(schema.safeParse('2024-02-29T01:02:03Z').isOk, isTrue);
+    expect(schema.safeParse('2024-02-30T01:02:03Z').isFail, isTrue);
+  });
 }
