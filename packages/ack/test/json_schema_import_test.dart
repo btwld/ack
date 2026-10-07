@@ -773,6 +773,35 @@ void main() {
     });
 
     test(
+      'uniqueItems reports its failure at the array, as native lists do',
+      () {
+        final schema = Ack.fromJsonSchema({
+          'uniqueItems': true,
+          'properties': {
+            'tags': {'uniqueItems': true},
+          },
+        });
+        final native = Ack.list(Ack.integer()).unique();
+        final root = schema.safeParse([1, 2, 1]).getError();
+        expect(root.path, native.safeParse([1, 2, 1]).getError().path);
+        expect(root.path, '#');
+        expect(root.value, [1, 2, 1]);
+        expect(
+          root,
+          isA<JsonSchemaValidationError>()
+              .having((e) => e.keyword, 'keyword', 'uniqueItems')
+              .having((e) => e.pointer, 'pointer', '#/uniqueItems'),
+        );
+
+        final nested = schema.safeParse({
+          'tags': ['a', 'b', 'a'],
+        }).getError();
+        expect(nested.path, '#/tags');
+        expect(nested.value, ['a', 'b', 'a']);
+      },
+    );
+
+    test(
       'reports meta-schema references as unsupported, not as any schema',
       () {
         expect(
