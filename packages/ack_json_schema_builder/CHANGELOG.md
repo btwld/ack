@@ -1,3 +1,12 @@
+## 1.7.0-beta.5
+
+### Changed
+
+* When paired with `ack` 1.7.0-beta.5 or later, imported builder schemas inherit
+  `contains` and conditional support, structured keyword errors, and Unicode
+  regex semantics. Review patterns when upgrading; see the Ack beta.5 migration
+  notes. The bridge's public API and compatible dependency minimum are unchanged.
+
 ## 1.7.0-beta.4
 
 ### Changed

@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.7.0-beta.5
+
+* Strict JSON Schema import supports `contains` and `if`/`then`/`else`, and
+  exposes the failing keyword and source location in `JsonSchemaValidationError`.
+  Source-location URI fragments preserve percent signs, spaces, `#`, and Unicode.
+* **Breaking:** imported `pattern` expressions now use ECMA-262 Unicode mode.
+  `.` matches one code point and Unicode property escapes work. Review patterns
+  that count UTF-16 code units or use identity escapes; write `-` instead of
+  `\-` outside character classes. Native `Ack.string().matches()` behavior is
+  unchanged, so native patterns can behave differently after export and import.
+* Align all five publishable packages at 1.7.0-beta.5. Adapter and generator
+  APIs and compatible dependency minimums are unchanged. The beta.3 annotation
+  and generator migrations still apply when upgrading from earlier versions.
+
 ## 1.7.0-beta.4
 
 * Strict Ack JSON Schema import now asserts the supported `date-time` format.
