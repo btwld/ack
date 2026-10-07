@@ -603,6 +603,33 @@ void main() {
       expect(Ack.fromJsonSchema(true).safeParse(double.nan).isFail, isTrue);
     });
 
+    test('parse and encode reject the same non-JSON values', () {
+      final schema = Ack.fromJsonSchema(true);
+      final cycle = <String, Object?>{};
+      cycle['self'] = [cycle];
+      for (final value in <Object>[
+        {1: 'a'},
+        {
+          'a': [double.infinity],
+        },
+        cycle,
+        [DateTime(2026)],
+      ]) {
+        final parsed = schema.safeParse(value);
+        final encoded = schema.safeEncode(value);
+        expect(parsed.isFail, isTrue, reason: '$value');
+        expect(encoded.isFail, isTrue, reason: '$value');
+        expect(parsed.getError().message, encoded.getError().message);
+      }
+      final shared = ['x'];
+      final parsed = schema.parse({'a': shared, 'b': shared}) as Map;
+      expect(parsed, {
+        'a': ['x'],
+        'b': ['x'],
+      });
+      expect(() => parsed['c'] = 1, throwsUnsupportedError);
+    });
+
     test(
       'fluent nullability overrides preserve parse/encode/export parity',
       () {

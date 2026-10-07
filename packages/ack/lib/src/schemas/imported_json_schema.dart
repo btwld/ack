@@ -56,13 +56,33 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
     if (!_isImportJson(value, HashSet.identity())) {
-      return SchemaResult.fail(
+      return _failNotImportJson(context);
+    }
+    return _validateImportJson(value!, context);
+  }
+
+  @override
+  @protected
+  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+    final copy = _copyImportJson(value, HashSet.identity());
+    if (identical(copy, _notImportJson)) return _failNotImportJson(context);
+    return _validateImportJson(copy!, context);
+  }
+
+  SchemaResult<Object> _failNotImportJson(SchemaContext context) =>
+      SchemaResult.fail(
         SchemaValidationError(
           message: 'Expected an acyclic JSON value with finite numbers.',
           context: context,
         ),
       );
-    }
+
+  SchemaResult<Object> _validateImportJson(
+    Object value,
+    SchemaContext context,
+  ) {
     final violation = _checkImportedNode(_root, value);
     if (violation != null) {
       var errorContext = context;
@@ -91,15 +111,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         ),
       );
     }
-    return applyConstraintsAndRefinements(value!, context);
-  }
-
-  @override
-  @protected
-  SchemaResult<Object> parseWithContext(Object? value, SchemaContext context) {
-    final result = validateRuntimeWithContext(value, context);
-    if (result.isFail) return result;
-    return SchemaResult.ok(cloneDefault(result.getOrNull()));
+    return applyConstraintsAndRefinements(value, context);
   }
 
   /// Builds root-scoped definitions for the shared schema-model renderer.
