@@ -3,6 +3,10 @@ part of '../schemas/schema.dart';
 String _importPointerToken(String token) =>
     token.replaceAll('~', '~0').replaceAll('/', '~1');
 
+String _keywordPointer(_ImportedNode node, String keyword) => keyword.isEmpty
+    ? node.pointer
+    : '${node.pointer}/${_importPointerToken(keyword)}';
+
 final class _ImportedNode {
   _ImportedNode(this.source, this.documentUri, this.pointer, this.baseUri);
 
@@ -502,9 +506,7 @@ final class _JsonSchemaCompiler {
   ) => JsonSchemaImportDiagnostic._(
     code: code,
     documentUri: node.documentUri,
-    pointer: key.isEmpty
-        ? node.pointer
-        : '${node.pointer}/${_importPointerToken(key)}',
+    pointer: _keywordPointer(node, key),
     keyword: key,
     message: message,
   );

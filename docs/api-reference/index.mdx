@@ -71,6 +71,9 @@ examples.
 - `JsonSchemaImportException`: Thrown when an import encounters an unsupported
   assertion or cannot be completed safely. Its
   `diagnostics` list identifies every reported issue.
+- `JsonSchemaValidationError`: A `SchemaValidationError` returned when a value
+  fails an imported schema. `keyword` names the failing keyword, and
+  `documentUri` and `pointer` locate it after `$ref` resolution.
 
 ## `AckSchema<Boundary, Runtime>` (Base Class)
 

@@ -82,9 +82,12 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         );
       }
       return SchemaResult.fail(
-        SchemaValidationError(
+        JsonSchemaValidationError._(
           message: violation.message,
           context: errorContext,
+          keyword: violation.keyword,
+          documentUri: violation.node.documentUri,
+          pointer: _keywordPointer(violation.node, violation.keyword),
         ),
       );
     }
@@ -140,32 +143,40 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
 final class _ImportViolation {
   const _ImportViolation(
-    this.message, {
+    this.node,
+    this.keyword, {
     this.path = const [],
     this.invalidPropertyName,
   });
-  final String message;
+  final _ImportedNode node;
+
+  /// Empty when [node] is the boolean schema `false`.
+  final String keyword;
   final List<String> path;
   final String? invalidPropertyName;
 
+  String get message =>
+      'JSON Schema "${keyword.isEmpty ? 'false' : keyword}" failed at '
+      '${node.documentUri}${node.pointer}.';
+
   _ImportViolation at(String segment) => _ImportViolation(
-    message,
+    node,
+    keyword,
     path: [segment, ...path],
     invalidPropertyName: invalidPropertyName,
   );
 
   _ImportViolation atPropertyName(String name) => _ImportViolation(
-    message,
+    node,
+    keyword,
     path: [name, ...path],
     invalidPropertyName: name,
   );
 }
 
 _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
-  _ImportViolation fail(String keyword) => _ImportViolation(
-    'JSON Schema "$keyword" failed at ${node.documentUri}${node.pointer}.',
-  );
-  if (node.source == false) return fail('false');
+  _ImportViolation fail(String keyword) => _ImportViolation(node, keyword);
+  if (node.source == false) return fail('');
   final keywords = node.keywords;
   if (keywords['type'] case final type?) {
     final types = type is List ? type : [type];

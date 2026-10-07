@@ -328,6 +328,81 @@ void main() {
       expect(error.toMap()['value'], 'foobar');
     });
 
+    test('runtime errors expose the failing keyword and its location', () {
+      final schema = Ack.fromJsonSchema({
+        'type': 'object',
+        'properties': {
+          'tags': {
+            'type': 'array',
+            'items': {
+              'enum': ['x', 'y'],
+            },
+          },
+        },
+      });
+      final error =
+          schema.safeParse({
+                'tags': ['x', 'z'],
+              }).getError()
+              as JsonSchemaValidationError;
+      expect(error.keyword, 'enum');
+      expect(error.documentUri, Uri.parse('ack-import:///root.json'));
+      expect(error.pointer, '#/properties/tags/items/enum');
+      expect(error.path, '#/tags/1');
+      expect(
+        error.toMap(),
+        allOf(
+          containsPair('keyword', 'enum'),
+          containsPair('documentUri', 'ack-import:///root.json'),
+          containsPair('pointer', '#/properties/tags/items/enum'),
+        ),
+      );
+    });
+
+    test('runtime error locations follow references across documents', () {
+      final schema = Ack.fromJsonSchema(
+        {
+          'properties': {
+            'a': {r'$ref': r'defs.json#/$defs/a~1b'},
+            'b': {
+              'properties': {'c': false},
+            },
+          },
+          'required': ['a'],
+        },
+        baseUri: Uri.parse('https://example.test/root.json'),
+        documents: {
+          Uri.parse('https://example.test/defs.json'): {
+            r'$defs': {
+              'a/b': {'type': 'string'},
+            },
+          },
+        },
+      );
+      JsonSchemaValidationError failure(Object value) =>
+          schema.safeParse(value).getError() as JsonSchemaValidationError;
+
+      final type = failure({'a': 1});
+      expect(type.keyword, 'type');
+      expect(type.documentUri, Uri.parse('https://example.test/defs.json'));
+      expect(type.pointer, r'#/$defs/a~1b/type');
+      expect(type.path, '#/a');
+
+      final rejected = failure({
+        'a': 'ok',
+        'b': {'c': 1},
+      });
+      expect(rejected.keyword, isEmpty);
+      expect(rejected.documentUri, Uri.parse('https://example.test/root.json'));
+      expect(rejected.pointer, '#/properties/b/properties/c');
+      expect(rejected.message, contains('"false" failed'));
+
+      final missing = failure(<String, Object?>{});
+      expect(missing.keyword, 'required');
+      expect(missing.pointer, '#/required');
+      expect(missing.path, '#/a');
+    });
+
     test('recursive validation has no hidden Ack.lazy depth limit', () {
       final schema = Ack.fromJsonSchema({
         'type': 'object',
@@ -548,15 +623,27 @@ void main() {
         'tags': ['y'],
       }).getError();
       expect(noMatch.path, '#/tags');
-      expect(noMatch.message, contains('"contains" failed at'));
-      expect(noMatch.message, endsWith('#/properties/tags.'));
+      expect(
+        noMatch,
+        isA<JsonSchemaValidationError>()
+            .having((e) => e.keyword, 'keyword', 'contains')
+            .having((e) => e.pointer, 'pointer', '#/properties/tags/contains'),
+      );
 
       final thenError = schema.safeParse({
         'pet': {'kind': 'dog'},
       }).getError();
       expect(thenError.path, '#/pet/breed');
-      expect(thenError.message, contains('"required" failed at'));
-      expect(thenError.message, endsWith('#/properties/pet/then.'));
+      expect(
+        thenError,
+        isA<JsonSchemaValidationError>()
+            .having((e) => e.keyword, 'keyword', 'required')
+            .having(
+              (e) => e.pointer,
+              'pointer',
+              '#/properties/pet/then/required',
+            ),
+      );
     });
 
     test(
