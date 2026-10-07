@@ -199,6 +199,7 @@ if (error is JsonSchemaValidationError) {
   print(error.keyword); // enum
   print(error.documentUri); // ack-import:///root.json
   print(error.pointer); // #/properties/tags/items/enum
+  print(error.keywordLocation); // /properties/tags/items/enum
   print(error.path); // #/tags/1
 }
 ```
@@ -210,6 +211,13 @@ is empty when the failing subschema is `false`. Only the first failure is
 reported. A root `null` that the source schema rejects returns the standard
 `SchemaConstraintsError` for a missing value, as other non-nullable Ack schemas
 do.
+
+`keywordLocation` is the evaluation path from the root schema to the failing
+keyword. It includes each `$ref` it passed through, so two applicators that
+share a definition report different locations, while their `pointer` is the
+same. It uses the plain JSON Pointer form of the Draft 2020-12
+`keywordLocation` output field, with no `#` and no percent-encoding. It is
+empty when the root schema is `false`.
 
 ### Importing json_schema_builder models
 

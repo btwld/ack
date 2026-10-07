@@ -502,6 +502,159 @@ void main() {
       });
     });
 
+    group('keywordLocation follows the evaluation path', () {
+      const draft = 'https://json-schema.org/draft/2020-12/schema';
+      String keywordLocation(Map<String, Object?> source, Object value) =>
+          (Ack.fromJsonSchema(source).safeParse(value).getError()
+                  as JsonSchemaValidationError)
+              .keywordLocation;
+
+      test('separates propertyNames from additionalProperties', () {
+        final schema = Ack.fromJsonSchema({
+          r'$schema': draft,
+          r'$defs': {
+            'short': {'type': 'string', 'maxLength': 3},
+          },
+          'properties': {
+            'names': {
+              'propertyNames': {r'$ref': r'#/$defs/short'},
+            },
+            'values': {
+              'additionalProperties': {r'$ref': r'#/$defs/short'},
+            },
+          },
+        });
+        JsonSchemaValidationError failure(Object value) =>
+            schema.safeParse(value).getError() as JsonSchemaValidationError;
+
+        final name = failure({
+          'names': {'abcd': 'x'},
+        });
+        final value = failure({
+          'values': {'abcd': 'abcd'},
+        });
+        expect(
+          name.keywordLocation,
+          r'/properties/names/propertyNames/$ref/maxLength',
+        );
+        expect(
+          value.keywordLocation,
+          r'/properties/values/additionalProperties/$ref/maxLength',
+        );
+        expect(name.pointer, value.pointer);
+      });
+
+      test('separates properties from additionalProperties', () {
+        Map<String, Object?> source(Map<String, Object?> properties) => {
+          r'$schema': draft,
+          r'$defs': {'never': false},
+          'properties': properties,
+          'additionalProperties': {r'$ref': r'#/$defs/never'},
+        };
+
+        expect(
+          keywordLocation(
+            source({
+              'a': {r'$ref': r'#/$defs/never'},
+            }),
+            {'a': 1},
+          ),
+          r'/properties/a/$ref',
+        );
+        expect(
+          keywordLocation(source({'b': true}), {'a': 1}),
+          r'/additionalProperties/$ref',
+        );
+      });
+
+      test('includes the allOf branch index', () {
+        expect(
+          keywordLocation({
+            'allOf': [
+              {'type': 'integer'},
+              {'minimum': 10},
+            ],
+          }, 5),
+          '/allOf/1/minimum',
+        );
+      });
+
+      test('names the if branch that ran', () {
+        final source = {
+          'if': {'type': 'string'},
+          'then': {'maxLength': 1},
+          'else': {'maximum': 1},
+        };
+        expect(keywordLocation(source, 'ab'), '/then/maxLength');
+        expect(keywordLocation(source, 2), '/else/maximum');
+      });
+
+      test('includes items and stops at assertions on the node', () {
+        expect(
+          keywordLocation(
+            {
+              'items': {
+                'anyOf': [
+                  {'type': 'string'},
+                  {'type': 'boolean'},
+                ],
+              },
+            },
+            ['x', 1],
+          ),
+          '/items/anyOf',
+        );
+      });
+
+      test('escapes reference tokens without percent-encoding', () {
+        expect(
+          keywordLocation(
+            {
+              'properties': {
+                'a/b': {
+                  'properties': {
+                    '~ %': {'type': 'string'},
+                  },
+                },
+              },
+            },
+            {
+              'a/b': {'~ %': 1},
+            },
+          ),
+          '/properties/a~1b/properties/~0 %/type',
+        );
+      });
+
+      test('is empty when the root schema is false', () {
+        final error =
+            Ack.fromJsonSchema(false).safeParse(42).getError()
+                as JsonSchemaValidationError;
+        expect(error.keywordLocation, isEmpty);
+        expect(error.toMap(), containsPair('keywordLocation', ''));
+      });
+
+      test('appears in toMap', () {
+        final error =
+            Ack.fromJsonSchema({
+                  'properties': {
+                    'a': {r'$ref': r'#/$defs/s'},
+                  },
+                  r'$defs': {
+                    's': {'type': 'string'},
+                  },
+                }).safeParse({'a': 1}).getError()
+                as JsonSchemaValidationError;
+        expect(
+          error.toMap(),
+          allOf(
+            containsPair('keywordLocation', r'/properties/a/$ref/type'),
+            containsPair('pointer', r'#/$defs/s/type'),
+          ),
+        );
+      });
+    });
+
     test('recursive validation has no hidden Ack.lazy depth limit', () {
       final schema = Ack.fromJsonSchema({
         'type': 'object',

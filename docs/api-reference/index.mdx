@@ -74,6 +74,7 @@ examples.
 - `JsonSchemaValidationError`: A `SchemaValidationError` returned when a value
   fails an imported schema. `keyword` names the failing keyword, and
   `documentUri` and `pointer` locate it after `$ref` resolution.
+  `keywordLocation` is the evaluation path that reached it, including `$ref`.
 
 ## `AckSchema<Boundary, Runtime>` (Base Class)
 
