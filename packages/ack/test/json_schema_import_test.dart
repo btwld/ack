@@ -403,6 +403,88 @@ void main() {
       expect(missing.path, '#/a');
     });
 
+    group('error locations use URI fragment encoding', () {
+      for (final entry in {
+        '%': '%25',
+        '%2F': '%252F',
+        ' ': '%20',
+        '#': '%23',
+        '☃😀': '%E2%98%83%F0%9F%98%80',
+        '/': '~1',
+        '~': '~0',
+        '~1': '~01',
+      }.entries) {
+        test('runtime keyword location for "${entry.key}"', () {
+          final schema = Ack.fromJsonSchema({
+            'properties': {
+              entry.key: {'type': 'string'},
+            },
+          });
+          expect(schema.safeParse({entry.key: 'ok'}).isOk, isTrue);
+          for (final result in [
+            schema.safeParse({entry.key: 42}),
+            schema.safeEncode({entry.key: 42}),
+          ]) {
+            final error = result.getError() as JsonSchemaValidationError;
+            final pointer = '#/properties/${entry.value}/type';
+            expect(error.keyword, 'type');
+            expect(error.pointer, pointer);
+            expect(error.toMap(), containsPair('pointer', pointer));
+            expect(error.value, 42);
+          }
+        });
+
+        test('referenced false schema location for "${entry.key}"', () {
+          final documentUri = Uri.parse('https://example.test/defs.json');
+          final schema = Ack.fromJsonSchema(
+            {r'$ref': 'child.json#/properties/${entry.value}'},
+            baseUri: Uri.parse('https://example.test/root.json'),
+            documents: {
+              documentUri: {
+                r'$defs': {
+                  'resource': {
+                    r'$id': 'child.json',
+                    'properties': {entry.key: false},
+                  },
+                },
+              },
+            },
+          );
+          final error =
+              schema.safeParse(42).getError() as JsonSchemaValidationError;
+          expect(error.keyword, isEmpty);
+          expect(error.documentUri, documentUri);
+          expect(error.pointer, '#/\$defs/resource/properties/${entry.value}');
+          expect(error.path, '#');
+        });
+
+        test('import diagnostic location for "${entry.key}"', () {
+          expect(
+            () => Ack.fromJsonSchema({
+              'properties': {
+                entry.key: {'type': 'invalid'},
+              },
+            }),
+            throwsA(
+              isA<JsonSchemaImportException>().having(
+                (error) => error.diagnostics.single.pointer,
+                'pointer',
+                '#/properties/${entry.value}/type',
+              ),
+            ),
+          );
+        });
+      }
+
+      test('root false schema keeps the empty fragment', () {
+        final error =
+            Ack.fromJsonSchema(false).safeParse(42).getError()
+                as JsonSchemaValidationError;
+        expect(error.keyword, isEmpty);
+        expect(error.pointer, '#');
+      });
+    });
+
     test('recursive validation has no hidden Ack.lazy depth limit', () {
       final schema = Ack.fromJsonSchema({
         'type': 'object',

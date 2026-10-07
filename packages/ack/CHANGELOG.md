@@ -9,6 +9,11 @@
   `JsonSchemaValidationError`. Its `keyword`, `documentUri`, and `pointer`
   identify the failing keyword in the source schema after `$ref` resolution.
 
+### Fixed
+
+* Imported JSON Schema error locations now percent-encode URI fragments,
+  preserving property names containing percent signs, spaces, `#`, or Unicode.
+
 ## 1.7.0-beta.4
 
 ### Added

@@ -3,9 +3,14 @@ part of '../schemas/schema.dart';
 String _importPointerToken(String token) =>
     token.replaceAll('~', '~0').replaceAll('/', '~1');
 
-String _keywordPointer(_ImportedNode node, String keyword) => keyword.isEmpty
-    ? node.pointer
-    : '${node.pointer}/${_importPointerToken(keyword)}';
+String _keywordPointer(_ImportedNode node, String keyword) {
+  final pointer = keyword.isEmpty
+      ? node.pointer
+      : '${node.pointer}/${_importPointerToken(keyword)}';
+  // Internal pointers stay unencoded for lookup. Encode only the public
+  // fragment, including literal '%' and '#' characters (RFC 6901 section 6).
+  return '#${Uri.encodeFull(pointer.substring(1)).replaceAll('#', '%23')}';
+}
 
 final class _ImportedNode {
   _ImportedNode(this.source, this.documentUri, this.pointer, this.baseUri);
