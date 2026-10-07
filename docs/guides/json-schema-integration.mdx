@@ -102,20 +102,24 @@ treat `format` as an annotation unless configured to assert it.
 | Equality | `enum`, `const`, including nested JSON values and empty enums |
 | Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
 | Arrays | Single-schema `items`, `contains`, `minItems`, `maxItems`, `uniqueItems` |
-| Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search, no `u` flag) |
+| Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search in Unicode mode) |
 | Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`, `if`/`then`/`else`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
 | Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
 | Format | `date-time` (asserted for strings) |
 
-`pattern` compiles without ECMA-262's `u` flag, matching the default
-`RegExp`. Unicode property escapes (`\p{...}`, `\P{...}`) are therefore
-identity escapes rather than character classes, and patterns that only `u`
-mode rejects — an escaped hyphen outside a character class, for example —
-still import. This can differ from validators such as Ajv, which enables `u`
-by default: `pattern: "^.$"` rejects `"😀"` here but accepts it with `u`.
-Test patterns in both validators if their results must agree.
+`pattern` compiles with ECMA-262's `u` flag, as the JSON Schema Test Suite
+requires and Ajv does by default. `.` matches one code point, so
+`pattern: "^.$"` accepts `"😀"`, and `\p{...}` is a Unicode property escape.
+A pattern that is invalid in Unicode mode fails import with an
+`invalid_schema` diagnostic. For example, an escaped hyphen outside a character
+class (`^\d{3}\-\d{4}$`) is invalid; write the hyphen unescaped.
+
+`Ack.string().matches()` uses Dart's default `RegExp`, without `u`. A native
+pattern can match differently after export and import, and a native pattern
+that is invalid in Unicode mode exports a schema that this importer and Ajv
+reject.
 
 This is deliberately not a complete JSON Schema validator. Unsupported
 keywords include `multipleOf`, `patternProperties`, `prefixItems`,
@@ -241,8 +245,8 @@ client capabilities report the three meta-schema references. Test the specific
 catalog your application uses; successful validation of examples does not prove
 complete catalog conformance.
 
-The supported-subset fixture contains 675 upstream JSON Schema instance cases
-across 204 groups, including supplied remote documents. A separate optional
+The supported-subset fixture contains 678 upstream JSON Schema instance cases
+across 205 groups, including supplied remote documents. A separate optional
 date-time fixture adds 43 cases. The supported-subset tests check parse,
 encode, and re-imported exports without network access. Unsupported cases are
 not silently skipped within that fixture.

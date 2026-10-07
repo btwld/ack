@@ -483,7 +483,7 @@ final class _JsonSchemaCompiler {
           _fail(node, key, 'Expected a regular expression string.');
         }
         try {
-          RegExp(value);
+          RegExp(value, unicode: true);
         } on FormatException catch (e) {
           _fail(node, key, 'Invalid regular expression: ${e.message}');
         }

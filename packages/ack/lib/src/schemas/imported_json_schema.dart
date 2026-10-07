@@ -264,7 +264,9 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       return fail('format');
     }
     if (keywords['pattern'] case final String source) {
-      if (!RegExp(source).hasMatch(value)) return fail('pattern');
+      if (!RegExp(source, unicode: true).hasMatch(value)) {
+        return fail('pattern');
+      }
     }
   }
   if (value is Map) {
