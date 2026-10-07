@@ -101,10 +101,10 @@ treat `format` as an annotation unless configured to assert it.
 | Schemas and types | Boolean schemas, `type` (including lists and `null`) |
 | Equality | `enum`, `const`, including nested JSON values and empty enums |
 | Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
-| Arrays | Single-schema `items`, `minItems`, `maxItems`, `uniqueItems` |
+| Arrays | Single-schema `items`, `contains`, `minItems`, `maxItems`, `uniqueItems` |
 | Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search, no `u` flag) |
 | Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
-| Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`; sibling assertions are intersected |
+| Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`, `if`/`then`/`else`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
 | Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
 | Format | `date-time` (asserted for strings) |
@@ -119,8 +119,8 @@ Test patterns in both validators if their results must agree.
 
 This is deliberately not a complete JSON Schema validator. Unsupported
 keywords include `multipleOf`, `patternProperties`, `prefixItems`,
-`contains`, conditional/dependent/unevaluated keywords, dynamic references,
-and custom vocabulary declarations. Unknown extension keywords are also
+`minContains`, `maxContains`, dependent/unevaluated keywords, dynamic
+references, and custom vocabulary declarations. Unknown extension keywords are also
 reported. `date-time` is the only supported format label. References to the
 2020-12 meta-schema fail strict import.
 The meta-schema itself is not validated.
@@ -210,8 +210,8 @@ client capabilities report the three meta-schema references. Test the specific
 catalog your application uses; successful validation of examples does not prove
 complete catalog conformance.
 
-The supported-subset fixture contains 631 upstream JSON Schema instance cases
-across 186 groups, including supplied remote documents. A separate optional
+The supported-subset fixture contains 675 upstream JSON Schema instance cases
+across 204 groups, including supplied remote documents. A separate optional
 date-time fixture adds 43 cases. The supported-subset tests check parse,
 encode, and re-imported exports without network access. Unsupported cases are
 not silently skipped within that fixture.

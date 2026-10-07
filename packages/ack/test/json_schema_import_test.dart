@@ -502,6 +502,63 @@ void main() {
       },
     );
 
+    test('conditional reference cycles are nonproductive', () {
+      for (final keyword in ['if', 'then', 'else']) {
+        expect(
+          () => Ack.fromJsonSchema({
+            r'$defs': {
+              'a': {
+                'if': true,
+                keyword: {r'$ref': r'#/$defs/a'},
+              },
+            },
+            r'$ref': r'#/$defs/a',
+          }),
+          throwsA(
+            isA<JsonSchemaImportException>().having(
+              (e) => e.diagnostics.single.code,
+              'code',
+              'nonproductive_reference_cycle',
+            ),
+          ),
+          reason: keyword,
+        );
+      }
+    });
+
+    test('contains and then report their failure locations', () {
+      final schema = Ack.fromJsonSchema({
+        'properties': {
+          'tags': {
+            'contains': {'const': 'x'},
+          },
+          'pet': {
+            'if': {
+              'properties': {
+                'kind': {'const': 'dog'},
+              },
+            },
+            'then': {
+              'required': ['breed'],
+            },
+          },
+        },
+      });
+      final noMatch = schema.safeParse({
+        'tags': ['y'],
+      }).getError();
+      expect(noMatch.path, '#/tags');
+      expect(noMatch.message, contains('"contains" failed at'));
+      expect(noMatch.message, endsWith('#/properties/tags.'));
+
+      final thenError = schema.safeParse({
+        'pet': {'kind': 'dog'},
+      }).getError();
+      expect(thenError.path, '#/pet/breed');
+      expect(thenError.message, contains('"required" failed at'));
+      expect(thenError.message, endsWith('#/properties/pet/then.'));
+    });
+
     test(
       'reports meta-schema references as unsupported, not as any schema',
       () {
