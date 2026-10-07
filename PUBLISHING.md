@@ -9,11 +9,15 @@ environment. A release-preparation PR does not publish anything.
 
 Use SemVer for the combined public API: patch for compatible fixes, minor for
 new compatible features/packages, and major when any stable public API breaks.
+For 1.7.0, the imported-pattern Unicode behavior change is a deliberately
+accepted exception to this major-version policy.
+
 The next candidate is **1.7.0-beta.5**. It adds `contains`, conditionals,
 structured keyword errors, and correct URI-fragment error locations to strict
-JSON Schema import. It also deliberately changes imported regex behavior from
-beta.4 to ECMA-262 Unicode mode in this 1.7.0 prerelease: review identity escapes
-and patterns that count UTF-16 code units. Native `Ack.string().matches()` keeps
+JSON Schema import. Imported regex behavior changes from stable 1.6.2 and
+earlier 1.7.0 betas to ECMA-262 Unicode mode. Review imported patterns when
+upgrading from those versions, including identity escapes and expressions that
+count UTF-16 code units. Native `Ack.string().matches()` keeps
 its Dart regex contract. The beta.3 annotation and generator migration still
 applies to consumers coming from earlier versions; beta.5 adds no new generator
 migration. The API check compares all five packages against 1.6.2; generator

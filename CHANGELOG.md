@@ -9,8 +9,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   exposes the failing keyword and source location in `JsonSchemaValidationError`.
   Source-location URI fragments preserve percent signs, spaces, `#`, and Unicode.
 * **Breaking:** imported `pattern` expressions now use ECMA-262 Unicode mode.
-  `.` matches one code point and Unicode property escapes work. Review patterns
-  that count UTF-16 code units or use identity escapes; write `-` instead of
+  `.` matches one code point and Unicode property escapes work. When upgrading
+  from stable 1.6.2 or earlier 1.7.0 betas, review imported patterns that count
+  UTF-16 code units or use identity escapes; write `-` instead of
   `\-` outside character classes. Native `Ack.string().matches()` behavior is
   unchanged, so native patterns can behave differently after export and import.
 * Align all five publishable packages at 1.7.0-beta.5. Adapter and generator
