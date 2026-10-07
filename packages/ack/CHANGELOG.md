@@ -1,3 +1,15 @@
+## Unreleased
+
+### Changed
+
+* `safeParse` and `safeEncode` no longer rebuild the root error-context name on
+  every call. Ack computes it once per schema type, and skips it when the
+  caller passes `debugName`. A valid `Ack.string()` parse takes about 50 ns
+  instead of 360 ns on an AOT build.
+* Imported JSON Schema validation reuses the `pattern` regular expressions
+  compiled at import and allocates less per schema node. Error output does not
+  change.
+
 ## 1.7.0-beta.5
 
 ### Breaking
