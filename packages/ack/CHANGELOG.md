@@ -1,4 +1,4 @@
-## Unreleased
+## 1.7.0-beta.5
 
 ### Breaking
 
@@ -7,15 +7,23 @@
   and `\p{...}` is a Unicode property escape. Patterns that are invalid in
   Unicode mode now fail import with an `invalid_schema` diagnostic. For
   example, write `-` instead of `\-` outside a character class.
+  `Ack.string().matches()` retains native Dart regex behavior; a native pattern
+  can behave differently or fail import after export to JSON Schema. Review
+  imported patterns when upgrading from stable 1.6.2 or earlier 1.7.0 betas,
+  including expressions that count UTF-16 code units or use identity escapes.
 
 ### Added
 
 * Strict JSON Schema import now supports `contains` and `if`/`then`/`else`.
   `minContains` and `maxContains` remain unsupported, because Draft-7 export
   cannot represent them.
-* Values that fail an imported JSON Schema now return a
+* Failures from imported JSON Schema keyword evaluation now return a
   `JsonSchemaValidationError`. Its `keyword`, `documentUri`, and `pointer`
   identify the failing keyword in the source schema after `$ref` resolution.
+  Existing `SchemaValidationError` catches still work; consumers that require
+  an exact runtime type or serialized map shape should allow the subtype and
+  its three additional fields. Initial null-input and JSON-value checks retain
+  their existing Ack error types.
 
 ### Fixed
 
