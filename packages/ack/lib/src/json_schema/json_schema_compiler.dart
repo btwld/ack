@@ -28,7 +28,9 @@ final class _ImportedNode {
 
   Iterable<_ImportedNode> get inPlaceDependencies sync* {
     if (reference case final target?) yield target;
-    if (children['not'] case final target?) yield target;
+    for (final key in ['not', 'if', 'then', 'else']) {
+      if (children[key] case final target?) yield target;
+    }
     for (final key in ['anyOf', 'allOf', 'oneOf']) {
       yield* lists[key] ?? const <_ImportedNode>[];
     }
@@ -392,7 +394,11 @@ final class _JsonSchemaCompiler {
         'items',
         'additionalProperties',
         'not',
+        'contains',
         'propertyNames',
+        'if',
+        'then',
+        'else',
       }.contains(key)) {
         if ((key == 'items' && source.containsKey('prefixItems')) ||
             (key == 'additionalProperties' &&

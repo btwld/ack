@@ -212,6 +212,15 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
   if (node.children['not'] case final target?) {
     if (_checkImportedNode(target, value) == null) return fail('not');
   }
+  if (node.children['if'] case final condition?) {
+    final branch = _checkImportedNode(condition, value) == null
+        ? node.children['then']
+        : node.children['else'];
+    if (branch != null) {
+      final error = _checkImportedNode(branch, value);
+      if (error != null) return error;
+    }
+  }
   if (value is num) {
     for (final key in _JsonSchemaCompiler.bounds) {
       if (keywords[key] case final num limit) {
@@ -274,6 +283,11 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
             return fail('uniqueItems').at('$i');
           }
         }
+      }
+    }
+    if (node.children['contains'] case final target?) {
+      if (!value.any((item) => _checkImportedNode(target, item) == null)) {
+        return fail('contains');
       }
     }
     if (node.children['items'] case final target?) {

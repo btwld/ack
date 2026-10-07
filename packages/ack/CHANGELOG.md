@@ -1,3 +1,11 @@
+## Unreleased
+
+### Added
+
+* Strict JSON Schema import now supports `contains` and `if`/`then`/`else`.
+  `minContains` and `maxContains` remain unsupported, because Draft-7 export
+  cannot represent them.
+
 ## 1.7.0-beta.4
 
 ### Added

@@ -1400,6 +1400,193 @@
     ]
   },
   {
+    "description": "contains.json: contains keyword validation",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "minimum": 5
+      }
+    },
+    "tests": [
+      {
+        "description": "array with item matching schema (5) is valid",
+        "data": [
+          3,
+          4,
+          5
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with item matching schema (6) is valid",
+        "data": [
+          3,
+          4,
+          6
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with two items matching schema (5, 6) is valid",
+        "data": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "valid": true
+      },
+      {
+        "description": "array without items matching schema is invalid",
+        "data": [
+          2,
+          3,
+          4
+        ],
+        "valid": false
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "not array is valid",
+        "data": {},
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains keyword with const keyword",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "const": 5
+      }
+    },
+    "tests": [
+      {
+        "description": "array with item 5 is valid",
+        "data": [
+          3,
+          4,
+          5
+        ],
+        "valid": true
+      },
+      {
+        "description": "array with two items 5 is valid",
+        "data": [
+          3,
+          4,
+          5,
+          5
+        ],
+        "valid": true
+      },
+      {
+        "description": "array without item 5 is invalid",
+        "data": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains keyword with boolean schema true",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": true
+    },
+    "tests": [
+      {
+        "description": "any non-empty array is valid",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains keyword with boolean schema false",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": false
+    },
+    "tests": [
+      {
+        "description": "any non-empty array is invalid",
+        "data": [
+          "foo"
+        ],
+        "valid": false
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      },
+      {
+        "description": "non-arrays are valid",
+        "data": "contains does not apply to strings",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains with false if subschema",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "if": false,
+        "else": true
+      }
+    },
+    "tests": [
+      {
+        "description": "any non-empty array is valid",
+        "data": [
+          "foo"
+        ],
+        "valid": true
+      },
+      {
+        "description": "empty array is invalid",
+        "data": [],
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "contains.json: contains with null instance elements",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "contains": {
+        "type": "null"
+      }
+    },
+    "tests": [
+      {
+        "description": "allows null items",
+        "data": [
+          null
+        ],
+        "valid": true
+      }
+    ]
+  },
+  {
     "description": "default.json: invalid type for default",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2059,6 +2246,227 @@
         "description": "ignores non-numbers",
         "data": "x",
         "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: ignore if without then or else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "const": 0
+      }
+    },
+    "tests": [
+      {
+        "description": "valid when valid against lone if",
+        "data": 0,
+        "valid": true
+      },
+      {
+        "description": "valid when invalid against lone if",
+        "data": "hello",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: ignore then without if",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "then": {
+        "const": 0
+      }
+    },
+    "tests": [
+      {
+        "description": "valid when valid against lone then",
+        "data": 0,
+        "valid": true
+      },
+      {
+        "description": "valid when invalid against lone then",
+        "data": "hello",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: ignore else without if",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "else": {
+        "const": 0
+      }
+    },
+    "tests": [
+      {
+        "description": "valid when valid against lone else",
+        "data": 0,
+        "valid": true
+      },
+      {
+        "description": "valid when invalid against lone else",
+        "data": "hello",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if and then without else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": {
+        "exclusiveMaximum": 0
+      },
+      "then": {
+        "minimum": -10
+      }
+    },
+    "tests": [
+      {
+        "description": "valid through then",
+        "data": -1,
+        "valid": true
+      },
+      {
+        "description": "invalid through then",
+        "data": -100,
+        "valid": false
+      },
+      {
+        "description": "valid when if test fails",
+        "data": 3,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if with boolean schema true",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": true,
+      "then": {
+        "const": "then"
+      },
+      "else": {
+        "const": "else"
+      }
+    },
+    "tests": [
+      {
+        "description": "boolean schema true in if always chooses the then path (valid)",
+        "data": "then",
+        "valid": true
+      },
+      {
+        "description": "boolean schema true in if always chooses the then path (invalid)",
+        "data": "else",
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if with boolean schema false",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "if": false,
+      "then": {
+        "const": "then"
+      },
+      "else": {
+        "const": "else"
+      }
+    },
+    "tests": [
+      {
+        "description": "boolean schema false in if always chooses the else path (invalid)",
+        "data": "then",
+        "valid": false
+      },
+      {
+        "description": "boolean schema false in if always chooses the else path (valid)",
+        "data": "else",
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: if appears at the end when serialized (keyword processing sequence)",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "then": {
+        "const": "yes"
+      },
+      "else": {
+        "const": "other"
+      },
+      "if": {
+        "maxLength": 4
+      }
+    },
+    "tests": [
+      {
+        "description": "yes redirects to then and passes",
+        "data": "yes",
+        "valid": true
+      },
+      {
+        "description": "other redirects to else and passes",
+        "data": "other",
+        "valid": true
+      },
+      {
+        "description": "no redirects to then and fails",
+        "data": "no",
+        "valid": false
+      },
+      {
+        "description": "invalid redirects to else and fails",
+        "data": "invalid",
+        "valid": false
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: then: false fails when condition matches",
+    "schema": {
+      "if": {
+        "const": 1
+      },
+      "then": false
+    },
+    "tests": [
+      {
+        "description": "matches if → then=false → invalid",
+        "data": 1,
+        "valid": false
+      },
+      {
+        "description": "does not match if → then ignored → valid",
+        "data": 2,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "if-then-else.json: else: false fails when condition does not match",
+    "schema": {
+      "if": {
+        "const": 1
+      },
+      "else": false
+    },
+    "tests": [
+      {
+        "description": "matches if → else ignored → valid",
+        "data": 1,
+        "valid": true
+      },
+      {
+        "description": "does not match if → else executes → invalid",
+        "data": 2,
+        "valid": false
       }
     ]
   },
@@ -5044,6 +5452,75 @@
         "description": "a non-string is invalid",
         "data": 12,
         "valid": false
+      }
+    ]
+  },
+  {
+    "description": "ref.json: ref to if",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$ref": "http://example.com/ref/if",
+      "if": {
+        "$id": "http://example.com/ref/if",
+        "type": "integer"
+      }
+    },
+    "tests": [
+      {
+        "description": "a non-integer is invalid due to the $ref",
+        "data": "foo",
+        "valid": false
+      },
+      {
+        "description": "an integer is valid",
+        "data": 12,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "ref.json: ref to then",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$ref": "http://example.com/ref/then",
+      "then": {
+        "$id": "http://example.com/ref/then",
+        "type": "integer"
+      }
+    },
+    "tests": [
+      {
+        "description": "a non-integer is invalid due to the $ref",
+        "data": "foo",
+        "valid": false
+      },
+      {
+        "description": "an integer is valid",
+        "data": 12,
+        "valid": true
+      }
+    ]
+  },
+  {
+    "description": "ref.json: ref to else",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$ref": "http://example.com/ref/else",
+      "else": {
+        "$id": "http://example.com/ref/else",
+        "type": "integer"
+      }
+    },
+    "tests": [
+      {
+        "description": "a non-integer is invalid due to the $ref",
+        "data": "foo",
+        "valid": false
+      },
+      {
+        "description": "an integer is valid",
+        "data": 12,
+        "valid": true
       }
     ]
   },
