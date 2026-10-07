@@ -179,21 +179,10 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
   if (node.source == false) return fail('');
   final keywords = node.keywords;
   if (keywords['type'] case final type?) {
-    final types = type is List ? type : [type];
-    if (!types.any(
-      (t) => switch (t) {
-        'null' => value == null,
-        'string' => value is String,
-        'boolean' => value is bool,
-        'integer' => value is num && value.isFinite && value % 1 == 0,
-        'number' => value is num && value.isFinite,
-        'array' => value is List,
-        'object' => value is Map,
-        _ => false,
-      },
-    )) {
-      return fail('type');
-    }
+    final matches = type is List
+        ? type.any((t) => _isImportType(t, value))
+        : _isImportType(type, value);
+    if (!matches) return fail('type');
   }
   if (keywords.containsKey('const') && !deepEquals(value, keywords['const'])) {
     return fail('const');
@@ -245,28 +234,26 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       }
     }
   }
-  final (length, suffix) = switch (value) {
-    String() => (value.runes.length, 'Length'),
-    List() => (value.length, 'Items'),
-    Map() => (value.length, 'Properties'),
-    _ => (null, ''),
+  final (length, minKey, maxKey) = switch (value) {
+    String() => (value.runes.length, 'minLength', 'maxLength'),
+    List() => (value.length, 'minItems', 'maxItems'),
+    Map() => (value.length, 'minProperties', 'maxProperties'),
+    _ => (null, '', ''),
   };
   if (length != null) {
-    if (keywords['min$suffix'] case final num minimum) {
-      if (length < minimum) return fail('min$suffix');
+    if (keywords[minKey] case final num minimum) {
+      if (length < minimum) return fail(minKey);
     }
-    if (keywords['max$suffix'] case final num maximum) {
-      if (length > maximum) return fail('max$suffix');
+    if (keywords[maxKey] case final num maximum) {
+      if (length > maximum) return fail(maxKey);
     }
   }
   if (value is String) {
     if (keywords['format'] == 'date-time' && !isValidRfc3339DateTime(value)) {
       return fail('format');
     }
-    if (keywords['pattern'] case final String source) {
-      if (!RegExp(source, unicode: true).hasMatch(value)) {
-        return fail('pattern');
-      }
+    if (node.pattern case final pattern?) {
+      if (!pattern.hasMatch(value)) return fail('pattern');
     }
   }
   if (value is Map) {
@@ -312,3 +299,14 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
   }
   return null;
 }
+
+bool _isImportType(Object? type, Object? value) => switch (type) {
+  'null' => value == null,
+  'string' => value is String,
+  'boolean' => value is bool,
+  'integer' => value is num && value.isFinite && value % 1 == 0,
+  'number' => value is num && value.isFinite,
+  'array' => value is List,
+  'object' => value is Map,
+  _ => false,
+};

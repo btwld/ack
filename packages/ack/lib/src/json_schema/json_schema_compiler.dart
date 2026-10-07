@@ -24,6 +24,7 @@ final class _ImportedNode {
   final maps = <String, Map<String, _ImportedNode>>{};
   final lists = <String, List<_ImportedNode>>{};
   _ImportedNode? reference;
+  RegExp? pattern;
   Iterable<_ImportedNode> get dependencies sync* {
     if (reference case final target?) yield target;
     yield* children.values;
@@ -483,7 +484,7 @@ final class _JsonSchemaCompiler {
           _fail(node, key, 'Expected a regular expression string.');
         }
         try {
-          RegExp(value, unicode: true);
+          node.pattern = RegExp(value, unicode: true);
         } on FormatException catch (e) {
           _fail(node, key, 'Invalid regular expression: ${e.message}');
         }
