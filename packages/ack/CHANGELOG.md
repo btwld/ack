@@ -1,5 +1,13 @@
 ## Unreleased
 
+### Breaking
+
+* Strict JSON Schema import compiles `pattern` in ECMA-262 Unicode mode (the
+  `u` flag), as the JSON Schema Test Suite requires. `.` matches one code point
+  and `\p{...}` is a Unicode property escape. Patterns that are invalid in
+  Unicode mode now fail import with an `invalid_schema` diagnostic. For
+  example, write `-` instead of `\-` outside a character class.
+
 ### Added
 
 * Strict JSON Schema import now supports `contains` and `if`/`then`/`else`.

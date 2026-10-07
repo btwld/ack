@@ -212,6 +212,23 @@ void main() {
       expect(roundTrip.safeParse(badPropertyName).isFail, isTrue);
     });
 
+    test('pattern compiles in ECMA-262 Unicode mode', () {
+      final single = Ack.fromJsonSchema({'pattern': r'^.$'});
+      expect(single.safeParse('😀').isOk, isTrue);
+      expect(single.safeParse('😀😀').isFail, isTrue);
+
+      expect(
+        () => Ack.fromJsonSchema({'pattern': r'^\d{3}\-\d{4}$'}),
+        throwsA(
+          isA<JsonSchemaImportException>().having(
+            (e) => e.diagnostics.single.pointer,
+            'pointer',
+            '#/pattern',
+          ),
+        ),
+      );
+    });
+
     test('reference failures include source URI and keyword location', () {
       try {
         Ack.fromJsonSchema({
