@@ -25,6 +25,33 @@ void main() {
       }).describe('Represents a user in the system');
     }
 
+    test('validation errors name the failing keyword and location', () {
+      final schema = Ack.fromJsonSchema({
+        'properties': {
+          'tags': {
+            'items': {
+              'enum': ['x', 'y'],
+            },
+          },
+        },
+      });
+      final error = schema.safeParse({
+        'tags': ['x', 'z'],
+      }).getError();
+      expect(
+        error,
+        isA<JsonSchemaValidationError>()
+            .having((e) => e.keyword, 'keyword', 'enum')
+            .having(
+              (e) => e.documentUri,
+              'documentUri',
+              Uri.parse('ack-import:///root.json'),
+            )
+            .having((e) => e.pointer, 'pointer', '#/properties/tags/items/enum')
+            .having((e) => e.path, 'path', '#/tags/1'),
+      );
+    });
+
     test('toJsonSchema produces expected metadata', () {
       final schema = buildUserSchema();
       final jsonSchema = schema.toJsonSchema();

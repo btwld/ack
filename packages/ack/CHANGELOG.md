@@ -5,6 +5,14 @@
 * Strict JSON Schema import now supports `contains` and `if`/`then`/`else`.
   `minContains` and `maxContains` remain unsupported, because Draft-7 export
   cannot represent them.
+* Values that fail an imported JSON Schema now return a
+  `JsonSchemaValidationError`. Its `keyword`, `documentUri`, and `pointer`
+  identify the failing keyword in the source schema after `$ref` resolution.
+
+### Fixed
+
+* Imported JSON Schema error locations now percent-encode URI fragments,
+  preserving property names containing percent signs, spaces, `#`, or Unicode.
 
 ## 1.7.0-beta.4
 

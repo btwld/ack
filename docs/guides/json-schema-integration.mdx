@@ -176,6 +176,37 @@ it is not full meta-schema validation of unused definitions or unsupported
 vocabularies. Structural recursion is supported without adding an arbitrary
 validation-depth constraint.
 
+### Validation errors
+
+When a value fails a keyword of an imported schema, the error is a
+`JsonSchemaValidationError`. It names the failing keyword and locates it in the
+source schema, so callers do not parse the message:
+
+```dart
+final schema = Ack.fromJsonSchema({
+  'properties': {
+    'tags': {
+      'items': {'enum': ['x', 'y']},
+    },
+  },
+});
+final error = schema.safeParse({'tags': ['x', 'z']}).getError();
+if (error is JsonSchemaValidationError) {
+  print(error.keyword); // enum
+  print(error.documentUri); // ack-import:///root.json
+  print(error.pointer); // #/properties/tags/items/enum
+  print(error.path); // #/tags/1
+}
+```
+
+`documentUri` and `pointer` follow `$ref` into the referenced document, and
+use the same form as `JsonSchemaImportDiagnostic`. The pointer starts at the
+document root, also inside a subschema that declares its own `$id`. `keyword`
+is empty when the failing subschema is `false`. Only the first failure is
+reported. A root `null` that the source schema rejects returns the standard
+`SchemaConstraintsError` for a missing value, as other non-nullable Ack schemas
+do.
+
 ### Importing json_schema_builder models
 
 The existing bridge works in both directions:
