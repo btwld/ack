@@ -122,12 +122,10 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   @internal
   Map<String, Map<String, Object?>> exportDefinitions(String prefix) {
     final refs = <_ImportedNode, String>{};
-    final order = <_ImportedNode>[];
     void visit(_ImportedNode node) {
       if (refs.containsKey(node)) return;
-      final name = '$prefix${order.length}';
+      final name = '$prefix${refs.length}';
       refs[node] = '#/definitions/${_importPointerToken(name)}';
-      order.add(node);
       for (final child in node.dependencies) {
         visit(child);
       }
@@ -136,7 +134,8 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     visit(_root);
     String refOf(_ImportedNode node) => refs[node]!;
     return {
-      for (final (i, node) in order.indexed) '$prefix$i': node.render(refOf),
+      for (final (i, node) in refs.keys.indexed)
+        '$prefix$i': node.render(refOf),
     };
   }
 
