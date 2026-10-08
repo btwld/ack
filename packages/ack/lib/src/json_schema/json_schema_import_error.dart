@@ -27,8 +27,8 @@ final class JsonSchemaImportDiagnostic {
 /// A value failed a keyword of a schema imported by `Ack.fromJsonSchema`.
 ///
 /// [documentUri] and [pointer] locate the failing keyword after `$ref`
-/// resolution, as they do on [JsonSchemaImportDiagnostic]. [path] is the
-/// instance location.
+/// resolution, as they do on [JsonSchemaImportDiagnostic]. [keywordLocation]
+/// is the evaluation path that reached it. [path] is the instance location.
 @immutable
 final class JsonSchemaValidationError extends SchemaValidationError {
   JsonSchemaValidationError._({
@@ -37,6 +37,7 @@ final class JsonSchemaValidationError extends SchemaValidationError {
     required this.keyword,
     required this.documentUri,
     required this.pointer,
+    required this.keywordLocation,
   });
 
   /// The failing keyword, or empty when the failing subschema is `false`.
@@ -46,12 +47,20 @@ final class JsonSchemaValidationError extends SchemaValidationError {
   /// JSON Pointer URI fragment identifying the failing keyword.
   final String pointer;
 
+  /// JSON Pointer from the root schema to the failing keyword along the
+  /// evaluation path, including `$ref` (Draft 2020-12 core section 12.3.1).
+  ///
+  /// It is a plain pointer without `#` or percent-encoding, and is empty when
+  /// the root schema is `false`.
+  final String keywordLocation;
+
   @override
   Map<String, Object?> toMap() => {
     ...super.toMap(),
     'keyword': keyword,
     'documentUri': '$documentUri',
     'pointer': pointer,
+    'keywordLocation': keywordLocation,
   };
 }
 
