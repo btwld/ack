@@ -1,3 +1,21 @@
+## 1.7.0-beta.7
+
+### Added
+
+* `Ack.fromJsonSchema()` now compiles and enforces `multipleOf` (`num > 0 &&
+  isFinite`) with exact decimal division, reporting `keyword: 'multipleOf'` and
+  `keywordLocation` on failures and enabling round-trips from
+  `Ack.integer().multipleOf(...)` and `Ack.double().multipleOf(...)`.
+* `Ack.fromJsonSchema()` now supports Ack's exported string formats
+  (`date-time`, `date`, `email`, `uuid`, `uri`, `ipv4`, `ipv6`), standard
+  numeric format bounds (`int32`, `int64`, `uint32`, `uint64`, `float`,
+  `double`), and `x-*` vendor extension annotations (including `x-transformed`
+  from `AckSchema.transform(...)`), while continuing to report
+  `unsupported_keyword` for unknown formats and non-`x-*` extension keywords.
+* `Ack.fromJsonSchema()` now accepts the Draft-07 `$schema` URI
+  (`http(s)://json-schema.org/draft-07/schema#`) and removes the unused
+  `prefixItems` index entry.
+
 ## 1.7.0-beta.6
 
 ### Added
