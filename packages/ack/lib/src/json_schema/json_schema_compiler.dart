@@ -550,3 +550,34 @@ bool _isImportJson(Object? value, Set<Object> active) {
   active.remove(value);
   return valid;
 }
+
+final _notImportJson = Object();
+
+/// Returns [_notImportJson] where [_isImportJson] returns false.
+Object? _copyImportJson(Object? value, Set<Object> active) {
+  if (value == null || value is String || value is bool) return value;
+  if (value is num) return value.isFinite ? value : _notImportJson;
+  if (value is! List && value is! Map) return _notImportJson;
+  if (!active.add(value)) return _notImportJson;
+  final Object copy;
+  if (value is List) {
+    final items = List<Object?>.filled(value.length, null);
+    for (var i = 0; i < items.length; i++) {
+      final item = _copyImportJson(value[i], active);
+      if (identical(item, _notImportJson)) return item;
+      items[i] = item;
+    }
+    copy = UnmodifiableListView(items);
+  } else {
+    final entries = <String, Object?>{};
+    for (final MapEntry(:key, value: item) in (value as Map).entries) {
+      if (key is! String) return _notImportJson;
+      final itemCopy = _copyImportJson(item, active);
+      if (identical(itemCopy, _notImportJson)) return itemCopy;
+      entries[key] = itemCopy;
+    }
+    copy = UnmodifiableMapView(entries);
+  }
+  active.remove(value);
+  return copy;
+}

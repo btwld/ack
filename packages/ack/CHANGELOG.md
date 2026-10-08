@@ -9,6 +9,10 @@
 * Imported JSON Schema validation reuses the `pattern` regular expressions
   compiled at import and allocates less per schema node. Error output does not
   change.
+* Parsing with an imported JSON Schema checks that the input is JSON and copies
+  it in one walk, then validates the copy. A valid value is walked twice
+  instead of three times. The result is still a detached, recursively
+  unmodifiable value.
 
 ## 1.7.0-beta.5
 
