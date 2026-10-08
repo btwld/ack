@@ -61,7 +61,7 @@ final class _ImportedNode {
   num? minProperties;
   num? maxProperties;
   bool uniqueItems = false;
-  bool dateTime = false;
+  String? format;
 
   List<_ImportedNode> get dependencies => [
     ?reference,
@@ -165,6 +165,21 @@ final class _JsonSchemaCompiler {
     'maximum',
     'exclusiveMinimum',
     'exclusiveMaximum',
+  };
+  static const supportedFormats = {
+    'date-time',
+    'date',
+    'email',
+    'uuid',
+    'uri',
+    'ipv4',
+    'ipv6',
+    'int32',
+    'int64',
+    'uint32',
+    'uint64',
+    'float',
+    'double',
   };
 
   _ImportedNode addDocument(Object document, Uri uri) {
@@ -593,12 +608,13 @@ final class _JsonSchemaCompiler {
         if (value is! String) {
           _fail(node, key, 'Expected a format string.');
         }
-        if (value != 'date-time') {
+        if (!supportedFormats.contains(value)) {
           _unsupported(node, key, 'Format "$value" is not supported.');
           continue;
         }
+        node.keywords[key] = node.format = value;
+      } else if (key.startsWith('x-')) {
         node.keywords[key] = value;
-        node.dateTime = true;
       } else {
         _unsupported(node, key, 'Keyword "$key" is not supported.');
       }

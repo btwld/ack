@@ -975,7 +975,7 @@ void main() {
     test('strict mode reports unsupported keywords at escaped locations', () {
       final document = {
         'properties': {
-          'a/b': {'format': 'email', 'x-custom': true},
+          'a/b': {'format': 'hostname', 'customKeyword': true},
         },
       };
       try {
@@ -986,7 +986,7 @@ void main() {
           error.diagnostics.map((diagnostic) => diagnostic.pointer),
           containsAll([
             '#/properties/a~1b/format',
-            '#/properties/a~1b/x-custom',
+            '#/properties/a~1b/customKeyword',
           ]),
         );
       }
@@ -1059,6 +1059,143 @@ void main() {
         expect(native.safeParse(computed).isOk, isTrue);
         expect(imported.safeParse(computed).isFail, isTrue);
         expect(imported.safeParse(0.3).isOk, isTrue);
+      },
+    );
+
+    test(
+      'accepts x-transformed and x-* vendor extensions and round-trips codecs',
+      () {
+        final dateJson = Ack.date().toJsonSchema();
+        expect(dateJson['format'], 'date');
+        expect(dateJson['x-transformed'], isTrue);
+        final importedDate = Ack.fromJsonSchema(dateJson);
+        expect(importedDate.safeParse('2024-02-29').isOk, isTrue);
+        expect(importedDate.safeParse('2024-02-30').isFail, isTrue);
+        expect(importedDate.toJsonSchema(), dateJson);
+
+        final dateTimeJson = Ack.datetime().toJsonSchema();
+        expect(dateTimeJson['format'], 'date-time');
+        expect(dateTimeJson['x-transformed'], isTrue);
+        final importedDateTime = Ack.fromJsonSchema(dateTimeJson);
+        expect(importedDateTime.safeParse('2024-02-29T12:00:00Z').isOk, isTrue);
+        expect(
+          importedDateTime.safeParse('2024-02-30T12:00:00Z').isFail,
+          isTrue,
+        );
+
+        final uriJson = Ack.uri().toJsonSchema();
+        expect(uriJson['format'], 'uri');
+        expect(uriJson['x-transformed'], isTrue);
+        final importedUri = Ack.fromJsonSchema(uriJson);
+        expect(importedUri.safeParse('https://example.com/path').isOk, isTrue);
+        expect(importedUri.safeParse('not a uri').isFail, isTrue);
+
+        final customVendor = Ack.fromJsonSchema({
+          'type': 'string',
+          'x-vendor-meta': {'tier': 'gold'},
+        });
+        expect(customVendor.safeParse('ok').isOk, isTrue);
+        expect(customVendor.toJsonSchema()['x-vendor-meta'], {'tier': 'gold'});
+      },
+    );
+
+    test(
+      'validates built-in string and numeric formats and round-trips native string formats',
+      () {
+        final emailSchema = Ack.fromJsonSchema(
+          Ack.string().email().toJsonSchema(),
+        );
+        expect(emailSchema.safeParse('ada@example.com').isOk, isTrue);
+        final emailErr = emailSchema.safeParse('not-an-email').getError();
+        expect(
+          emailErr,
+          isA<JsonSchemaValidationError>()
+              .having((e) => e.keyword, 'keyword', 'format')
+              .having((e) => e.keywordLocation, 'keywordLocation', '/format'),
+        );
+
+        final uuidSchema = Ack.fromJsonSchema(
+          Ack.string().uuid().toJsonSchema(),
+        );
+        expect(
+          uuidSchema.safeParse('550e8400-e29b-41d4-a716-446655440000').isOk,
+          isTrue,
+        );
+        expect(uuidSchema.safeParse('not-a-uuid').isFail, isTrue);
+
+        final ipv4Schema = Ack.fromJsonSchema(
+          Ack.string().ipv4().toJsonSchema(),
+        );
+        expect(ipv4Schema.safeParse('192.168.1.1').isOk, isTrue);
+        expect(ipv4Schema.safeParse('256.0.0.1').isFail, isTrue);
+        expect(ipv4Schema.safeParse('01.2.3.4').isFail, isTrue);
+
+        final ipv6Schema = Ack.fromJsonSchema(
+          Ack.string().ipv6().toJsonSchema(),
+        );
+        expect(ipv6Schema.safeParse('2001:db8::1').isOk, isTrue);
+        expect(ipv6Schema.safeParse('::1').isOk, isTrue);
+        expect(ipv6Schema.safeParse('2001:db8::1::2').isFail, isTrue);
+
+        final int32Schema = Ack.fromJsonSchema({
+          'type': 'integer',
+          'format': 'int32',
+        });
+        expect(int32Schema.safeParse(2147483647).isOk, isTrue);
+        expect(int32Schema.safeParse(-2147483648).isOk, isTrue);
+        expect(int32Schema.safeParse(2147483648).isFail, isTrue);
+
+        final uint32Schema = Ack.fromJsonSchema({
+          'type': 'integer',
+          'format': 'uint32',
+        });
+        expect(uint32Schema.safeParse(0).isOk, isTrue);
+        expect(uint32Schema.safeParse(4294967295).isOk, isTrue);
+        expect(uint32Schema.safeParse(-1).isFail, isTrue);
+        expect(uint32Schema.safeParse(4294967296).isFail, isTrue);
+
+        final int64Schema = Ack.fromJsonSchema({
+          'type': 'integer',
+          'format': 'int64',
+        });
+        expect(int64Schema.safeParse(9007199254740991).isOk, isTrue);
+
+        final uint64Schema = Ack.fromJsonSchema({
+          'type': 'integer',
+          'format': 'uint64',
+        });
+        expect(uint64Schema.safeParse(0).isOk, isTrue);
+        expect(uint64Schema.safeParse(-1).isFail, isTrue);
+
+        final floatSchema = Ack.fromJsonSchema({
+          'type': 'number',
+          'format': 'float',
+        });
+        expect(floatSchema.safeParse(1.5).isOk, isTrue);
+        expect(floatSchema.safeParse(1e39).isFail, isTrue);
+
+        final doubleSchema = Ack.fromJsonSchema({
+          'type': 'number',
+          'format': 'double',
+        });
+        expect(doubleSchema.safeParse(1e300).isOk, isTrue);
+
+        // Unknown formats still fail closed with unsupported_keyword.
+        for (final unsupportedFormat in ['time', 'duration', 'hostname']) {
+          expect(
+            () => Ack.fromJsonSchema({
+              'type': 'string',
+              'format': unsupportedFormat,
+            }),
+            throwsA(
+              isA<JsonSchemaImportException>().having(
+                (e) => e.diagnostics.single.code,
+                'code',
+                'unsupported_keyword',
+              ),
+            ),
+          );
+        }
       },
     );
 

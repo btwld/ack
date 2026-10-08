@@ -91,7 +91,7 @@ void main() {
   });
 
   test('unsupported assertions expose immutable diagnostics', () {
-    final document = {'type': 'string', 'format': 'email'};
+    final document = {'type': 'string', 'format': 'hostname'};
     late JsonSchemaImportException failure;
     try {
       Ack.fromJsonSchema(document);

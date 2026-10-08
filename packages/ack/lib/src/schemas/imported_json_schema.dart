@@ -269,6 +269,10 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
           when !_isJsonMultipleOf(value, divisor)) {
         return fail('multipleOf');
       }
+      if (node.format case final format?
+          when !_isValidImportedNumericFormat(format, value)) {
+        return fail('format');
+      }
     case String():
       // Counting code points allocates, so only do it when a bound exists.
       if (node.minLength != null || node.maxLength != null) {
@@ -281,7 +285,8 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
         );
         if (keyword != null) return fail(keyword);
       }
-      if (node.dateTime && !isValidRfc3339DateTime(value)) {
+      if (node.format case final format?
+          when !_isValidImportedStringFormat(format, value)) {
         return fail('format');
       }
       if (node.pattern case final pattern? when !pattern.hasMatch(value)) {
@@ -418,4 +423,150 @@ bool _isJsonMultipleOf(num value, num divisor) {
   final scale = fracDigits - exponent;
   if (scale >= 0) return (coefficient: unscaled, scale: scale);
   return (coefficient: unscaled * BigInt.from(10).pow(-scale), scale: 0);
+}
+
+final _importedEmailRegex = RegExp(
+  r'^(?!\.)(?!.*\.\.)([A-Za-z0-9_'
+  r"'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$",
+);
+
+final _importedUuidRegex = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+final _importedFullDateRegex = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
+
+final _importedBigIntInt64Min = BigInt.parse('-9223372036854775808');
+final _importedBigIntInt64Max = BigInt.parse('9223372036854775807');
+final _importedBigIntUint64Max = BigInt.parse('18446744073709551615');
+
+bool _isValidImportedNumericFormat(String format, num value) {
+  switch (format) {
+    case 'int32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= -2147483648 && value <= 2147483647;
+    case 'uint32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= 0 && value <= 4294967295;
+    case 'int64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= _importedBigIntInt64Min &&
+          intVal <= _importedBigIntInt64Max;
+    case 'uint64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= BigInt.zero && intVal <= _importedBigIntUint64Max;
+    case 'float':
+      if (!value.isFinite) return false;
+      final d = value.toDouble();
+      return d.abs() <= 3.4028234663852886e+38;
+    case 'double':
+      return value.isFinite;
+    default:
+      // String formats do not constrain numeric instances.
+      return true;
+  }
+}
+
+BigInt? _integralBigInt(num value) {
+  if (!value.isFinite || value % 1 != 0) return null;
+  if (value is int) return BigInt.from(value);
+  final dec = _decimalParts(value);
+  if (dec == null) return null;
+  if (dec.$2 == 0) return dec.$1;
+  final divisor = BigInt.from(10).pow(dec.$2);
+  if (dec.$1 % divisor != BigInt.zero) return null;
+  return dec.$1 ~/ divisor;
+}
+
+bool _isValidImportedStringFormat(String format, String value) =>
+    switch (format) {
+      'date-time' => isValidRfc3339DateTime(value),
+      'date' => _isValidRfc3339FullDate(value),
+      'email' => _importedEmailRegex.hasMatch(value),
+      'uuid' => _importedUuidRegex.hasMatch(value),
+      'uri' => _isValidImportedUri(value),
+      'ipv4' => _isValidImportedIpv4(value),
+      'ipv6' => _isValidImportedIpv6(value),
+      // Numeric formats do not constrain string instances.
+      _ => true,
+    };
+
+bool _isValidRfc3339FullDate(String value) {
+  final match = _importedFullDateRegex.firstMatch(value);
+  if (match == null) return false;
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  if (month < 1 || month > 12 || day < 1) return false;
+  final maxDay = switch (month) {
+    2 => (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28,
+    4 || 6 || 9 || 11 => 30,
+    _ => 31,
+  };
+  return day <= maxDay;
+}
+
+bool _isValidImportedUri(String value) {
+  if (value.isEmpty) return false;
+  final uri = Uri.tryParse(value);
+  return uri != null && uri.hasScheme && uri.host.isNotEmpty;
+}
+
+bool _isValidImportedIpv4(String value) {
+  final parts = value.split('.');
+  if (parts.length != 4) return false;
+  for (final part in parts) {
+    if (part.isEmpty || part.length > 3) return false;
+    if (part.length > 1 && part.startsWith('0')) return false;
+    final numValue = int.tryParse(part);
+    if (numValue == null || numValue < 0 || numValue > 255) return false;
+  }
+  return true;
+}
+
+bool _isValidImportedIpv6(String value) {
+  if (value.isEmpty || value.contains('%')) return false;
+  final doubleColonCount = '::'.allMatches(value).length;
+  if (doubleColonCount > 1) return false;
+
+  var work = value;
+  var ipv4TailGroups = 0;
+  if (work.contains('.')) {
+    final lastColon = work.lastIndexOf(':');
+    if (lastColon == -1) return false;
+    final ipv4Part = work.substring(lastColon + 1);
+    if (!_isValidImportedIpv4(ipv4Part)) return false;
+    ipv4TailGroups = 2;
+    work = work.substring(0, lastColon);
+    if (work.endsWith(':')) {
+      work = '${work}0';
+    } else {
+      work = '$work:0';
+    }
+  }
+
+  final hasCompression = doubleColonCount == 1;
+  List<String> groups;
+  if (hasCompression) {
+    final sides = work.split('::');
+    final left = sides[0].isEmpty ? const <String>[] : sides[0].split(':');
+    final right = sides[1].isEmpty ? const <String>[] : sides[1].split(':');
+    if (ipv4TailGroups > 0 && right.isNotEmpty) {
+      right.removeLast();
+    }
+    final totalGroups = left.length + right.length + ipv4TailGroups;
+    if (totalGroups >= 8) return false;
+    groups = [...left, ...right];
+  } else {
+    groups = work.split(':');
+    if (ipv4TailGroups > 0 && groups.isNotEmpty) {
+      groups.removeLast();
+    }
+    if (groups.length + ipv4TailGroups != 8) return false;
+  }
+
+  final hexGroup = RegExp(r'^[0-9a-fA-F]{1,4}$');
+  return groups.every(hexGroup.hasMatch);
 }
