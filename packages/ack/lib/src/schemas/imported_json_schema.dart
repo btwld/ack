@@ -265,6 +265,10 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       if (node.exclusiveMaximum case final limit? when value >= limit) {
         return fail('exclusiveMaximum');
       }
+      if (node.multipleOf case final divisor?
+          when !_isJsonMultipleOf(value, divisor)) {
+        return fail('multipleOf');
+      }
     case String():
       // Counting code points allocates, so only do it when a bound exists.
       if (node.minLength != null || node.maxLength != null) {
@@ -379,3 +383,48 @@ bool _isImportType(Object? type, Object? value) => switch (type) {
   'object' => value is Map,
   _ => false,
 };
+
+bool _isJsonMultipleOf(num value, num divisor) {
+  if (!value.isFinite || !divisor.isFinite || divisor <= 0) return false;
+  if (value is int && divisor is int) return value % divisor == 0;
+  final valueDec = _decimalParts(value);
+  final divisorDec = _decimalParts(divisor);
+  if (valueDec == null || divisorDec == null || divisorDec.$1 == BigInt.zero) {
+    return false;
+  }
+  final scaleDiff = valueDec.$2 - divisorDec.$2;
+  final scaledValue = scaleDiff < 0
+      ? valueDec.$1 * BigInt.from(10).pow(-scaleDiff)
+      : valueDec.$1;
+  final scaledDivisor = scaleDiff > 0
+      ? divisorDec.$1 * BigInt.from(10).pow(scaleDiff)
+      : divisorDec.$1;
+  return scaledValue % scaledDivisor == BigInt.zero;
+}
+
+(BigInt, int)? _decimalParts(num number) {
+  if (number is int) return (BigInt.from(number), 0);
+  var raw = number.toString().toLowerCase();
+  var exponent = 0;
+  final expIndex = raw.indexOf('e');
+  if (expIndex != -1) {
+    final parsedExp = int.tryParse(raw.substring(expIndex + 1));
+    if (parsedExp == null) return null;
+    exponent = parsedExp;
+    raw = raw.substring(0, expIndex);
+  }
+  final dotIndex = raw.indexOf('.');
+  var digits = raw;
+  var fracDigits = 0;
+  if (dotIndex != -1) {
+    fracDigits = raw.length - dotIndex - 1;
+    digits = raw.substring(0, dotIndex) + raw.substring(dotIndex + 1);
+  }
+  final unscaled = BigInt.tryParse(digits);
+  if (unscaled == null) return null;
+  final scale = fracDigits - exponent;
+  if (scale >= 0) {
+    return (unscaled, scale);
+  }
+  return (unscaled * BigInt.from(10).pow(-scale), 0);
+}
