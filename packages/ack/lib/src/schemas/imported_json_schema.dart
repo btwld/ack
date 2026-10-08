@@ -472,12 +472,11 @@ bool _isValidImportedNumericFormat(String format, num value) {
 BigInt? _integralBigInt(num value) {
   if (!value.isFinite || value % 1 != 0) return null;
   if (value is int) return BigInt.from(value);
-  final dec = _decimalParts(value);
-  if (dec == null) return null;
-  if (dec.$2 == 0) return dec.$1;
-  final divisor = BigInt.from(10).pow(dec.$2);
-  if (dec.$1 % divisor != BigInt.zero) return null;
-  return dec.$1 ~/ divisor;
+  final (:coefficient, :scale) = _decimalParts(value);
+  if (scale == 0) return coefficient;
+  final divisor = BigInt.from(10).pow(scale);
+  if (coefficient % divisor != BigInt.zero) return null;
+  return coefficient ~/ divisor;
 }
 
 bool _isValidImportedStringFormat(String format, String value) =>
