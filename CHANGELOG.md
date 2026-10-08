@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.7.0-beta.6
+
+* `JsonSchemaValidationError` reports `keywordLocation`, the evaluation path
+  from the root schema to the failing keyword, including each `$ref` on the
+  way. `toMap()` includes it.
+* An imported `uniqueItems` failure reports the array as its path instead of
+  the later duplicate item, matching native `Ack.list(...).unique()`.
+* `safeParse` and `safeEncode` no longer rebuild the root error-context name on
+  every call, and imported JSON Schema validation reuses compiled patterns and
+  walks valid input twice instead of three times. Error output is unchanged.
+* Align all five publishable packages at 1.7.0-beta.6. Adapter and generator
+  APIs and compatible dependency minimums are unchanged. The beta.3 annotation
+  and generator migrations and the beta.5 imported-pattern change still apply
+  when upgrading from earlier versions.
+
 ## 1.7.0-beta.5
 
 * Strict JSON Schema import supports `contains` and `if`/`then`/`else`, and
