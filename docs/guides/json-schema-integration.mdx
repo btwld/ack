@@ -8,16 +8,16 @@ Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's sh
 
 Use strict `Ack.fromJsonSchema()` to turn a decoded JSON Schema document
 (a map or boolean, not a JSON string) into an
-`AckSchema<Object, Object>`. The input dialect is draft 2020-12, including
-when `$schema` is absent. Other explicitly declared dialects are rejected.
+`AckSchema<Object, Object>`. The input dialect is draft 2020-12 or Draft-7
+(`http(s)://json-schema.org/draft-07/schema(#)`), including when `$schema` is
+absent. Other explicitly declared dialects are rejected.
 
 Only the declared `$schema` string is checked — a document is never matched
-against a dialect by shape. Replacing an older draft's `$schema` string does
-not convert its semantics. Tuple-form `items` (a Draft-7 array) is rejected;
-Draft-7 ignores `$ref` siblings that this importer applies. Draft-4 boolean
-`exclusiveMinimum` and `exclusiveMaximum` values are rejected, and Draft-4
-`integer` rejects `1.0` where this importer accepts it. Convert older schemas
-to draft 2020-12 and check their validation results before importing them.
+against a dialect by shape. Draft-7 documents are evaluated under the same
+supported subset: tuple-form `items` (a Draft-7 array) is rejected, and `$ref`
+siblings are applied as in draft 2020-12. Draft-4 boolean `exclusiveMinimum`
+and `exclusiveMaximum` values are rejected, and Draft-4 `integer` rejects `1.0`
+where this importer accepts it.
 
 ```dart
 import 'package:ack/ack.dart';

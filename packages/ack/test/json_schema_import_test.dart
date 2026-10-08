@@ -250,12 +250,33 @@ void main() {
         {r'$ref': '#/%FF'},
         {r'$schema': null},
         {r'$anchor': null},
-        {r'$schema': 'http://json-schema.org/draft-07/schema#'},
+        {r'$schema': 'http://json-schema.org/draft-04/schema#'},
       ]) {
         expect(
           () => Ack.fromJsonSchema(document),
           throwsA(isA<JsonSchemaImportException>()),
         );
+      }
+
+      for (final draft07Uri in [
+        'http://json-schema.org/draft-07/schema#',
+        'http://json-schema.org/draft-07/schema',
+        'https://json-schema.org/draft-07/schema#',
+        'https://json-schema.org/draft-07/schema',
+      ]) {
+        final draft07Schema = Ack.fromJsonSchema({
+          r'$schema': draft07Uri,
+          'definitions': {
+            'item': {'type': 'string', 'minLength': 2},
+          },
+          'type': 'object',
+          'properties': {
+            'name': {r'$ref': '#/definitions/item'},
+          },
+          'required': ['name'],
+        });
+        expect(draft07Schema.safeParse({'name': 'Ada'}).isOk, isTrue);
+        expect(draft07Schema.safeParse({'name': 'A'}).isFail, isTrue);
       }
     });
 
@@ -1207,6 +1228,31 @@ void main() {
         }
       },
     );
+
+    test('keeps prefixItems unsupported without indexing as a schema list', () {
+      for (final document in [
+        {
+          'type': 'array',
+          'prefixItems': [
+            {'type': 'string'},
+          ],
+        },
+        {'type': 'array', 'prefixItems': 'not-a-list'},
+      ]) {
+        expect(
+          () => Ack.fromJsonSchema(document),
+          throwsA(
+            isA<JsonSchemaImportException>().having(
+              (e) => e.diagnostics.single,
+              'diagnostic',
+              isA<JsonSchemaImportDiagnostic>()
+                  .having((d) => d.code, 'code', 'unsupported_keyword')
+                  .having((d) => d.keyword, 'keyword', 'prefixItems'),
+            ),
+          ),
+        );
+      }
+    });
 
     test('rejects malformed supported keywords', () {
       for (final document in [
