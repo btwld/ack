@@ -1020,6 +1020,9 @@ void main() {
         expect(doubleRoundTrip.safeParse(0.03).isOk, isTrue);
         expect(doubleRoundTrip.safeParse(12.34).isOk, isTrue);
         expect(doubleRoundTrip.safeParse(0.035).isFail, isTrue);
+        expect(doubleRoundTrip.safeParse(1e308).isOk, isTrue);
+        expect(doubleRoundTrip.safeParse(-0.0).isOk, isTrue);
+        expect(doubleRoundTrip.safeParse(1e-9).isFail, isTrue);
 
         final refSchema = Ack.fromJsonSchema({
           r'$defs': {
@@ -1042,6 +1045,20 @@ void main() {
                 r'/properties/amount/$ref/multipleOf',
               ),
         );
+      },
+    );
+
+    test(
+      'imported multipleOf divides exactly where native tolerates rounding',
+      () {
+        final native = Ack.double().multipleOf(0.1);
+        final imported = Ack.fromJsonSchema(native.toJsonSchema());
+        final computed = 0.1 + 0.2;
+
+        expect(computed, 0.30000000000000004);
+        expect(native.safeParse(computed).isOk, isTrue);
+        expect(imported.safeParse(computed).isFail, isTrue);
+        expect(imported.safeParse(0.3).isOk, isTrue);
       },
     );
 

@@ -572,7 +572,7 @@ final class _JsonSchemaCompiler {
             node.exclusiveMaximum = value;
         }
       } else if (key == 'multipleOf') {
-        if (value is! num || !value.isFinite || value <= 0) {
+        if (value is! num || value <= 0) {
           _fail(node, key, 'Expected a positive number.');
         }
         node.keywords[key] = node.multipleOf = value;

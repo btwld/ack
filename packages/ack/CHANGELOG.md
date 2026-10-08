@@ -1,5 +1,15 @@
 ## Unreleased
 
+### Added
+
+* Strict JSON Schema import supports `multipleOf`. Division is exact on the
+  decimal digits of the JSON number, so `1e308` is a multiple of `0.5` and
+  `0.30000000000000004` is not a multiple of `0.1`. Native
+  `Ack.double().multipleOf()` keeps its floating-point tolerance, so a value
+  computed in Dart can pass natively and fail after export and import.
+  A `multipleOf` that is not a positive number fails import with an
+  `invalid_schema` diagnostic.
+
 ### Changed
 
 * Imported JSON Schema validation reads typed node fields instead of keyword

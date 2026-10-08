@@ -384,33 +384,27 @@ bool _isImportType(Object? type, Object? value) => switch (type) {
   _ => false,
 };
 
+/// Exact decimal division, as the JSON Schema Test Suite requires. Both
+/// numbers are finite and [divisor] is positive: the compiler and the input
+/// walk reject anything else before this runs.
 bool _isJsonMultipleOf(num value, num divisor) {
-  if (!value.isFinite || !divisor.isFinite || divisor <= 0) return false;
   if (value is int && divisor is int) return value % divisor == 0;
-  final valueDec = _decimalParts(value);
-  final divisorDec = _decimalParts(divisor);
-  if (valueDec == null || divisorDec == null || divisorDec.$1 == BigInt.zero) {
-    return false;
-  }
-  final scaleDiff = valueDec.$2 - divisorDec.$2;
-  final scaledValue = scaleDiff < 0
-      ? valueDec.$1 * BigInt.from(10).pow(-scaleDiff)
-      : valueDec.$1;
-  final scaledDivisor = scaleDiff > 0
-      ? divisorDec.$1 * BigInt.from(10).pow(scaleDiff)
-      : divisorDec.$1;
+  final (coefficient: v, scale: vScale) = _decimalParts(value);
+  final (coefficient: d, scale: dScale) = _decimalParts(divisor);
+  final shift = vScale - dScale;
+  final scaledValue = shift < 0 ? v * BigInt.from(10).pow(-shift) : v;
+  final scaledDivisor = shift > 0 ? d * BigInt.from(10).pow(shift) : d;
   return scaledValue % scaledDivisor == BigInt.zero;
 }
 
-(BigInt, int)? _decimalParts(num number) {
-  if (number is int) return (BigInt.from(number), 0);
+/// Splits a finite number into `coefficient * 10^-scale` with `scale >= 0`.
+({BigInt coefficient, int scale}) _decimalParts(num number) {
+  if (number is int) return (coefficient: BigInt.from(number), scale: 0);
   var raw = number.toString().toLowerCase();
   var exponent = 0;
   final expIndex = raw.indexOf('e');
   if (expIndex != -1) {
-    final parsedExp = int.tryParse(raw.substring(expIndex + 1));
-    if (parsedExp == null) return null;
-    exponent = parsedExp;
+    exponent = int.parse(raw.substring(expIndex + 1));
     raw = raw.substring(0, expIndex);
   }
   final dotIndex = raw.indexOf('.');
@@ -420,11 +414,8 @@ bool _isJsonMultipleOf(num value, num divisor) {
     fracDigits = raw.length - dotIndex - 1;
     digits = raw.substring(0, dotIndex) + raw.substring(dotIndex + 1);
   }
-  final unscaled = BigInt.tryParse(digits);
-  if (unscaled == null) return null;
+  final unscaled = BigInt.parse(digits);
   final scale = fracDigits - exponent;
-  if (scale >= 0) {
-    return (unscaled, scale);
-  }
-  return (unscaled * BigInt.from(10).pow(-scale), 0);
+  if (scale >= 0) return (coefficient: unscaled, scale: scale);
+  return (coefficient: unscaled * BigInt.from(10).pow(-scale), scale: 0);
 }
