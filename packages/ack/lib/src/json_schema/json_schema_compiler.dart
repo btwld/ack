@@ -93,7 +93,30 @@ final class _JsonSchemaCompiler {
     'then',
     'else',
   };
-  static const listKeywords = {'anyOf', 'allOf', 'oneOf', 'prefixItems'};
+  static const listKeywords = {'anyOf', 'allOf', 'oneOf'};
+  static const supportedSchemaDialects = {
+    'https://json-schema.org/draft/2020-12/schema',
+    'https://json-schema.org/draft/2020-12/schema#',
+    'http://json-schema.org/draft-07/schema',
+    'http://json-schema.org/draft-07/schema#',
+    'https://json-schema.org/draft-07/schema',
+    'https://json-schema.org/draft-07/schema#',
+  };
+  static const supportedFormats = {
+    'date-time',
+    'date',
+    'email',
+    'uuid',
+    'uri',
+    'ipv4',
+    'ipv6',
+    'int32',
+    'int64',
+    'uint32',
+    'uint64',
+    'float',
+    'double',
+  };
   static const annotations = {
     'title',
     'description',
@@ -183,12 +206,11 @@ final class _JsonSchemaCompiler {
     if (source.containsKey(r'$schema')) {
       final dialect = source[r'$schema'];
       // An empty fragment identifies the same meta-schema resource.
-      if (dialect != 'https://json-schema.org/draft/2020-12/schema' &&
-          dialect != 'https://json-schema.org/draft/2020-12/schema#') {
+      if (!supportedSchemaDialects.contains(dialect)) {
         _fail(
           node,
           r'$schema',
-          'Only draft 2020-12 input is supported.',
+          'Only draft 2020-12 and draft-07 input is supported.',
           code: 'unsupported_dialect',
         );
       }
@@ -476,6 +498,11 @@ final class _JsonSchemaCompiler {
       } else if (bounds.contains(key)) {
         if (value is! num) _fail(node, key, 'Expected a number.');
         node.keywords[key] = value;
+      } else if (key == 'multipleOf') {
+        if (value is! num || !value.isFinite || value <= 0) {
+          _fail(node, key, 'Expected a positive finite number.');
+        }
+        node.keywords[key] = value;
       } else if (key == 'uniqueItems') {
         if (value is! bool) _fail(node, key, 'Expected a boolean.');
         node.keywords[key] = value;
@@ -493,10 +520,12 @@ final class _JsonSchemaCompiler {
         if (value is! String) {
           _fail(node, key, 'Expected a format string.');
         }
-        if (value != 'date-time') {
+        if (!supportedFormats.contains(value)) {
           _unsupported(node, key, 'Format "$value" is not supported.');
           continue;
         }
+        node.keywords[key] = value;
+      } else if (key.startsWith('x-')) {
         node.keywords[key] = value;
       } else {
         _unsupported(node, key, 'Keyword "$key" is not supported.');

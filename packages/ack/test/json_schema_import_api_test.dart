@@ -91,7 +91,7 @@ void main() {
   });
 
   test('unsupported assertions expose immutable diagnostics', () {
-    final document = {'type': 'string', 'format': 'email'};
+    final document = {'type': 'string', 'format': 'not-a-supported-format'};
     late JsonSchemaImportException failure;
     try {
       Ack.fromJsonSchema(document);
@@ -111,7 +111,7 @@ void main() {
       {'minLength': -1},
       {r'$ref': 'missing.json'},
       {r'$ref': '#'},
-      {r'$schema': 'http://json-schema.org/draft-07/schema#'},
+      {r'$schema': 'http://json-schema.org/draft-04/schema#'},
     ]) {
       expect(
         () => Ack.fromJsonSchema(document),

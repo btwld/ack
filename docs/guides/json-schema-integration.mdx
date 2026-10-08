@@ -8,16 +8,16 @@ Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's sh
 
 Use strict `Ack.fromJsonSchema()` to turn a decoded JSON Schema document
 (a map or boolean, not a JSON string) into an
-`AckSchema<Object, Object>`. The input dialect is draft 2020-12, including
-when `$schema` is absent. Other explicitly declared dialects are rejected.
+`AckSchema<Object, Object>`. The input dialect is draft 2020-12 (including
+when `$schema` is absent) or Draft-7 (`http://json-schema.org/draft-07/schema#`
+and `https://json-schema.org/draft-07/schema#`). Other explicitly declared
+dialects are rejected.
 
 Only the declared `$schema` string is checked — a document is never matched
-against a dialect by shape. Replacing an older draft's `$schema` string does
-not convert its semantics. Tuple-form `items` (a Draft-7 array) is rejected;
-Draft-7 ignores `$ref` siblings that this importer applies. Draft-4 boolean
-`exclusiveMinimum` and `exclusiveMaximum` values are rejected, and Draft-4
-`integer` rejects `1.0` where this importer accepts it. Convert older schemas
-to draft 2020-12 and check their validation results before importing them.
+against a dialect by shape. Tuple-form `items` (a Draft-7 array) is rejected,
+and `$ref` siblings are always applied using draft 2020-12 semantics. Draft-4
+boolean `exclusiveMinimum` and `exclusiveMaximum` values are rejected, and
+Draft-4 `integer` rejects `1.0` where this importer accepts it.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -68,8 +68,10 @@ Exports containing unsupported keywords are rejected.
 
 ### Importing `format`
 
-Ack's strict supported-subset importer recognizes `date-time` and validates it
-automatically:
+Ack's strict supported-subset importer recognizes Ack's built-in string formats
+(`date-time`, `date`, `email`, `uuid`, `uri`, `ipv4`, `ipv6`) and standard
+numeric formats (`int32`, `int64`, `uint32`, `uint64`, `float`, `double`),
+validating them automatically:
 
 ```dart
 final timestamp = Ack.fromJsonSchema(
@@ -81,8 +83,9 @@ timestamp.parse('2024-02-29T12:34:56.123456789+02:00');
 Other format labels remain unsupported and produce an `unsupported_keyword`
 diagnostic at their source location. This is Ack's strict import subset, not a
 claim that draft 2020-12 requires format assertions or that Ack implements the
-full Format-Assertion vocabulary. A format-only schema still accepts non-string
-values because `format` does not imply `type: string`; add the type when needed.
+full Format-Assertion vocabulary. A format-only schema only asserts string
+formats on string instances and numeric formats on number instances because
+`format` does not imply `type`; add `type` when needed.
 
 Date-time validation uses RFC 3339 syntax, calendar dates, offsets, and the
 bundled list of announced positive leap-second dates. The list is updated in
@@ -103,11 +106,11 @@ treat `format` as an annotation unless configured to assert it.
 | Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
 | Arrays | Single-schema `items`, `contains`, `minItems`, `maxItems`, `uniqueItems` |
 | Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search in Unicode mode) |
-| Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
+| Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf` |
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`, `if`/`then`/`else`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
-| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
-| Format | `date-time` (asserted for strings) |
+| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated`, `x-*` vendor extensions (such as `x-transformed`) |
+| Format | `date-time`, `date`, `email`, `uuid`, `uri`, `ipv4`, `ipv6` (asserted for strings); `int32`, `int64`, `uint32`, `uint64`, `float`, `double` (asserted for numbers) |
 
 `pattern` compiles with ECMA-262's `u` flag, as the JSON Schema Test Suite
 requires and Ajv does by default. `.` matches one code point, so
@@ -122,10 +125,10 @@ that is invalid in Unicode mode exports a schema that this importer and Ajv
 reject.
 
 This is deliberately not a complete JSON Schema validator. Unsupported
-keywords include `multipleOf`, `patternProperties`, `prefixItems`,
+keywords include `patternProperties`, `prefixItems`,
 `minContains`, `maxContains`, dependent/unevaluated keywords, dynamic
-references, and custom vocabulary declarations. Unknown extension keywords are also
-reported. `date-time` is the only supported format label. References to the
+references, and custom vocabulary declarations. Non-`x-*` unknown extension
+keywords and unrecognized `format` labels are also reported. References to the
 2020-12 meta-schema fail strict import.
 The meta-schema itself is not validated.
 

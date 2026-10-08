@@ -20,7 +20,7 @@ void main() {
   });
 
   test('builder bridge retains strictness and diagnostics', () {
-    final model = jsb.Schema.fromMap({'format': 'email'});
+    final model = jsb.Schema.fromMap({'format': 'not-a-supported-format'});
     expect(
       () => model.toAckSchema(),
       throwsA(

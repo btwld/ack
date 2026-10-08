@@ -31,19 +31,30 @@ void main() {
       );
     });
 
-    test('accepts the draft 2020-12 dialect with an empty fragment', () {
-      final schema = Ack.fromJsonSchema({
-        r'$schema': 'https://json-schema.org/draft/2020-12/schema#',
-        'type': 'string',
-      });
-      expect(schema.safeParse('hello').isOk, isTrue);
-      expect(schema.safeParse(1).isFail, isTrue);
+    test('accepts draft 2020-12 and draft-07 dialects', () {
+      for (final dialect in [
+        'https://json-schema.org/draft/2020-12/schema',
+        'https://json-schema.org/draft/2020-12/schema#',
+        'http://json-schema.org/draft-07/schema',
+        'http://json-schema.org/draft-07/schema#',
+        'https://json-schema.org/draft-07/schema',
+        'https://json-schema.org/draft-07/schema#',
+      ]) {
+        final schema = Ack.fromJsonSchema({
+          r'$schema': dialect,
+          'type': 'string',
+        });
+        expect(schema.safeParse('hello').isOk, isTrue, reason: dialect);
+        expect(schema.safeParse(1).isFail, isTrue, reason: dialect);
+      }
     });
 
     test('rejects non-empty dialect fragments and different drafts', () {
       for (final dialect in [
         'https://json-schema.org/draft/2020-12/schema#other',
+        'http://json-schema.org/draft-07/schema#other',
         'https://json-schema.org/draft/2019-09/schema#',
+        'http://json-schema.org/draft-04/schema#',
       ]) {
         expect(
           () => Ack.fromJsonSchema({r'$schema': dialect}),
@@ -154,7 +165,10 @@ void main() {
         {
           'type': 'string',
           r'$defs': {
-            'unused': {'format': 'email', r'$ref': 'missing.json'},
+            'unused': {
+              'format': 'not-a-supported-format',
+              r'$ref': 'missing.json',
+            },
           },
         },
         documents: {
@@ -250,7 +264,7 @@ void main() {
         {r'$ref': '#/%FF'},
         {r'$schema': null},
         {r'$anchor': null},
-        {r'$schema': 'http://json-schema.org/draft-07/schema#'},
+        {r'$schema': 'http://json-schema.org/draft-04/schema#'},
       ]) {
         expect(
           () => Ack.fromJsonSchema(document),
@@ -975,7 +989,10 @@ void main() {
     test('strict mode reports unsupported keywords at escaped locations', () {
       final document = {
         'properties': {
-          'a/b': {'format': 'email', 'x-custom': true},
+          'a/b': {
+            'format': 'not-a-supported-format',
+            'unsupportedKeyword': true,
+          },
         },
       };
       try {
@@ -986,11 +1003,219 @@ void main() {
           error.diagnostics.map((diagnostic) => diagnostic.pointer),
           containsAll([
             '#/properties/a~1b/format',
-            '#/properties/a~1b/x-custom',
+            '#/properties/a~1b/unsupportedKeyword',
           ]),
         );
       }
     });
+
+    test(
+      'multipleOf validates exact decimals, tracks keywordLocation, and round-trips',
+      () {
+        final schema = Ack.fromJsonSchema({
+          'properties': {
+            'step': {'type': 'number', 'multipleOf': 0.1},
+          },
+        });
+        for (final value in [0, 0.3, -0.3, 1.0, 1e2]) {
+          expect(
+            schema.safeParse({'step': value}).isOk,
+            isTrue,
+            reason: '$value',
+          );
+        }
+        for (final value in [0.31, 1.2000000000000002, 1e-7]) {
+          final result = schema.safeParse({'step': value});
+          expect(result.isFail, isTrue, reason: '$value');
+          final error = result.getError() as JsonSchemaValidationError;
+          expect(error.keyword, 'multipleOf');
+          expect(error.pointer, '#/properties/step/multipleOf');
+          expect(error.keywordLocation, '/properties/step/multipleOf');
+          expect(error.path, '#/step');
+        }
+
+        // Handles float overflow without raising an overflow error.
+        final hugeHalf = Ack.fromJsonSchema({
+          'type': 'integer',
+          'multipleOf': 0.5,
+        });
+        expect(hugeHalf.safeParse(1e308).isOk, isTrue);
+        final hugeFraction = Ack.fromJsonSchema({
+          'type': 'integer',
+          'multipleOf': 0.123456789,
+        });
+        expect(hugeFraction.safeParse(1e308).isFail, isTrue);
+
+        // Round-trips from Ack.integer().multipleOf(...) and Ack.double().multipleOf(...)
+        final intMultiple = Ack.fromJsonSchema(
+          Ack.integer().multipleOf(5).toJsonSchema(),
+        );
+        expect(intMultiple.safeParse(15).isOk, isTrue);
+        expect(intMultiple.safeParse(14).isFail, isTrue);
+
+        final doubleMultiple = Ack.fromJsonSchema(
+          Ack.double().multipleOf(0.5).toJsonSchema(),
+        );
+        expect(doubleMultiple.safeParse(1.5).isOk, isTrue);
+        expect(doubleMultiple.safeParse(1.3).isFail, isTrue);
+
+        for (final invalid in [0, -0.1, '0.1', true]) {
+          expect(
+            () => Ack.fromJsonSchema({'multipleOf': invalid}),
+            throwsA(isA<JsonSchemaImportException>()),
+            reason: '$invalid',
+          );
+        }
+      },
+    );
+
+    test(
+      'accepts x-transformed and x-* vendor extensions and round-trips codecs',
+      () {
+        final vendorSchema = Ack.fromJsonSchema({
+          'type': 'string',
+          'x-transformed': true,
+          'x-custom': {'nested': 1},
+        });
+        expect(vendorSchema.safeParse('hello').isOk, isTrue);
+        expect(vendorSchema.safeParse(42).isFail, isTrue);
+
+        final dateRoundTrip = Ack.fromJsonSchema(Ack.date().toJsonSchema());
+        expect(dateRoundTrip.safeParse('2026-10-08').isOk, isTrue);
+        expect(dateRoundTrip.safeParse('2026-02-30').isFail, isTrue);
+
+        final dateTimeRoundTrip = Ack.fromJsonSchema(
+          Ack.datetime().toJsonSchema(),
+        );
+        expect(
+          dateTimeRoundTrip.safeParse('2026-10-08T12:00:00Z').isOk,
+          isTrue,
+        );
+        expect(dateTimeRoundTrip.safeParse('not-a-datetime').isFail, isTrue);
+
+        final uriRoundTrip = Ack.fromJsonSchema(Ack.uri().toJsonSchema());
+        expect(uriRoundTrip.safeParse('https://example.com/path').isOk, isTrue);
+        expect(uriRoundTrip.safeParse('not a uri').isFail, isTrue);
+
+        final durationRoundTrip = Ack.fromJsonSchema(
+          Ack.duration().toJsonSchema(),
+        );
+        expect(durationRoundTrip.safeParse(1000).isOk, isTrue);
+        expect(durationRoundTrip.safeParse('1000').isFail, isTrue);
+      },
+    );
+
+    test(
+      'validates built-in string and numeric formats and round-trips native string formats',
+      () {
+        final formats = <String, ({List<Object> valid, List<Object> invalid})>{
+          'date': (
+            valid: ['2024-02-29', '1963-06-19', 42],
+            invalid: ['2023-02-29', '2024-13-01', '2024-02-29T00:00:00Z'],
+          ),
+          'email': (
+            valid: ['user@example.com', 'joe.bloggs@[127.0.0.1]', 42],
+            invalid: ['not-an-email', '.user@example.com', 'user@-example.com'],
+          ),
+          'uuid': (
+            valid: [
+              '123e4567-e89b-12d3-a456-426614174000',
+              '00000000-0000-0000-0000-000000000000',
+              42,
+            ],
+            invalid: [
+              'not-a-uuid',
+              '123e4567-e89b-12d3-a456-42661417400',
+              'urn:uuid:123e4567-e89b-12d3-a456-426614174000',
+            ],
+          ),
+          'uri': (
+            valid: ['https://example.com/path?x=1#frag', 'mailto:a@b.com', 42],
+            invalid: [
+              '/relative/path',
+              'http:// bad.com',
+              'http://example.com/%GG',
+            ],
+          ),
+          'ipv4': (
+            valid: ['192.168.0.1', '0.0.0.0', '255.255.255.255', 42],
+            invalid: ['256.0.0.1', '192.168.0', '01.2.3.4', '::1'],
+          ),
+          'ipv6': (
+            valid: ['::1', '2001:db8::1', '::ffff:192.168.0.1', 42],
+            invalid: ['192.168.0.1', '1::2::3', '12345::', '[::1]'],
+          ),
+          'int32': (
+            valid: [-2147483648, 0, 2147483647, 'ignored'],
+            invalid: [-2147483649, 2147483648, 1.5],
+          ),
+          'int64': (
+            valid: [-9000000000, 0, 9000000000, 'ignored'],
+            invalid: [1.5, -0.25],
+          ),
+          'uint32': (
+            valid: [0, 4294967295, 'ignored'],
+            invalid: [-1, 4294967296, 1.5],
+          ),
+          'uint64': (valid: [0, 9000000000, 'ignored'], invalid: [-1, 1.5]),
+          'float': (valid: [0, -1.5, 3.25, 'ignored'], invalid: const []),
+          'double': (valid: [0, -1.5, 3.25, 'ignored'], invalid: const []),
+        };
+
+        for (final entry in formats.entries) {
+          final schema = Ack.fromJsonSchema({'format': entry.key});
+          for (final valid in entry.value.valid) {
+            expect(
+              schema.safeParse(valid).isOk,
+              isTrue,
+              reason: '${entry.key}: $valid',
+            );
+          }
+          for (final invalid in entry.value.invalid) {
+            final result = schema.safeParse(invalid);
+            expect(result.isFail, isTrue, reason: '${entry.key}: $invalid');
+            final error = result.getError() as JsonSchemaValidationError;
+            expect(error.keyword, 'format');
+            expect(error.keywordLocation, '/format');
+          }
+        }
+
+        // Round-trip from Ack.string() format helpers
+        for (final (schema, valid, invalid) in [
+          (Ack.string().email(), 'user@example.com', 'not-an-email'),
+          (
+            Ack.string().uuid(),
+            '123e4567-e89b-12d3-a456-426614174000',
+            'not-a-uuid',
+          ),
+          (Ack.string().url(), 'https://example.com', 'not a url'),
+          (Ack.string().date(), '2026-10-08', '2026-02-30'),
+          (Ack.string().ipv4(), '192.168.1.1', '999.1.1.1'),
+          (Ack.string().ipv6(), '2001:db8::1', '192.168.1.1'),
+          (Ack.string().ip(), '2001:db8::1', 'not-an-ip'),
+        ]) {
+          final imported = Ack.fromJsonSchema(schema.toJsonSchema());
+          expect(imported.safeParse(valid).isOk, isTrue, reason: valid);
+          expect(imported.safeParse(invalid).isFail, isTrue, reason: invalid);
+        }
+      },
+    );
+
+    test(
+      'prefixItems remains unsupported without indexing as a schema list',
+      () {
+        expect(
+          () => Ack.fromJsonSchema({'prefixItems': 123}),
+          throwsA(
+            isA<JsonSchemaImportException>().having(
+              (e) => e.diagnostics.single.code,
+              'code',
+              'unsupported_keyword',
+            ),
+          ),
+        );
+      },
+    );
 
     test('rejects malformed supported keywords', () {
       for (final document in [
@@ -1002,6 +1227,9 @@ void main() {
         {'items': 3},
         {'pattern': 1},
         {'pattern': '('},
+        {'multipleOf': 0},
+        {'multipleOf': -2},
+        {'multipleOf': '2'},
       ]) {
         expect(
           () => Ack.fromJsonSchema(document),

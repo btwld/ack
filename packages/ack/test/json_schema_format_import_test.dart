@@ -22,7 +22,7 @@ void main() {
           documents: {
             Uri.parse('formats.json'): {
               r'$defs': {
-                'stamp': {'format': 'email'},
+                'stamp': {'format': 'not-a-supported-format'},
               },
             },
           },
@@ -40,7 +40,7 @@ void main() {
       expect(
         Ack.fromJsonSchema({
           r'$defs': {
-            'unused': {'format': 'email'},
+            'unused': {'format': 'not-a-supported-format'},
           },
         }).safeParse('anything').isOk,
         isTrue,
