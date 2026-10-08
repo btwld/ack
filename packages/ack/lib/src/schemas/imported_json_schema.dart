@@ -292,7 +292,7 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       for (var i = 0; i < value.length; i++) {
         for (var j = 0; j < i; j++) {
           if (deepEquals(value[i], value[j])) {
-            return fail('uniqueItems').at('$i');
+            return fail('uniqueItems');
           }
         }
       }
