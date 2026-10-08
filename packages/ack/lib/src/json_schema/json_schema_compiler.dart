@@ -20,7 +20,8 @@ final class _ImportedNode {
   final String pointer;
   final Uri baseUri;
 
-  /// Keyword values and sub-schemas in document order, for [render].
+  /// Keyword values and sub-schemas in document order. [render] and
+  /// [dependencies] read these; validation reads the typed fields below.
   final keywords = <String, Object?>{};
   final children = <String, _ImportedNode>{};
   final maps = <String, Map<String, _ImportedNode>>{};

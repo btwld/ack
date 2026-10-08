@@ -1,3 +1,17 @@
+## Unreleased
+
+### Changed
+
+* Speed up imported JSON Schema compilation and validation by reading typed node
+  fields directly instead of per-node keyword maps. Error output and exported
+  JSON Schema are unchanged.
+* Speed up `toJsonSchema()` on native schemas by skipping redundant subtree
+  walks when constraints do not project nested keywords.
+* Return unmodifiable views directly from `Ack.object()`, `Ack.list()`, and
+  `Ack.map()` parse and encode results instead of copying the validated
+  collection a second time. Results remain detached from the input and
+  unmodifiable.
+
 ## 1.7.0-beta.6
 
 ### Added
@@ -9,14 +23,6 @@
 
 ### Changed
 
-* Imported schemas validate from typed node fields instead of keyword maps,
-  `toJsonSchema` renders a model's subtree only when a constraint projects
-  keywords, and parse and encode results from `Ack.object()`, `Ack.list()` and
-  `Ack.map()` are unmodifiable views of the validated collection instead of a
-  second copy. Output does not change. On an AOT build of the benchmarks,
-  `toJsonSchema` on a large native schema is 2.3x faster, imported `safeParse`
-  and `safeEncode` are 1.5x to 3x faster, and `fromJsonSchema` compilation is
-  about 10% faster.
 * `safeParse` and `safeEncode` no longer rebuild the root error-context name on
   every call. Ack computes it once per schema type, and skips it when the
   caller passes `debugName`. A valid `Ack.string()` parse takes about 50 ns
