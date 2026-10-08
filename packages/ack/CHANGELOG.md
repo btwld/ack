@@ -1,5 +1,12 @@
 ## Unreleased
 
+### Added
+
+* `JsonSchemaValidationError` now reports `keywordLocation`, the Draft 2020-12
+  evaluation path from the root schema to the failing keyword. It includes each
+  `$ref` on the way, so failures under two applicators that share a definition
+  are distinguishable. `toMap()` includes it.
+
 ### Changed
 
 * `safeParse` and `safeEncode` no longer rebuild the root error-context name on

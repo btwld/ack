@@ -108,6 +108,10 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
           keyword: violation.keyword,
           documentUri: violation.node.documentUri,
           pointer: _keywordPointer(violation.node, violation.keyword),
+          keywordLocation: [
+            ...violation.evaluationPath,
+            if (violation.keyword.isNotEmpty) violation.keyword,
+          ].map((token) => '/${_importPointerToken(token)}').join(),
         ),
       );
     }
@@ -158,6 +162,7 @@ final class _ImportViolation {
     this.node,
     this.keyword, {
     this.path = const [],
+    this.evaluationPath = const [],
     this.invalidPropertyName,
   });
   final _ImportedNode node;
@@ -165,24 +170,37 @@ final class _ImportViolation {
   /// Empty when [node] is the boolean schema `false`.
   final String keyword;
   final List<String> path;
+  final List<String> evaluationPath;
   final String? invalidPropertyName;
 
   String get message =>
       'JSON Schema "${keyword.isEmpty ? 'false' : keyword}" failed at '
       '${node.documentUri}${node.pointer}.';
 
-  _ImportViolation at(String segment) => _ImportViolation(
-    node,
-    keyword,
-    path: [segment, ...path],
-    invalidPropertyName: invalidPropertyName,
-  );
+  _ImportViolation at(String segment, [List<String> tokens = const []]) =>
+      _ImportViolation(
+        node,
+        keyword,
+        path: [segment, ...path],
+        evaluationPath: [...tokens, ...evaluationPath],
+        invalidPropertyName: invalidPropertyName,
+      );
 
-  _ImportViolation atPropertyName(String name) => _ImportViolation(
+  _ImportViolation atPropertyName(String name, List<String> tokens) =>
+      _ImportViolation(
+        node,
+        keyword,
+        path: [name, ...path],
+        evaluationPath: [...tokens, ...evaluationPath],
+        invalidPropertyName: name,
+      );
+
+  _ImportViolation via(List<String> tokens) => _ImportViolation(
     node,
     keyword,
-    path: [name, ...path],
-    invalidPropertyName: name,
+    path: path,
+    evaluationPath: [...tokens, ...evaluationPath],
+    invalidPropertyName: invalidPropertyName,
   );
 }
 
@@ -204,11 +222,11 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
   }
   if (node.reference case final target?) {
     final error = _checkImportedNode(target, value);
-    if (error != null) return error;
+    if (error != null) return error.via(const [r'$ref']);
   }
-  for (final target in node.lists['allOf'] ?? const <_ImportedNode>[]) {
+  for (final (i, target) in (node.lists['allOf'] ?? const []).indexed) {
     final error = _checkImportedNode(target, value);
-    if (error != null) return error;
+    if (error != null) return error.via(['allOf', '$i']);
   }
   if (node.lists['anyOf'] case final branches?) {
     if (!branches.any((n) => _checkImportedNode(n, value) == null)) {
@@ -225,12 +243,10 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
     if (_checkImportedNode(target, value) == null) return fail('not');
   }
   if (node.children['if'] case final condition?) {
-    final branch = _checkImportedNode(condition, value) == null
-        ? node.children['then']
-        : node.children['else'];
-    if (branch != null) {
+    final key = _checkImportedNode(condition, value) == null ? 'then' : 'else';
+    if (node.children[key] case final branch?) {
       final error = _checkImportedNode(branch, value);
-      if (error != null) return error;
+      if (error != null) return error.via([key]);
     }
   }
   if (value is num) {
@@ -274,16 +290,26 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
     }
     final properties = node.maps['properties'] ?? const {};
     for (final entry in value.entries) {
-      final target =
-          properties[entry.key] ?? node.children['additionalProperties'];
+      final key = entry.key as String;
+      final declared = properties[key];
+      final target = declared ?? node.children['additionalProperties'];
       if (target == null) continue;
       final error = _checkImportedNode(target, entry.value);
-      if (error != null) return error.at(entry.key as String);
+      if (error != null) {
+        return error.at(
+          key,
+          declared == null
+              ? const ['additionalProperties']
+              : ['properties', key],
+        );
+      }
     }
     if (node.children['propertyNames'] case final target?) {
       for (final key in value.keys) {
         final error = _checkImportedNode(target, key);
-        if (error != null) return error.atPropertyName(key as String);
+        if (error != null) {
+          return error.atPropertyName(key as String, const ['propertyNames']);
+        }
       }
     }
   }
@@ -305,7 +331,7 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
     if (node.children['items'] case final target?) {
       for (var i = 0; i < value.length; i++) {
         final error = _checkImportedNode(target, value[i]);
-        if (error != null) return error.at('$i');
+        if (error != null) return error.at('$i', const ['items']);
       }
     }
   }

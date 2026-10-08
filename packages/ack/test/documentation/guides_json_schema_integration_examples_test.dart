@@ -48,6 +48,11 @@ void main() {
               Uri.parse('ack-import:///root.json'),
             )
             .having((e) => e.pointer, 'pointer', '#/properties/tags/items/enum')
+            .having(
+              (e) => e.keywordLocation,
+              'keywordLocation',
+              '/properties/tags/items/enum',
+            )
             .having((e) => e.path, 'path', '#/tags/1'),
       );
     });
