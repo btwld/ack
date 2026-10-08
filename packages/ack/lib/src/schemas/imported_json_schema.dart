@@ -121,19 +121,22 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   /// Builds root-scoped definitions for the shared schema-model renderer.
   @internal
   Map<String, Map<String, Object?>> exportDefinitions(String prefix) {
-    final names = <_ImportedNode, String>{};
+    final refs = <_ImportedNode, String>{};
+    final order = <_ImportedNode>[];
     void visit(_ImportedNode node) {
-      if (names.containsKey(node)) return;
-      names[node] = '$prefix${names.length}';
+      if (refs.containsKey(node)) return;
+      final name = '$prefix${order.length}';
+      refs[node] = '#/definitions/${_importPointerToken(name)}';
+      order.add(node);
       for (final child in node.dependencies) {
         visit(child);
       }
     }
 
     visit(_root);
+    String refOf(_ImportedNode node) => refs[node]!;
     return {
-      for (final entry in names.entries)
-        entry.value: entry.key.render((node) => names[node]!),
+      for (final (i, node) in order.indexed) '$prefix$i': node.render(refOf),
     };
   }
 
@@ -206,135 +209,164 @@ final class _ImportViolation {
 
 _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
   _ImportViolation fail(String keyword) => _ImportViolation(node, keyword);
-  if (node.source == false) return fail('');
-  final keywords = node.keywords;
-  if (keywords['type'] case final type?) {
-    final matches = type is List
-        ? type.any((t) => _isImportType(t, value))
-        : _isImportType(type, value);
-    if (!matches) return fail('type');
+  if (node.isFalse) return fail('');
+  if (node.types case final types?) {
+    if (!types.any((t) => _isImportType(t, value))) return fail('type');
   }
-  if (keywords.containsKey('const') && !deepEquals(value, keywords['const'])) {
+  if (node.hasConst && !deepEquals(value, node.constValue)) {
     return fail('const');
   }
-  if (keywords['enum'] case final List values) {
+  if (node.enumValues case final values?) {
     if (!values.any((v) => deepEquals(v, value))) return fail('enum');
   }
   if (node.reference case final target?) {
     final error = _checkImportedNode(target, value);
     if (error != null) return error.via(const [r'$ref']);
   }
-  for (final (i, target) in (node.lists['allOf'] ?? const []).indexed) {
-    final error = _checkImportedNode(target, value);
-    if (error != null) return error.via(['allOf', '$i']);
+  if (node.allOf case final targets?) {
+    for (final (i, target) in targets.indexed) {
+      final error = _checkImportedNode(target, value);
+      if (error != null) return error.via(['allOf', '$i']);
+    }
   }
-  if (node.lists['anyOf'] case final branches?) {
+  if (node.anyOf case final branches?) {
     if (!branches.any((n) => _checkImportedNode(n, value) == null)) {
       return fail('anyOf');
     }
   }
-  if (node.lists['oneOf'] case final branches?) {
-    if (branches.where((n) => _checkImportedNode(n, value) == null).length !=
-        1) {
-      return fail('oneOf');
+  if (node.oneOf case final branches?) {
+    var matches = 0;
+    for (final branch in branches) {
+      if (_checkImportedNode(branch, value) == null && ++matches > 1) break;
     }
+    if (matches != 1) return fail('oneOf');
   }
-  if (node.children['not'] case final target?) {
+  if (node.not case final target?) {
     if (_checkImportedNode(target, value) == null) return fail('not');
   }
-  if (node.children['if'] case final condition?) {
-    final key = _checkImportedNode(condition, value) == null ? 'then' : 'else';
-    if (node.children[key] case final branch?) {
+  if (node.ifNode case final condition?) {
+    final passed = _checkImportedNode(condition, value) == null;
+    final branch = passed ? node.thenNode : node.elseNode;
+    if (branch != null) {
       final error = _checkImportedNode(branch, value);
-      if (error != null) return error.via([key]);
+      if (error != null) return error.via([passed ? 'then' : 'else']);
     }
   }
-  if (value is num) {
-    for (final key in _JsonSchemaCompiler.bounds) {
-      if (keywords[key] case final num limit) {
-        final valid = switch (key) {
-          'minimum' => value >= limit,
-          'maximum' => value <= limit,
-          'exclusiveMinimum' => value > limit,
-          _ => value < limit,
-        };
-        if (!valid) return fail(key);
+  switch (value) {
+    case num():
+      if (node.minimum case final limit? when value < limit) {
+        return fail('minimum');
       }
-    }
-  }
-  final (length, minKey, maxKey) = switch (value) {
-    String() => (value.runes.length, 'minLength', 'maxLength'),
-    List() => (value.length, 'minItems', 'maxItems'),
-    Map() => (value.length, 'minProperties', 'maxProperties'),
-    _ => (null, '', ''),
-  };
-  if (length != null) {
-    if (keywords[minKey] case final num minimum) {
-      if (length < minimum) return fail(minKey);
-    }
-    if (keywords[maxKey] case final num maximum) {
-      if (length > maximum) return fail(maxKey);
-    }
-  }
-  if (value is String) {
-    if (keywords['format'] == 'date-time' && !isValidRfc3339DateTime(value)) {
-      return fail('format');
-    }
-    if (node.pattern case final pattern?) {
-      if (!pattern.hasMatch(value)) return fail('pattern');
-    }
-  }
-  if (value is Map) {
-    for (final key in keywords['required'] as List? ?? const []) {
-      if (!value.containsKey(key)) return fail('required').at(key as String);
-    }
-    final properties = node.maps['properties'] ?? const {};
-    for (final entry in value.entries) {
-      final key = entry.key as String;
-      final declared = properties[key];
-      final target = declared ?? node.children['additionalProperties'];
-      if (target == null) continue;
-      final error = _checkImportedNode(target, entry.value);
-      if (error != null) {
-        return error.at(
-          key,
-          declared == null
-              ? const ['additionalProperties']
-              : ['properties', key],
+      if (node.maximum case final limit? when value > limit) {
+        return fail('maximum');
+      }
+      if (node.exclusiveMinimum case final limit? when value <= limit) {
+        return fail('exclusiveMinimum');
+      }
+      if (node.exclusiveMaximum case final limit? when value >= limit) {
+        return fail('exclusiveMaximum');
+      }
+    case String():
+      // Counting code points allocates, so only do it when a bound exists.
+      if (node.minLength != null || node.maxLength != null) {
+        final keyword = _sizeViolation(
+          value.runes.length,
+          node.minLength,
+          node.maxLength,
+          'minLength',
+          'maxLength',
         );
+        if (keyword != null) return fail(keyword);
       }
-    }
-    if (node.children['propertyNames'] case final target?) {
-      for (final key in value.keys) {
-        final error = _checkImportedNode(target, key);
-        if (error != null) {
-          return error.atPropertyName(key as String, const ['propertyNames']);
+      if (node.dateTime && !isValidRfc3339DateTime(value)) {
+        return fail('format');
+      }
+      if (node.pattern case final pattern? when !pattern.hasMatch(value)) {
+        return fail('pattern');
+      }
+    case Map():
+      final keyword = _sizeViolation(
+        value.length,
+        node.minProperties,
+        node.maxProperties,
+        'minProperties',
+        'maxProperties',
+      );
+      if (keyword != null) return fail(keyword);
+      if (node.required case final required?) {
+        for (final key in required) {
+          if (!value.containsKey(key)) return fail('required').at(key);
         }
       }
-    }
-  }
-  if (value is List) {
-    if (keywords['uniqueItems'] == true) {
-      for (var i = 0; i < value.length; i++) {
-        for (var j = 0; j < i; j++) {
-          if (deepEquals(value[i], value[j])) {
-            return fail('uniqueItems');
+      final properties = node.properties;
+      final additional = node.additionalProperties;
+      if (properties != null || additional != null) {
+        for (final MapEntry(:key, value: item) in value.entries) {
+          final declared = properties?[key];
+          final target = declared ?? additional;
+          if (target == null) continue;
+          final error = _checkImportedNode(target, item);
+          if (error != null) {
+            return error.at(
+              key as String,
+              declared == null
+                  ? const ['additionalProperties']
+                  : ['properties', key],
+            );
           }
         }
       }
-    }
-    if (node.children['contains'] case final target?) {
-      if (!value.any((item) => _checkImportedNode(target, item) == null)) {
-        return fail('contains');
+      if (node.propertyNames case final target?) {
+        for (final key in value.keys) {
+          final error = _checkImportedNode(target, key);
+          if (error != null) {
+            return error.atPropertyName(key as String, const ['propertyNames']);
+          }
+        }
       }
-    }
-    if (node.children['items'] case final target?) {
-      for (var i = 0; i < value.length; i++) {
-        final error = _checkImportedNode(target, value[i]);
-        if (error != null) return error.at('$i', const ['items']);
+    case List():
+      final keyword = _sizeViolation(
+        value.length,
+        node.minItems,
+        node.maxItems,
+        'minItems',
+        'maxItems',
+      );
+      if (keyword != null) return fail(keyword);
+      if (node.uniqueItems) {
+        for (var i = 0; i < value.length; i++) {
+          for (var j = 0; j < i; j++) {
+            if (deepEquals(value[i], value[j])) {
+              return fail('uniqueItems');
+            }
+          }
+        }
       }
-    }
+      if (node.contains case final target?) {
+        if (!value.any((item) => _checkImportedNode(target, item) == null)) {
+          return fail('contains');
+        }
+      }
+      if (node.items case final target?) {
+        for (var i = 0; i < value.length; i++) {
+          final error = _checkImportedNode(target, value[i]);
+          if (error != null) return error.at('$i', const ['items']);
+        }
+      }
   }
+  return null;
+}
+
+/// The failing size keyword, if any.
+String? _sizeViolation(
+  int size,
+  num? min,
+  num? max,
+  String minKey,
+  String maxKey,
+) {
+  if (min != null && size < min) return minKey;
+  if (max != null && size > max) return maxKey;
   return null;
 }
 

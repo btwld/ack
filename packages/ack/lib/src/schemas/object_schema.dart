@@ -147,7 +147,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     }
 
     return applyConstraintsAndRefinements(
-      Map.unmodifiable(validatedMap),
+      UnmodifiableMapView(validatedMap),
       context,
     );
   }
@@ -353,7 +353,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
-    return SchemaResult.ok(Map.unmodifiable(encoded));
+    return SchemaResult.ok(UnmodifiableMapView(encoded));
   }
 
   @override
