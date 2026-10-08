@@ -128,7 +128,7 @@ final class _JsonSchemaCompiler {
     'then',
     'else',
   };
-  static const listKeywords = {'anyOf', 'allOf', 'oneOf', 'prefixItems'};
+  static const listKeywords = {'anyOf', 'allOf', 'oneOf'};
 
   // The subsets of the indexing sets above that validation implements.
   static const supportedChildKeywords = {
@@ -165,6 +165,14 @@ final class _JsonSchemaCompiler {
     'maximum',
     'exclusiveMinimum',
     'exclusiveMaximum',
+  };
+  static const supportedSchemaDialects = {
+    'https://json-schema.org/draft/2020-12/schema',
+    'https://json-schema.org/draft/2020-12/schema#',
+    'http://json-schema.org/draft-07/schema',
+    'http://json-schema.org/draft-07/schema#',
+    'https://json-schema.org/draft-07/schema',
+    'https://json-schema.org/draft-07/schema#',
   };
   static const supportedFormats = {
     'date-time',
@@ -247,12 +255,11 @@ final class _JsonSchemaCompiler {
     if (source.containsKey(r'$schema')) {
       final dialect = source[r'$schema'];
       // An empty fragment identifies the same meta-schema resource.
-      if (dialect != 'https://json-schema.org/draft/2020-12/schema' &&
-          dialect != 'https://json-schema.org/draft/2020-12/schema#') {
+      if (!supportedSchemaDialects.contains(dialect)) {
         _fail(
           node,
           r'$schema',
-          'Only draft 2020-12 input is supported.',
+          'Only draft 2020-12 and draft-07 inputs are supported.',
           code: 'unsupported_dialect',
         );
       }
