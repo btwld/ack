@@ -469,18 +469,22 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return result.getOrThrow();
   }
 
+  static final _rootNames = <Type, String>{};
+
   SchemaContext _createRootContext(
     Object? value, {
     String? debugName,
     required SchemaOperation operation,
   }) {
-    final typeName = runtimeType
-        .toString()
-        .replaceFirst(RegExp(r'Schema$'), '')
-        .toLowerCase();
-    final effectiveDebugName = debugName ?? typeName;
     return SchemaContext(
-      name: effectiveDebugName,
+      name:
+          debugName ??
+          _rootNames.putIfAbsent(
+            runtimeType,
+            () => '$runtimeType'
+                .replaceFirst(RegExp(r'Schema$'), '')
+                .toLowerCase(),
+          ),
       schema: this,
       value: value,
       operation: operation,

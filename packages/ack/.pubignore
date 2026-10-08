@@ -10,3 +10,5 @@ coverage/
 # cannot resolve outside the workspace, so shipping it breaks
 # `dart format` and `dart analyze` in the published archive.
 analysis_options.yaml
+
+benchmark/

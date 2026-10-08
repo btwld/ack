@@ -111,6 +111,22 @@ void main() {
       });
     });
 
+    test('root errors are named after each schema type unless named', () {
+      for (final (schema, name) in <(AckSchema, String)>[
+        (Ack.string(), 'string'),
+        (Ack.integer(), 'integer'),
+        (Ack.list(Ack.string()), 'listschema<string, string>'),
+        (Ack.list(Ack.integer()), 'listschema<int, int>'),
+        (Ack.string(), 'string'),
+      ]) {
+        expect(schema.safeParse(true).getError().name, name);
+        expect(
+          schema.safeParse(true, debugName: 'field').getError().name,
+          'field',
+        );
+      }
+    });
+
     group('parseAs / safeParseAs', () {
       test('parseAs maps validated primitive value', () {
         final schema = Ack.string().minLength(1);
