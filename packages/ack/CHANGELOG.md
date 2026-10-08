@@ -14,6 +14,13 @@
   instead of three times. The result is still a detached, recursively
   unmodifiable value.
 
+### Fixed
+
+* An imported JSON Schema `uniqueItems` failure now reports the array as its
+  path, for example `#` instead of the later duplicate at `#/2`. Native
+  `Ack.list(...).unique()` and the JSON Schema output format use the same
+  location. `keyword` and `pointer` do not change.
+
 ## 1.7.0-beta.5
 
 ### Breaking
