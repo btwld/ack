@@ -1071,7 +1071,10 @@ void main() {
         final importedDate = Ack.fromJsonSchema(dateJson);
         expect(importedDate.safeParse('2024-02-29').isOk, isTrue);
         expect(importedDate.safeParse('2024-02-30').isFail, isTrue);
-        expect(importedDate.toJsonSchema(), dateJson);
+        // Imported schemas export through root-scoped definitions.
+        final dateDefinitions =
+            importedDate.toJsonSchema()['definitions'] as Map;
+        expect(dateDefinitions.values.first, dateJson);
 
         final dateTimeJson = Ack.datetime().toJsonSchema();
         expect(dateTimeJson['format'], 'date-time');
@@ -1095,7 +1098,11 @@ void main() {
           'x-vendor-meta': {'tier': 'gold'},
         });
         expect(customVendor.safeParse('ok').isOk, isTrue);
-        expect(customVendor.toJsonSchema()['x-vendor-meta'], {'tier': 'gold'});
+        final vendorDefinitions =
+            customVendor.toJsonSchema()['definitions'] as Map;
+        expect((vendorDefinitions.values.first as Map)['x-vendor-meta'], {
+          'tier': 'gold',
+        });
       },
     );
 
