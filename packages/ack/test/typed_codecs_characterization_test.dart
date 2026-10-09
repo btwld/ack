@@ -2,7 +2,11 @@ import 'package:ack/ack.dart';
 // These symbols are intentionally hidden from the public ack.dart export;
 // the internal characterization tests below reach into the source path.
 import 'package:ack/src/schemas/schema.dart'
-    show AnyAckSchema, Refinement, SchemaOperation, WrapperSchema;
+    show
+        AnyAckSchema,
+        SchemaOperation,
+        TestOperationRecordingAckSchema,
+        WrapperSchema;
 import 'package:test/test.dart';
 
 final class _Event {
@@ -29,73 +33,6 @@ final class _StartsWithConstraint extends Constraint<String>
 
   @override
   String buildMessage(String value) => 'Expected value to start with $prefix';
-}
-
-final class _OperationRecordingSchema extends AckSchema<String, String>
-    with FluentSchema<String, String, _OperationRecordingSchema> {
-  _OperationRecordingSchema({
-    required this.parseOperations,
-    required this.validateOperations,
-    required this.encodeOperations,
-    super.isNullable,
-    super.isOptional,
-    super.description,
-    super.constraints,
-    super.refinements,
-  });
-
-  final List<SchemaOperation> parseOperations;
-  final List<SchemaOperation> validateOperations;
-  final List<SchemaOperation> encodeOperations;
-
-  @override
-  SchemaType get schemaType => SchemaType.string;
-
-  @override
-  SchemaResult<String> parseWithContext(Object? value, SchemaContext context) {
-    parseOperations.add(context.operation);
-    return validateRuntimeWithContext(value, context);
-  }
-
-  @override
-  SchemaResult<String> validateRuntimeWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
-    validateOperations.add(context.operation);
-    return SchemaResult.ok(value as String);
-  }
-
-  @override
-  SchemaResult<String> encodeWithContext(String value, SchemaContext context) {
-    encodeOperations.add(context.operation);
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
-
-  @override
-  _OperationRecordingSchema copyWith({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    List<Constraint<String>>? constraints,
-    List<Refinement<String>>? refinements,
-  }) {
-    return _OperationRecordingSchema(
-      parseOperations: parseOperations,
-      validateOperations: validateOperations,
-      encodeOperations: encodeOperations,
-      isNullable: isNullable ?? this.isNullable,
-      isOptional: isOptional ?? this.isOptional,
-      description: description ?? this.description,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-    );
-  }
-
-  @override
-  Map<String, Object?> toJsonSchema() => const {'type': 'string'};
 }
 
 void main() {
@@ -557,7 +494,7 @@ void main() {
     test('parse path observes SchemaOperation.parse', () {
       final parseOperations = <SchemaOperation>[];
       final validateOperations = <SchemaOperation>[];
-      final schema = _OperationRecordingSchema(
+      final schema = TestOperationRecordingAckSchema(
         parseOperations: parseOperations,
         validateOperations: validateOperations,
         encodeOperations: [],
@@ -572,7 +509,7 @@ void main() {
     test('encode path observes SchemaOperation.encode', () {
       final validateOperations = <SchemaOperation>[];
       final encodeOperations = <SchemaOperation>[];
-      final schema = _OperationRecordingSchema(
+      final schema = TestOperationRecordingAckSchema(
         parseOperations: [],
         validateOperations: validateOperations,
         encodeOperations: encodeOperations,
@@ -583,5 +520,57 @@ void main() {
       expect(encodeOperations, [SchemaOperation.encode]);
       expect(validateOperations, [SchemaOperation.encode]);
     });
+  });
+
+  group('Sealed SchemaError exhaustiveness', () {
+    String classifyError(SchemaError error) => switch (error) {
+      TypeMismatchError() => 'type_mismatch',
+      SchemaConstraintsError() => 'constraints',
+      SchemaNestedError() => 'nested',
+      SchemaValidationError() => 'validation',
+      SchemaTransformError() => 'transform',
+      SchemaEncodeError() => 'encode',
+    };
+
+    test(
+      'exhaustive switch handles all SchemaError subtypes without default',
+      () {
+        expect(
+          classifyError(Ack.string().safeParse(42).getError()),
+          'type_mismatch',
+        );
+        expect(
+          classifyError(Ack.string().minLength(5).safeParse('hi').getError()),
+          'constraints',
+        );
+        expect(
+          classifyError(
+            Ack.object({'a': Ack.string()}).safeParse({'a': 1}).getError(),
+          ),
+          'nested',
+        );
+        expect(
+          classifyError(
+            Ack.string()
+                .refine((v) => v == 'ok', message: 'nope')
+                .safeParse('no')
+                .getError(),
+          ),
+          'validation',
+        );
+        expect(
+          classifyError(
+            Ack.string().transform(int.parse).safeParse('abc').getError(),
+          ),
+          'transform',
+        );
+        expect(
+          classifyError(
+            Ack.string().transform(int.parse).safeEncode(1).getError(),
+          ),
+          'encode',
+        );
+      },
+    );
   });
 }

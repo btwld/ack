@@ -75,7 +75,7 @@ enum SchemaOperation { parse, encode }
 /// methods. Subclasses override the three methods; they should not override
 /// the public wrappers.
 @immutable
-abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
+sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   final bool isNullable;
   final bool isOptional;
   final String? description;

@@ -39,6 +39,8 @@ export 'src/schemas/schema.dart'
         ImportedJsonSchema,
         Refinement,
         SchemaOperation,
+        TestOperationRecordingAckSchema,
+        TestThrowingLeafAckSchema,
         WrapperSchema,
         createCodecSchemaInternal;
 export 'src/validation/ack_exception.dart';

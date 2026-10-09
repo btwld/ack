@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'class_first_models.g.dart';
 
@@ -16,7 +15,7 @@ final class Account with _$AccountAck {
   });
 
   /// The name shown to other users.
-  @MinLength(2)
+  @Check.minLength(2)
   @AckField(description: 'The name shown to other users.')
   final String displayName;
   final Uri? website;
@@ -40,8 +39,8 @@ sealed class Pet with _$PetAck {
 final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
 
-  @Min(1)
-  @Max(9)
+  @Check.min(1)
+  @Check.max(9)
   final int lives;
 }
 
