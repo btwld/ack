@@ -2,6 +2,14 @@
 
 ### Added
 
+* `Ack.fromJsonSchema()` now validates and round-trips the complete required
+  Draft 2020-12 test suite, including dynamic references, unevaluated keywords,
+  and offline standard meta-schemas. `assertFormats: true` enables optional
+  format assertions.
+* `toJsonSchema()` and `toSchemaModel()` now preserve imported Draft 2020-12
+  resources by default. `toJsonSchemaDraft7()` and `toSchemaModelDraft7()`
+  retain the legacy 1.x Draft-7 lowering for imported schemas when compatible;
+  imports that require 2020-12-only semantics reject Draft-7 lowering explicitly.
 * `Ack.fromJsonSchema()` now supports `multipleOf` for `number` and `integer`
   schemas. Non-positive or non-numeric `multipleOf` values fail import with an
   `invalid_schema` diagnostic.

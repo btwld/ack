@@ -19,24 +19,10 @@ void main() {
     expect(strict.safeParse({}).isFail, isTrue);
   });
 
-  test('builder bridge retains strictness and diagnostics', () {
-    final model = jsb.Schema.fromMap({'format': 'hostname'});
-    expect(
-      () => model.toAckSchema(),
-      throwsA(
-        isA<JsonSchemaImportException>().having(
-          (error) => error.diagnostics.single.keyword,
-          'keyword',
-          'format',
-        ),
-      ),
-    );
-  });
-
-  test('builder bridge asserts supported date-time on import', () {
-    final model = jsb.Schema.fromMap({'type': 'string', 'format': 'date-time'});
+  test('builder bridge treats formats as annotations by default', () {
+    final model = jsb.Schema.fromMap({'type': 'string', 'format': 'email'});
     final schema = model.toAckSchema();
-    expect(schema.safeParse('2024-02-29T01:02:03Z').isOk, isTrue);
-    expect(schema.safeParse('2024-02-30T01:02:03Z').isFail, isTrue);
+    expect(schema.safeParse('not an email').isOk, isTrue);
+    expect(schema.safeParse(42).isFail, isTrue);
   });
 }

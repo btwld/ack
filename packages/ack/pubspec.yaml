@@ -18,6 +18,8 @@ environment:
 dependencies:
   meta: ^1.15.0
   collection: ^1.18.0
+  punycoder: ^0.3.0
+  unorm_dart: ^0.3.2
 
 dev_dependencies:
   test: ^1.25.15
