@@ -269,13 +269,13 @@ final payloadSchema = ${unsupported.key};
     });
   }
 
-  test('rejects a .trim() field with the declaration path', () async {
+  test('rejects a .transform() field with the declaration path', () async {
     await _expectFailure(
       '''
 $_head
 @Schemable()
 final userSchema = Ack.object({
-  'nick': Ack.string().trim(),
+  'nick': Ack.string().transform((v) => v.trim()),
 });
 ''',
       ['userSchema.nick', '.transform()'],
@@ -317,7 +317,7 @@ final ageSchema = ageFromString;
     await _expectFailure(
       '''
 $_head
-final normalized = Ack.string().trim();
+final normalized = Ack.string().transform((v) => v.trim());
 
 @Schemable()
 final valueSchema = normalized.codec<String>(
@@ -333,7 +333,8 @@ final valueSchema = normalized.codec<String>(
     await _expectFailure(
       '''
 $_head
-AckSchema<String, String> normalized() => Ack.string().trim();
+AckSchema<String, String> normalized() =>
+    Ack.string().transform((v) => v.trim());
 
 @Schemable()
 final valueSchema = normalized().codec<String>(
@@ -349,7 +350,7 @@ final valueSchema = normalized().codec<String>(
     await _expectFailure(
       '''
 $_head
-final normalized = Ack.string().trim();
+final normalized = Ack.string().transform((v) => v.trim());
 
 @Schemable()
 final valueSchema = (normalized).codec<String>(
@@ -368,7 +369,7 @@ final valueSchema = (normalized).codec<String>(
         '''
 $_head
 @Schemable()
-final valueSchema = (Ack.string().trim()).codec<String>(
+final valueSchema = (Ack.string().transform((v) => v.trim())).codec<String>(
   decode: (value) => value,
   encode: (value) => value,
 );

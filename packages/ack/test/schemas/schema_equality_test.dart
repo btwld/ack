@@ -198,10 +198,22 @@ void main() {
         expect(a.hashCode, equals(b.hashCode));
       });
 
-      test('equivalent built-in transformers are equal', () {
+      test('equivalent built-in normalizers are equal and order-sensitive', () {
         expect(Ack.string().trim(), equals(Ack.string().trim()));
         expect(Ack.string().toLowerCase(), equals(Ack.string().toLowerCase()));
         expect(Ack.string().toUpperCase(), equals(Ack.string().toUpperCase()));
+        expect(
+          Ack.string().trim().minLength(2),
+          equals(Ack.string().trim().minLength(2)),
+        );
+        expect(
+          Ack.string().trim().minLength(2),
+          isNot(equals(Ack.string().minLength(2).trim())),
+        );
+        expect(
+          Ack.string().trim().toLowerCase(),
+          isNot(equals(Ack.string().toLowerCase().trim())),
+        );
       });
     });
 

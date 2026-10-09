@@ -42,7 +42,10 @@ export 'src/schemas/schema.dart'
         TestOperationRecordingAckSchema,
         TestThrowingLeafAckSchema,
         WrapperSchema,
-        createCodecSchemaInternal;
+        createCodecSchemaInternal,
+        lowercaseStringSchemaInternal,
+        trimStringSchemaInternal,
+        uppercaseStringSchemaInternal;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results

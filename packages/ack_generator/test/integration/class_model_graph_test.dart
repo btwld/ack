@@ -443,7 +443,8 @@ final class User with _\$UserAck {
   test('rejects a one-way transform returned by AckField', () async {
     await _expectFailure(
       '''
-AckSchema<String, String> normalizedSchema() => Ack.string().trim();
+AckSchema<String, String> normalizedSchema() =>
+    Ack.string().transform((v) => v.trim());
 
 @Schemable()
 final class User with _\$UserAck {
@@ -460,7 +461,7 @@ final class User with _\$UserAck {
   test('rejects a referenced one-way transform returned by AckField', () async {
     await _expectFailure(
       '''
-final normalized = Ack.string().trim();
+final normalized = Ack.string().transform((v) => v.trim());
 AckSchema<String, String> normalizedSchema() => normalized;
 
 @Schemable()

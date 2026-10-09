@@ -132,12 +132,7 @@ final class ClassModelGraphBuilder {
     'yield',
   };
 
-  static const _oneWayTransformMethods = {
-    'transform',
-    'trim',
-    'toLowerCase',
-    'toUpperCase',
-  };
+  static const _oneWayTransformMethods = {'transform'};
 
   static const _schemableChecker = TypeChecker.typeNamed(
     annotations.Schemable,

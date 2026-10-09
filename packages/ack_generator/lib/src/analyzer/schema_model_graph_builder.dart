@@ -56,12 +56,7 @@ final class SchemaModelGraphBuilder {
   static const _reservedMembers = ackSchemaFirstReservedMembers;
   static const _dartKeywords = ackDartReservedWords;
 
-  static const _oneWayTransformMethods = {
-    'transform',
-    'trim',
-    'toLowerCase',
-    'toUpperCase',
-  };
+  static const _oneWayTransformMethods = {'transform'};
 
   static const _maxReferenceDepth = 16;
 

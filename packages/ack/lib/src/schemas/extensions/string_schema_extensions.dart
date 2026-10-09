@@ -2,7 +2,6 @@ import '../../constraints/comparison_constraint.dart';
 import '../../constraints/pattern_constraint.dart';
 import '../../constraints/string_ip_constraint.dart';
 import '../schema.dart';
-import 'ack_schema_extensions.dart';
 
 /// Adds fluent validation methods to [StringSchema].
 extension StringSchemaExtensions on StringSchema {
@@ -127,27 +126,27 @@ extension StringSchemaExtensions on StringSchema {
   /// Adds a constraint that the string must be a valid IPv6 address.
   StringSchema ipv6() => ip(version: 6);
 
-  /// Trims leading and trailing whitespace from the string before validation.
-  /// Returns a one-way codec that applies String.trim() to the input.
-  CodecSchema<String, String> trim() {
-    return transform(_trimString);
+  /// Trims leading and trailing whitespace from the string.
+  ///
+  /// Runs in declaration order with any constraints and refinements chained
+  /// before or after this call, on both `parse` and `encode`.
+  StringSchema trim() {
+    return trimStringSchemaInternal(this);
   }
 
-  /// Converts the string to lowercase after validation.
-  /// Returns a one-way codec that applies String.toLowerCase() to the input.
-  CodecSchema<String, String> toLowerCase() {
-    return transform(_lowercaseString);
+  /// Converts the string to lowercase.
+  ///
+  /// Runs in declaration order with any constraints and refinements chained
+  /// before or after this call, on both `parse` and `encode`.
+  StringSchema toLowerCase() {
+    return lowercaseStringSchemaInternal(this);
   }
 
-  /// Converts the string to uppercase after validation.
-  /// Returns a one-way codec that applies String.toUpperCase() to the input.
-  CodecSchema<String, String> toUpperCase() {
-    return transform(_uppercaseString);
+  /// Converts the string to uppercase.
+  ///
+  /// Runs in declaration order with any constraints and refinements chained
+  /// before or after this call, on both `parse` and `encode`.
+  StringSchema toUpperCase() {
+    return uppercaseStringSchemaInternal(this);
   }
 }
-
-String _trimString(String value) => value.trim();
-
-String _lowercaseString(String value) => value.toLowerCase();
-
-String _uppercaseString(String value) => value.toUpperCase();
