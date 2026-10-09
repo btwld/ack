@@ -754,10 +754,7 @@ return ${node.className}(
       }
 
       final declaredLiteral = _declaredKeysLiteral(
-        _declaredJsonKeys(
-          effectiveFields,
-          additionalKeys: leadingEntries.keys,
-        ),
+        _declaredJsonKeys(effectiveFields, additionalKeys: leadingEntries.keys),
       );
       final allEntries = <String>[
         'for (final entry in additionalProperties.entries)\n'

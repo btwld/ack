@@ -698,4 +698,3 @@ bool _isImportType(Object? type, Object? value) => switch (type) {
   'object' => value is Map,
   _ => false,
 };
-

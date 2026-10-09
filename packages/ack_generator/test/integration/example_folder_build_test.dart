@@ -127,10 +127,7 @@ dependency_overrides:
           if (isClassFirst) {
             expect(entry.value, contains(r'mixin _$AccountAck'));
             expect(entry.value, contains('final _accountSchema'));
-            expect(
-              entry.value,
-              contains('abstract final class AccountSchema'),
-            );
+            expect(entry.value, contains('abstract final class AccountSchema'));
             expect(entry.value, contains(r'decode: _$AccountFromRuntime'));
             expect(entry.value, isNot(contains('final accountSchema')));
           } else {

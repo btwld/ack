@@ -349,10 +349,7 @@ void main() {
           .max(DateTime(2026, 12, 31));
       final model = schema.toSchemaModel();
 
-      expect(model.toJsonSchema(), {
-        'type': 'string',
-        'format': 'date',
-      });
+      expect(model.toJsonSchema(), {'type': 'string', 'format': 'date'});
       expect(
         model.warnings.map((warning) => warning.code),
         everyElement('datetime_constraint_not_draft7'),
@@ -405,10 +402,7 @@ void main() {
           .transform((value) => value.trim());
       final model = schema.toSchemaModel();
 
-      expect(model.toJsonSchema(), {
-        'type': 'string',
-        'minLength': 1,
-      });
+      expect(model.toJsonSchema(), {'type': 'string', 'minLength': 1});
       expect(model.warnings, isEmpty);
     });
 

@@ -138,9 +138,7 @@ final class Person with _\$PersonAck {
             'Import package:test_pkg/address.dart.',
       ],
       head: _aliasHead,
-      allowedOutputs: {
-        'test_pkg|lib/address.g.dart': decodedMatches(anything),
-      },
+      allowedOutputs: {'test_pkg|lib/address.g.dart': decodedMatches(anything)},
       extraSources: {
         'aliases.dart': '''
 import 'address.dart';
@@ -1227,9 +1225,7 @@ final class Address with _\$AddressAck {
 }
 ''',
       },
-      allowedOutputs: {
-        'test_pkg|lib/address.g.dart': decodedMatches(anything),
-      },
+      allowedOutputs: {'test_pkg|lib/address.g.dart': decodedMatches(anything)},
     );
   });
 
@@ -1292,9 +1288,11 @@ final class User with _\$UserAck {
     );
   });
 
-  test('rejects combining @AckField(name: ...) and @JsonKey(name: ...)', () async {
-    await _expectFailure(
-      '''
+  test(
+    'rejects combining @AckField(name: ...) and @JsonKey(name: ...)',
+    () async {
+      await _expectFailure(
+        '''
 @Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
@@ -1304,9 +1302,10 @@ final class User with _\$UserAck {
   final String name;
 }
 ''',
-      ['User.name', 'sets both @AckField(name: ...) and @JsonKey(name: ...)'],
-    );
-  });
+        ['User.name', 'sets both @AckField(name: ...) and @JsonKey(name: ...)'],
+      );
+    },
+  );
 
   test('rejects @Optional() on a required constructor parameter', () async {
     await _expectFailure(

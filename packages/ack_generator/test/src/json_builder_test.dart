@@ -20,7 +20,10 @@ void main() {
     expect(yaml, contains('builder_factories: ["ackGenerator"]'));
     expect(yaml, contains('build_extensions: {".dart": [".ack.g.part"]}'));
     expect(yaml, contains('build_to: cache'));
-    expect(yaml, contains('applies_builders: ["source_gen|combining_builder"]'));
+    expect(
+      yaml,
+      contains('applies_builders: ["source_gen|combining_builder"]'),
+    );
     expect(yaml, isNot(contains('ack_model_json')));
     expect(yaml, isNot(contains('.ack.g.dart')));
   });

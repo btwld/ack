@@ -14,7 +14,8 @@ String ackClassWireSchemaName(String className) =>
     '_${className[0].toLowerCase()}${className.substring(1)}WireSchema';
 
 /// Private runtime decoder generated for a class-first object model.
-String ackClassFromRuntimeName(String className) => '_\$${className}FromRuntime';
+String ackClassFromRuntimeName(String className) =>
+    '_\$${className}FromRuntime';
 
 /// Private runtime encoder generated for a class-first object model.
 String ackClassToRuntimeName(String className) => '_\$${className}ToRuntime';

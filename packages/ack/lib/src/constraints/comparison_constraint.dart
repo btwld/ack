@@ -442,4 +442,3 @@ bool isExactDecimalMultipleOf(num value, num divisor) {
   }
   return (coefficient, scale);
 }
-

@@ -789,9 +789,7 @@ final petSchema = Ack.discriminated(
 ''',
       },
       outputs: {
-        'test_pkg|lib/cat.g.dart': decodedMatches(
-          contains('final class Cat'),
-        ),
+        'test_pkg|lib/cat.g.dart': decodedMatches(contains('final class Cat')),
       },
       onLog: (log) {
         if (log.level.name == 'SEVERE') messages.add(log.message);
@@ -819,8 +817,12 @@ final docSchema = Ack.object({
       outputs: {
         'test_pkg|lib/doc.g.dart': decodedMatches(
           allOf(
-            contains('/// Model line one.\n/// Model line two.\nfinal class Doc'),
-            contains('/// First line.\n  /// Second line.\n  final String note;'),
+            contains(
+              '/// Model line one.\n/// Model line two.\nfinal class Doc',
+            ),
+            contains(
+              '/// First line.\n  /// Second line.\n  final String note;',
+            ),
           ),
         ),
       },

@@ -1148,10 +1148,7 @@ void main() {
         final generated = _generatedFiles(temporary);
         expect(
           generated.keys,
-          containsAll([
-            'lib/coexist.g.dart',
-            'lib/models.g.dart',
-          ]),
+          containsAll(['lib/coexist.g.dart', 'lib/models.g.dart']),
         );
         expect(
           generated['lib/models.g.dart'],
@@ -1162,10 +1159,7 @@ void main() {
           contains(r'_$PlainJsonFromJson'),
         );
         expect(generated['lib/models.g.dart'], contains('class Legacy'));
-        expect(
-          generated['lib/models.g.dart'],
-          contains(r'mixin _$ProfileAck'),
-        );
+        expect(generated['lib/models.g.dart'], contains(r'mixin _$ProfileAck'));
         expect(
           generated['lib/models.g.dart'],
           contains(r'implements $ParentCopyWith<$Result>'),
