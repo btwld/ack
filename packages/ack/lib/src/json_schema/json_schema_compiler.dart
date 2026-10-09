@@ -53,6 +53,7 @@ final class _ImportedNode {
   num? maximum;
   num? exclusiveMinimum;
   num? exclusiveMaximum;
+  num? multipleOf;
   num? minLength;
   num? maxLength;
   num? minItems;
@@ -570,6 +571,11 @@ final class _JsonSchemaCompiler {
           case 'exclusiveMaximum':
             node.exclusiveMaximum = value;
         }
+      } else if (key == 'multipleOf') {
+        if (value is! num || value <= 0) {
+          _fail(node, key, 'Expected a positive number.');
+        }
+        node.keywords[key] = node.multipleOf = value;
       } else if (key == 'uniqueItems') {
         if (value is! bool) _fail(node, key, 'Expected a boolean.');
         node.keywords[key] = node.uniqueItems = value;

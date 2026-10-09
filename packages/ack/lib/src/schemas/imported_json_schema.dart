@@ -265,6 +265,10 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
       if (node.exclusiveMaximum case final limit? when value >= limit) {
         return fail('exclusiveMaximum');
       }
+      if (node.multipleOf case final divisor?
+          when !isExactDecimalMultipleOf(value, divisor)) {
+        return fail('multipleOf');
+      }
     case String():
       // Counting code points allocates, so only do it when a bound exists.
       if (node.minLength != null || node.maxLength != null) {
