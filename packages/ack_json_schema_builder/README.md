@@ -95,9 +95,12 @@ other logic that JSON Schema cannot represent.
 
 ### Target Schema Support
 
-The converter emits ACK's generic Draft-7 JSON Schema map before constructing
-the `json_schema_builder` schema. If a downstream validator or consumer ignores
-a JSON Schema keyword, validate with ACK after parsing.
+The converter uses `AckSchema.toJsonSchema()` before constructing the
+`json_schema_builder` schema, preserving imported Draft 2020-12 resources by
+default and emitting Draft-7 for native ACK schemas. To lower an imported
+schema into legacy Draft-7 `definitions`, call
+`schema.toJsonSchemaBuilderDraft7()`. If a downstream validator or consumer
+ignores a JSON Schema keyword, validate with ACK after parsing.
 
 ```dart
 final schema = Ack.date().min(DateTime(2026));

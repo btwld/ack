@@ -162,68 +162,77 @@ void main() {
       );
     });
 
-    test('uses existing composition models for imported JSON Schema', () {
-      final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+    test(
+      'uses a resource-preserving model for imported JSON Schema by default',
+      () {
+        final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
 
-      final model = schema.toSchemaModel();
+        final model = schema.toSchemaModel();
 
-      expect(model, isA<AckAllOfSchemaModel>());
-      final allOf = model as AckAllOfSchemaModel;
-      expect(allOf.schemas, hasLength(1));
-      expect(allOf.schemas.single, isA<AckRefSchemaModel>());
-      expect(model.toJsonSchema(), schema.toJsonSchema());
-    });
+        expect(model, isA<AckRawSchemaModel>());
+        expect(model.toJsonSchema()['type'], 'string');
+        expect(model.toJsonSchema(), schema.toJsonSchema());
+      },
+    );
 
-    test('uses a resource-preserving model for imported JSON Schema', () {
-      final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+    test(
+      'uses existing composition models for Draft-7 lowered imported JSON Schema',
+      () {
+        final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
 
-      final model = schema.toSchemaModelPreservingImportedDialect();
+        final model = schema.toSchemaModelDraft7();
 
-      expect(model, isA<AckRawSchemaModel>());
-      expect(model.toJsonSchema()['type'], 'string');
-      expect(
-        model.toJsonSchema(),
-        schema.toJsonSchemaPreservingImportedDialect(),
-      );
-    });
+        expect(model, isA<AckAllOfSchemaModel>());
+        final allOf = model as AckAllOfSchemaModel;
+        expect(allOf.schemas, hasLength(1));
+        expect(allOf.schemas.single, isA<AckRefSchemaModel>());
+        expect(model.toJsonSchema(), schema.toJsonSchemaDraft7());
+      },
+    );
 
-    test('rejects an imported definition reused as a lazy target', () {
-      final imported = Ack.fromJsonSchema(true).nullable(value: false);
-      final schema = Ack.object({
-        'a': imported,
-        'b': Ack.lazy('_ack_import_0_0', () => imported),
-      });
+    test(
+      'rejects an imported definition reused as a lazy target in Draft-7 lowering',
+      () {
+        final imported = Ack.fromJsonSchema(true).nullable(value: false);
+        final schema = Ack.object({
+          'a': imported,
+          'b': Ack.lazy('_ack_import_0_0', () => imported),
+        });
 
-      expect(
-        schema.toJsonSchema,
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            contains('collides with an imported definition'),
+        expect(
+          schema.toJsonSchemaDraft7,
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('collides with an imported definition'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
-    test('rejects an import generated name occupied by an earlier lazy', () {
-      final imported = Ack.fromJsonSchema(true);
-      final schema = Ack.object({
-        'a': Ack.lazy('_ack_import_0_0', Ack.string),
-        'b': imported,
-      });
+    test(
+      'rejects an import generated name occupied by an earlier lazy in Draft-7 lowering',
+      () {
+        final imported = Ack.fromJsonSchema(true);
+        final schema = Ack.object({
+          'a': Ack.lazy('_ack_import_0_0', Ack.string),
+          'b': imported,
+        });
 
-      expect(
-        schema.toJsonSchema,
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            contains('Imported definition collides with'),
+        expect(
+          schema.toJsonSchemaDraft7,
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('Imported definition collides with'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test('rejects nullable list item schemas at construction', () {
       expect(

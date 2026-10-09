@@ -28,9 +28,7 @@ void main() {
             group['schema']!,
             assertFormats: true,
           );
-          final roundTrip = Ack.fromJsonSchema(
-            schema.toJsonSchemaPreservingImportedDialect(),
-          );
+          final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
           final mismatches = <String>[];
           for (final example in group['tests']! as List) {
             final testCase = example as Map<String, Object?>;
@@ -78,9 +76,7 @@ void main() {
           group['schema']!,
           documents: documents,
         );
-        final roundTrip = Ack.fromJsonSchema(
-          schema.toJsonSchemaPreservingImportedDialect(),
-        );
+        final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
         for (final example in group['tests']! as List) {
           final testCase = example as Map<String, Object?>;
           expect(

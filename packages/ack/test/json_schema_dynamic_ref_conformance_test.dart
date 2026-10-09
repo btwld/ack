@@ -47,9 +47,7 @@ void main() {
           ),
           documents: documents,
         );
-        final exported = Ack.fromJsonSchema(
-          schema.toJsonSchemaPreservingImportedDialect(),
-        );
+        final exported = Ack.fromJsonSchema(schema.toJsonSchema());
         for (final example in group['tests']! as List) {
           final value = example['data'];
           final expected = example['valid'] as bool;

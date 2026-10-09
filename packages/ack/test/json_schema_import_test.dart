@@ -96,7 +96,7 @@ void main() {
         expect(schema.safeParse('ok').isOk, isTrue);
         expect(schema.safeParse(1).isFail, isTrue);
         expect(schema.safeParse(null).isOk, isTrue);
-        final exported = schema.toJsonSchemaPreservingImportedDialect();
+        final exported = schema.toJsonSchema();
         expect(exported.containsKey(r'$ref'), isFalse);
         expect(
           exported[r'$schema'],
@@ -109,10 +109,7 @@ void main() {
         expect(constrained, isNot(contains(r'$ref')));
         expect(Ack.fromJsonSchema(exported).safeParse(1).isFail, isTrue);
         expect(Ack.fromJsonSchema(exported).safeParse(null).isOk, isTrue);
-        expect(
-          schema.toSchemaModelPreservingImportedDialect().toJsonSchema(),
-          exported,
-        );
+        expect(schema.toSchemaModel().toJsonSchema(), exported);
       },
     );
 
@@ -133,9 +130,7 @@ void main() {
           'alias': {r'$ref': '#/properties/name'},
         },
       }).nullable();
-      final restored = Ack.fromJsonSchema(
-        schema.toJsonSchemaPreservingImportedDialect(),
-      );
+      final restored = Ack.fromJsonSchema(schema.toJsonSchema());
       for (final value in <Object?>[
         null,
         {'name': 'Ada', 'alias': 'Ada'},
@@ -152,9 +147,7 @@ void main() {
           'child': {r'$ref': '#'},
         },
       }).nullable();
-      final restored = Ack.fromJsonSchema(
-        schema.toJsonSchemaPreservingImportedDialect(),
-      );
+      final restored = Ack.fromJsonSchema(schema.toJsonSchema());
       for (final value in <Object?>[
         null,
         <String, Object?>{},
@@ -177,9 +170,7 @@ void main() {
             'child': {reference: '#node'},
           },
         }).nullable();
-        final restored = Ack.fromJsonSchema(
-          schema.toJsonSchemaPreservingImportedDialect(),
-        );
+        final restored = Ack.fromJsonSchema(schema.toJsonSchema());
         for (final value in <Object?>[
           null,
           <String, Object?>{},
@@ -224,7 +215,7 @@ void main() {
         expect(schema.safeParse({'text': 1}).isFail, isTrue);
         expect(
           Ack.fromJsonSchema(
-            schema.toJsonSchemaPreservingImportedDialect(),
+            schema.toJsonSchema(),
           ).safeParse({'text': 1}).isFail,
           isTrue,
         );
@@ -251,9 +242,7 @@ void main() {
       for (final value in [null, 1, 'x', [], <String, Object?>{}]) {
         expect(never.safeParse(value).isFail, isTrue);
         expect(
-          Ack.fromJsonSchema(
-            never.toJsonSchemaPreservingImportedDialect(),
-          ).safeParse(value).isFail,
+          Ack.fromJsonSchema(never.toJsonSchema()).safeParse(value).isFail,
           isTrue,
         );
       }
@@ -261,13 +250,8 @@ void main() {
         'enum': [1, 1.0, 'x', 'x'],
       });
       expect(repeated.safeParse(1).isOk, isTrue);
-      expect(repeated.toJsonSchemaPreservingImportedDialect()['enum'], [
-        1,
-        1.0,
-        'x',
-        'x',
-      ]);
-      expect(never.toJsonSchemaPreservingImportedDialect()['enum'], isEmpty);
+      expect(repeated.toJsonSchema()['enum'], [1, 1.0, 'x', 'x']);
+      expect(never.toJsonSchema()['enum'], isEmpty);
     });
 
     test('pattern and propertyNames validate and export verbatim', () {
@@ -286,7 +270,7 @@ void main() {
       // "pattern" is skipped rather than failed for non-strings.
       expect(schema.safeParse({'name': 42}).isOk, isTrue);
 
-      final export = schema.toJsonSchemaPreservingImportedDialect();
+      final export = schema.toJsonSchema();
       expect((export['properties'] as Map)['name'], {'pattern': r'^a+$'});
       expect(export['propertyNames'], {'maxLength': 4});
       final roundTrip = Ack.fromJsonSchema(export);
@@ -304,9 +288,7 @@ void main() {
       expect(schema.safeParse('東京').isOk, isTrue);
       expect(schema.safeParse('123').isFail, isTrue);
       expect(
-        Ack.fromJsonSchema(
-          schema.toJsonSchemaPreservingImportedDialect(),
-        ).safeParse('東京').isOk,
+        Ack.fromJsonSchema(schema.toJsonSchema()).safeParse('東京').isOk,
         isTrue,
       );
     });
@@ -319,9 +301,7 @@ void main() {
       for (final value in [0.31, 1.2000000000000002, 1e-7]) {
         expect(schema.safeParse(value).isFail, isTrue, reason: '$value');
       }
-      final restored = Ack.fromJsonSchema(
-        schema.toJsonSchemaPreservingImportedDialect(),
-      );
+      final restored = Ack.fromJsonSchema(schema.toJsonSchema());
       expect(restored.safeParse(0.3).isOk, isTrue);
       expect(restored.safeParse(0.31).isFail, isTrue);
       for (final invalid in [0, -0.1, '0.1']) {
@@ -556,9 +536,7 @@ void main() {
           Ack.fromJsonSchema({'type': 'string'}).nullable(),
           Ack.fromJsonSchema(true).nullable(value: false),
         ]) {
-          final roundTrip = Ack.fromJsonSchema(
-            schema.toJsonSchemaPreservingImportedDialect(),
-          );
+          final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
           expect(schema.safeParse(null).isOk, schema.isNullable);
           expect(schema.safeEncode(null).isOk, schema.isNullable);
           expect(roundTrip.safeParse(null).isOk, schema.isNullable);
@@ -597,9 +575,7 @@ void main() {
         };
         expect(schema.parse(value), value);
         expect(schema.safeParse({'value': 1, 'next': {}}).isFail, isTrue);
-        final roundTrip = Ack.fromJsonSchema(
-          schema.toJsonSchemaPreservingImportedDialect(),
-        );
+        final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
         expect(roundTrip.safeParse(value).isOk, isTrue);
         expect(roundTrip.safeParse({'value': 1, 'next': {}}).isFail, isTrue);
       },
@@ -691,7 +667,7 @@ void main() {
         final schema = Ack.fromJsonSchema(document);
         expect(schema.safeParse('not an email or base64').isOk, isTrue);
         expect(schema.safeParse(1).isFail, isTrue);
-        final imported = schema.toJsonSchemaPreservingImportedDialect();
+        final imported = schema.toJsonSchema();
         for (final key in [
           'format',
           'contentEncoding',
@@ -702,9 +678,7 @@ void main() {
           expect(imported[key], document[key], reason: key);
         }
         expect(
-          Ack.fromJsonSchema(
-            schema.toJsonSchemaPreservingImportedDialect(),
-          ).safeParse('invalid').isOk,
+          Ack.fromJsonSchema(schema.toJsonSchema()).safeParse('invalid').isOk,
           isTrue,
         );
       },
@@ -726,7 +700,7 @@ void main() {
       });
       expect(schema.safeParse('accepted').isOk, isTrue);
       expect(schema.safeParse(1).isFail, isTrue);
-      expect(schema.toJsonSchemaPreservingImportedDialect()[r'$vocabulary'], {
+      expect(schema.toJsonSchema()[r'$vocabulary'], {
         'https://example.test/optional': false,
       });
     });

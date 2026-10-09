@@ -1,8 +1,9 @@
 /// Bidirectional JSON Schema Builder bridge for ACK validation library.
 ///
-/// Converts ACK validation schemas to json_schema_builder Schema format
-/// from ACK's stable Draft-7 JSON Schema renderer. Use the explicit preserving
-/// export on an imported schema when its draft 2020-12 dialect is required.
+/// Converts ACK validation schemas to json_schema_builder Schema format,
+/// preserving imported Draft 2020-12 resources by default and emitting ACK's
+/// Draft-7 representation for native schemas. Use [toJsonSchemaBuilderDraft7]
+/// when an imported schema must be lowered to Draft-7 definitions.
 /// Imports draft 2020-12 builder models through [AckSchemaImportExtension].
 ///
 /// ## Usage
@@ -47,15 +48,14 @@ extension JsonSchemaBuilderExtension on AckSchema {
   /// Converts this ACK schema to json_schema_builder Schema format.
   ///
   /// Returns a json_schema_builder [Schema] instance from ACK's JSON Schema
-  /// map, preserving the 1.x Draft-7 export representation.
+  /// map, preserving imported Draft 2020-12 resources by default.
   jsb.Schema toJsonSchemaBuilder() {
     return jsb.Schema.fromMap(toJsonSchema());
   }
 
-  /// Converts imports without lowering their draft 2020-12 resources.
-  /// Native schemas retain Draft-7 output.
-  jsb.Schema toJsonSchemaBuilderPreservingImportedDialect() {
-    return jsb.Schema.fromMap(toJsonSchemaPreservingImportedDialect());
+  /// Converts imports using the legacy Draft-7 `definitions` / `$ref` lowering.
+  jsb.Schema toJsonSchemaBuilderDraft7() {
+    return jsb.Schema.fromMap(toJsonSchemaDraft7());
   }
 }
 

@@ -10,20 +10,23 @@ void main() {
     final Map<String, Object?> modelExport = schema
         .toSchemaModel()
         .toJsonSchema();
+    final Map<String, Object?> draft7Export = schema.toJsonSchemaDraft7();
 
-    expect(exported['type'], isNull);
-    expect(exported['allOf'], [
+    expect(
+      exported[r'$schema'],
+      'https://json-schema.org/draft/2020-12/schema',
+    );
+    expect(exported['type'], 'string');
+    expect(exported['minLength'], 2);
+    expect(modelExport, exported);
+    expect(draft7Export['type'], isNull);
+    expect(draft7Export['allOf'], [
       {r'$ref': '#/definitions/_ack_import_0_0'},
     ]);
-    expect((exported['definitions'] as Map)['_ack_import_0_0'], {
+    expect((draft7Export['definitions'] as Map)['_ack_import_0_0'], {
       'type': 'string',
       'minLength': 2,
     });
-    expect(
-      schema.toJsonSchemaPreservingImportedDialect()[r'$schema'],
-      'https://json-schema.org/draft/2020-12/schema',
-    );
-    expect(modelExport, exported);
     expect(schema.safeParse('Ada').isOk, isTrue);
     expect(schema.safeParse('A').isFail, isTrue);
   });
@@ -135,7 +138,7 @@ void main() {
     expect(never.safeParse('anything').isFail, isTrue);
   });
 
-  test('dynamic references require the explicit preserving export', () {
+  test('dynamic references export by default and reject Draft-7 lowering', () {
     final schema = Ack.fromJsonSchema({
       r'$dynamicAnchor': 'node',
       'type': 'object',
@@ -143,10 +146,7 @@ void main() {
         'next': {r'$dynamicRef': '#node'},
       },
     });
-    expect(schema.toJsonSchema, throwsUnsupportedError);
-    expect(
-      schema.toJsonSchemaPreservingImportedDialect()[r'$dynamicAnchor'],
-      'node',
-    );
+    expect(schema.toJsonSchema()[r'$dynamicAnchor'], 'node');
+    expect(schema.toJsonSchemaDraft7, throwsUnsupportedError);
   });
 }

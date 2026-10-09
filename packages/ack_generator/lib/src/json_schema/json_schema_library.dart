@@ -1208,7 +1208,7 @@ String _emitFallback(
       ..writeln('  Object? toJson() => encode(this);')
       ..writeln()
       ..writeln('  static Map<String, Object?> toJsonSchema() =>')
-      ..writeln('      schema.toJsonSchemaPreservingImportedDialect();')
+      ..writeln('      schema.toJsonSchema();')
       ..writeln('}')
       ..writeln();
   }

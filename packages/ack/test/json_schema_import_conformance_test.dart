@@ -23,9 +23,7 @@ void main() {
             (uri, value) => MapEntry(Uri.parse(uri), value!),
           ),
         );
-        final roundTrip = Ack.fromJsonSchema(
-          schema.toJsonSchemaPreservingImportedDialect(),
-        );
+        final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
         for (final example in group['tests']! as List) {
           final value = example['data'];
           final expected = example['valid'] as bool;

@@ -104,15 +104,15 @@ final class _ImportedNode {
   ];
 
   /// The 1.x Draft-7 representation of an imported node. Newer 2020-12
-  /// assertions that cannot be lowered must use the preserving export.
+  /// assertions that cannot be lowered fail when `toJsonSchemaDraft7()` is used.
   Map<String, Object?> renderLegacy(String Function(_ImportedNode) refOf) {
     if (dynamicReference != null ||
         dynamicAnchorName != null ||
         (source is Map<String, Object?> &&
             (source as Map<String, Object?>).containsKey('format'))) {
       throw UnsupportedError(
-        'This imported schema needs 2020-12 semantics. Use '
-        'toJsonSchemaPreservingImportedDialect().',
+        'This imported schema needs 2020-12 semantics and cannot be lowered '
+        'with toJsonSchemaDraft7().',
       );
     }
     if (isFalse) return {'not': <String, Object?>{}};

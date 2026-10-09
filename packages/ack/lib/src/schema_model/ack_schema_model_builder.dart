@@ -17,20 +17,24 @@ extension AckSchemaModelExtension<
   Runtime extends Object
 >
     on AckSchema<Boundary, Runtime> {
-  AckSchemaModel toSchemaModel() => _SchemaModelBuilder().build(this);
-
   /// Preserves imported Draft 2020-12 resources, including dynamic references.
   /// Native Ack schemas continue to use their Draft-7 representation.
-  AckSchemaModel toSchemaModelPreservingImportedDialect() =>
+  AckSchemaModel toSchemaModel() =>
       _SchemaModelBuilder(preserveImportedDialect: true).build(this);
 
-  /// Exports imported schemas with their Draft 2020-12 dialect and resources.
-  Map<String, Object?> toJsonSchemaPreservingImportedDialect() =>
-      toSchemaModelPreservingImportedDialect().toJsonSchema();
+  /// Lowers imported schemas into the legacy Draft-7 `definitions` / `$ref`
+  /// representation when possible.
+  AckSchemaModel toSchemaModelDraft7() =>
+      _SchemaModelBuilder(preserveImportedDialect: false).build(this);
+
+  /// Exports imported schemas using the legacy Draft-7 `definitions` / `$ref`
+  /// representation when possible.
+  Map<String, Object?> toJsonSchemaDraft7() =>
+      toSchemaModelDraft7().toJsonSchema();
 }
 
 final class _SchemaModelBuilder {
-  _SchemaModelBuilder({this.preserveImportedDialect = false});
+  _SchemaModelBuilder({this.preserveImportedDialect = true});
 
   final bool preserveImportedDialect;
   // Every emitted definition name is reserved here. A null value marks a lazy

@@ -35,9 +35,7 @@ void main() {
             ),
             documents: documents,
           );
-          final roundTrip = Ack.fromJsonSchema(
-            schema.toJsonSchemaPreservingImportedDialect(),
-          );
+          final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
           for (final example in group['tests']! as List) {
             final testCase = example as Map<String, Object?>;
             final expected = testCase['valid'] as bool;
