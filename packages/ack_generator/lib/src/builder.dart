@@ -3,6 +3,8 @@ import 'package:source_gen/source_gen.dart';
 
 import 'generator.dart';
 import 'json/ack_json_generator.dart';
+import 'json_schema/json_schema_builder.dart';
+import 'json_schema/json_schema_library.dart';
 import 'model_generator.dart';
 
 /// Header for the modern parts.
@@ -41,3 +43,11 @@ Builder ackModelJsonBuilder(BuilderOptions options) {
     options: options,
   );
 }
+
+/// Creates the opt-in builder that generates `@AckInfer` schema declarations
+/// from `*.schema.json` JSON Schema bundles.
+///
+/// Enable it in a consumer's `build.yaml` as `ack_generator:ack_json_schema`.
+Builder ackJsonSchemaBuilder(BuilderOptions options) => AckJsonSchemaBuilder(
+  AckJsonSchemaLibraryOptions.fromConfig(options.config),
+);

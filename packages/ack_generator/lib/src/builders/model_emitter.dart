@@ -304,9 +304,7 @@ return switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
       ..name = field.dartName
       ..modifier = FieldModifier.final$
       ..type = refer(_fieldType(field))
-      ..docs.addAll([
-        if (field.description != null) '/// ${field.description}',
-      ]),
+      ..docs.addAll(_descriptionDocs(field.description)),
   );
 
   Field _additionalPropertiesField() => Field(
@@ -1072,7 +1070,15 @@ return $helper(<String, dynamic>{
 
   List<String> _docs(AckModelNode node, String kind) => [
     '/// $kind generated from `${node.id.declarationName}`.',
-    if (node.description != null) '/// ${node.description}',
+    ..._descriptionDocs(node.description),
+  ];
+
+  /// One doc-comment line per description line, so multi-line descriptions
+  /// keep the generated declaration valid.
+  List<String> _descriptionDocs(String? description) => [
+    if (description != null)
+      for (final line in description.split(RegExp(r'\r?\n')))
+        line.trimRight().isEmpty ? '///' : '/// ${line.trimRight()}',
   ];
 
   Expression _jsonMarker() {
