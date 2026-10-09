@@ -11,6 +11,7 @@ import 'package:source_gen/source_gen.dart';
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 import 'generated_companion_visibility.dart';
+import 'schema_first_names.dart';
 
 final class _Declaration {
   const _Declaration({
@@ -52,90 +53,8 @@ typedef _SchemaTypes = ({AckInferRef boundary, AckInferRef runtime});
 final class SchemaModelGraphBuilder {
   SchemaModelGraphBuilder(this.library);
 
-  static const _reservedMembers = {
-    r'$ack',
-    'parse',
-    'safeParse',
-    'fromJson',
-    'toJson',
-    'safeToJson',
-    'copyWith',
-    '_fromAckRuntime',
-    '_toAckRuntime',
-    'hashCode',
-    'noSuchMethod',
-    'toString',
-    'runtimeType',
-  };
-
-  static const _dartKeywords = {
-    'abstract',
-    'as',
-    'assert',
-    'async',
-    'await',
-    'base',
-    'break',
-    'case',
-    'catch',
-    'class',
-    'const',
-    'continue',
-    'covariant',
-    'default',
-    'deferred',
-    'do',
-    'dynamic',
-    'else',
-    'enum',
-    'export',
-    'extends',
-    'extension',
-    'external',
-    'factory',
-    'false',
-    'final',
-    'finally',
-    'for',
-    'get',
-    'hide',
-    'if',
-    'implements',
-    'import',
-    'in',
-    'interface',
-    'is',
-    'late',
-    'library',
-    'mixin',
-    'new',
-    'null',
-    'of',
-    'on',
-    'operator',
-    'part',
-    'required',
-    'rethrow',
-    'return',
-    'sealed',
-    'set',
-    'show',
-    'static',
-    'super',
-    'switch',
-    'sync',
-    'this',
-    'throw',
-    'true',
-    'try',
-    'typedef',
-    'var',
-    'void',
-    'when',
-    'while',
-    'with',
-    'yield',
-  };
+  static const _reservedMembers = ackSchemaFirstReservedMembers;
+  static const _dartKeywords = ackDartReservedWords;
 
   static const _oneWayTransformMethods = {
     'transform',
@@ -146,23 +65,8 @@ final class SchemaModelGraphBuilder {
 
   static const _maxReferenceDepth = 16;
 
-  static const _ackInferChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
-    AckInfer,
-    inPackage: 'ack',
-  );
   static const _schemableChecker = TypeChecker.typeNamed(
     Schemable,
-    inPackage: 'ack',
-  );
-  static const _legacyAckTypeChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
-    AckType,
-    inPackage: 'ack',
-  );
-  static const _ackModelChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
-    AckModel,
     inPackage: 'ack',
   );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
@@ -869,14 +773,6 @@ final class SchemaModelGraphBuilder {
     if (element is! TopLevelVariableElement && element is! GetterElement) {
       return null;
     }
-    if (_hasLegacyAckType(element)) {
-      throw InvalidGenerationSource(
-        '$path crosses from a modern Ack model into legacy @AckType. '
-        'AckType and modern models intentionally use isolated generators; '
-        'migrate this connected graph together.',
-        element: context,
-      );
-    }
     if (_hasAckInfer(element)) return null;
     if (depth >= _maxReferenceDepth) {
       throw InvalidGenerationSource(
@@ -1184,9 +1080,7 @@ final class SchemaModelGraphBuilder {
   }
 
   String? _classFirstFacadeName(ClassElement element) {
-    final annotation =
-        _ackModelChecker.firstAnnotationOfExact(element) ??
-        _schemableChecker.firstAnnotationOfExact(element);
+    final annotation = _schemableChecker.firstAnnotationOfExact(element);
     if (annotation != null) {
       final value = ConstantReader(annotation).read('schemaName');
       return ackClassSchemaFacadeName(
@@ -1199,8 +1093,7 @@ final class SchemaModelGraphBuilder {
       return base is ClassElement &&
           base.library == element.library &&
           base.isSealed &&
-          (_ackModelChecker.hasAnnotationOfExact(base) ||
-              _schemableChecker.hasAnnotationOfExact(base));
+          _schemableChecker.hasAnnotationOfExact(base);
     });
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)
@@ -1470,27 +1363,15 @@ final class SchemaModelGraphBuilder {
 
   bool _hasAckInfer(Element element) {
     final declaration = _propertyDeclaration(element);
-    return _ackInferChecker.hasAnnotationOfExact(declaration) ||
-        _schemableChecker.hasAnnotationOfExact(declaration);
+    return _schemableChecker.hasAnnotationOfExact(declaration);
   }
 
   /// The annotation spelling that marks the declaration behind [element].
-  String _annotationLabel(Element element) =>
-      _ackInferChecker.hasAnnotationOfExact(_propertyDeclaration(element))
-      ? '@AckInfer'
-      : '@Schemable';
-
-  bool _hasLegacyAckType(Element element) {
-    return _legacyAckTypeChecker.hasAnnotationOfExact(
-      _propertyDeclaration(element),
-    );
-  }
+  String _annotationLabel(Element element) => '@Schemable';
 
   String? _annotationName(Element element) {
     final declaration = _propertyDeclaration(element);
-    final annotation =
-        _ackInferChecker.firstAnnotationOfExact(declaration) ??
-        _schemableChecker.firstAnnotationOfExact(declaration);
+    final annotation = _schemableChecker.firstAnnotationOfExact(declaration);
     final field = annotation == null
         ? null
         : ConstantReader(annotation).peek('name');
@@ -1596,30 +1477,16 @@ final class SchemaModelGraphBuilder {
       if (declaration == null) continue;
       switch (node) {
         case AckUnionModelNode():
-          continue;
         case AckValueModelNode():
-          _validateClassHelperNames(
-            className: node.className,
-            fieldNames: const ['value'],
-            needsCopyWithSentinel: false,
-            path: node.id.declarationName,
-            element: declaration.element,
-            localNames: localNames,
-          );
+          continue;
         case AckObjectModelNode():
           _validateClassHelperNames(
             className: node.className,
-            fieldNames: [
-              for (final field in node.fields)
-                if (field.jsonKey != node.discriminatorKey) field.dartName,
-              if (node.additionalProperties) 'additionalProperties',
-            ],
             needsCopyWithSentinel: node.fields.any(
               (field) =>
                   field.jsonKey != node.discriminatorKey &&
                   (field.nullable || !field.isRequired),
             ),
-            path: node.id.declarationName,
             element: declaration.element,
             localNames: localNames,
           );
@@ -1629,48 +1496,10 @@ final class SchemaModelGraphBuilder {
 
   void _validateClassHelperNames({
     required String className,
-    required List<String> fieldNames,
     required bool needsCopyWithSentinel,
-    required String path,
     required Element element,
     required Set<String> localNames,
   }) {
-    final ownerByBridge = <String, String>{};
-    for (final fieldName in fieldNames) {
-      for (final bridgeName in ackFieldBridgeNames(fieldName)) {
-        final owner = ownerByBridge[bridgeName];
-        if (owner != null) {
-          throw InvalidGenerationSource(
-            '$path.$fieldName generates helper "$bridgeName" that conflicts '
-            'with $path.$owner.',
-            element: element,
-          );
-        }
-        if (fieldNames.contains(bridgeName)) {
-          throw InvalidGenerationSource(
-            '$path.$fieldName generates helper "$bridgeName" that conflicts '
-            'with a stored field.',
-            element: element,
-          );
-        }
-        if (_reservedMembers.contains(bridgeName)) {
-          throw InvalidGenerationSource(
-            '$path.$fieldName generates helper "$bridgeName" that conflicts '
-            'with a generated member.',
-            element: element,
-          );
-        }
-        ownerByBridge[bridgeName] = fieldName;
-      }
-    }
-
-    for (final helperName in ackJsonHelperNames(className)) {
-      if (!localNames.contains(helperName)) continue;
-      throw InvalidGenerationSource(
-        'Generated helper "$helperName" conflicts with a local declaration.',
-        element: element,
-      );
-    }
     final sentinelType = ackCopyWithUnsetTypeName(className);
     if (needsCopyWithSentinel && localNames.contains(sentinelType)) {
       throw InvalidGenerationSource(

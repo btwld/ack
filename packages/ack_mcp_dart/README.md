@@ -112,7 +112,7 @@ It does not throw `McpError`. A parsed null is also rejected by the wrapper.
 | --- | --- | --- |
 | Optional default | `default` annotation; field may be omitted | ACK fills the value during parse |
 | Refinement | Predicate is not exported | ACK runs the predicate |
-| Codec / transform | Boundary shape and `x-transformed` metadata | ACK produces typed values, e.g. `DateTime` |
+| Codec / transform | Boundary shape | ACK produces typed values, e.g. `DateTime` |
 | Integer | JSON Schema integer semantics | `2.0` becomes `int 2`; `2.5` fails |
 | Structural failure | Rejected by `mcp_dart` | ACK and custom invalid handler are not reached |
 

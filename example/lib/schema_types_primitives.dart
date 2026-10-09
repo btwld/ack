@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 
-part 'schema_types_primitives.ack.dart';
-part 'schema_types_primitives.ack.g.dart';
+part 'schema_types_primitives.g.dart';
 
 // Primitive schemas generate immutable value models while the schema remains
 // available directly for parse() and safeParse().

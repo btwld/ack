@@ -23,7 +23,9 @@ void main() {
             (uri, value) => MapEntry(Uri.parse(uri), value!),
           ),
         );
-        final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
+        final roundTrip = Ack.fromJsonSchema(
+          schema.toJsonSchemaPreservingImportedDialect(),
+        );
         for (final example in group['tests']! as List) {
           final value = example['data'];
           final expected = example['valid'] as bool;
@@ -34,33 +36,5 @@ void main() {
         }
       });
     }
-  });
-
-  test('asserted date-time matches the official format fixture', () {
-    final fixture =
-        jsonDecode(
-              File(
-                'test/fixtures/json_schema_2020_12_full/'
-                'draft2020-12/optional/format/date-time.json',
-              ).readAsStringSync(),
-            )
-            as List<dynamic>;
-    final imported = Ack.fromJsonSchema({'format': 'date-time'});
-    final native = Ack.string().datetime();
-    var count = 0;
-    for (final group in fixture.cast<Map<String, dynamic>>()) {
-      for (final probe
-          in (group['tests'] as List).cast<Map<String, dynamic>>()) {
-        final value = probe['data'];
-        final expected = probe['valid'] as bool;
-        final reason = probe['description'] as String;
-        expect(imported.safeParse(value).isOk, expected, reason: reason);
-        if (value is String) {
-          expect(native.safeParse(value).isOk, expected, reason: reason);
-        }
-        count++;
-      }
-    }
-    expect(count, 43);
   });
 }

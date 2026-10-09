@@ -8,8 +8,7 @@ const _head = '''
 import 'package:ack/ack.dart';
 import 'types.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 const _types = r'''
@@ -120,7 +119,7 @@ Future<void> _expectOutput(
     },
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
-    outputs: {'test_pkg|lib/model.ack.dart': decodedMatches(matcher)},
+    outputs: {'test_pkg|lib/model.g.dart': decodedMatches(matcher)},
   );
 }
 
@@ -268,8 +267,7 @@ final class Section with _$SectionAck {
 import 'package:ack/ack.dart';
 import 'types.dart' as types;
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
     );
   });

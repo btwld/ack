@@ -46,8 +46,7 @@ import 'package:ack/ack.dart';
 
 import 'child.dart';
 
-part 'parent.ack.dart';
-part 'parent.ack.g.dart';
+part 'parent.g.dart';
 
 @Schemable()
 final class Parent with _$ParentAck {
@@ -61,8 +60,7 @@ import 'package:ack/ack.dart';
 
 import 'parent.dart';
 
-part 'child.ack.dart';
-part 'child.ack.g.dart';
+part 'child.g.dart';
 
 @Schemable()
 final class Child with _$ChildAck {
@@ -90,11 +88,11 @@ final class Child with _$ChildAck {
       expect(output, contains('recursive class-first schema graph'));
       expect(output, anyOf(contains('Child.parent'), contains('Parent.child')));
       expect(
-        File(p.join(temporary.path, 'lib', 'parent.ack.dart')).existsSync(),
+        File(p.join(temporary.path, 'lib', 'parent.g.dart')).existsSync(),
         isFalse,
       );
       expect(
-        File(p.join(temporary.path, 'lib', 'child.ack.dart')).existsSync(),
+        File(p.join(temporary.path, 'lib', 'child.g.dart')).existsSync(),
         isFalse,
       );
     },

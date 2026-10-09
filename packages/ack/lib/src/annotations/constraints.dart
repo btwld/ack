@@ -60,13 +60,6 @@ final class Matches {
   final String pattern;
 }
 
-/// Former name of [Matches].
-///
-/// Not exported from `package:ack/ack.dart`, where it would hide
-/// `dart:core`'s `Pattern`.
-@Deprecated('Use @Matches(). Pattern will be removed in 2.0.0.')
-typedef Pattern = Matches;
-
 /// Adds `.email()` to an inferred string schema.
 @Target({TargetKind.field, TargetKind.parameter})
 final class Email {

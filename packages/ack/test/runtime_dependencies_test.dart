@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('ack depends only on meta and collection at runtime', () {
+  test('ack depends only on lightweight runtime packages (no json_annotation)', () {
     final lines = File('pubspec.yaml').readAsLinesSync();
     final start = lines.indexOf('dependencies:');
     final dependencies = [
@@ -18,6 +18,9 @@ void main() {
           match.group(1),
     ];
 
-    expect(dependencies, unorderedEquals(['meta', 'collection']));
+    expect(
+      dependencies,
+      unorderedEquals(['meta', 'collection', 'punycoder', 'unorm_dart']),
+    );
   });
 }

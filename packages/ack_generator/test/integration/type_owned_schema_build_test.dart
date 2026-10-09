@@ -120,8 +120,7 @@ import 'package:ack/ack.dart';
 
 import 'types.dart';
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 
 @Schemable()
 final class Habit with _$HabitAck {
@@ -292,7 +291,7 @@ void main() {
           'build_runner build',
         );
         final generated = File(
-          p.join(temporary.path, 'lib', 'models.ack.dart'),
+          p.join(temporary.path, 'lib', 'models.g.dart'),
         ).readAsStringSync();
         expect(generated, contains('Command.schema<CompletionAction>()'));
         expect(generated, contains('Trigger.schema<void>()'));

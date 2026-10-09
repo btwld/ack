@@ -18,15 +18,26 @@ extension AckSchemaModelExtension<
 >
     on AckSchema<Boundary, Runtime> {
   AckSchemaModel toSchemaModel() => _SchemaModelBuilder().build(this);
+
+  /// Preserves imported Draft 2020-12 resources, including dynamic references.
+  /// Native Ack schemas continue to use their Draft-7 representation.
+  AckSchemaModel toSchemaModelPreservingImportedDialect() =>
+      _SchemaModelBuilder(preserveImportedDialect: true).build(this);
+
+  /// Exports imported schemas with their Draft 2020-12 dialect and resources.
+  Map<String, Object?> toJsonSchemaPreservingImportedDialect() =>
+      toSchemaModelPreservingImportedDialect().toJsonSchema();
 }
 
 final class _SchemaModelBuilder {
+  _SchemaModelBuilder({this.preserveImportedDialect = false});
+
+  final bool preserveImportedDialect;
   // Every emitted definition name is reserved here. A null value marks a lazy
   // target that is currently being built.
   final _definitions = <String, Object?>{};
 
-  // Lazy-target identity is tracked separately because imported definitions
-  // are complete schema bodies, not recursive lazy targets.
+  // Lazy-target identity is tracked separately from emitted definitions.
   final _lazyTargets = <String, Object>{};
   var _importCount = 0;
 
@@ -84,15 +95,9 @@ final class _SchemaModelBuilder {
   AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {
     if (schema is WrapperSchema) {
       final base = _build(schema.inner);
-      // Defaults and boundary-preserving wrappers do not transform the wire
-      // value, so they should not advertise themselves as transformed.
-      final extensions = schema is DefaultSchema || schema is BoundarySchema
-          ? base.extensions
-          : {...base.extensions, 'x-transformed': true};
       final layered = base
           .withDescription(schema.description ?? base.description)
-          .withNullable(schema.isNullable || base.nullable)
-          .withExtensions(extensions);
+          .withNullable(schema.isNullable || base.nullable);
       // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
       // which `_build(schema.inner)` already applied. Re-running them here
       // would emit duplicate warnings (e.g. datetime range under a default).
@@ -161,7 +166,17 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel _imported(ImportedJsonSchema schema) {
-    final prefix = '_ack_import_${_importCount++}_';
+    final importIndex = _importCount++;
+    if (preserveImportedDialect) {
+      return AckRawSchemaModel(
+        schema: schema.export2020Document(importIndex: importIndex),
+        description: schema.description,
+        nullable:
+            schema.isNullable &&
+            (!schema.sourceAllowsNull || schema.constraints.isNotEmpty),
+      );
+    }
+    final prefix = '_ack_import_${importIndex}_';
     for (final entry in schema.exportDefinitions(prefix).entries) {
       if (_definitions.containsKey(entry.key)) {
         throw ArgumentError(
@@ -423,7 +438,9 @@ AckSchemaModel _applyConstraints(
   bool projectKeywords = true,
 }) {
   var next = model;
-  final appliedKeywordValues = {
+  // Rendering the model walks its whole subtree, so only do it once a
+  // constraint actually projects keywords.
+  late final appliedKeywordValues = {
     for (final entry in _renderedKeywords(model).entries)
       entry.key: <Object?>[entry.value],
   };

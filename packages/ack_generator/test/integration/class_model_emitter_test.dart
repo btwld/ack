@@ -49,8 +49,7 @@ void main() {
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart' as ack;
 
-part 'contact.ack.dart';
-part 'contact.ack.g.dart';
+part 'contact.g.dart';
 
 final class Email {
   const Email(this.address);
@@ -70,7 +69,7 @@ final class Contact with _\$ContactAck {
 ''',
         },
         outputs: {
-          'test_pkg|lib/contact.ack.dart': decodedMatches(
+          'test_pkg|lib/contact.g.dart': decodedMatches(
             _containsCode(
               "Ack.object({'address': Ack.string().email(), "
               "'id': Ack.string().uuid()})",
@@ -87,8 +86,7 @@ final class Contact with _\$ContactAck {
         'scores.dart':
             '''
 $_imports
-part 'scores.ack.dart';
-part 'scores.ack.g.dart';
+part 'scores.g.dart';
 
 MapSchema<int, int> scoresSchema() => Ack.map(Ack.integer().min(0));
 
@@ -102,7 +100,7 @@ final class Board with _\$BoardAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/scores.ack.dart': decodedMatches(
+        'test_pkg|lib/scores.g.dart': decodedMatches(
           _containsCode("Ack.object({'scores': scoresSchema()})"),
         ),
       },
@@ -117,8 +115,7 @@ final class Board with _\$BoardAck {
           'grid.dart':
               '''
 $_imports
-part 'grid.ack.dart';
-part 'grid.ack.g.dart';
+part 'grid.g.dart';
 
 @Schemable()
 final class Grid with _\$GridAck {
@@ -130,7 +127,7 @@ final class Grid with _\$GridAck {
 ''',
         },
         outputs: {
-          'test_pkg|lib/grid.ack.dart': decodedMatches(
+          'test_pkg|lib/grid.g.dart': decodedMatches(
             allOf(
               _containsCode(
                 'Ack.list(Ack.list(Ack.integer()).codec<Set<int>>('
@@ -152,8 +149,7 @@ final class Grid with _\$GridAck {
         'documented.dart':
             '''
 $_imports
-part 'documented.ack.dart';
-part 'documented.ack.g.dart';
+part 'documented.g.dart';
 
 @Schemable()
 final class Documented with _\$DocumentedAck {
@@ -166,7 +162,7 @@ final class Documented with _\$DocumentedAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/documented.ack.dart': decodedMatches(
+        'test_pkg|lib/documented.g.dart': decodedMatches(
           contains("'title': Ack.string().describe('The item title.')"),
         ),
       },
@@ -180,8 +176,7 @@ final class Documented with _\$DocumentedAck {
         'documented.dart':
             '''
 $_imports
-part 'documented.ack.dart';
-part 'documented.ack.g.dart';
+part 'documented.g.dart';
 
 /// A task the person's \$team can complete.
 /// @description A task the person's \$team can complete.
@@ -208,7 +203,7 @@ final class Note with _\$NoteAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/documented.ack.dart': decodedMatches(
+        'test_pkg|lib/documented.g.dart': decodedMatches(
           allOf(
             _containsCode(
               'final _taskObject = Ack.object({'
@@ -240,8 +235,7 @@ final class Note with _\$NoteAck {
         'plain.dart':
             '''
 $_imports
-part 'plain.ack.dart';
-part 'plain.ack.g.dart';
+part 'plain.g.dart';
 
 /// Ordinary class prose is not schema data.
 @Schemable()
@@ -257,7 +251,7 @@ final class Plain with _\$PlainAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/plain.ack.dart': decodedMatches(
+        'test_pkg|lib/plain.g.dart': decodedMatches(
           isNot(contains('.describe(')),
         ),
       },
@@ -270,8 +264,7 @@ final class Plain with _\$PlainAck {
         'escaped.dart':
             '''
 $_imports
-part 'escaped.ack.dart';
-part 'escaped.ack.g.dart';
+part 'escaped.g.dart';
 
 @Schemable(description: 'First\\nsecond')
 final class Escaped with _\$EscapedAck {
@@ -283,7 +276,7 @@ final class Escaped with _\$EscapedAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/escaped.ack.dart': decodedMatches(
+        'test_pkg|lib/escaped.g.dart': decodedMatches(
           allOf([
             contains(r".describe('First\u000asecond')"),
             contains(r".describe('A\u0009B')"),
@@ -299,8 +292,7 @@ final class Escaped with _\$EscapedAck {
         'shapes.dart':
             '''
 $_imports
-part 'shapes.ack.dart';
-part 'shapes.ack.g.dart';
+part 'shapes.g.dart';
 
 /// A shape to draw.
 /// @description A shape to draw.
@@ -326,7 +318,7 @@ final class Square extends Shape with _\$SquareAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/shapes.ack.dart': decodedMatches(
+        'test_pkg|lib/shapes.g.dart': decodedMatches(
           allOf(
             _containsCode("'radius': Ack.double(),}).describe('A circle.');"),
             _containsCode(
@@ -356,8 +348,7 @@ final class Square extends Shape with _\$SquareAck {
             '''
 $_imports
 import 'package:ack/format_annotations.dart' as formats;
-part 'formats.ack.dart';
-part 'formats.ack.g.dart';
+part 'formats.g.dart';
 
 @Schemable()
 final class Formats with _\$FormatsAck {
@@ -383,7 +374,7 @@ final class Formats with _\$FormatsAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/formats.ack.dart': decodedMatches(
+        'test_pkg|lib/formats.g.dart': decodedMatches(
           allOf([
             contains("'url': Ack.string().url()"),
             contains("'uri': Ack.string().uri()"),
@@ -402,8 +393,7 @@ final class Formats with _\$FormatsAck {
         'defaults.dart':
             '''
 $_imports
-part 'defaults.ack.dart';
-part 'defaults.ack.g.dart';
+part 'defaults.g.dart';
 
 @Schemable()
 final class Defaults with _\$DefaultsAck {
@@ -415,14 +405,14 @@ final class Defaults with _\$DefaultsAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/defaults.ack.dart': decodedMatches(
+        'test_pkg|lib/defaults.g.dart': decodedMatches(
           allOf([
             contains(
               "'fallback': Ack.string().nullable().withDefault('fallback')",
             ),
             contains("'empty': Ack.string().optional().nullable()"),
-            contains("result['fallback'] = null"),
-            contains("result['empty'] = null"),
+            contains("'fallback': model.fallback"),
+            contains("'empty': model.empty"),
             isNot(contains('withDefault(null)')),
           ]),
         ),
@@ -436,8 +426,7 @@ final class Defaults with _\$DefaultsAck {
         'envelope.dart':
             '''
 $_imports
-part 'envelope.ack.dart';
-part 'envelope.ack.g.dart';
+part 'envelope.g.dart';
 
 @Schemable()
 final class Envelope with _\$EnvelopeAck {
@@ -465,7 +454,7 @@ final class Envelope with _\$EnvelopeAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/envelope.ack.dart': decodedMatches(
+        'test_pkg|lib/envelope.g.dart': decodedMatches(
           allOf([
             contains("'kind': Ack.any()"),
             contains("'payload': Ack.any().optional().nullable()"),
@@ -482,14 +471,13 @@ final class Envelope with _\$EnvelopeAck {
     );
   });
 
-  test('emits a codec schema, presence semantics, mixin, and bridges', () async {
+  test('emits a codec schema, presence semantics, mixin, and direct decode/encode', () async {
     await _build(
       {
         'profile.dart':
             '''
 $_imports
-part 'profile.ack.dart';
-part 'profile.ack.g.dart';
+part 'profile.g.dart';
 
 @Schemable()
 final class Profile with _\$ProfileAck {
@@ -513,7 +501,7 @@ final class Profile with _\$ProfileAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/profile.ack.dart': decodedMatches(
+        'test_pkg|lib/profile.g.dart': decodedMatches(
           allOf([
             contains('final _profileObject = Ack.object'),
             contains(
@@ -553,9 +541,8 @@ final class Profile with _\$ProfileAck {
             contains('_profileSchema.parse(value, debugName: debugName)!'),
             contains('_profileSchema.encode(value, debugName: debugName)!'),
             contains(r'Profile _$ProfileFromRuntime'),
-            contains(r'_$ProfileFromJson'),
             contains(r'Map<String, Object?> _$ProfileToRuntime'),
-            contains("result['nickname'] = null"),
+            contains("'nickname': model.nickname"),
             contains(r'mixin _$ProfileAck'),
             contains(r'$ProfileCopyWith<Profile> get copyWith'),
             contains('final class _ProfileCopyWithUnset'),
@@ -571,8 +558,6 @@ final class Profile with _\$ProfileAck {
             contains('SchemaResult<Map<String, Object?>> safeToJson()'),
             contains('ProfileSchema.encode(this as Profile)'),
             contains('ProfileSchema.safeEncode(this as Profile)'),
-            contains('_ackProfileFromRuntimeBio'),
-            contains('_ackProfileToRuntimeTags'),
           ]),
         ),
       },
@@ -587,8 +572,7 @@ final class Profile with _\$ProfileAck {
           'types.dart':
               '''
 $_imports
-part 'types.ack.dart';
-part 'types.ack.g.dart';
+part 'types.g.dart';
 
 final class Color {
   const Color(this.value);
@@ -634,7 +618,7 @@ final class Record with _\$RecordAck {
 ''',
         },
         outputs: {
-          'test_pkg|lib/types.ack.dart': decodedMatches(
+          'test_pkg|lib/types.g.dart': decodedMatches(
             allOf([
               contains("'color': colorSchema()"),
               isNot(contains("'color': colorSchema().describe(")),
@@ -644,8 +628,6 @@ final class Record with _\$RecordAck {
               contains("'website': Ack.uri()"),
               contains("'timeout': Ack.duration()"),
               contains("'names': Ack.list(Ack.list(Ack.string()))"),
-              contains('Map<String, int> _ackRecordFromRuntimeScores'),
-              contains('List<List<String>> _ackRecordFromRuntimeNames'),
               contains('Map<String, int>.unmodifiable('),
               contains('List<List<String>>.unmodifiable('),
               contains('List<String>.unmodifiable('),
@@ -656,33 +638,40 @@ final class Record with _\$RecordAck {
     },
   );
 
-  test('computes case-style and JsonKey schema keys once', () async {
+  test('computes case-style, AckField(name:), and JsonKey schema keys once', () async {
     await _build(
       {
         'account.dart':
             '''
 $_imports
 import 'package:json_annotation/json_annotation.dart' show JsonKey;
-part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _\$AccountAck {
-  const Account({required this.firstName, required this.imageUrl});
+  const Account({
+    required this.firstName,
+    required this.imageUrl,
+    required this.handleName,
+  });
 
   final String firstName;
   @JsonKey(name: 'avatar')
   final String imageUrl;
+  @AckField(name: 'handle')
+  final String handleName;
 }
 ''',
       },
       outputs: {
-        'test_pkg|lib/account.ack.dart': decodedMatches(
+        'test_pkg|lib/account.g.dart': decodedMatches(
           allOf([
             contains("'first_name': Ack.string()"),
             contains("'avatar': Ack.string()"),
+            contains("'handle': Ack.string()"),
             isNot(contains("'firstName':")),
             isNot(contains("'image_url':")),
+            isNot(contains("'handle_name':")),
           ]),
         ),
       },
@@ -697,8 +686,7 @@ final class Account with _\$AccountAck {
           'a.dart':
               '''
 $_imports
-part 'a.ack.dart';
-part 'a.ack.g.dart';
+part 'a.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -716,8 +704,7 @@ final class Address {
 $_imports
 import 'a.dart' as a;
 import 'b.dart' as b;
-part 'order.ack.dart';
-part 'order.ack.g.dart';
+part 'order.g.dart';
 
 @Schemable()
 final class Order with _\$OrderAck {
@@ -730,16 +717,16 @@ const Type otherAddressType = b.Address;
 ''',
         },
         outputs: {
-          'test_pkg|lib/a.ack.dart': decodedMatches(
+          'test_pkg|lib/a.g.dart': decodedMatches(
             allOf([
               contains('final _addressSchema'),
               contains('abstract final class AddressSchema'),
             ]),
           ),
-          'test_pkg|lib/order.ack.dart': decodedMatches(
+          'test_pkg|lib/order.g.dart': decodedMatches(
             allOf([
               contains("'shipping': a.AddressSchema.schema"),
-              contains('a.Address _ackOrderFromRuntimeShipping'),
+              contains("shipping: value['shipping'] as a.Address"),
               isNot(contains('b.AddressSchema')),
             ]),
           ),
@@ -756,8 +743,7 @@ const Type otherAddressType = b.Address;
           'pet.dart':
               '''
 $_imports
-part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 @Schemable(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
@@ -780,7 +766,7 @@ final class Dog extends Pet with _\$DogAck {
 ''',
         },
         outputs: {
-          'test_pkg|lib/pet.ack.dart': decodedMatches(
+          'test_pkg|lib/pet.g.dart': decodedMatches(
             allOf([
               contains('final _catObject = Ack.object'),
               contains("'id': Ack.string()"),
@@ -799,8 +785,8 @@ final class Dog extends Pet with _\$DogAck {
               contains("discriminatorKey: 'type'"),
               contains("schemas: {'cat': _catObject, 'Dog': _dogObject}"),
               contains('.codec<Pet>('),
-              contains("'cat' => _\$CatFromRuntime(value)"),
-              contains("'Dog' => _\$DogFromRuntime(value)"),
+              contains(r"'cat' => _$CatFromRuntime(value)"),
+              contains(r"'Dog' => _$DogFromRuntime(value)"),
               contains('encode: (model) => switch (model)'),
               contains(r'Cat() => _$CatToRuntime(model)'),
               contains(r'Dog() => _$DogToRuntime(model)'),
@@ -826,8 +812,7 @@ final class Dog extends Pet with _\$DogAck {
           'account.dart':
               '''
 $_imports
-part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 
 @Schemable(schemaName: 'WireAccountSchema')
 final class Account with _\$AccountAck {
@@ -837,7 +822,7 @@ final class Account with _\$AccountAck {
 ''',
         },
         outputs: {
-          'test_pkg|lib/account.ack.dart': decodedMatches(
+          'test_pkg|lib/account.g.dart': decodedMatches(
             allOf([
               contains('final _accountObject = Ack.object'),
               contains('final _accountSchema = _accountObject.codec<Account>'),
@@ -859,8 +844,7 @@ final class Account with _\$AccountAck {
           'fields.dart':
               '''
 $_imports
-part 'fields.ack.dart';
-part 'fields.ack.g.dart';
+part 'fields.g.dart';
 
 @Schemable()
 final class Example with _\$ExampleAck {
@@ -915,14 +899,6 @@ final class Forced with _\$ForcedAck {
   final String? summary;
 }
 
-@Schemable()
-final class LegacyOptional with _\$LegacyOptionalAck {
-  const LegacyOptional({this.note});
-
-  @AckField(presence: AckFieldPresence.optional)
-  final String? note;
-}
-
 final class ParameterEntry {
   const ParameterEntry(this.value);
   final String value;
@@ -957,7 +933,7 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
 ''',
         },
         outputs: {
-          'test_pkg|lib/fields.ack.dart': decodedMatches(
+          'test_pkg|lib/fields.g.dart': decodedMatches(
             allOf([
               contains(
                 "'label': Ack.string().optional().nullable(value: false)",
@@ -977,7 +953,6 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
               contains("'value': Ack.string().nullable(value: false)"),
               isNot(contains("'value': Ack.string().optional()")),
               contains("'summary': Ack.string().nullable()"),
-              contains("'note': Ack.string().optional().nullable()"),
               contains("'parameters': parameterMapSchema().optional()"),
               isNot(contains('parameterMapSchema().optional().nullable(')),
               contains('Map<String, ParameterEntry>? parameters'),
@@ -1002,8 +977,7 @@ import 'package:ack/ack.dart' as ack
 import 'package:ack/annotations.dart' as annotations
     show Schemable;
 
-part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 
 @annotations.Schemable()
 final class Account with _\$AccountAck {
@@ -1012,7 +986,7 @@ final class Account with _\$AccountAck {
 ''',
       },
       outputs: {
-        'test_pkg|lib/account.ack.dart': decodedMatches(
+        'test_pkg|lib/account.g.dart': decodedMatches(
           allOf([
             contains('ack.Ack.object'),
             contains('ack.AckSchema<Map<String, Object?>, Account>'),

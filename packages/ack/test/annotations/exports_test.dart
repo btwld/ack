@@ -63,9 +63,8 @@ void main() {
     expect(const ack.Email(), isA<ack.Email>());
   });
 
-  test('the deprecated Pattern spelling creates a Matches annotation', () {
-    // ignore: deprecated_member_use_from_same_package
-    const annotation = ack.Pattern('^a');
+  test('Matches annotation exposes pattern', () {
+    const annotation = ack.Matches('^a');
 
     expect(annotation, isA<ack.Matches>());
     expect(annotation.pattern, '^a');

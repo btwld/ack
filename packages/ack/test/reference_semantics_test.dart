@@ -99,7 +99,6 @@ void main() {
       expect(model.toJsonSchema(), {
         'type': 'string',
         'minLength': 10,
-        'x-transformed': true,
       });
       expect(model.warnings.map((warning) => warning.code), [
         'codec_runtime_constraint_not_exported',

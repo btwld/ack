@@ -1,6 +1,3 @@
-// These tests also cover the deprecated AckField.presence API.
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
 
@@ -48,19 +45,20 @@ void main() {
     },
   );
 
-  test('AckField accepts a schema tear-off and a presence override', () {
-    const inferred = AckField(schema: _customSchema);
+  test('AckField accepts name, schema tear-off, and description', () {
+    const inferred = AckField(
+      name: 'wire_key',
+      schema: _customSchema,
+      description: 'Field description',
+    );
+    expect(inferred.name, 'wire_key');
     expect(inferred.schema, same(_customSchema));
-    expect(inferred.presence, AckFieldPresence.inferred);
+    expect(inferred.description, 'Field description');
 
-    const optional = AckField(presence: AckFieldPresence.optional);
-    expect(optional.schema, isNull);
-    expect(optional.presence, AckFieldPresence.optional);
-    expect(AckFieldPresence.values, const [
-      AckFieldPresence.inferred,
-      AckFieldPresence.required,
-      AckFieldPresence.optional,
-    ]);
+    const defaults = AckField();
+    expect(defaults.name, isNull);
+    expect(defaults.schema, isNull);
+    expect(defaults.description, isNull);
   });
 
   test('presence and null annotations are const', () {
@@ -81,7 +79,7 @@ void main() {
       Negative(),
       MinLength(1),
       MaxLength(100),
-      Pattern(r'^[a-z]+$'),
+      Matches(r'^[a-z]+$'),
       Email(),
       NotEmpty(),
       MinItems(1),
@@ -94,7 +92,7 @@ void main() {
     expect((annotations[2] as MultipleOf).value, 2);
     expect((annotations[5] as MinLength).length, 1);
     expect((annotations[6] as MaxLength).length, 100);
-    expect((annotations[7] as Pattern).pattern, r'^[a-z]+$');
+    expect((annotations[7] as Matches).pattern, r'^[a-z]+$');
     expect((annotations[10] as MinItems).count, 1);
     expect((annotations[11] as MaxItems).count, 10);
   });

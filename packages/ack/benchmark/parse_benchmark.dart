@@ -1,14 +1,9 @@
-/// JIT numbers drift with warmup, so measure an AOT build:
-///
-/// ```sh
-/// dart compile exe benchmark/parse_benchmark.dart -o build/parse_benchmark
-/// build/parse_benchmark
-/// ```
+/// Small schemas and values. See `harness.dart` for how to run.
 library;
 
 import 'package:ack/ack.dart';
 
-const _draft = 'https://json-schema.org/draft/2020-12/schema';
+import 'harness.dart';
 
 void main() {
   final string = Ack.string();
@@ -19,7 +14,7 @@ void main() {
   });
   final anything = Ack.fromJsonSchema(true);
   final flat = Ack.fromJsonSchema({
-    r'$schema': _draft,
+    r'$schema': draft,
     'type': 'object',
     'properties': {
       for (var i = 0; i < 8; i++)
@@ -28,7 +23,7 @@ void main() {
   });
   final flatValue = {for (var i = 0; i < 8; i++) 'p$i': 'abc'};
   final nested = Ack.fromJsonSchema({
-    r'$schema': _draft,
+    r'$schema': draft,
     'type': 'object',
     'properties': {
       'items': {
@@ -56,40 +51,21 @@ void main() {
         },
     ],
   };
+  const objectValue = {'a': 'x', 'b': 'y', 'c': 'z'};
+  check('string', string.safeParse('x').isOk);
+  check('object', object.safeParse(objectValue).isOk);
+  check('anything', anything.safeParse('x').isOk);
+  check('flat', flat.safeParse(flatValue).isOk);
+  check('nested', nested.safeParse(nestedValue).isOk);
 
-  _report('Ack.string()', 200000, () => string.safeParse('x'));
-  _report(
-    'Ack.object, 3 string fields',
-    200000,
-    () => object.safeParse(const {'a': 'x', 'b': 'y', 'c': 'z'}),
-  );
-  _report('fromJsonSchema(true)', 200000, () => anything.safeParse('x'));
-  _report('imported, 8 properties', 100000, () => flat.safeParse(flatValue));
-  _report(
-    'imported, 8 properties (encode)',
-    100000,
-    () => flat.safeEncode(flatValue),
-  );
-  _report(
-    'imported, 50 nested items',
-    10000,
-    () => nested.safeParse(nestedValue),
-  );
-  _report(
+  report('Ack.string()', () => string.safeParse('x'));
+  report('Ack.object, 3 string fields', () => object.safeParse(objectValue));
+  report('fromJsonSchema(true)', () => anything.safeParse('x'));
+  report('imported, 8 properties', () => flat.safeParse(flatValue));
+  report('imported, 8 properties (encode)', () => flat.safeEncode(flatValue));
+  report('imported, 50 nested items', () => nested.safeParse(nestedValue));
+  report(
     'imported, 50 nested items (encode)',
-    10000,
     () => nested.safeEncode(nestedValue),
   );
-}
-
-void _report(String name, int iterations, void Function() body) {
-  for (var i = 0; i < iterations ~/ 10; i++) {
-    body();
-  }
-  final stopwatch = Stopwatch()..start();
-  for (var i = 0; i < iterations; i++) {
-    body();
-  }
-  final ns = stopwatch.elapsedMicroseconds * 1000 / iterations;
-  print('${name.padRight(36)} ${ns.toStringAsFixed(0).padLeft(7)} ns');
 }

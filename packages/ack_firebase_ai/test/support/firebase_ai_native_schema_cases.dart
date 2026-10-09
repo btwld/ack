@@ -418,22 +418,22 @@ FirebaseAiNativeSchemaCase _nativeJsonSchemaCase(
     ),
     'ack_schema_date_transform_constraints' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.string(format: 'date'),
     ),
     'ack_schema_datetime_transform' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.string(format: 'date-time'),
     ),
     'ack_schema_uri_transform' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.string(format: 'uri'),
     ),
     'ack_schema_duration_transform_constraints' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.integer(minimum: 1000, maximum: 2000),
     ),
     'ack_schema_discriminated_union' => _generatedJsonSchema(

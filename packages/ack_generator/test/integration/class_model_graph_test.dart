@@ -34,41 +34,19 @@ Future<void> _expectFailure(
   expect(seen, containsAll(messages));
 }
 
-Future<void> _expectWarning(String body, List<String> messages) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
-  final seen = <String>{};
-  await testBuilder(
-    ackModelBuilder(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': '$_head\n$body'},
-    generateFor: const {'test_pkg|lib/model.dart'},
-    readerWriter: readerWriter,
-    outputs: {'test_pkg|lib/model.ack.dart': decodedMatches(contains('mixin'))},
-    onLog: (LogRecord log) {
-      if (log.level.name != 'WARNING') return;
-      for (final message in messages) {
-        if (log.message.contains(message)) seen.add(message);
-      }
-    },
-  );
-  expect(seen, containsAll(messages));
-}
-
 const _head = '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 const _aliasHead = '''
 import 'package:ack/ack.dart';
 import 'aliases.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 void main() {
@@ -161,7 +139,7 @@ final class Person with _\$PersonAck {
       ],
       head: _aliasHead,
       allowedOutputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
       },
       extraSources: {
         'aliases.dart': '''
@@ -174,8 +152,7 @@ typedef Shade = Color;
         'address.dart': '''
 import 'package:ack/ack.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -907,8 +884,7 @@ import 'package:ack/ack.dart'
     show Ack, AckSchema, AckSchemaModel, SchemaResult;
 import 'package:ack/annotations.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
     );
   });
@@ -989,39 +965,14 @@ abstract final class CatSchema {}
   });
 
   for (final collision in <({String name, String declaration})>[
-    (
-      name: r'_$UserFromRuntime',
-      declaration:
-          r'User _$UserFromRuntime(Map<String, Object?> value) => throw 0;',
-    ),
-    (
-      name: r'_$UserToRuntime',
-      declaration:
-          r'Map<String, Object?> _$UserToRuntime(User value) => throw 0;',
-    ),
-    (
-      name: '_ackUserFromRuntimeName',
-      declaration: 'String _ackUserFromRuntimeName(Object? value) => "";',
-    ),
-    (
-      name: '_ackUserToRuntimeName',
-      declaration: 'Object? _ackUserToRuntimeName(String value) => value;',
-    ),
-    (
-      name: r'_$UserFromJson',
-      declaration:
-          r'User _$UserFromJson(Map<String, dynamic> value) => throw 0;',
-    ),
-    (
-      name: r'_$UserToJson',
-      declaration: r'Map<String, dynamic> _$UserToJson(User value) => throw 0;',
-    ),
     (name: r'_$UserAck', declaration: r'mixin _$UserAck {}'),
     (name: r'_userObject', declaration: r'final _userObject = Ack.object({});'),
     (
       name: r'_userWireSchema',
       declaration: r'final _userWireSchema = Ack.string();',
     ),
+    (name: r'_$UserFromRuntime', declaration: r'void _$UserFromRuntime() {}'),
+    (name: r'_$UserToRuntime', declaration: r'void _$UserToRuntime() {}'),
   ]) {
     test('rejects local ${collision.name} helper collisions', () async {
       await _expectFailure(
@@ -1131,16 +1082,14 @@ import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'child.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
       extraSources: {
         'child.dart': '''
 import 'package:ack/annotations.dart';
 import 'model.dart';
 
-part 'child.ack.dart';
-part 'child.ack.g.dart';
+part 'child.g.dart';
 
 @Schemable()
 final class Child with _\$ChildAck {
@@ -1171,16 +1120,14 @@ import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
         extraSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -1191,7 +1138,7 @@ final class Address with _\$AddressAck {
 ''',
         },
         allowedOutputs: {
-          'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+          'test_pkg|lib/address.g.dart': decodedMatches(anything),
         },
       );
     },
@@ -1209,8 +1156,7 @@ import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 import 'address.dart' show AddressSchema;
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 
 @Schemable()
 final class Order with _\$OrderAck {
@@ -1223,8 +1169,7 @@ final class Order with _\$OrderAck {
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -1240,8 +1185,8 @@ final class Address with _\$AddressAck {
       },
       readerWriter: readerWriter,
       outputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
-        'test_pkg|lib/model.ack.dart': decodedMatches(
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
+        'test_pkg|lib/model.g.dart': decodedMatches(
           contains('AddressSchema.schema'),
         ),
       },
@@ -1264,8 +1209,7 @@ import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'exports.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
       extraSources: {
         'exports.dart': "export 'address.dart' show Address;",
@@ -1273,8 +1217,7 @@ part 'model.ack.g.dart';
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -1285,7 +1228,7 @@ final class Address with _\$AddressAck {
 ''',
       },
       allowedOutputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
       },
     );
   });
@@ -1334,23 +1277,36 @@ final class User with _\$UserAck {
     );
   });
 
-  test(
-    'rejects optional presence on a required constructor parameter',
-    () async {
-      await _expectFailure(
-        '''
+  test('rejects blank @AckField(name: ...)', () async {
+    await _expectFailure(
+      '''
 @Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @AckField(presence: AckFieldPresence.optional)
+  @AckField(name: '   ')
   final String name;
 }
 ''',
-        ['User.name', 'optional', 'constructor'],
-      );
-    },
-  );
+      ['User.name', '@AckField.name must not be blank.'],
+    );
+  });
+
+  test('rejects combining @AckField(name: ...) and @JsonKey(name: ...)', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckField(name: 'a')
+  @JsonKey(name: 'b')
+  final String name;
+}
+''',
+      ['User.name', 'sets both @AckField(name: ...) and @JsonKey(name: ...)'],
+    );
+  });
 
   test('rejects @Optional() on a required constructor parameter', () async {
     await _expectFailure(
@@ -1382,56 +1338,6 @@ final class User with _\$UserAck {
       ['User.name', '@Optional()', '@Required()'],
     );
   });
-
-  test('rejects conflicting legacy and new presence declarations', () async {
-    await _expectFailure(
-      '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({this.name});
-
-  @Optional()
-  @AckField(presence: AckFieldPresence.required)
-  final String? name;
-}
-''',
-      ['User.name', 'conflicting', 'presence'],
-    );
-  });
-
-  test('warns when legacy AckField presence is used', () async {
-    await _expectWarning(
-      '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({this.name});
-
-  @AckField(presence: AckFieldPresence.optional)
-  final String? name;
-}
-''',
-      ['User.name', '@AckField(presence:', '@Optional()', '2.0.0'],
-    );
-  });
-
-  test(
-    'warns when matching legacy and new presence declarations coexist',
-    () async {
-      await _expectWarning(
-        '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({this.name});
-
-  @Optional()
-  @AckField(presence: AckFieldPresence.optional)
-  final String? name;
-}
-''',
-        ['User.name', '@AckField(presence:', '2.0.0'],
-      );
-    },
-  );
 
   test('rejects an unmapped constructor parameter', () async {
     await _expectFailure(

@@ -2,8 +2,7 @@ import 'package:ack/ack.dart';
 
 import 'pet.dart';
 
-part 'user_with_color.ack.dart';
-part 'user_with_color.ack.g.dart';
+part 'user_with_color.g.dart';
 
 class Color {
   final int value;

@@ -43,8 +43,7 @@ const _imports = '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 void main() {
@@ -63,7 +62,7 @@ final class Point with _\$PointAck {
 }
 ''',
         outputs: {
-          'test_pkg|lib/model.ack.dart': decodedMatches(
+          'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
               contains(r'mixin _$PointAck'),
               contains(r'$PointCopyWith<Point> get copyWith'),
@@ -106,7 +105,7 @@ final class Bag with _\$BagAck {
 }
 ''',
       outputs: {
-        'test_pkg|lib/model.ack.dart': decodedMatches(
+        'test_pkg|lib/model.g.dart': decodedMatches(
           allOf([
             contains('final _strictObject = Ack.object({'),
             isNot(
@@ -115,11 +114,10 @@ final class Bag with _\$BagAck {
               ),
             ),
             contains('additionalProperties: true'),
-            contains("'args': Map<String, Object?>.fromEntries"),
-            contains('result.remove(\'args\')'),
+            contains('args: deepUnmodifiableJsonMap('),
+            contains('Map<String, Object?>.fromEntries('),
             contains('model.args.entries'),
             contains('self.args'),
-            contains('deepUnmodifiableJsonMap(value as Map<String, Object?>)'),
             isNot(contains('_ackClassImmutableCopyValue')),
             isNot(contains('_ackClassImmutableCopyMap')),
           ]),
@@ -154,7 +152,7 @@ $_imports
 @Schemable()
 final class User with _\$UserAck {
   const User({this.nickname});
-  @AckField(presence: AckFieldPresence.required)
+  @Required()
   final String? nickname;
 }
 
@@ -170,7 +168,7 @@ final class Cat extends Pet with _\$CatAck {
 }
 ''',
         outputs: {
-          'test_pkg|lib/model.ack.dart': decodedMatches(
+          'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
               contains("'nickname': Ack.string().nullable()"),
               isNot(contains("'nickname': Ack.string().nullable().optional()")),
@@ -194,12 +192,12 @@ $_imports
 final class Normalized with _\$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
-  @AckField(presence: AckFieldPresence.optional)
+  @Optional()
   final String value;
 }
 ''',
         outputs: {
-          'test_pkg|lib/model.ack.dart': decodedMatches(
+          'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
               contains("'value': Ack.string().optional()"),
               contains('Normalized call({Object? value = _ackCopyWithUnset})'),
@@ -226,7 +224,7 @@ final userSchema = Ack.object({
 });
 ''',
       outputs: {
-        'test_pkg|lib/model.ack.dart': decodedMatches(
+        'test_pkg|lib/model.g.dart': decodedMatches(
           allOf([
             contains('// ignore_for_file: type=lint'),
             contains('// coverage:ignore-file'),

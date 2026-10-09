@@ -36,11 +36,10 @@ dart pub add ack
 dart pub add --dev ack_generator build_runner
 ```
 
-Every annotated library needs both generated parts:
+Every annotated library needs the generated part:
 
 ```dart
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 ```
 
 Run the generator after adding or changing a model:
@@ -52,14 +51,13 @@ dart run build_runner build
 ## A working example of both directions
 
 This file contains one schema-first model and one class-first model. Both use
-the same builders and generated parts.
+the same builder and generated part.
 
 ```dart title="lib/models.dart"
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 
 // Schema-first: write the schema; Ack generates Order.
 @Schemable()

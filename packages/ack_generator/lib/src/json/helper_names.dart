@@ -1,32 +1,3 @@
-/// Pascal-case first letter used by per-field Ack runtime bridges.
-String ackBridgePascal(String fieldName) {
-  if (fieldName.isEmpty) return fieldName;
-  return '${fieldName[0].toUpperCase()}${fieldName.substring(1)}';
-}
-
-/// Decode-side runtime bridge for a stored field.
-String ackFromRuntimeBridgeName(String fieldName) =>
-    '_ackFromRuntime${ackBridgePascal(fieldName)}';
-
-/// Encode-side runtime bridge for a stored field.
-String ackToRuntimeBridgeName(String fieldName) =>
-    '_ackToRuntime${ackBridgePascal(fieldName)}';
-
-/// Decode-side top-level bridge for a class-first stored field.
-String ackClassFromRuntimeBridgeName(String className, String fieldName) =>
-    '_ack${className}FromRuntime${ackBridgePascal(fieldName)}';
-
-/// Encode-side top-level bridge for a class-first stored field.
-String ackClassToRuntimeBridgeName(String className, String fieldName) =>
-    '_ack${className}ToRuntime${ackBridgePascal(fieldName)}';
-
-/// Runtime-map decoder for a hand-written class-first model.
-String ackClassFromRuntimeName(String className) =>
-    '_\$${className}FromRuntime';
-
-/// Runtime-map encoder for a hand-written class-first model.
-String ackClassToRuntimeName(String className) => '_\$${className}ToRuntime';
-
 /// Generated mixin that exposes class-first JSON and value members.
 String ackClassMixinName(String className) => '_\$${className}Ack';
 
@@ -42,7 +13,13 @@ String ackClassSchemaBackingName(String className) =>
 String ackClassWireSchemaName(String className) =>
     '_${className[0].toLowerCase()}${className.substring(1)}WireSchema';
 
-/// Model class generated for an `@AckInfer` declaration.
+/// Private runtime decoder generated for a class-first object model.
+String ackClassFromRuntimeName(String className) => '_\$${className}FromRuntime';
+
+/// Private runtime encoder generated for a class-first object model.
+String ackClassToRuntimeName(String className) => '_\$${className}ToRuntime';
+
+/// Model class generated for a `@Schemable` schema declaration.
 String ackInferModelClassName(String declarationName, {String? override}) {
   if (override != null) return override;
   final stem = declarationName.endsWith('Schema')
@@ -66,21 +43,3 @@ String ackCopyWithInterfaceName(String className) => '\$${className}CopyWith';
 /// Private implementation behind a generated model's `copyWith` getter.
 String ackCopyWithImplementationName(String className) =>
     '_\$${className}CopyWith';
-
-/// json_serializable `fromJson` helper for a generated model class.
-String jsonFromHelperName(String className) => '_\$${className}FromJson';
-
-/// json_serializable `toJson` helper for a generated model class.
-String jsonToHelperName(String className) => '_\$${className}ToJson';
-
-/// All per-field bridges derived from [fieldName].
-Iterable<String> ackFieldBridgeNames(String fieldName) sync* {
-  yield ackFromRuntimeBridgeName(fieldName);
-  yield ackToRuntimeBridgeName(fieldName);
-}
-
-/// All top-level JSON helpers derived from [className].
-Iterable<String> ackJsonHelperNames(String className) sync* {
-  yield jsonFromHelperName(className);
-  yield jsonToHelperName(className);
-}

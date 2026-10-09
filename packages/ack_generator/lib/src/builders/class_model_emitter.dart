@@ -90,8 +90,7 @@ final class AckClassModelEmitter {
           copyWithSupertypes: metadata.copyWithSupertypes,
         ),
       )
-      ..writeln()
-      ..writeln(_fieldBridges(node));
+      ..writeln();
   }
 
   void _emitUnion(
@@ -273,125 +272,138 @@ abstract final class ${metadata.facadeName} {
   }
 
   String _fromRuntimeFunction(AckObjectModelNode node) {
-    final helper = jsonFromHelperName(node.className);
     final function = ackClassFromRuntimeName(node.className);
+    final fieldsByName = {
+      for (final field in node.fields) field.dartName: field,
+    };
+    final arguments = <String>[];
+    for (final parameter in node.constructorParameters) {
+      final String expression;
+      if (parameter.fieldName == node.captureFieldName) {
+        expression =
+            '${_ack('deepUnmodifiableJsonMap')}(Map<String, Object?>.fromEntries(\n'
+            '      value.entries.where((entry) => !declared.contains(entry.key)),\n'
+            '    ))';
+      } else {
+        final field = fieldsByName[parameter.fieldName];
+        if (field == null) {
+          throw StateError(
+            'Missing field ${parameter.fieldName} on ${node.className}.',
+          );
+        }
+        expression = _decodeParameter(parameter, field);
+      }
+      arguments.add(
+        parameter.kind == AckConstructorParameterKind.named
+            ? '${parameter.name}: $expression'
+            : expression,
+      );
+    }
+
     if (node.captureFieldName == null) {
       return '''
 ${node.className} $function(Map<String, Object?> value) =>
-    $helper(Map<String, dynamic>.from(value));''';
+    ${node.className}(${arguments.join(', ')});''';
     }
     final declared = _declaredKeys(node);
-    final capture = node.captureFieldName!;
-    final captureJsonKey = node.captureJsonKey ?? capture;
     return '''
 ${node.className} $function(Map<String, Object?> value) {
   const declared = ${_keySet(declared)};
-  return $helper(<String, dynamic>{
-    ...value,
-    ${dartStringLiteral(captureJsonKey)}: Map<String, Object?>.fromEntries(
-      value.entries.where((entry) => !declared.contains(entry.key)),
-    ),
-  });
+  return ${node.className}(
+    ${arguments.join(',\n    ')},
+  );
 }''';
+  }
+
+  String _decodeParameter(
+    AckConstructorParameter parameter,
+    AckFieldNode field,
+  ) {
+    final raw = 'value[${dartStringLiteral(field.jsonKey)}]';
+    final defaultExpr =
+        parameter.defaultExpression != null &&
+            parameter.defaultExpression != 'null'
+        ? parameter.defaultExpression
+        : null;
+    final baseType = _nonNullable(parameter.typeRef);
+    final isNullableOrDefaulted =
+        parameter.typeRef is AckNullableTypeRef || defaultExpr != null;
+    if (!isNullableOrDefaulted) {
+      return _fromRuntime(baseType, raw);
+    }
+    if (baseType is AckScalarTypeRef || baseType is AckExternalTypeRef) {
+      final cast = baseType is AckScalarTypeRef && baseType.dartType == 'Object'
+          ? raw
+          : '$raw as ${_type(baseType)}?';
+      return defaultExpr == null ? cast : '$cast ?? $defaultExpr';
+    }
+    final nullBranch = defaultExpr ?? 'null';
+    return 'switch ($raw) {'
+        ' null => $nullBranch,'
+        ' final fieldValue => ${_fromRuntime(baseType, 'fieldValue')},'
+        ' }';
   }
 
   String _toRuntimeFunction(AckObjectModelNode node) {
     final function = ackClassToRuntimeName(node.className);
-    final jsonHelper = jsonToHelperName(node.className);
-    final requiredNulls = [
-      for (final field in node.fields)
-        if (field.isRequired && field.acceptsNull) field,
-    ];
     final discriminatorKey = node.discriminatorKey;
     final discriminatorValue = node.discriminatorValue;
     final capture = node.captureFieldName;
-    final captureJsonKey = node.captureJsonKey ?? capture;
-    final needsBlock =
-        capture != null || requiredNulls.isNotEmpty || discriminatorKey != null;
-    if (!needsBlock) {
+    final fieldEntries = <String>[
+      for (final field in node.fields)
+        if (discriminatorValue == null || field.jsonKey != discriminatorKey)
+          '${dartStringLiteral(field.jsonKey)}: '
+              '${_omitIfNull(field) ? '?' : ''}${_encodeField(field)}',
+      if (discriminatorKey != null && discriminatorValue != null)
+        '${dartStringLiteral(discriminatorKey)}: '
+            '${dartStringLiteral(discriminatorValue)}',
+    ];
+    if (capture == null) {
       return '''
 Map<String, Object?> $function(${node.className} model) =>
-    <String, Object?>{...$jsonHelper(model)};''';
+    <String, Object?>{${fieldEntries.join(', ')}};''';
     }
-
-    final lines = <String>[];
-    if (capture != null) {
-      lines.add('const declared = ${_keySet(_declaredKeys(node))};');
-    }
-    lines
-      ..add('final result = <String, Object?>{...$jsonHelper(model)};')
-      ..addAll([
-        if (captureJsonKey != null)
-          'result.remove(${dartStringLiteral(captureJsonKey)});',
-        for (final field in requiredNulls)
-          'if (model.${field.dartName} == null) { '
-              'result[${dartStringLiteral(field.jsonKey)}] = null; }',
-      ]);
-
     final entries = <String>[
-      if (capture != null)
-        'for (final entry in model.$capture.entries)\n'
-            '    if (!declared.contains(entry.key)) entry.key: entry.value',
-      '...result',
-      if (discriminatorKey != null && discriminatorValue != null)
-        '${dartStringLiteral(discriminatorKey)}: ${dartStringLiteral(discriminatorValue)}',
+      'for (final entry in model.$capture.entries)\n'
+          '      if (!declared.contains(entry.key)) entry.key: entry.value',
+      ...fieldEntries,
     ];
-    lines.add('return <String, Object?>{${entries.join(',\n  ')}};');
     return '''
 Map<String, Object?> $function(${node.className} model) {
-  ${lines.join('\n  ')}
+  const declared = ${_keySet(_declaredKeys(node))};
+  return <String, Object?>{
+    ${entries.join(',\n    ')},
+  };
 }''';
   }
 
-  String _fieldBridges(AckObjectModelNode node) {
-    final output = StringBuffer();
-    final parametersByField = {
-      for (final parameter in node.constructorParameters)
-        parameter.fieldName: parameter,
-    };
-    for (final field in node.fields) {
-      final type = _type(field.runtimeRef);
-      final parameterType =
-          parametersByField[field.dartName]?.typeRef ?? field.runtimeRef;
-      final fromRuntimeType =
-          field.defaultExpression != null &&
-              parameterType is! AckNullableTypeRef
-          ? AckNullableTypeRef(parameterType)
-          : parameterType;
-      final fromType = _type(fromRuntimeType);
-      final fromName = ackClassFromRuntimeBridgeName(
-        node.className,
-        field.dartName,
-      );
-      final toName = ackClassToRuntimeBridgeName(
-        node.className,
-        field.dartName,
-      );
-      output
-        ..writeln(
-          '$fromType $fromName(Object? value) => '
-          '${_fromRuntime(fromRuntimeType, 'value')};',
-        )
-        ..writeln(
-          'Object? $toName($type value) => '
-          '${_toRuntime(field.runtimeRef, 'value')};',
-        );
-    }
-    if (node.captureFieldName case final capture?) {
-      final fromName = ackClassFromRuntimeBridgeName(node.className, capture);
-      final toName = ackClassToRuntimeBridgeName(node.className, capture);
-      output
-        ..writeln(
-          'Map<String, Object?>? $fromName(Object? value) => '
-          'value == null ? null : '
-          '${_ack('deepUnmodifiableJsonMap')}('
-          'value as Map<String, Object?>);',
-        )
-        ..writeln('Object? $toName(Map<String, Object?> value) => value;');
-    }
+  bool _omitIfNull(AckFieldNode field) =>
+      field.nullable && !(field.isRequired && field.acceptsNull);
 
-    return output.toString();
+  String _encodeField(AckFieldNode field) {
+    final baseType = _nonNullable(field.runtimeRef);
+    final access = 'model.${field.dartName}';
+    if (!field.nullable) {
+      return _toRuntime(baseType, access);
+    }
+    if (baseType is AckScalarTypeRef || baseType is AckExternalTypeRef) {
+      return access;
+    }
+    if (baseType is AckListTypeRef ||
+        baseType is AckSetTypeRef ||
+        baseType is AckMapTypeRef) {
+      return _toRuntime(AckNullableTypeRef(baseType), access);
+    }
+    return 'switch ($access) {'
+        ' null => null,'
+        ' final fieldValue => ${_toRuntime(baseType, 'fieldValue')},'
+        ' }';
   }
+
+  AckInferRef _nonNullable(AckInferRef type) => switch (type) {
+    AckNullableTypeRef(:final inner) => inner,
+    _ => type,
+  };
 
   String _fromRuntime(AckInferRef type, String expression) => switch (type) {
     // Any input is already assignable to Object?; a cast would be redundant.

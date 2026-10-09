@@ -13,7 +13,7 @@ Future<void> _expectOutput(String source, Matcher matcher) async {
     {'test_pkg|lib/schema.dart': source},
     generateFor: const {'test_pkg|lib/schema.dart'},
     readerWriter: readerWriter,
-    outputs: {'test_pkg|lib/schema.ack.dart': decodedMatches(matcher)},
+    outputs: {'test_pkg|lib/schema.g.dart': decodedMatches(matcher)},
   );
 }
 
@@ -41,8 +41,7 @@ const _head = '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 ''';
 
 void main() {
@@ -57,8 +56,7 @@ void main() {
 import 'package:ack/ack.dart';
 import 'money_schema.dart';
 
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @Schemable()
 final orderSchema = Ack.object({'price': moneySchema});

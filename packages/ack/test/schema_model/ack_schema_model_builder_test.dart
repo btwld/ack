@@ -174,6 +174,19 @@ void main() {
       expect(model.toJsonSchema(), schema.toJsonSchema());
     });
 
+    test('uses a resource-preserving model for imported JSON Schema', () {
+      final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+
+      final model = schema.toSchemaModelPreservingImportedDialect();
+
+      expect(model, isA<AckRawSchemaModel>());
+      expect(model.toJsonSchema()['type'], 'string');
+      expect(
+        model.toJsonSchema(),
+        schema.toJsonSchemaPreservingImportedDialect(),
+      );
+    });
+
     test('rejects an imported definition reused as a lazy target', () {
       final imported = Ack.fromJsonSchema(true).nullable(value: false);
       final schema = Ack.object({
@@ -325,7 +338,7 @@ void main() {
             branch.properties!['type'] as AckStringSchemaModel;
 
         expect(discriminator.constValue, 'cat');
-        expect(branch.extensions['x-transformed'], isTrue);
+        expect(branch.extensions, isEmpty);
         expect(branch.required, ['type', 'name']);
       },
     );
@@ -339,7 +352,6 @@ void main() {
       expect(model.toJsonSchema(), {
         'type': 'string',
         'format': 'date',
-        'x-transformed': true,
       });
       expect(
         model.warnings.map((warning) => warning.code),
@@ -396,7 +408,6 @@ void main() {
       expect(model.toJsonSchema(), {
         'type': 'string',
         'minLength': 1,
-        'x-transformed': true,
       });
       expect(model.warnings, isEmpty);
     });
@@ -412,7 +423,7 @@ void main() {
       );
       final model = schema.toSchemaModel();
 
-      expect(model.toJsonSchema(), {'type': 'integer', 'x-transformed': true});
+      expect(model.toJsonSchema(), {'type': 'integer'});
       expect(model.warnings, isEmpty);
     });
 

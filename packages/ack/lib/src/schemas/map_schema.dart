@@ -89,10 +89,7 @@ final class MapSchema<ValueBoundary extends Object, ValueRuntime extends Object>
       );
     }
 
-    return applyConstraintsAndRefinements(
-      Map<String, ValueRuntime?>.unmodifiable(typed),
-      context,
-    );
+    return applyConstraintsAndRefinements(UnmodifiableMapView(typed), context);
   }
 
   @override
@@ -157,7 +154,7 @@ final class MapSchema<ValueBoundary extends Object, ValueRuntime extends Object>
       );
     }
 
-    return SchemaResult.ok(Map<String, ValueBoundary?>.unmodifiable(encoded));
+    return SchemaResult.ok(UnmodifiableMapView(encoded));
   }
 
   @override

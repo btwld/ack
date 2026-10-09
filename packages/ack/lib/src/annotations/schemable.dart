@@ -1,7 +1,21 @@
 import 'package:meta/meta_meta.dart';
 
-import 'ack_generated_json.dart';
-import 'ack_model.dart';
+/// JSON field-name styles supported by class-first Ack generation.
+///
+/// This enum is deliberately closed: `ack_generator` maps each style onto a
+/// fixed field-rename rule when it generates the model schema.
+enum AckCaseStyle { none, snake, kebab, pascal, screamingSnake }
+
+/// How a class-first object treats properties that are not declared fields.
+///
+/// [reject] is the default: unknown properties fail validation.
+/// [discard] accepts unknown properties during validation but does not store
+/// them on the model. It is intended for tolerant, read-only consumers.
+/// [capture] stores unknown properties in the configured `captureField`
+/// and flattens them back onto the wire during encoding. Declared fields and
+/// union discriminators always win over captured extras. Models that must
+/// round-trip unknown properties use [capture].
+enum AckUnknownPropertyPolicy { reject, discard, capture }
 
 /// Marks an Ack schema declaration.
 ///
@@ -9,16 +23,8 @@ import 'ack_model.dart';
 /// schema-first model. Use it on a class to generate a class-first schema.
 /// [name] applies only to a top-level schema; every other option applies only
 /// to a class. `ack_generator` rejects an option set for the other target.
-/// The deprecated `@AckInfer` and `@AckModel` spellings remain supported until
-/// 2.0.0.
 @Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
 final class Schemable {
-  /// Internal marker used on generated schema-first model classes.
-  ///
-  /// Typed as [Object] so generated code only needs a constant annotation
-  /// expression. The generator inspects the actual [AckGeneratedJson] type.
-  static const Object generatedJson = AckGeneratedJson();
-
   /// Creates a unified schema declaration annotation.
   const Schemable({
     this.name,
