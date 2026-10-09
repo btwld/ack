@@ -41,7 +41,7 @@ void main() {
       outputs: {
         'test_pkg|lib/probe.exports': decodedMatches(
           'AckCaseStyle,AckField,AckUnknownPropertyPolicy,'
-          'NotNull,Optional,Required,Schemable',
+          'Check,NotNull,Optional,Required,Schemable',
         ),
       },
     );

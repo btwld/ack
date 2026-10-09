@@ -10,20 +10,11 @@ and generate a Dart model, or start with a Dart model and generate its schema.
 | A top-level Ack schema | `@Schemable()` | An immutable Dart model |
 | A Dart class | `@Schemable()` | An Ack codec schema and JSON helpers |
 
-`@Schemable()` and the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`) come from `package:ack/ack.dart`.
-Constraint annotations such as `@MinLength` and `@Email` come from
-`package:ack/annotations.dart`. Where a constraint name clashes with another
-type, such as `package:uuid`'s `Uuid` or your own `Email`, import it with a
-prefix and write `@ack.Email()`:
-
-```dart
-import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart' as ack;
-```
-
-`@Uri()` and `@DateTime()` come from `package:ack/format_annotations.dart`,
-imported with a prefix because they share names with `dart:core` types.
+`@Schemable()`, the model annotations (`@AckField`, `@Optional`,
+`@Required`, `@NotNull`), and the `@Check.*` constraint namespace come from
+`package:ack/ack.dart`. Legacy top-level constraint annotations in
+`package:ack/annotations.dart` and `package:ack/format_annotations.dart` are
+deprecated and will be removed in 2.0.0.
 There is no `@AckSchema()` annotation. `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 `@AckInfer()` and `@AckModel()` are deprecated spellings of `@Schemable()` and
@@ -55,7 +46,6 @@ the same builder and generated part.
 
 ```dart title="lib/models.dart"
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'models.g.dart';
 
@@ -77,10 +67,10 @@ final class Account with _$AccountAck {
     this.role = 'member',
   });
 
-  @MinLength(2)
+  @Check.minLength(2)
   final String displayName;
 
-  @Email()
+  @Check.email()
   final String email;
 
   final String? middleName;
@@ -342,16 +332,14 @@ Map values may be `null` only when the value type is nullable. `List<Object?>`
 stays rejected because `Ack.list` has no nullable-item contract. Parsed
 `Object` values are recursively unmodifiable, like other stored collections.
 
-Constraint annotations follow the field type:
+Constraint annotations use `@Check.*` and follow the field type:
 
-- numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`;
-- strings: `@MinLength`, `@MaxLength`, `@Matches`, `@Email`, `@NotEmpty`;
-- string formats: `@Url`, `@Uuid`, `@Date`; `@Uri()` and `@DateTime()` from
-  `package:ack/format_annotations.dart` imported with a prefix
-  (`@formats.Uri()`);
-- lists and sets: `@MinItems`, `@MaxItems`, `@UniqueItems`.
+- numeric: `@Check.min`, `@Check.max`, `@Check.multipleOf`, `@Check.positive`, `@Check.negative`;
+- strings: `@Check.minLength`, `@Check.maxLength`, `@Check.matches`, `@Check.email`, `@Check.notEmpty`;
+- string formats: `@Check.url`, `@Check.uri`, `@Check.uuid`, `@Check.date`, `@Check.dateTime` (`@Check.datetime`), `@Check.ip`, `@Check.ipv4`, `@Check.ipv6`;
+- lists and sets: `@Check.minItems`, `@Check.maxItems`, `@Check.uniqueItems` (`@Check.unique`).
 
-`@Matches` is the annotation form of `Ack.string().matches(...)`. Numeric
+`@Check.matches` is the annotation form of `Ack.string().matches(...)`. Numeric
 constraint values must be finite. On a `Set<Set<T>>` field the collection
 constraints apply to the outer set.
 
