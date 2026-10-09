@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.7.0-beta.7
+
+* Strict JSON Schema import (`Ack.fromJsonSchema()`) now supports `multipleOf`
+  with exact decimal division (shared with native `.multipleOf()`) and reports
+  `keywordLocation` on `multipleOf` validation failures, enabling round-trips
+  from `Ack.integer().multipleOf(...)` and `Ack.double().multipleOf(...)`.
+* Strict JSON Schema import now recognizes Ack's built-in string formats
+  (`date-time`, `date`, `email`, `uuid`, `uri`, `ipv4`, `ipv6`), standard
+  numeric format bounds (`int32`, `int64`, `uint32`, `uint64`, `float`,
+  `double`), and `x-*` vendor extension annotations (including `x-transformed`
+  from `AckSchema.transform(...)`), while continuing to reject unknown formats
+  and non-`x-*` extension keywords.
+* Strict JSON Schema import now accepts Draft-07 `$schema` URIs
+  (`http(s)://json-schema.org/draft-07/schema` with or without a trailing `#`),
+  so schemas exported by `.toJsonSchema()` can be re-imported without stripping
+  `$schema`.
+* Speed up imported JSON Schema compilation and validation, `toJsonSchema()` on
+  native schemas, and collection parse/encode results (`Ack.object()`,
+  `Ack.list()`, `Ack.map()`). Error output, exported JSON Schema, and
+  unmodifiable result detachment are unchanged.
+* Align all five publishable packages at 1.7.0-beta.7. Adapter and generator
+  APIs and compatible dependency minimums are unchanged. The beta.3 annotation
+  and generator migrations and the beta.5 imported-pattern change still apply
+  when upgrading from earlier versions.
+
 ## 1.7.0-beta.6
 
 * `JsonSchemaValidationError` reports `keywordLocation`, the evaluation path

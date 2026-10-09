@@ -1,4 +1,4 @@
-## Unreleased
+## 1.7.0-beta.7
 
 ### Added
 
