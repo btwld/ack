@@ -19,10 +19,29 @@ void main() {
     expect(strict.safeParse({}).isFail, isTrue);
   });
 
-  test('builder bridge treats formats as annotations by default', () {
+  test('builder bridge forwards the format assertion policy', () {
     final model = jsb.Schema.fromMap({'type': 'string', 'format': 'email'});
-    final schema = model.toAckSchema();
-    expect(schema.safeParse('not an email').isOk, isTrue);
-    expect(schema.safeParse(42).isFail, isTrue);
+    expect(model.toAckSchema().safeParse('not an email').isOk, isTrue);
+
+    final asserted = model.toAckSchema(assertFormats: true);
+    expect(asserted.safeParse('ada@example.com').isOk, isTrue);
+    expect(asserted.safeParse('not an email').isFail, isTrue);
   });
+
+  test(
+    'builder exports preserve 2020-12 by default and expose Draft-7 lowering',
+    () {
+      final imported = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+      final exported = imported.toJsonSchemaBuilder().value as Map;
+      final legacy = imported.toJsonSchemaBuilderDraft7().value as Map;
+
+      expect(exported['type'], 'string');
+      expect(
+        exported[r'$schema'],
+        'https://json-schema.org/draft/2020-12/schema',
+      );
+      expect(legacy['definitions'], isA<Map<String, Object?>>());
+      expect(legacy[r'$schema'], isNull);
+    },
+  );
 }

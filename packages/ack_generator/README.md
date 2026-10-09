@@ -8,6 +8,87 @@ come from `package:ack/annotations.dart`. `@AckInfer()` and `@AckModel()` are de
 spellings of `@Schemable()` until 2.0.0. It also retains the deprecated Ack
 1.1 `@AckType()` generator unchanged.
 
+## Generate models from JSON Schema
+
+The opt-in `ack_json_schema` builder turns a draft 2020-12 JSON Schema into
+models. It emits typed `@AckInfer` models for shapes it can represent as Ack
+fields. For other valid 2020-12 shapes, it emits validated
+value models backed by `Ack.fromJsonSchema`, preserving every supported
+assertion. Name the source `lib/contract.schema.json`; named `$defs` entries
+produce models, and a schema with root assertions also produces `Root`
+(`DocumentRoot` when `$defs/Root` already owns that name):
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "User": {
+      "type": "object",
+      "properties": { "name": { "type": "string" } },
+      "required": ["name"],
+      "additionalProperties": false
+    }
+  }
+}
+```
+
+Enable the builder in the consuming package's `build.yaml`:
+
+```yaml
+targets:
+  $default:
+    builders:
+      ack_generator:ack_json_schema:
+        enabled: true
+        options:
+          unknown_properties: schema
+          assert_formats: false
+          model_mode: auto # use validated for exact source-schema parity
+          # Optional offline resources: retrieval URI -> package asset path.
+          # documents:
+          #   "https://example.test/common.json": "lib/common.json"
+```
+
+Run `dart run build_runner build`. Import `contract.schema.dart` to use the
+generated models. A typed model also writes `contract.schema.ack.dart` and
+`contract.schema.ack.g.dart` and offers typed fields and `copyWith`. A validated
+value model needs no parts: `User.parse(value)` returns a wrapper whose
+immutable `value` is the validated JSON value; `User.encode(model)`,
+`User.safeEncode(model)`, and `model.toJson()` revalidate on output. The
+`userSchema` declaration and `User.schema` expose the exact source validator.
+Do not hand-edit generated files.
+
+The default `unknown_properties: schema` follows each object's
+`additionalProperties`. Choose `preserve` for a forward-compatible client: it
+widens `additionalProperties: false` to `true` at every object, records every
+widened JSON pointer in the generated header, and captures unknown fields in
+`additionalProperties`. The source JSON Schema is never rewritten. This is a
+deliberate change to the effective validation contract.
+
+Typed output covers named non-null objects, references to named definitions,
+inline objects, maps, arrays with non-null items, common primitives and bounds,
+string enums, and simple unions. Other valid shapes—including recursive and
+dynamic references, composition, nullable roots and items, `multipleOf`,
+unevaluated keywords, and format assertions—use validated value models.
+`assert_formats: true` opts into format assertions under the standard dialect;
+unknown asserted formats and unresolved or malformed schemas fail the build
+with a JSON-pointer diagnostic. External resources are read only from the
+explicit `documents` mapping; the builder never fetches URLs. The complete
+required 2020-12 corpus generates offline with its supplied resources. Custom
+vocabulary support is limited to what `Ack.fromJsonSchema` implements.
+
+Definitions with non-Dart names receive stable UpperCamelCase wrapper names.
+If the entire document uses fallback, all its models are value wrappers so
+references and dynamic scope stay bound to the same effective source document.
+Validated wrappers do not expose inferred fields or typed `copyWith`.
+
+An integral JSON number beyond Dart's `int` range is a known edge case:
+`Ack.fromJsonSchema` can accept it as an integral `double`, while a typed
+`Ack.integer()` model cannot represent it as an `int`. String length bounds also
+differ for astral Unicode characters (code points in the importer versus UTF-16
+units in the fluent schema). Set `model_mode: validated` when these edge cases
+matter; typed output retains the original v1 contract for compatibility.
+
 ## Schema-first usage
 
 ```dart

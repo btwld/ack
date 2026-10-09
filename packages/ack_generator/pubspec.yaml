@@ -26,6 +26,8 @@ dependencies:
   json_serializable: ^6.14.1
   logging: ^1.3.0
   meta: ^1.15.0
+  package_config: ^2.1.0
+  pub_semver: ^2.1.4
 
   # Ack packages (versions are overridden locally by Melos)
   ack: ^1.7.0-beta.3

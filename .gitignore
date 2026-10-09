@@ -60,6 +60,7 @@ temp/
 
 # AI Agent workspace
 .augment/
+/.agents/plans/
 
 # dart_apitool generated files
 api-model-*.json

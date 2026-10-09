@@ -1,3 +1,18 @@
+## Unreleased
+
+### Added
+
+* Opt-in `ack_generator:ack_json_schema` builder generates `@Schemable` schema
+  libraries and model parts from named draft 2020-12 `$defs` bundles in one
+  build. `unknown_properties: preserve` widens strict objects explicitly for
+  forward-compatible clients. Validated value-model fallback now covers valid
+  draft 2020-12 roots and definitions that cannot become typed Ack fields,
+  including recursion, dynamic references, composition, and nullable values.
+  `model_mode: validated` forces exact source-schema parse/encode semantics;
+  `assert_formats` and offline `documents` options retain format and external
+  resource behavior. Malformed or unresolved schemas fail with JSON-pointer
+  diagnostics.
+
 ## 1.7.0-beta.6
 
 ### Changed

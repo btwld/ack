@@ -75,7 +75,8 @@ Exports preserve supported validation behavior, not textual document identity.
 Full A2UI coverage is not supported. MCP registration compatibility remains
 separate. See the
 [JSON Schema guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
-for the supported subset, recursive bundles, and round-trip guarantees.
+and [capability matrix](../../docs/json-schema-2020-12-capabilities.md) for
+coverage and round-trip guarantees.
 
 ## Documentation
 
