@@ -269,6 +269,10 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
           when !isExactDecimalMultipleOf(value, divisor)) {
         return fail('multipleOf');
       }
+      if (node.format case final format?
+          when !_isValidImportedNumericFormat(format, value)) {
+        return fail('format');
+      }
     case String():
       // Counting code points allocates, so only do it when a bound exists.
       if (node.minLength != null || node.maxLength != null) {
@@ -281,7 +285,8 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
         );
         if (keyword != null) return fail(keyword);
       }
-      if (node.dateTime && !isValidRfc3339DateTime(value)) {
+      if (node.format case final format?
+          when !_isValidImportedStringFormat(format, value)) {
         return fail('format');
       }
       if (node.pattern case final pattern? when !pattern.hasMatch(value)) {
@@ -383,3 +388,58 @@ bool _isImportType(Object? type, Object? value) => switch (type) {
   'object' => value is Map,
   _ => false,
 };
+final _importedBigIntInt64Min = BigInt.parse('-9223372036854775808');
+final _importedBigIntInt64Max = BigInt.parse('9223372036854775807');
+final _importedBigIntUint64Max = BigInt.parse('18446744073709551615');
+
+bool _isValidImportedNumericFormat(String format, num value) {
+  switch (format) {
+    case 'int32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= -2147483648 && value <= 2147483647;
+    case 'uint32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= 0 && value <= 4294967295;
+    case 'int64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= _importedBigIntInt64Min &&
+          intVal <= _importedBigIntInt64Max;
+    case 'uint64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= BigInt.zero && intVal <= _importedBigIntUint64Max;
+    case 'float':
+      if (!value.isFinite) return false;
+      final d = value.toDouble();
+      return d.abs() <= 3.4028234663852886e+38;
+    case 'double':
+      return value.isFinite;
+    default:
+      // String formats do not constrain numeric instances.
+      return true;
+  }
+}
+
+BigInt? _integralBigInt(num value) {
+  if (!value.isFinite || value % 1 != 0) return null;
+  if (value is int) return BigInt.from(value);
+  final (:coefficient, :scale) = decimalParts(value);
+  if (scale == 0) return coefficient;
+  final divisor = BigInt.from(10).pow(scale);
+  if (coefficient % divisor != BigInt.zero) return null;
+  return coefficient ~/ divisor;
+}
+
+bool _isValidImportedStringFormat(String format, String value) =>
+    switch (format) {
+      'date-time' => isValidRfc3339DateTime(value),
+      'date' => isValidIso8601Date(value),
+      'email' => isValidEmailFormat(value),
+      'uuid' => isValidUuidFormat(value),
+      'uri' => isValidUriFormat(value),
+      'ipv4' => StringIpConstraint.isIpv4(value),
+      'ipv6' => StringIpConstraint.isIpv6(value),
+      // Numeric formats do not constrain string instances.
+      _ => true,
+    };

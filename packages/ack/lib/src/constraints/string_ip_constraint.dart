@@ -18,13 +18,15 @@ class StringIpConstraint extends Constraint<String>
 
   @override
   bool isValid(String value) {
-    if (version == 4) return _ipv4Regex.hasMatch(value);
-    if (version == 6) return _isIpv6(value);
+    if (version == 4) return isIpv4(value);
+    if (version == 6) return isIpv6(value);
 
-    return _ipv4Regex.hasMatch(value) || _isIpv6(value);
+    return isIpv4(value) || isIpv6(value);
   }
 
-  static bool _isIpv6(String value) {
+  static bool isIpv4(String value) => _ipv4Regex.hasMatch(value);
+
+  static bool isIpv6(String value) {
     try {
       Uri.parseIPv6Address(value);
       return true;
