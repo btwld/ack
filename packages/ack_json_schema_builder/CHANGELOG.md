@@ -1,3 +1,12 @@
+## 1.7.0-beta.7
+
+### Changed
+
+* When paired with `ack` 1.7.0-beta.7 or later, imported builder schemas inherit
+  `multipleOf` validation, built-in string and numeric `format` assertions,
+  `x-*` vendor extension support, and Draft-07 `$schema` URI support. The
+  bridge's public API and compatible dependency minimum are unchanged.
+
 ## 1.7.0-beta.6
 
 ### Changed
