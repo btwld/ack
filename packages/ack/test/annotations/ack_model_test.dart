@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
 
@@ -70,7 +72,66 @@ void main() {
     expect(notNull, isA<NotNull>());
   });
 
-  test('constraint sugar annotations are const data', () {
+  test('Check.* constraint annotations are const and expose kind + value', () {
+    const checks = <Check>[
+      Check.min(1),
+      Check.max(9.5),
+      Check.multipleOf(2),
+      Check.positive(),
+      Check.negative(),
+      Check.minLength(1),
+      Check.maxLength(100),
+      Check.matches(r'^[a-z]+$'),
+      Check.notEmpty(),
+      Check.email(),
+      Check.url(),
+      Check.uri(),
+      Check.uuid(),
+      Check.date(),
+      Check.dateTime(),
+      Check.datetime(),
+      Check.ip(),
+      Check.ip(version: 4),
+      Check.ipv4(),
+      Check.ipv6(),
+      Check.minItems(1),
+      Check.maxItems(10),
+      Check.uniqueItems(),
+      Check.unique(),
+    ];
+
+    expect(
+      checks.map((c) => (c.kind, c.value)).toList(),
+      const <(String, Object?)>[
+        ('min', 1),
+        ('max', 9.5),
+        ('multipleOf', 2),
+        ('positive', null),
+        ('negative', null),
+        ('minLength', 1),
+        ('maxLength', 100),
+        ('matches', r'^[a-z]+$'),
+        ('notEmpty', null),
+        ('email', null),
+        ('url', null),
+        ('uri', null),
+        ('uuid', null),
+        ('date', null),
+        ('dateTime', null),
+        ('datetime', null),
+        ('ip', null),
+        ('ip', 4),
+        ('ipv4', null),
+        ('ipv6', null),
+        ('minItems', 1),
+        ('maxItems', 10),
+        ('uniqueItems', null),
+        ('unique', null),
+      ],
+    );
+  });
+
+  test('legacy constraint sugar annotations remain const data', () {
     const annotations = <Object>[
       Min(1),
       Max(9),

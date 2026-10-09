@@ -1006,4 +1006,124 @@ final class Account with _\$AccountAck {
       },
     );
   });
+
+  test(
+    '@Check.* constraints work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
+    () async {
+      await _build(
+        {
+          'check_models.dart': '''
+import 'package:ack/ack.dart';
+
+part 'check_models.g.dart';
+
+final class Email {
+  const Email(this.address);
+  final String address;
+}
+
+final class Uuid {
+  const Uuid(this.value);
+  final String value;
+}
+
+@Schemable()
+final class CheckedRecord with _\$CheckedRecordAck {
+  const CheckedRecord({
+    required this.email,
+    required this.id,
+    required this.website,
+    required this.resourceUri,
+    required this.birthDate,
+    required this.createdAt,
+    required this.clientIp,
+    required this.v4,
+    required this.v6,
+    required this.code,
+    required this.score,
+    required this.debt,
+    required this.tags,
+    @Check.minLength(2) @Check.maxLength(20) required this.handle,
+  });
+
+  @Check.email()
+  final String email;
+
+  @Check.uuid()
+  final String id;
+
+  @Check.url()
+  final String website;
+
+  @Check.uri()
+  final String resourceUri;
+
+  @Check.date()
+  final String birthDate;
+
+  @Check.dateTime()
+  final String createdAt;
+
+  @Check.ip(version: 4)
+  final String clientIp;
+
+  @Check.ipv4()
+  final String v4;
+
+  @Check.ipv6()
+  final String v6;
+
+  @Check.notEmpty()
+  @Check.matches(r'^[A-Z]+\$')
+  final String code;
+
+  @Check.min(0)
+  @Check.max(100)
+  @Check.multipleOf(5)
+  @Check.positive()
+  final int score;
+
+  @Check.negative()
+  final double debt;
+
+  @Check.minItems(1)
+  @Check.maxItems(5)
+  @Check.uniqueItems()
+  final List<String> tags;
+
+  final String handle;
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/check_models.g.dart': decodedMatches(
+            allOf([
+              _containsCode("'email': Ack.string().email()"),
+              _containsCode("'id': Ack.string().uuid()"),
+              _containsCode("'website': Ack.string().url()"),
+              _containsCode("'resourceUri': Ack.string().uri()"),
+              _containsCode("'birthDate': Ack.string().date()"),
+              _containsCode("'createdAt': Ack.string().datetime()"),
+              _containsCode("'clientIp': Ack.string().ip(version: 4)"),
+              _containsCode("'v4': Ack.string().ipv4()"),
+              _containsCode("'v6': Ack.string().ipv6()"),
+              _containsCode(
+                r"'code': Ack.string().notEmpty().matches('^[A-Z]+\$')",
+              ),
+              _containsCode(
+                "'score': Ack.integer().min(0).max(100).multipleOf(5).positive()",
+              ),
+              _containsCode("'debt': Ack.double().negative()"),
+              _containsCode(
+                "'tags': Ack.list(Ack.string()).minItems(1).maxItems(5).unique()",
+              ),
+              _containsCode(
+                "'handle': Ack.string().minLength(2).maxLength(20)",
+              ),
+            ]),
+          ),
+        },
+      );
+    },
+  );
 }

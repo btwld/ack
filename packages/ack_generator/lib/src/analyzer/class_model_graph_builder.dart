@@ -2,6 +2,7 @@ import 'package:ack/ack.dart' show AckModelAdapter, AckSchema;
 import 'package:ack/annotations.dart' as annotations;
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -621,7 +622,8 @@ final class ClassModelGraphBuilder {
         );
       }
       captureJsonKey =
-          _jsonKey(extras) ?? _rename(captureFieldName, options.caseStyle);
+          _jsonKey(extras, parameters[captureFieldName]) ??
+          _rename(captureFieldName, options.caseStyle);
     }
 
     final nodes = <AckFieldNode>[];
@@ -653,7 +655,8 @@ final class ClassModelGraphBuilder {
       _validateMapKey(field, field.type);
       final futureType = futureTypes[name];
       _recordClassFirstDependencies(element, field.type, field);
-      final jsonKey = _jsonKey(field) ?? _rename(name, options.caseStyle);
+      final jsonKey =
+          _jsonKey(field, parameter) ?? _rename(name, options.caseStyle);
       final prior = ownerByJsonKey[jsonKey];
       if (prior != null) {
         throw InvalidGenerationSource(
@@ -674,7 +677,7 @@ final class ClassModelGraphBuilder {
       final dartNullable =
           futureType?.runtimeRef is AckNullableTypeRef ||
           _isNullable(field.type);
-      final rejectNull = _notNullChecker.hasAnnotationOfExact(field);
+      final rejectNull = _hasAnnotation(_notNullChecker, field, parameter);
       final acceptsNull = dartNullable && !rejectNull;
       final presence = _effectivePresence(
         field,
@@ -683,8 +686,12 @@ final class ClassModelGraphBuilder {
       );
       var schema = isDiscriminator && discriminatorValue != null
           ? '${_ack('Ack')}.literal(${dartStringLiteral(discriminatorValue)})'
-          : await _fieldSchema(field, futureType: futureType);
-      schema = _inference.applyDescription(schema, field);
+          : await _fieldSchema(
+              field,
+              parameter: parameter,
+              futureType: futureType,
+            );
+      schema = _applyDescription(schema, field, parameter);
       schema = _applyPresence(
         schema,
         presence: presence,
@@ -795,14 +802,15 @@ final class ClassModelGraphBuilder {
 
   Future<String> _fieldSchema(
     FieldElement field, {
+    FormalParameterElement? parameter,
     _FutureGeneratedType? futureType,
   }) async {
-    final override = _ackFieldChecker.firstAnnotationOfExact(field);
+    final override = _firstAnnotation(_ackFieldChecker, field, parameter);
     if (override != null) {
       final reader = ConstantReader(override);
       if (!reader.read('schema').isNull) {
         final base = await _escapeHatchExpression(field, reader);
-        return _applySugar(base, field);
+        return _applySugar(base, field, parameter);
       }
     }
     if (futureType != null) {
@@ -810,11 +818,11 @@ final class ClassModelGraphBuilder {
       final setListSchema = futureType.setListSchema;
       if (setListSchema != null) {
         return _setCodec(
-          _applySugar(setListSchema, field),
+          _applySugar(setListSchema, field, parameter),
           futureType.runtimeRef,
         );
       }
-      return _applySugar(futureType.schemaExpression, field);
+      return _applySugar(futureType.schemaExpression, field, parameter);
     }
     final type = field.type;
     if (type is InterfaceType &&
@@ -823,10 +831,10 @@ final class ClassModelGraphBuilder {
       final itemType = type.typeArguments.single;
       _rejectNullableCollectionElement(field, itemType);
       final item = await _schemaForType(itemType, field);
-      final list = _applySugar('${_ack('Ack')}.list($item)', field);
+      final list = _applySugar('${_ack('Ack')}.list($item)', field, parameter);
       return _setCodec(list, _typeRef(type, field));
     }
-    return _applySugar(await _schemaForType(type, field), field);
+    return _applySugar(await _schemaForType(type, field), field, parameter);
   }
 
   String _setCodec(String listSchema, AckInferRef runtimeRef) {
@@ -1387,8 +1395,57 @@ final class ClassModelGraphBuilder {
     }
   }
 
-  String _applySugar(String schema, FieldElement field) =>
-      _inference.applyConstraints(schema, field, field.type);
+  String _applySugar(
+    String schema,
+    FieldElement field,
+    FormalParameterElement? parameter,
+  ) {
+    if (field.isOriginDeclaringFormalParameter) {
+      final target = field.metadata.annotations.isNotEmpty
+          ? field
+          : (parameter ?? field);
+      return _inference.applyConstraints(schema, target, field.type);
+    }
+    var output = _inference.applyConstraints(schema, field, field.type);
+    if (parameter != null && !identical(parameter, field)) {
+      output = _inference.applyConstraints(output, parameter, field.type);
+    }
+    return output;
+  }
+
+  String _applyDescription(
+    String schema,
+    FieldElement field,
+    FormalParameterElement? parameter,
+  ) {
+    final target = _ackFieldChecker.hasAnnotationOfExact(field)
+        ? field
+        : (parameter != null && _ackFieldChecker.hasAnnotationOfExact(parameter)
+              ? parameter
+              : field);
+    return _inference.applyDescription(
+      schema,
+      target,
+      sourceComment: field.documentationComment,
+    );
+  }
+
+  DartObject? _firstAnnotation(
+    TypeChecker checker,
+    FieldElement field, [
+    FormalParameterElement? parameter,
+  ]) =>
+      checker.firstAnnotationOfExact(field) ??
+      (parameter == null ? null : checker.firstAnnotationOfExact(parameter));
+
+  bool _hasAnnotation(
+    TypeChecker checker,
+    FieldElement field, [
+    FormalParameterElement? parameter,
+  ]) =>
+      checker.hasAnnotationOfExact(field) ||
+      (parameter != null && checker.hasAnnotationOfExact(parameter));
+
   void _rejectUnsupportedStaticType(FieldElement field, DartType type) {
     if (type is DynamicType || type is TypeParameterType) {
       _unsupportedFieldType(field, type);
@@ -1549,8 +1606,8 @@ final class ClassModelGraphBuilder {
     required bool isDiscriminator,
   }) {
     final inferred = _fieldPresence(parameter);
-    final hasOptional = _optionalChecker.hasAnnotationOfExact(field);
-    final hasRequired = _requiredChecker.hasAnnotationOfExact(field);
+    final hasOptional = _hasAnnotation(_optionalChecker, field, parameter);
+    final hasRequired = _hasAnnotation(_requiredChecker, field, parameter);
     if (hasOptional && hasRequired) {
       throw InvalidGenerationSource(
         '${field.enclosingElement.name}.${field.name} cannot combine '
@@ -1559,7 +1616,7 @@ final class ClassModelGraphBuilder {
       );
     }
 
-    final annotation = _ackFieldChecker.firstAnnotationOfExact(field);
+    final annotation = _firstAnnotation(_ackFieldChecker, field, parameter);
     if (annotation != null) {
       final reader = ConstantReader(annotation);
       if (reader.read('name').isNull &&
@@ -1909,9 +1966,9 @@ final class ClassModelGraphBuilder {
         : null;
   }
 
-  String? _jsonKey(FieldElement field) {
+  String? _jsonKey(FieldElement field, [FormalParameterElement? parameter]) {
     String? ackFieldName;
-    final ackField = _ackFieldChecker.firstAnnotationOfExact(field);
+    final ackField = _firstAnnotation(_ackFieldChecker, field, parameter);
     if (ackField != null) {
       final nameReader = ConstantReader(ackField).read('name');
       if (!nameReader.isNull) {

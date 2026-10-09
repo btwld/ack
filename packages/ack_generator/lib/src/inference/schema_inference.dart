@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:ack/annotations.dart' as annotations;
 import 'package:ack/format_annotations.dart' as formats;
 import 'package:analyzer/dart/analysis/utilities.dart';
@@ -20,6 +22,10 @@ final class AckSchemaInference {
 
   final String? ackPrefix;
 
+  static const _check = TypeChecker.typeNamed(
+    annotations.Check,
+    inPackage: 'ack',
+  );
   static const _min = TypeChecker.typeNamed(annotations.Min, inPackage: 'ack');
   static const _max = TypeChecker.typeNamed(annotations.Max, inPackage: 'ack');
   static const _multipleOf = TypeChecker.typeNamed(
@@ -154,11 +160,218 @@ final class AckSchemaInference {
     final isSet = type is InterfaceType && type.isDartCoreSet;
     final setConstraints = <String>[];
     var hasUniqueConstraint = false;
+
+    void addCollectionConstraint(String constraint, {bool isUnique = false}) {
+      if (isSet) {
+        if (isUnique) hasUniqueConstraint = true;
+        setConstraints.add(constraint);
+      } else {
+        output = '$output$constraint';
+      }
+    }
+
     for (final metadata in declaration.metadata.annotations) {
       final value = metadata.computeConstantValue();
       final valueType = value?.type;
       if (value == null || valueType == null) continue;
-      if (_min.isExactlyType(valueType)) {
+      if (_check.isExactlyType(valueType)) {
+        final kind = value.getField('kind')!.toStringValue()!;
+        switch (kind) {
+          case 'min':
+            _require(
+              declaration,
+              type,
+              '@Check.min',
+              isNumeric,
+              '@Check.minLength',
+            );
+            output =
+                '$output.min(${_number(declaration, '@Check.min', value)})';
+          case 'max':
+            _require(
+              declaration,
+              type,
+              '@Check.max',
+              isNumeric,
+              '@Check.maxLength',
+            );
+            output =
+                '$output.max(${_number(declaration, '@Check.max', value)})';
+          case 'multipleOf':
+            _require(
+              declaration,
+              type,
+              '@Check.multipleOf',
+              isNumeric,
+              'numeric field',
+            );
+            output =
+                '$output.multipleOf(${_number(declaration, '@Check.multipleOf', value)})';
+          case 'positive':
+            _require(
+              declaration,
+              type,
+              '@Check.positive',
+              isNumeric,
+              'numeric field',
+            );
+            output = '$output.positive()';
+          case 'negative':
+            _require(
+              declaration,
+              type,
+              '@Check.negative',
+              isNumeric,
+              'numeric field',
+            );
+            output = '$output.negative()';
+          case 'minLength':
+            _require(
+              declaration,
+              type,
+              '@Check.minLength',
+              isString,
+              '@Check.min',
+            );
+            output =
+                '$output.minLength(${value.getField('value')!.toIntValue()})';
+          case 'maxLength':
+            _require(
+              declaration,
+              type,
+              '@Check.maxLength',
+              isString,
+              '@Check.max',
+            );
+            output =
+                '$output.maxLength(${value.getField('value')!.toIntValue()})';
+          case 'matches':
+            _require(
+              declaration,
+              type,
+              '@Check.matches',
+              isString,
+              'String field',
+            );
+            output =
+                '$output.matches(${dartStringLiteral(value.getField('value')!.toStringValue()!)})';
+          case 'notEmpty':
+            _require(
+              declaration,
+              type,
+              '@Check.notEmpty',
+              isString,
+              'String field',
+            );
+            output = '$output.notEmpty()';
+          case 'email':
+            _require(
+              declaration,
+              type,
+              '@Check.email',
+              isString,
+              'String field',
+            );
+            output = '$output.email()';
+          case 'url':
+            _require(declaration, type, '@Check.url', isString, 'String field');
+            output = '$output.url()';
+          case 'uri':
+            _require(declaration, type, '@Check.uri', isString, 'String field');
+            output = '$output.uri()';
+          case 'uuid':
+            _require(
+              declaration,
+              type,
+              '@Check.uuid',
+              isString,
+              'String field',
+            );
+            output = '$output.uuid()';
+          case 'date':
+            _require(
+              declaration,
+              type,
+              '@Check.date',
+              isString,
+              'String field',
+            );
+            output = '$output.date()';
+          case 'dateTime' || 'datetime':
+            _require(
+              declaration,
+              type,
+              '@Check.$kind',
+              isString,
+              'String field',
+            );
+            output = '$output.datetime()';
+          case 'ip':
+            _require(declaration, type, '@Check.ip', isString, 'String field');
+            final version = value.getField('value')?.toIntValue();
+            if (version != null) {
+              if (version != 4 && version != 6) {
+                throw InvalidGenerationSource(
+                  '${_qualifiedName(declaration)} has @Check.ip(version: '
+                  '$version); version must be 4 or 6.',
+                  element: declaration,
+                );
+              }
+              output = '$output.ip(version: $version)';
+            } else {
+              output = '$output.ip()';
+            }
+          case 'ipv4':
+            _require(
+              declaration,
+              type,
+              '@Check.ipv4',
+              isString,
+              'String field',
+            );
+            output = '$output.ipv4()';
+          case 'ipv6':
+            _require(
+              declaration,
+              type,
+              '@Check.ipv6',
+              isString,
+              'String field',
+            );
+            output = '$output.ipv6()';
+          case 'minItems':
+            _require(
+              declaration,
+              type,
+              '@Check.minItems',
+              isCollection,
+              'List or Set field',
+            );
+            addCollectionConstraint(
+              '.minItems(${value.getField('value')!.toIntValue()})',
+            );
+          case 'maxItems':
+            _require(
+              declaration,
+              type,
+              '@Check.maxItems',
+              isCollection,
+              'List or Set field',
+            );
+            addCollectionConstraint(
+              '.maxItems(${value.getField('value')!.toIntValue()})',
+            );
+          case 'uniqueItems' || 'unique':
+            _require(
+              declaration,
+              type,
+              '@Check.$kind',
+              isCollection,
+              'List or Set field',
+            );
+            addCollectionConstraint('.unique()', isUnique: true);
+        }
+      } else if (_min.isExactlyType(valueType)) {
         _require(declaration, type, '@Min', isNumeric, '@MinLength');
         output = '$output.min(${_number(declaration, '@Min', value)})';
       } else if (_max.isExactlyType(valueType)) {
@@ -213,13 +426,9 @@ final class AckSchemaInference {
           isCollection,
           'List or Set field',
         );
-        final constraint =
-            '.minItems(${value.getField('count')!.toIntValue()})';
-        if (isSet) {
-          setConstraints.add(constraint);
-        } else {
-          output = '$output$constraint';
-        }
+        addCollectionConstraint(
+          '.minItems(${value.getField('count')!.toIntValue()})',
+        );
       } else if (_maxItems.isExactlyType(valueType)) {
         _require(
           declaration,
@@ -228,13 +437,9 @@ final class AckSchemaInference {
           isCollection,
           'List or Set field',
         );
-        final constraint =
-            '.maxItems(${value.getField('count')!.toIntValue()})';
-        if (isSet) {
-          setConstraints.add(constraint);
-        } else {
-          output = '$output$constraint';
-        }
+        addCollectionConstraint(
+          '.maxItems(${value.getField('count')!.toIntValue()})',
+        );
       } else if (_uniqueItems.isExactlyType(valueType)) {
         _require(
           declaration,
@@ -243,12 +448,7 @@ final class AckSchemaInference {
           isCollection,
           'List or Set field',
         );
-        if (isSet) {
-          hasUniqueConstraint = true;
-          setConstraints.add('.unique()');
-        } else {
-          output = '$output.unique()';
-        }
+        addCollectionConstraint('.unique()', isUnique: true);
       }
     }
     if (setConstraints.isNotEmpty) {
@@ -352,7 +552,7 @@ final class AckSchemaInference {
     final number = (field.toIntValue() ?? field.toDoubleValue())!;
     if (!number.isFinite) {
       throw InvalidGenerationSource(
-        '${declaration.enclosingElement?.name}.${declaration.name} has '
+        '${_qualifiedName(declaration)} has '
         '$annotation($number); the value must be a finite number.',
         element: declaration,
       );
@@ -369,9 +569,20 @@ final class AckSchemaInference {
   ) {
     if (valid) return;
     throw InvalidGenerationSource(
-      '${declaration.enclosingElement?.name}.${declaration.name} has '
+      '${_qualifiedName(declaration)} has '
       '$annotation on ${type.getDisplayString()}; use $alternative instead.',
       element: declaration,
     );
+  }
+
+  String _qualifiedName(Element declaration) {
+    final owner = switch (declaration.enclosingElement) {
+      ConstructorElement(:final enclosingElement) => enclosingElement.name,
+      final enclosing? => enclosing.name,
+      null => null,
+    };
+    return owner == null || owner.isEmpty
+        ? '${declaration.name}'
+        : '$owner.${declaration.name}';
   }
 }

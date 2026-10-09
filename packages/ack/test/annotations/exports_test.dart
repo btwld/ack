@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart' as ack;
 import 'package:test/test.dart';
@@ -11,17 +13,31 @@ final class Contact {
   final Email email;
 }
 
+final class SingleImportContact {
+  const SingleImportContact(this.email, this.id);
+
+  @Check.email()
+  final Email email;
+
+  @Check.uuid()
+  final Uuid id;
+}
+
 void main() {
-  test('package:ack/ack.dart exports the model annotations', () {
+  test('package:ack/ack.dart exports the model and Check annotations', () {
     const values = <Object>[
       Schemable(caseStyle: AckCaseStyle.snake),
       AckField(description: 'id'),
       Required(),
       Optional(),
       NotNull(),
+      Check.email(),
+      Check.minLength(2),
+      Check.matches(r'^\d+$'),
+      ack.Check.uuid(),
     ];
 
-    expect(values, hasLength(5));
+    expect(values, hasLength(9));
     expect(AckUnknownPropertyPolicy.values, hasLength(3));
   });
 
@@ -34,6 +50,7 @@ void main() {
       const date = Date('2026-10-01');
       const min = Min(1);
       const pattern = Pattern('^a');
+      const contact = SingleImportContact(email, uuid);
 
       expect(
         [
@@ -43,6 +60,8 @@ void main() {
           date.iso,
           min.value,
           pattern.source,
+          contact.email.address,
+          contact.id.value,
         ],
         [
           '7c9e6679',
@@ -51,6 +70,8 @@ void main() {
           '2026-10-01',
           1,
           '^a',
+          'ada@example.com',
+          '7c9e6679',
         ],
       );
     },

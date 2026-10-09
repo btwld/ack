@@ -1352,4 +1352,45 @@ final class User with _\$UserAck {
       ['User', 'extra', 'mapped'],
     );
   });
+
+  test(
+    'rejects invalid @Check.* constraints on mismatched field types or values',
+    () async {
+      await _expectFailure(
+        '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @Check.min(1)
+  final String name;
+}
+''',
+        ['User.name', '@Check.min', 'String', '@Check.minLength'],
+      );
+      await _expectFailure(
+        '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.ip});
+
+  @Check.ip(version: 5)
+  final String ip;
+}
+''',
+        ['User.ip', '@Check.ip(version: 5)', 'version must be 4 or 6.'],
+      );
+      await _expectFailure(
+        '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({@Check.minLength(1) required this.age});
+
+  final int age;
+}
+''',
+        ['User.age', '@Check.minLength', 'int', '@Check.min'],
+      );
+    },
+  );
 }
