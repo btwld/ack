@@ -1,5 +1,14 @@
 ## Unreleased
 
+### Breaking
+
+* Preserve programmer `Error` objects and their original stack traces when
+  codec decoders or one-way transforms throw. Nested schemas and `anyOf`
+  no longer disguise those defects as validation failures or try a fallback
+  branch. Recoverable `Exception`s still become `SchemaTransformError`
+  failures. Decoder callbacks should throw an `Exception`, such as
+  `FormatException`, to report invalid input rather than a programmer defect.
+
 ### Added
 
 * `Ack.fromJsonSchema()` now supports `multipleOf` for `number` and `integer`
