@@ -445,7 +445,7 @@ _ImportEvaluation _evaluateImportedNode(
     case num():
       if (node.validationVocabulary) {
         if (node.multipleOf case final divisor?
-            when !_isJsonMultipleOf(value, divisor)) {
+            when !isExactDecimalMultipleOf(value, divisor)) {
           return fail('multipleOf');
         }
         if (node.minimum case final limit? when value < limit) {
@@ -699,35 +699,3 @@ bool _isImportType(Object? type, Object? value) => switch (type) {
   _ => false,
 };
 
-/// Compares the decimal values represented by finite Dart numbers. Dividing
-/// binary floating-point values directly would reject JSON decimals such as
-/// `0.3` with `multipleOf: 0.1`.
-bool _isJsonMultipleOf(num value, num divisor) {
-  final (valueCoefficient, valueScale) = _decimalParts(value);
-  final (divisorCoefficient, divisorScale) = _decimalParts(divisor);
-  final scale = valueScale > divisorScale ? valueScale : divisorScale;
-  final ten = BigInt.from(10);
-  final numerator = valueCoefficient * ten.pow(scale - valueScale);
-  final denominator = divisorCoefficient * ten.pow(scale - divisorScale);
-  return numerator % denominator == BigInt.zero;
-}
-
-(BigInt, int) _decimalParts(num value) {
-  final text = value.toString().toLowerCase();
-  final exponentIndex = text.indexOf('e');
-  final mantissa = exponentIndex < 0 ? text : text.substring(0, exponentIndex);
-  final exponent = exponentIndex < 0
-      ? 0
-      : int.parse(text.substring(exponentIndex + 1));
-  final pointIndex = mantissa.indexOf('.');
-  final fractionalDigits = pointIndex < 0
-      ? 0
-      : mantissa.length - pointIndex - 1;
-  var coefficient = BigInt.parse(mantissa.replaceAll('.', ''));
-  final scale = fractionalDigits - exponent;
-  if (scale < 0) {
-    coefficient *= BigInt.from(10).pow(-scale);
-    return (coefficient, 0);
-  }
-  return (coefficient, scale);
-}

@@ -7,6 +7,7 @@ import 'package:punycoder/punycoder.dart' as punycoder;
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 import '../common_types.dart';
+import '../constraints/comparison_constraint.dart';
 import '../constraints/constraint.dart';
 import '../constraints/number_finite_constraint.dart';
 import '../constraints/pattern_constraint.dart';

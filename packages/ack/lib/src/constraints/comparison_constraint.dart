@@ -53,15 +53,6 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   /// Optional custom message builder. If provided, overrides default messages.
   final String Function(T value, num extractedValue)? customMessageBuilder;
 
-  /// Machine epsilon used for floating-point multipleOf comparisons.
-  ///
-  /// The tolerance is scaled to the reconstructed value below so it follows
-  /// floating-point precision instead of accepting a fixed quotient error.
-  static const _doubleMachineEpsilon = 2.220446049250313e-16;
-
-  /// Allows for rounding in division, integer rounding, and multiplication.
-  static const _multipleOfPrecisionFactor = 4;
-
   const ComparisonConstraint({
     required super.constraintKey,
     required super.description,
@@ -283,29 +274,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonType.lte => extracted <= threshold,
       ComparisonType.eq => () {
         if (multipleValue != null && constraintKey == 'number_multiple_of') {
-          if (!extracted.isFinite) return false;
-          if (extracted is int && multipleValue is int) {
-            return extracted.remainder(multipleValue!) == 0;
-          }
-
-          // Deliberate: scale the tolerance to the reconstructed value rather
-          // than using a fixed absolute epsilon. A constant epsilon (the former
-          // 1e-10) accepts every value once the divisor drops below it and is
-          // meaningless at large magnitudes; a relative tolerance stays correct
-          // across scales. Do not revert to a fixed epsilon.
-          final quotient = extracted / multipleValue!;
-          if (!quotient.isFinite) return false;
-
-          final nearestMultiple = quotient.roundToDouble();
-          final reconstructed = nearestMultiple * multipleValue!;
-          if (!reconstructed.isFinite) return false;
-
-          final magnitude = extracted.abs() > reconstructed.abs()
-              ? extracted.abs()
-              : reconstructed.abs();
-          final tolerance =
-              magnitude * _doubleMachineEpsilon * _multipleOfPrecisionFactor;
-          return (extracted - reconstructed).abs() <= tolerance;
+          return isExactDecimalMultipleOf(extracted, multipleValue!);
         }
 
         return extracted == threshold;
@@ -431,3 +400,46 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     multipleValue,
   );
 }
+
+/// Checks whether [value] is an exact multiple of [divisor] using their
+/// decimal representations.
+///
+/// Dividing binary floating-point values directly would reject JSON decimals
+/// such as `0.3` with `multipleOf: 0.1` or overflow on extreme finite doubles
+/// such as `1e308` with `multipleOf: 0.5`.
+bool isExactDecimalMultipleOf(num value, num divisor) {
+  if (!value.isFinite || !divisor.isFinite || divisor <= 0) return false;
+  if (value is int && divisor is int) {
+    return value.remainder(divisor) == 0;
+  }
+  final (valueCoefficient, valueScale) = decimalParts(value);
+  final (divisorCoefficient, divisorScale) = decimalParts(divisor);
+  final scale = valueScale > divisorScale ? valueScale : divisorScale;
+  final ten = BigInt.from(10);
+  final numerator = valueCoefficient * ten.pow(scale - valueScale);
+  final denominator = divisorCoefficient * ten.pow(scale - divisorScale);
+  return numerator % denominator == BigInt.zero;
+}
+
+/// Parses the decimal representation of a finite [num] into `(coefficient, scale)`
+/// such that `value == coefficient * 10^(-scale)` with `scale >= 0`.
+(BigInt, int) decimalParts(num value) {
+  final text = value.toString().toLowerCase();
+  final exponentIndex = text.indexOf('e');
+  final mantissa = exponentIndex < 0 ? text : text.substring(0, exponentIndex);
+  final exponent = exponentIndex < 0
+      ? 0
+      : int.parse(text.substring(exponentIndex + 1));
+  final pointIndex = mantissa.indexOf('.');
+  final fractionalDigits = pointIndex < 0
+      ? 0
+      : mantissa.length - pointIndex - 1;
+  var coefficient = BigInt.parse(mantissa.replaceAll('.', ''));
+  final scale = fractionalDigits - exponent;
+  if (scale < 0) {
+    coefficient *= BigInt.from(10).pow(-scale);
+    return (coefficient, 0);
+  }
+  return (coefficient, scale);
+}
+
