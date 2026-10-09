@@ -85,10 +85,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
       );
     }
 
-    return applyConstraintsAndRefinements(
-      List<ItemRuntime>.unmodifiable(typed),
-      context,
-    );
+    return applyConstraintsAndRefinements(UnmodifiableListView(typed), context);
   }
 
   @override
@@ -160,7 +157,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
       );
     }
 
-    return SchemaResult.ok(List<ItemBoundary>.unmodifiable(encoded));
+    return SchemaResult.ok(UnmodifiableListView(encoded));
   }
 
   @override

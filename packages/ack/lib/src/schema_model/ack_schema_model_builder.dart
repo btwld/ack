@@ -423,7 +423,9 @@ AckSchemaModel _applyConstraints(
   bool projectKeywords = true,
 }) {
   var next = model;
-  final appliedKeywordValues = {
+  // Rendering the model walks its whole subtree, so only do it once a
+  // constraint actually projects keywords.
+  late final appliedKeywordValues = {
     for (final entry in _renderedKeywords(model).entries)
       entry.key: <Object?>[entry.value],
   };

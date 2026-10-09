@@ -1,3 +1,17 @@
+## Unreleased
+
+### Changed
+
+* Speed up imported JSON Schema compilation and validation by reading typed node
+  fields directly instead of per-node keyword maps. Error output and exported
+  JSON Schema are unchanged.
+* Speed up `toJsonSchema()` on native schemas by skipping redundant subtree
+  walks when constraints do not project nested keywords.
+* Return unmodifiable views directly from `Ack.object()`, `Ack.list()`, and
+  `Ack.map()` parse and encode results instead of copying the validated
+  collection a second time. Results remain detached from the input and
+  unmodifiable.
+
 ## 1.7.0-beta.6
 
 ### Added
