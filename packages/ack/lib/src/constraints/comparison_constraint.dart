@@ -53,15 +53,6 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   /// Optional custom message builder. If provided, overrides default messages.
   final String Function(T value, num extractedValue)? customMessageBuilder;
 
-  /// Machine epsilon used for floating-point multipleOf comparisons.
-  ///
-  /// The tolerance is scaled to the reconstructed value below so it follows
-  /// floating-point precision instead of accepting a fixed quotient error.
-  static const _doubleMachineEpsilon = 2.220446049250313e-16;
-
-  /// Allows for rounding in division, integer rounding, and multiplication.
-  static const _multipleOfPrecisionFactor = 4;
-
   const ComparisonConstraint({
     required super.constraintKey,
     required super.description,
@@ -284,28 +275,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonType.eq => () {
         if (multipleValue != null && constraintKey == 'number_multiple_of') {
           if (!extracted.isFinite) return false;
-          if (extracted is int && multipleValue is int) {
-            return extracted.remainder(multipleValue!) == 0;
-          }
-
-          // Deliberate: scale the tolerance to the reconstructed value rather
-          // than using a fixed absolute epsilon. A constant epsilon (the former
-          // 1e-10) accepts every value once the divisor drops below it and is
-          // meaningless at large magnitudes; a relative tolerance stays correct
-          // across scales. Do not revert to a fixed epsilon.
-          final quotient = extracted / multipleValue!;
-          if (!quotient.isFinite) return false;
-
-          final nearestMultiple = quotient.roundToDouble();
-          final reconstructed = nearestMultiple * multipleValue!;
-          if (!reconstructed.isFinite) return false;
-
-          final magnitude = extracted.abs() > reconstructed.abs()
-              ? extracted.abs()
-              : reconstructed.abs();
-          final tolerance =
-              magnitude * _doubleMachineEpsilon * _multipleOfPrecisionFactor;
-          return (extracted - reconstructed).abs() <= tolerance;
+          return isExactDecimalMultipleOf(extracted, multipleValue!);
         }
 
         return extracted == threshold;
@@ -430,4 +400,39 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     maxThreshold,
     multipleValue,
   );
+}
+
+/// Exact decimal division shared by native `multipleOf` constraints and
+/// imported JSON Schemas. Both numbers must be finite and [divisor] positive.
+bool isExactDecimalMultipleOf(num value, num divisor) {
+  if (value is int && divisor is int) return value % divisor == 0;
+  final (coefficient: v, scale: vScale) = decimalParts(value);
+  final (coefficient: d, scale: dScale) = decimalParts(divisor);
+  final shift = vScale - dScale;
+  final scaledValue = shift < 0 ? v * BigInt.from(10).pow(-shift) : v;
+  final scaledDivisor = shift > 0 ? d * BigInt.from(10).pow(shift) : d;
+  return scaledValue % scaledDivisor == BigInt.zero;
+}
+
+/// Splits a finite number into `coefficient * 10^-scale` with `scale >= 0`.
+({BigInt coefficient, int scale}) decimalParts(num number) {
+  if (number is int) return (coefficient: BigInt.from(number), scale: 0);
+  var raw = number.toString().toLowerCase();
+  var exponent = 0;
+  final expIndex = raw.indexOf('e');
+  if (expIndex != -1) {
+    exponent = int.parse(raw.substring(expIndex + 1));
+    raw = raw.substring(0, expIndex);
+  }
+  final dotIndex = raw.indexOf('.');
+  var digits = raw;
+  var fracDigits = 0;
+  if (dotIndex != -1) {
+    fracDigits = raw.length - dotIndex - 1;
+    digits = raw.substring(0, dotIndex) + raw.substring(dotIndex + 1);
+  }
+  final unscaled = BigInt.parse(digits);
+  final scale = fracDigits - exponent;
+  if (scale >= 0) return (coefficient: unscaled, scale: scale);
+  return (coefficient: unscaled * BigInt.from(10).pow(-scale), scale: 0);
 }

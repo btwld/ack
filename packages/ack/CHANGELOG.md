@@ -1,7 +1,17 @@
 ## Unreleased
 
+### Added
+
+* `Ack.fromJsonSchema()` now supports `multipleOf` for `number` and `integer`
+  schemas. Non-positive or non-numeric `multipleOf` values fail import with an
+  `invalid_schema` diagnostic.
+
 ### Changed
 
+* Native `.multipleOf()` and imported `multipleOf` now share exact decimal
+  division on the number's decimal digits, avoiding binary floating-point
+  remainder drift (such as `0.3` with `0.1`) and overflow on large finite
+  doubles.
 * Speed up imported JSON Schema compilation and validation by reading typed node
   fields directly instead of per-node keyword maps. Error output and exported
   JSON Schema are unchanged.

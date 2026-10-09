@@ -992,11 +992,86 @@ void main() {
       }
     });
 
+    test(
+      'supports multipleOf with exact decimals, tracks keywordLocation, and round-trips',
+      () {
+        final intRoundTrip = Ack.fromJsonSchema(
+          Ack.integer().multipleOf(5).toJsonSchema(),
+        );
+        expect(intRoundTrip.safeParse(15).isOk, isTrue);
+        expect(intRoundTrip.safeParse(0).isOk, isTrue);
+        expect(intRoundTrip.safeParse(-10).isOk, isTrue);
+        final intFail = intRoundTrip.safeParse(14).getError();
+        expect(
+          intFail,
+          isA<JsonSchemaValidationError>()
+              .having((e) => e.keyword, 'keyword', 'multipleOf')
+              .having((e) => e.pointer, 'pointer', '#/multipleOf')
+              .having(
+                (e) => e.keywordLocation,
+                'keywordLocation',
+                '/multipleOf',
+              ),
+        );
+
+        final doubleRoundTrip = Ack.fromJsonSchema(
+          Ack.double().multipleOf(0.01).toJsonSchema(),
+        );
+        expect(doubleRoundTrip.safeParse(0.03).isOk, isTrue);
+        expect(doubleRoundTrip.safeParse(12.34).isOk, isTrue);
+        expect(doubleRoundTrip.safeParse(0.035).isFail, isTrue);
+        expect(doubleRoundTrip.safeParse(1e308).isOk, isTrue);
+        expect(doubleRoundTrip.safeParse(-0.0).isOk, isTrue);
+        expect(doubleRoundTrip.safeParse(1e-9).isFail, isTrue);
+
+        final refSchema = Ack.fromJsonSchema({
+          r'$defs': {
+            'step': {'type': 'number', 'multipleOf': 0.1},
+          },
+          'properties': {
+            'amount': {r'$ref': r'#/$defs/step'},
+          },
+        });
+        expect(refSchema.safeParse({'amount': 0.3}).isOk, isTrue);
+        final refFail = refSchema.safeParse({'amount': 0.35}).getError();
+        expect(
+          refFail,
+          isA<JsonSchemaValidationError>()
+              .having((e) => e.keyword, 'keyword', 'multipleOf')
+              .having((e) => e.pointer, 'pointer', r'#/$defs/step/multipleOf')
+              .having(
+                (e) => e.keywordLocation,
+                'keywordLocation',
+                r'/properties/amount/$ref/multipleOf',
+              ),
+        );
+      },
+    );
+
+    test(
+      'native and imported multipleOf both divide exactly on decimal digits',
+      () {
+        final native = Ack.double().multipleOf(0.1);
+        final imported = Ack.fromJsonSchema(native.toJsonSchema());
+        final computed = 0.1 + 0.2;
+
+        expect(computed, 0.30000000000000004);
+        expect(native.safeParse(computed).isFail, isTrue);
+        expect(imported.safeParse(computed).isFail, isTrue);
+        expect(native.safeParse(0.3).isOk, isTrue);
+        expect(imported.safeParse(0.3).isOk, isTrue);
+        expect(Ack.double().multipleOf(0.5).safeParse(1e308).isOk, isTrue);
+      },
+    );
+
     test('rejects malformed supported keywords', () {
       for (final document in [
         {'type': 'made-up'},
         {'required': 'a'},
         {'minItems': -1},
+        {'multipleOf': 0},
+        {'multipleOf': -2},
+        {'multipleOf': '2'},
         {'anyOf': []},
         {'enum': 1},
         {'items': 3},

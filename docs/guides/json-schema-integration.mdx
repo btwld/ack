@@ -103,7 +103,7 @@ treat `format` as an annotation unless configured to assert it.
 | Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
 | Arrays | Single-schema `items`, `contains`, `minItems`, `maxItems`, `uniqueItems` |
 | Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search in Unicode mode) |
-| Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` |
+| Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf` (exact decimal division) |
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`, `if`/`then`/`else`; sibling assertions are intersected |
 | References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
 | Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated` |
@@ -121,8 +121,13 @@ pattern can match differently after export and import, and a native pattern
 that is invalid in Unicode mode exports a schema that this importer and Ajv
 reject.
 
+Both native `.multipleOf()` and imported `multipleOf` divide exactly on the
+decimal digits of the number, as the JSON Schema Test Suite requires, so `0.3`
+and `0.6` are multiples of `0.1`, `1e308` is a multiple of `0.5`, and an
+unrounded binary-float sum such as `0.1 + 0.2` (`0.30000000000000004`) is not.
+
 This is deliberately not a complete JSON Schema validator. Unsupported
-keywords include `multipleOf`, `patternProperties`, `prefixItems`,
+keywords include `patternProperties`, `prefixItems`,
 `minContains`, `maxContains`, dependent/unevaluated keywords, dynamic
 references, and custom vocabulary declarations. Unknown extension keywords are also
 reported. `date-time` is the only supported format label. References to the
