@@ -159,6 +159,50 @@ void main() {
       );
     });
 
+    group('Encode results', () {
+      test('object encode result is detached and unmodifiable', () {
+        final schema = Ack.object({
+          'name': Ack.string(),
+          'tags': Ack.list(Ack.string()),
+        });
+        final input = {
+          'name': 'Leo',
+          'tags': ['a'],
+        };
+        final encoded = schema.encode(input)!;
+
+        expect(() => encoded['name'] = 'Other', throwsUnsupportedError);
+        expect(() => encoded.remove('name'), throwsUnsupportedError);
+        expect(
+          () => (encoded['tags'] as List).add('b'),
+          throwsUnsupportedError,
+        );
+
+        input['name'] = 'Changed';
+        (input['tags'] as List).add('c');
+        expect(encoded['name'], 'Leo');
+        expect(encoded['tags'], ['a']);
+      });
+
+      test('list encode result is detached and unmodifiable', () {
+        final schema = Ack.list(Ack.object({'id': Ack.integer()}));
+        final input = [
+          {'id': 1},
+        ];
+        final encoded = schema.encode(input)!;
+
+        expect(() => encoded.add({'id': 2}), throwsUnsupportedError);
+        expect(() => encoded[0] = {'id': 3}, throwsUnsupportedError);
+        expect(() => (encoded[0] as Map)['id'] = 4, throwsUnsupportedError);
+
+        input.add({'id': 5});
+        input[0]['id'] = 6;
+        expect(encoded, [
+          {'id': 1},
+        ]);
+      });
+    });
+
     group('Constraints work with unmodifiable collections', () {
       test('object refinement works on unmodifiable map', () {
         final schema = Ack.object({'name': Ack.string()}).refine(

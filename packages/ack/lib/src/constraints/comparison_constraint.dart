@@ -274,6 +274,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonType.lte => extracted <= threshold,
       ComparisonType.eq => () {
         if (multipleValue != null && constraintKey == 'number_multiple_of') {
+          if (!extracted.isFinite) return false;
           return isExactDecimalMultipleOf(extracted, multipleValue!);
         }
 
@@ -401,44 +402,37 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   );
 }
 
-/// Checks whether [value] is an exact multiple of [divisor] using their
-/// decimal representations.
-///
-/// Dividing binary floating-point values directly would reject JSON decimals
-/// such as `0.3` with `multipleOf: 0.1` or overflow on extreme finite doubles
-/// such as `1e308` with `multipleOf: 0.5`.
+/// Exact decimal division shared by native `multipleOf` constraints and
+/// imported JSON Schemas. Both numbers must be finite and [divisor] positive.
 bool isExactDecimalMultipleOf(num value, num divisor) {
-  if (!value.isFinite || !divisor.isFinite || divisor <= 0) return false;
-  if (value is int && divisor is int) {
-    return value.remainder(divisor) == 0;
-  }
-  final (valueCoefficient, valueScale) = decimalParts(value);
-  final (divisorCoefficient, divisorScale) = decimalParts(divisor);
-  final scale = valueScale > divisorScale ? valueScale : divisorScale;
-  final ten = BigInt.from(10);
-  final numerator = valueCoefficient * ten.pow(scale - valueScale);
-  final denominator = divisorCoefficient * ten.pow(scale - divisorScale);
-  return numerator % denominator == BigInt.zero;
+  if (value is int && divisor is int) return value % divisor == 0;
+  final (coefficient: v, scale: vScale) = decimalParts(value);
+  final (coefficient: d, scale: dScale) = decimalParts(divisor);
+  final shift = vScale - dScale;
+  final scaledValue = shift < 0 ? v * BigInt.from(10).pow(-shift) : v;
+  final scaledDivisor = shift > 0 ? d * BigInt.from(10).pow(shift) : d;
+  return scaledValue % scaledDivisor == BigInt.zero;
 }
 
-/// Parses the decimal representation of a finite [num] into `(coefficient, scale)`
-/// such that `value == coefficient * 10^(-scale)` with `scale >= 0`.
-(BigInt, int) decimalParts(num value) {
-  final text = value.toString().toLowerCase();
-  final exponentIndex = text.indexOf('e');
-  final mantissa = exponentIndex < 0 ? text : text.substring(0, exponentIndex);
-  final exponent = exponentIndex < 0
-      ? 0
-      : int.parse(text.substring(exponentIndex + 1));
-  final pointIndex = mantissa.indexOf('.');
-  final fractionalDigits = pointIndex < 0
-      ? 0
-      : mantissa.length - pointIndex - 1;
-  var coefficient = BigInt.parse(mantissa.replaceAll('.', ''));
-  final scale = fractionalDigits - exponent;
-  if (scale < 0) {
-    coefficient *= BigInt.from(10).pow(-scale);
-    return (coefficient, 0);
+/// Splits a finite number into `coefficient * 10^-scale` with `scale >= 0`.
+({BigInt coefficient, int scale}) decimalParts(num number) {
+  if (number is int) return (coefficient: BigInt.from(number), scale: 0);
+  var raw = number.toString().toLowerCase();
+  var exponent = 0;
+  final expIndex = raw.indexOf('e');
+  if (expIndex != -1) {
+    exponent = int.parse(raw.substring(expIndex + 1));
+    raw = raw.substring(0, expIndex);
   }
-  return (coefficient, scale);
+  final dotIndex = raw.indexOf('.');
+  var digits = raw;
+  var fracDigits = 0;
+  if (dotIndex != -1) {
+    fracDigits = raw.length - dotIndex - 1;
+    digits = raw.substring(0, dotIndex) + raw.substring(dotIndex + 1);
+  }
+  final unscaled = BigInt.parse(digits);
+  final scale = fracDigits - exponent;
+  if (scale >= 0) return (coefficient: unscaled, scale: scale);
+  return (coefficient: unscaled * BigInt.from(10).pow(-scale), scale: 0);
 }

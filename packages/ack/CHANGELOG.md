@@ -2,6 +2,40 @@
 
 ### Added
 
+* `Ack.fromJsonSchema()` now supports `multipleOf` for `number` and `integer`
+  schemas. Non-positive or non-numeric `multipleOf` values fail import with an
+  `invalid_schema` diagnostic.
+* `Ack.fromJsonSchema()` now validates built-in string formats (`date`,
+  `email`, `uuid`, `uri`, `ipv4`, and `ipv6`, in addition to `date-time`),
+  standard numeric formats (`int32`, `int64`, `uint32`, `uint64`, `float`, and
+  `double`), and accepts `x-*` vendor extension annotations (such as
+  `x-transformed`). Unknown format labels and non-`x-*` extension keywords
+  continue to fail import with `unsupported_keyword`.
+* `Ack.fromJsonSchema()` now accepts Draft-07 `$schema` URIs
+  (`http(s)://json-schema.org/draft-07/schema` with or without a trailing `#`),
+  so schemas exported by `.toJsonSchema()` can be re-imported without stripping
+  `$schema`.
+
+### Changed
+
+* Native `.multipleOf()` and imported `multipleOf` now share exact decimal
+  division on the number's decimal digits, avoiding binary floating-point
+  remainder drift (such as `0.3` with `0.1`) and overflow on large finite
+  doubles.
+* Speed up imported JSON Schema compilation and validation by reading typed node
+  fields directly instead of per-node keyword maps. Error output and exported
+  JSON Schema are unchanged.
+* Speed up `toJsonSchema()` on native schemas by skipping redundant subtree
+  walks when constraints do not project nested keywords.
+* Return unmodifiable views directly from `Ack.object()`, `Ack.list()`, and
+  `Ack.map()` parse and encode results instead of copying the validated
+  collection a second time. Results remain detached from the input and
+  unmodifiable.
+
+## 1.7.0-beta.6
+
+### Added
+
 * `JsonSchemaValidationError` now reports `keywordLocation`, the Draft 2020-12
   evaluation path from the root schema to the failing keyword. It includes each
   `$ref` on the way, so failures under two applicators that share a definition

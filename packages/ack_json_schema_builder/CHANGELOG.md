@@ -1,3 +1,12 @@
+## 1.7.0-beta.6
+
+### Changed
+
+* When paired with `ack` 1.7.0-beta.6 or later, imported builder schemas report
+  `keywordLocation` on validation errors and report `uniqueItems` failures at
+  the array. The bridge's public API and compatible dependency minimum are
+  unchanged.
+
 ## 1.7.0-beta.5
 
 ### Changed
