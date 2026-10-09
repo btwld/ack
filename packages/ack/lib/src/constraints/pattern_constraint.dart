@@ -88,9 +88,7 @@ class PatternConstraint extends Constraint<String>
 
   static PatternConstraint email() => PatternConstraint(
     type: PatternType.regex,
-    pattern: RegExp(
-      r'''^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$''',
-    ),
+    pattern: _emailPattern,
     constraintKey: 'string_format_email',
     description: 'Must be a valid email address.',
     example: 'user@example.com',
@@ -100,9 +98,7 @@ class PatternConstraint extends Constraint<String>
 
   static PatternConstraint uuid() => PatternConstraint(
     type: PatternType.regex,
-    pattern: RegExp(
-      r'^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$',
-    ),
+    pattern: _uuidPattern,
     constraintKey: 'string_format_uuid',
     description: 'Must be a valid UUID.',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -120,10 +116,7 @@ class PatternConstraint extends Constraint<String>
 
   static PatternConstraint uri() => PatternConstraint(
     type: PatternType.format,
-    formatValidator: (v) {
-      final u = Uri.tryParse(v);
-      return u != null && u.hasScheme && u.host.isNotEmpty;
-    },
+    formatValidator: isValidUriFormat,
     constraintKey: 'string_format_uri',
     description: 'Must be a valid absolute URI with a scheme and host.',
     customMessageBuilder: (v) => 'Invalid URI format, got "$v".',
@@ -189,13 +182,7 @@ class PatternConstraint extends Constraint<String>
 
   static PatternConstraint dateIso8601() => PatternConstraint(
     type: PatternType.format,
-    formatValidator: (v) {
-      if (v.length != 10) return false;
-      final date = DateTime.tryParse(v);
-      if (date == null) return false;
-      // Check if it's just a date part and matches YYYY-MM-DD
-      return date.toIso8601String().startsWith(v);
-    },
+    formatValidator: isValidIso8601Date,
     constraintKey: 'string_format_date',
     description: 'Must be a valid ISO 8601 date string (YYYY-MM-DD).',
     example: '2023-10-27',
@@ -344,6 +331,35 @@ class PatternConstraint extends Constraint<String>
       example,
     );
   }
+}
+
+final _emailPattern = RegExp(
+  r'''^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$''',
+);
+
+final _uuidPattern = RegExp(
+  r'^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$',
+);
+
+/// Validates the email format shared by native strings and JSON Schema.
+bool isValidEmailFormat(String value) => _emailPattern.hasMatch(value);
+
+/// Validates the UUID format shared by native strings and JSON Schema.
+bool isValidUuidFormat(String value) => _uuidPattern.hasMatch(value);
+
+/// Validates the URI format shared by native strings and JSON Schema.
+bool isValidUriFormat(String value) {
+  final u = Uri.tryParse(value);
+  return u != null && u.hasScheme && u.host.isNotEmpty;
+}
+
+/// Validates the ISO 8601 date format (`YYYY-MM-DD`) shared by native strings
+/// and JSON Schema.
+bool isValidIso8601Date(String value) {
+  if (value.length != 10) return false;
+  final date = DateTime.tryParse(value);
+  if (date == null) return false;
+  return date.toIso8601String().startsWith(value);
 }
 
 final _iso8601DateTimePattern = RegExp(

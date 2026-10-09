@@ -5,6 +5,12 @@
 * `Ack.fromJsonSchema()` now supports `multipleOf` for `number` and `integer`
   schemas. Non-positive or non-numeric `multipleOf` values fail import with an
   `invalid_schema` diagnostic.
+* `Ack.fromJsonSchema()` now validates built-in string formats (`date`,
+  `email`, `uuid`, `uri`, `ipv4`, and `ipv6`, in addition to `date-time`),
+  standard numeric formats (`int32`, `int64`, `uint32`, `uint64`, `float`, and
+  `double`), and accepts `x-*` vendor extension annotations (such as
+  `x-transformed`). Unknown format labels and non-`x-*` extension keywords
+  continue to fail import with `unsupported_keyword`.
 
 ### Changed
 

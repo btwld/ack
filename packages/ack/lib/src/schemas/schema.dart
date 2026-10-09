@@ -8,6 +8,7 @@ import '../constraints/comparison_constraint.dart';
 import '../constraints/constraint.dart';
 import '../constraints/number_finite_constraint.dart';
 import '../constraints/pattern_constraint.dart';
+import '../constraints/string_ip_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
