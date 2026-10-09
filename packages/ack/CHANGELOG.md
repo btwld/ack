@@ -11,6 +11,10 @@
   `double`), and accepts `x-*` vendor extension annotations (such as
   `x-transformed`). Unknown format labels and non-`x-*` extension keywords
   continue to fail import with `unsupported_keyword`.
+* `Ack.fromJsonSchema()` now accepts Draft-07 `$schema` URIs
+  (`http(s)://json-schema.org/draft-07/schema` with or without a trailing `#`),
+  so schemas exported by `.toJsonSchema()` can be re-imported without stripping
+  `$schema`.
 
 ### Changed
 
