@@ -319,6 +319,18 @@ dart run melos run --list
 
 Additional development documentation is available in the `tools/` directory.
 
+### Performance comparisons
+
+See [benchmarks/README.md](benchmarks/README.md) for reproducible Dart JIT
+and JavaScript package comparisons, correctness gates, and result artifacts.
+The [benchmark roadmap](benchmarks/PLAN.md) covers Flutter devices, web,
+codecs, code generation, and controlled regression baselines.
+The [JIT performance audit](reports/ACK%20JIT%20performance%20audit.md)
+explains payload scaling, parser/validator tradeoffs, and optimization priorities.
+The [safeParse optimization results](reports/ACK%20safeParse%20optimization%20results.md)
+record per-candidate correctness checks, repeated measurements, and rejected
+experiments.
+
 ## Versioning and publishing
 
 This project uses GitHub Releases to manage versioning and publishing. See [PUBLISHING.md](./PUBLISHING.md) for instructions.

@@ -211,7 +211,10 @@ _ImportViolation? _checkImportedNode(_ImportedNode node, Object? value) {
   _ImportViolation fail(String keyword) => _ImportViolation(node, keyword);
   if (node.isFalse) return fail('');
   if (node.types case final types?) {
-    if (!types.any((t) => _isImportType(t, value))) return fail('type');
+    final matchesType = types.length == 1
+        ? _isImportType(types.first, value)
+        : types.any((t) => _isImportType(t, value));
+    if (!matchesType) return fail('type');
   }
   if (node.hasConst && !deepEquals(value, node.constValue)) {
     return fail('const');

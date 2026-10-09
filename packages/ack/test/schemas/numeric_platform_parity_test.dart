@@ -45,6 +45,38 @@ void main() {
         expect(refinedValue, equals(1));
         expect(refinedValue, isA<int>());
       });
+
+      test('mixed inputs preserve constraints and normalized refinements', () {
+        final refinedValues = <int>[];
+        final schema = Ack.integer().min(-10).max(10).refine((value) {
+          expect(value, isA<int>());
+          if (value == 0) expect(value.isNegative, isFalse);
+          refinedValues.add(value);
+          return true;
+        });
+
+        for (var round = 0; round < 2; round++) {
+          for (final (input, accepted) in <(Object?, bool)>[
+            (7, true),
+            (7.0, true),
+            (-0.0, true),
+            (-4, true),
+            (1.5, false),
+            (double.infinity, false),
+            (11, false),
+            ('7', false),
+            (true, false),
+            (null, false),
+          ]) {
+            expect(
+              schema.safeParse(input).isOk,
+              accepted,
+              reason: 'round: $round, input: $input',
+            );
+          }
+        }
+        expect(refinedValues, [7, 7, 0, -4, 7, 7, 0, -4]);
+      });
     });
 
     group('double', () {
@@ -80,8 +112,8 @@ void main() {
         double.negativeInfinity,
       ]) {
         expect(
-          Ack.integer().safeParse(input).isFail,
-          isTrue,
+          Ack.integer().safeParse(input).getError(),
+          isA<TypeMismatchError>(),
           reason: 'IntegerSchema input: $input',
         );
         expect(

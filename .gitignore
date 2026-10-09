@@ -51,6 +51,12 @@ CLAUDE.md
 tools/node_modules/
 tools/package-lock.json
 
+# Standalone, reproducible benchmark dependencies and local runs.
+benchmarks/node/node_modules/
+benchmarks/results/
+benchmarks/__pycache__/
+!benchmarks/dart/pubspec.lock
+
 # Temporary test files
 temp/
 *.tmp

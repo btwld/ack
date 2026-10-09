@@ -9,6 +9,10 @@
 
 ### Changed
 
+* Shared constraint evaluation creates its error list only after the first
+  violation. Imported JSON Schema evaluation checks singleton types directly
+  while retaining the existing union path. Parsing output, callback order,
+  normalization, and diagnostics are unchanged.
 * Imported schemas validate from typed node fields instead of keyword maps,
   `toJsonSchema` renders a model's subtree only when a constraint projects
   keywords, and parse and encode results from `Ack.object()`, `Ack.list()` and

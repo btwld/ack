@@ -1,0 +1,17 @@
+name: ack_benchmarks
+description: Private cross-package benchmarks for Ack.
+publish_to: none
+
+# Acanthis 2 requires Dart 3.13; this does not raise Ack's SDK floor.
+environment:
+  sdk: '>=3.13.0 <4.0.0'
+
+dependencies:
+  ack:
+    path: ../../packages/ack
+  acanthis: 2.0.0
+  json_schema: 5.2.2
+  validart: 3.0.2
+
+dev_dependencies:
+  lints: 5.1.1

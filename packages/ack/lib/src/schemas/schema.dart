@@ -150,12 +150,14 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     Runtime value,
     SchemaContext context,
   ) {
-    final constraintViolations = <ConstraintError>[];
+    List<ConstraintError>? constraintViolations;
     for (final constraint in _constraints) {
       if (constraint is! Validator<Runtime>) continue;
       try {
         final violation = constraint.validate(value);
-        if (violation != null) constraintViolations.add(violation);
+        if (violation != null) {
+          (constraintViolations ??= []).add(violation);
+        }
       } catch (error, stackTrace) {
         return _failFromThrown(
           'Constraint "${constraint.constraintKey}" threw: $error',
@@ -165,7 +167,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
         );
       }
     }
-    if (constraintViolations.isNotEmpty) {
+    if (constraintViolations != null) {
       return SchemaResult.fail(
         SchemaConstraintsError(
           constraints: constraintViolations,
