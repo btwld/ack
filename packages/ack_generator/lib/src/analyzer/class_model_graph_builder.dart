@@ -33,6 +33,13 @@ typedef _FutureGeneratedType = ({
 
 typedef _ClassFirstDependency = ({ClassElement target, FieldElement field});
 
+typedef _RegisteredSchema = ({
+  Element declaration,
+  DartType boundary,
+  DartType runtime,
+  bool isFunction,
+});
+
 /// Builds normalized Ack model nodes from hand-written `@Schemable` classes.
 ///
 /// Analyzer elements and AST nodes are consumed here; emitters receive only
@@ -188,6 +195,12 @@ final class ClassModelGraphBuilder {
   final Set<ClassElement> _consumed = {};
   final Map<String, ClassElement> _schemaNameOwners = {};
   final Map<ClassElement, List<_ClassFirstDependency>> _dependencies = {};
+  final List<_RegisteredSchema> _librarySchemas = [];
+  final List<_RegisteredSchema> _importedLibrarySchemas = [];
+  final Map<ClassElement, List<_RegisteredSchema>> _classSchemas = {};
+  final Map<ClassElement, ClassElement> _unionBaseByBranch = {};
+  final List<_RegisteredSchema> _libraryTopLevelSchemaCandidates = [];
+  ClassElement? _activeClass;
   ResolvedLibraryResult? _inputResolved;
   final Map<Uri, ResolvedLibraryResult> _resolvedByUri = {};
 
@@ -208,6 +221,7 @@ final class ClassModelGraphBuilder {
     for (final element in annotatedClasses) {
       _validateAnnotatedClass(element);
     }
+    await _initRegisteredAndLibrarySchemas();
 
     for (final element in annotatedClasses.where((item) => item.isSealed)) {
       await _buildUnion(element);
@@ -485,6 +499,7 @@ final class ClassModelGraphBuilder {
         );
       }
       valueOwners[value] = branch;
+      _unionBaseByBranch[branch] = base;
       _validateBranchDiscriminator(branch, discriminatorKey, value);
       final branchNode = await _buildObject(
         branch,
@@ -511,6 +526,28 @@ final class ClassModelGraphBuilder {
   }
 
   Future<AckObjectModelNode> _buildObject(
+    ClassElement element, {
+    required _ModelOptions options,
+    AckSchemaId? unionId,
+    String? discriminatorKey,
+    String? discriminatorValue,
+  }) async {
+    final previousActive = _activeClass;
+    _activeClass = element;
+    try {
+      return await _buildObjectBody(
+        element,
+        options: options,
+        unionId: unionId,
+        discriminatorKey: discriminatorKey,
+        discriminatorValue: discriminatorValue,
+      );
+    } finally {
+      _activeClass = previousActive;
+    }
+  }
+
+  Future<AckObjectModelNode> _buildObjectBody(
     ClassElement element, {
     required _ModelOptions options,
     AckSchemaId? unionId,
@@ -1206,8 +1243,10 @@ final class ClassModelGraphBuilder {
     return null;
   }
 
-  DartType? _inferredBoundaryType(DartType type) {
+  DartType? _inferredBoundaryType(DartType type, FieldElement field) {
     if (type is! InterfaceType) return null;
+    final registered = _registeredSchemaForType(type, field);
+    if (registered != null) return registered.boundary;
     final provider = library.element.typeProvider;
     if (_isCore(type, 'int') ||
         _isCore(type, 'double') ||
@@ -1254,6 +1293,8 @@ final class ClassModelGraphBuilder {
       );
     }
     if (target is EnumElement) return provider.stringType;
+    final autoDetected = _uniqueLibrarySchemaCandidate(type);
+    if (autoDetected != null) return autoDetected.boundary;
     return null;
   }
 
@@ -1300,6 +1341,13 @@ final class ClassModelGraphBuilder {
     InterfaceType interfaceType,
     FieldElement field,
   ) async {
+    final registered = _registeredSchemaForType(interfaceType, field);
+    if (registered != null) {
+      return _renderRegisteredSchema(registered, field);
+    }
+    if (_isOverridableBuiltInScalar(interfaceType)) {
+      return null;
+    }
     final target = interfaceType.element;
     if (target is ClassElement) {
       final facadeName = _classFirstFacadeName(target);
@@ -1317,8 +1365,375 @@ final class ClassModelGraphBuilder {
     if (_schemaFirstRuntimeRef(target, field) != null) {
       return '${_visibleTypeName(interfaceType, field)}.\$ack.schema';
     }
-    return await _typeOwnedSchema(interfaceType, field);
+    final typeOwned = await _typeOwnedSchema(interfaceType, field);
+    if (typeOwned != null) return typeOwned;
+    if (target is EnumElement) return null;
+    return await _autoDetectedLibrarySchema(interfaceType, field);
   }
+
+  Future<void> _initRegisteredAndLibrarySchemas() async {
+    final libraryAnnotation = _schemableChecker.firstAnnotationOfExact(
+      library.element,
+    );
+    if (libraryAnnotation != null) {
+      _librarySchemas.addAll(
+        await _parseSchemasList(
+          library.element,
+          ConstantReader(libraryAnnotation),
+        ),
+      );
+    }
+
+    final seenImportedLibraries = <LibraryElement>{};
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      final importedLibrary = import.importedLibrary;
+      if (importedLibrary == null ||
+          importedLibrary == library.element ||
+          !seenImportedLibraries.add(importedLibrary)) {
+        continue;
+      }
+      final importedAnnotation = _schemableChecker.firstAnnotationOfExact(
+        importedLibrary,
+      );
+      if (importedAnnotation == null) continue;
+      _importedLibrarySchemas.addAll(
+        await _parseSchemasList(
+          importedLibrary,
+          ConstantReader(importedAnnotation),
+        ),
+      );
+    }
+
+    for (final classElement in library.classes) {
+      final annotation = _schemableChecker.firstAnnotationOfExact(classElement);
+      if (annotation == null) continue;
+      final parsed = await _parseSchemasList(
+        classElement,
+        ConstantReader(annotation),
+      );
+      if (parsed.isNotEmpty) {
+        _classSchemas[classElement] = parsed;
+      }
+    }
+
+    for (final variable in library.element.topLevelVariables) {
+      if (!variable.isOriginDeclaration ||
+          _schemableChecker.hasAnnotationOfExact(variable)) {
+        continue;
+      }
+      _addLibrarySchemaCandidate(
+        declaration: variable,
+        schemaType: variable.type,
+        isFunction: false,
+      );
+    }
+    for (final getter in library.element.getters) {
+      if (!getter.isOriginDeclaration ||
+          _schemableChecker.hasAnnotationOfExact(getter)) {
+        continue;
+      }
+      _addLibrarySchemaCandidate(
+        declaration: getter,
+        schemaType: getter.returnType,
+        isFunction: false,
+      );
+    }
+    for (final function in library.element.topLevelFunctions) {
+      if (!function.isOriginDeclaration ||
+          function.typeParameters.isNotEmpty ||
+          function.formalParameters.isNotEmpty) {
+        continue;
+      }
+      _addLibrarySchemaCandidate(
+        declaration: function,
+        schemaType: function.returnType,
+        isFunction: true,
+      );
+    }
+  }
+
+  void _addLibrarySchemaCandidate({
+    required Element declaration,
+    required DartType schemaType,
+    required bool isFunction,
+  }) {
+    if (_containsInvalidType(schemaType) ||
+        !_ackSchemaChecker.isAssignableFromType(schemaType)) {
+      return;
+    }
+    final boundary = _ackSchemaBoundaryType(schemaType);
+    final runtime = _ackSchemaRuntimeType(schemaType);
+    if (boundary == null ||
+        runtime == null ||
+        _containsInvalidType(boundary) ||
+        _containsInvalidType(runtime) ||
+        runtime is DynamicType ||
+        (runtime is InterfaceType && _isCore(runtime, 'Object'))) {
+      return;
+    }
+    _libraryTopLevelSchemaCandidates.add((
+      declaration: declaration,
+      boundary: boundary,
+      runtime: library.element.typeSystem.promoteToNonNull(runtime),
+      isFunction: isFunction,
+    ));
+  }
+
+  Future<List<_RegisteredSchema>> _parseSchemasList(
+    Element owner,
+    ConstantReader reader,
+  ) async {
+    final schemasReader = reader.read('schemas');
+    if (schemasReader.isNull) return const [];
+    final ownerLabel = owner is LibraryElement
+        ? 'library'
+        : (owner.name ?? '@Schemable');
+    final list = schemasReader.listValue;
+    if (list.isEmpty) {
+      throw InvalidGenerationSource(
+        '$ownerLabel @Schemable(schemas: ...) must not be empty.',
+        element: owner,
+      );
+    }
+    final result = <_RegisteredSchema>[];
+    for (final item in list) {
+      final function = item.toFunctionValue();
+      if (function is! TopLevelFunctionElement) {
+        throw InvalidGenerationSource(
+          '$ownerLabel @Schemable(schemas: ...) entries must be const '
+          'tear-offs of top-level functions.',
+          element: owner,
+        );
+      }
+      if (function.typeParameters.isNotEmpty) {
+        throw InvalidGenerationSource(
+          '$ownerLabel @Schemable(schemas: ...) function ${function.name} is '
+          'generic. Use a non-generic top-level function, or declare a static '
+          'schema method on the type.',
+          element: owner,
+        );
+      }
+      if (function.formalParameters.isNotEmpty ||
+          !_ackSchemaChecker.isAssignableFromType(function.returnType)) {
+        throw InvalidGenerationSource(
+          '$ownerLabel @Schemable(schemas: ...) function ${function.name} must '
+          'have type AckSchema Function().',
+          element: owner,
+        );
+      }
+      final boundary = _ackSchemaBoundaryType(function.returnType);
+      final runtime = _ackSchemaRuntimeType(function.returnType);
+      if (boundary == null ||
+          runtime == null ||
+          runtime is DynamicType ||
+          (runtime is InterfaceType && _isCore(runtime, 'Object'))) {
+        throw InvalidGenerationSource(
+          '$ownerLabel @Schemable(schemas: ...) function ${function.name} must '
+          'return a typed AckSchema<Boundary, Runtime> for a specific runtime '
+          'type.',
+          element: owner,
+        );
+      }
+      if (runtime is InterfaceType && _isNonOverridableCoreType(runtime)) {
+        throw InvalidGenerationSource(
+          '$ownerLabel @Schemable(schemas: ...) cannot override core type '
+          '${runtime.getDisplayString()}; use @AckField(schema: '
+          '${function.name}) on the specific field instead.',
+          element: owner,
+        );
+      }
+      final resolved = await _resolvedLibraryFor(function.library);
+      final declaration = resolved
+          .getFragmentDeclaration(function.firstFragment)
+          ?.node;
+      final bodyExpression = declaration is FunctionDeclaration
+          ? _functionBodyExpression(declaration.functionExpression.body)
+          : null;
+      if (bodyExpression == null) {
+        throw InvalidGenerationSource(
+          '$ownerLabel @Schemable(schemas: ...) function ${function.name} must '
+          'have a statically resolvable expression or single return.',
+          element: owner,
+        );
+      }
+      final oneWaySource = await _oneWayTransformSource(bodyExpression);
+      if (oneWaySource != null) {
+        throw InvalidGenerationSource(
+          '$ownerLabel @Schemable(schemas: ...) function ${function.name} '
+          'reaches one-way schema $oneWaySource. Migrate this .transform() '
+          'path to .codec() with an encoder.',
+          element: owner,
+        );
+      }
+      final nonNullRuntime = library.element.typeSystem.promoteToNonNull(
+        runtime,
+      );
+      for (final prior in result) {
+        if (_sameTypeIgnoringNullability(prior.runtime, nonNullRuntime)) {
+          throw InvalidGenerationSource(
+            '$ownerLabel @Schemable(schemas: ...) registers multiple schemas '
+            'for ${nonNullRuntime.getDisplayString()}: '
+            '${prior.declaration.name} and ${function.name}.',
+            element: owner,
+          );
+        }
+      }
+      result.add((
+        declaration: function,
+        boundary: boundary,
+        runtime: nonNullRuntime,
+        isFunction: true,
+      ));
+    }
+    return result;
+  }
+
+  _RegisteredSchema? _registeredSchemaForType(
+    InterfaceType interfaceType,
+    FieldElement field,
+  ) {
+    final activeOwner = _activeClass;
+    final fieldOwner = field.enclosingElement;
+    for (final scope in [
+      if (activeOwner != null) ...[
+        if (_classSchemas[activeOwner] case final classList?) classList,
+        if (_unionBaseByBranch[activeOwner] case final base?)
+          if (_classSchemas[base] case final baseList?) baseList,
+      ],
+      if (fieldOwner is ClassElement && fieldOwner != activeOwner)
+        if (_classSchemas[fieldOwner] case final ownerList?) ownerList,
+      _librarySchemas,
+    ]) {
+      for (final entry in scope) {
+        if (_sameTypeIgnoringNullability(entry.runtime, interfaceType)) {
+          return entry;
+        }
+      }
+    }
+    final importedMatches = <Element, _RegisteredSchema>{};
+    for (final entry in _importedLibrarySchemas) {
+      if (_sameTypeIgnoringNullability(entry.runtime, interfaceType)) {
+        importedMatches[entry.declaration.baseElement] = entry;
+      }
+    }
+    if (importedMatches.length > 1) {
+      final path = '${field.enclosingElement.name}.${field.name}';
+      final display = library.element.typeSystem
+          .promoteToNonNull(interfaceType)
+          .getDisplayString();
+      final names = importedMatches.values
+          .map((m) => m.declaration.name)
+          .join(', ');
+      throw InvalidGenerationSource(
+        '$path has multiple imported library schemas for $display ($names). '
+        'Disambiguate with @Schemable(schemas: [...]) or '
+        '@AckField(schema: ...).',
+        element: field,
+      );
+    }
+    if (importedMatches.length == 1) return importedMatches.values.single;
+    return null;
+  }
+
+  _RegisteredSchema? _uniqueLibrarySchemaCandidate(
+    InterfaceType interfaceType,
+  ) {
+    if (_isNonOverridableCoreType(interfaceType) ||
+        _isOverridableBuiltInScalar(interfaceType) ||
+        interfaceType.element is EnumElement) {
+      return null;
+    }
+    final matches = [
+      for (final candidate in _libraryTopLevelSchemaCandidates)
+        if (_sameTypeIgnoringNullability(candidate.runtime, interfaceType))
+          candidate,
+    ];
+    return matches.length == 1 ? matches.single : null;
+  }
+
+  Future<String?> _autoDetectedLibrarySchema(
+    InterfaceType interfaceType,
+    FieldElement field,
+  ) async {
+    if (_isNonOverridableCoreType(interfaceType) ||
+        _isOverridableBuiltInScalar(interfaceType) ||
+        interfaceType.element is EnumElement) {
+      return null;
+    }
+    final matches = [
+      for (final candidate in _libraryTopLevelSchemaCandidates)
+        if (_sameTypeIgnoringNullability(candidate.runtime, interfaceType))
+          candidate,
+    ];
+    if (matches.isEmpty) return null;
+    final path = '${field.enclosingElement.name}.${field.name}';
+    final display = library.element.typeSystem
+        .promoteToNonNull(interfaceType)
+        .getDisplayString();
+    if (matches.length > 1) {
+      final names = matches.map((m) => m.declaration.name).join(', ');
+      throw InvalidGenerationSource(
+        '$path has multiple top-level schemas for $display in this library '
+        '($names). Disambiguate with @Schemable(schemas: [...]) or '
+        '@AckField(schema: ...).',
+        element: field,
+      );
+    }
+    final candidate = matches.single;
+    final resolved = await _resolvedLibraryFor(candidate.declaration.library!);
+    final node = resolved
+        .getFragmentDeclaration(candidate.declaration.firstFragment)
+        ?.node;
+    final bodyExpression = switch (node) {
+      VariableDeclaration() => node.initializer,
+      FunctionDeclaration() => _functionBodyExpression(
+        node.functionExpression.body,
+      ),
+      _ => null,
+    };
+    if (bodyExpression == null) {
+      throw InvalidGenerationSource(
+        '$path resolves to top-level schema ${candidate.declaration.name}, '
+        'which must have a statically resolvable expression or single return.',
+        element: field,
+      );
+    }
+    final oneWaySource = await _oneWayTransformSource(bodyExpression);
+    if (oneWaySource != null) {
+      throw InvalidGenerationSource(
+        '$path resolves to top-level schema ${candidate.declaration.name}, '
+        'which reaches one-way schema $oneWaySource. Migrate this '
+        '.transform() path to .codec() with an encoder.',
+        element: field,
+      );
+    }
+    return _renderRegisteredSchema(candidate, field);
+  }
+
+  String _renderRegisteredSchema(_RegisteredSchema schema, FieldElement field) {
+    final prefix = _visiblePrefix(schema.declaration, field);
+    final qualified =
+        '${prefix == null ? '' : '$prefix.'}${schema.declaration.name}';
+    return schema.isFunction ? '$qualified()' : qualified;
+  }
+
+  bool _isOverridableBuiltInScalar(InterfaceType type) =>
+      _isCore(type, 'DateTime') ||
+      _isCore(type, 'Uri') ||
+      _isCore(type, 'Duration');
+
+  bool _isNonOverridableCoreType(InterfaceType type) =>
+      _isCore(type, 'String') ||
+      _isCore(type, 'int') ||
+      _isCore(type, 'double') ||
+      _isCore(type, 'num') ||
+      _isCore(type, 'bool') ||
+      _isCore(type, 'Object') ||
+      type.isDartCoreList ||
+      type.isDartCoreSet ||
+      type.isDartCoreMap ||
+      _isJsonMaybe(type);
 
   AckInferRef? _schemaFirstRuntimeRef(
     InterfaceElement target,
@@ -1421,7 +1836,7 @@ final class ClassModelGraphBuilder {
           );
         }
         final expectedBoundary = _ackSchemaBoundaryType(parameterType);
-        final inferredBoundary = _inferredBoundaryType(argument);
+        final inferredBoundary = _inferredBoundaryType(argument, field);
         if (expectedBoundary != null &&
             inferredBoundary != null &&
             !library.element.typeSystem.isSubtypeOf(

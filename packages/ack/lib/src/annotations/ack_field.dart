@@ -46,18 +46,12 @@ final class NotNull {
 @Target({TargetKind.field, TargetKind.parameter})
 final class AckField {
   /// Creates a field annotation.
-  const AckField({
-    this.name,
-    @Deprecated('Declare a static schema on the field type instead.')
-    this.schema,
-    this.description,
-  });
+  const AckField({this.name, this.schema, this.description});
 
   /// Explicit JSON key for this property.
   final String? name;
 
   /// Top-level schema-function tear-off followed by `ack_generator`.
-  @Deprecated('Declare a static schema on the field type instead.')
   final Object Function()? schema;
 
   /// Schema description for this property.

@@ -21,9 +21,17 @@ enum AckUnknownPropertyPolicy { reject, discard, capture }
 ///
 /// Use this annotation on a top-level schema variable or getter to generate a
 /// schema-first model. Use it on a class to generate a class-first schema.
-/// [name] applies only to a top-level schema; every other option applies only
-/// to a class. `ack_generator` rejects an option set for the other target.
-@Target({TargetKind.classType, TargetKind.topLevelVariable, TargetKind.getter})
+/// Use it on a `library` directive (`@Schemable(schemas: [...]) library;`) to
+/// register custom type schemas across the library and its importers.
+/// [name] applies only to a top-level schema; [schemas] applies to a class or
+/// `library` directive; every other option applies only to a class.
+/// `ack_generator` rejects an option set for the wrong target.
+@Target({
+  TargetKind.classType,
+  TargetKind.topLevelVariable,
+  TargetKind.getter,
+  TargetKind.library,
+})
 final class Schemable {
   /// Creates a unified schema declaration annotation.
   const Schemable({
@@ -35,6 +43,7 @@ final class Schemable {
     this.discriminatorValue,
     this.unknownProperties = AckUnknownPropertyPolicy.reject,
     this.captureField = 'additionalProperties',
+    this.schemas,
   });
 
   /// Exact generated model name for a top-level schema declaration.
@@ -61,4 +70,10 @@ final class Schemable {
 
   /// Dart field that stores captured unknown properties.
   final String captureField;
+
+  /// Custom top-level schema functions registered for this class or library.
+  ///
+  /// Each entry must be a const tear-off of a zero-argument, non-generic
+  /// top-level function returning a two-way `AckSchema<Boundary, Runtime>`.
+  final List<Object Function()>? schemas;
 }

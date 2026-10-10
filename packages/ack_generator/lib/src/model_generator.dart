@@ -39,6 +39,7 @@ final class AckModelGenerator extends Generator {
 
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
+    _validateLibrarySchemable(library.element);
     final annotated = <Element>[];
     final annotatedModels = <ClassElement>[];
 
@@ -59,7 +60,7 @@ final class AckModelGenerator extends Generator {
       } else {
         throw InvalidGenerationSource(
           '@Schemable can only be applied to classes or top-level schema '
-          'variables or getters.',
+          'variables and getters, or library directives.',
           element: element,
         );
       }
@@ -197,7 +198,42 @@ final class AckModelGenerator extends Generator {
 
   bool _hasSchemableSchema(Element element) =>
       element is! ClassElement &&
+      element is! LibraryElement &&
       _schemableChecker.hasAnnotationOfExact(element);
+
+  void _validateLibrarySchemable(LibraryElement libraryElement) {
+    final annotation = _schemableChecker.firstAnnotationOfExact(libraryElement);
+    if (annotation == null) return;
+    final reader = ConstantReader(annotation);
+    int index(String option) =>
+        reader.read(option).objectValue.getField('index')!.toIntValue()!;
+    final configured = [
+      if (!reader.read('name').isNull) 'name',
+      if (!reader.read('schemaName').isNull) 'schemaName',
+      if (!reader.read('description').isNull) 'description',
+      if (index('caseStyle') != 0) 'caseStyle',
+      if (!reader.read('discriminatorKey').isNull) 'discriminatorKey',
+      if (!reader.read('discriminatorValue').isNull) 'discriminatorValue',
+      if (index('unknownProperties') != 0) 'unknownProperties',
+      if (reader.read('captureField').stringValue != 'additionalProperties')
+        'captureField',
+    ];
+    if (configured.isNotEmpty) {
+      throw InvalidGenerationSource(
+        '@Schemable on a library directive only supports schemas; received: '
+        '${configured.join(', ')}.',
+        element: libraryElement,
+      );
+    }
+    final schemasReader = reader.read('schemas');
+    if (schemasReader.isNull || schemasReader.listValue.isEmpty) {
+      throw InvalidGenerationSource(
+        '@Schemable on a library directive must specify a non-empty schemas '
+        'list.',
+        element: libraryElement,
+      );
+    }
+  }
 
   /// Strips `./` segments so `part './user.g.dart'` matches the file next to
   /// the input, without treating `part 'sub/user.g.dart'` as the same path.

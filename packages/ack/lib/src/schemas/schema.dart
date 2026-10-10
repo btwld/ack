@@ -17,7 +17,6 @@ import '../helpers.dart';
 import '../schema_model/ack_schema_model_builder.dart';
 import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
-import '../validation/standard_schema.dart';
 
 part '../json_schema/json_schema_compiler.dart';
 part '../json_schema/json_schema_formats.dart';
@@ -504,10 +503,6 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// the same output. Subclasses should not override this directly; instead
   /// they are dispatched in `ack_schema_model_builder.dart`.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
-
-  /// Returns a [StandardSchemaV1] view over this schema (`https://standardschema.dev/`).
-  StandardSchemaV1<Boundary, Runtime> get standard =>
-      AckStandardSchema<Boundary, Runtime>(this);
 
   Map<String, Object?> toMap() {
     return {

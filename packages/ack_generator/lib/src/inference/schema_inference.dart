@@ -106,6 +106,12 @@ final class AckSchemaInference {
     required void Function(InterfaceType) validateMapKey,
   }) async {
     if (type is! InterfaceType) return unsupported(type);
+    if (_core(type, 'DateTime') ||
+        _core(type, 'Uri') ||
+        _core(type, 'Duration')) {
+      final override = await resolveNamed(type);
+      if (override != null) return override;
+    }
     final scalar = _scalar(type);
     if (scalar != null) return scalar;
     if (type.element is EnumElement) {

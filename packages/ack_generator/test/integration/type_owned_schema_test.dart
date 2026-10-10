@@ -707,4 +707,351 @@ final class Routine {
       ),
     );
   });
+
+  test(
+    'automatically detects a unique top-level schema variable, getter, or function in the library',
+    () async {
+      await _expectOutput(
+        r'''
+final colorSchema = Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+AckSchema<int, Cents> get centsSchema => Ack.integer().codec<Cents>(
+  decode: Cents.new,
+  encode: (cents) => cents.amount,
+);
+
+AckSchema<String, Slug> slugSchema() => Ack.string().codec<Slug>(
+  decode: Slug.new,
+  encode: (slug) => slug.value,
+);
+
+@Schemable()
+final class Theme with _$ThemeAck {
+  const Theme({
+    required this.primary,
+    this.secondary,
+    required this.palette,
+    required this.swatches,
+    required this.namedColors,
+    this.maybeColor = const JsonMaybe.absent(),
+    required this.boxedColor,
+    required this.price,
+    required this.slug,
+  });
+
+  final Color primary;
+  final Color? secondary;
+  final List<Color> palette;
+  final Set<Color> swatches;
+  final Map<String, Color> namedColors;
+  final JsonMaybe<Color> maybeColor;
+  final Box<Color> boxedColor;
+  final Cents price;
+  final Slug slug;
+}
+''',
+        allOf([
+          _containsCode("'primary': colorSchema,"),
+          _containsCode("'secondary': colorSchema.optional().nullable(),"),
+          _containsCode("'palette': Ack.list(colorSchema),"),
+          _containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
+          _containsCode("'namedColors': Ack.map(colorSchema),"),
+          _containsCode("'maybeColor': colorSchema.optional().nullable(),"),
+          _containsCode("'boxedColor': Box.schema<Color>(colorSchema),"),
+          _containsCode("'price': centsSchema,"),
+          _containsCode("'slug': slugSchema()"),
+        ]),
+        types: '''
+import 'package:ack/ack.dart';
+
+final class Color {
+  const Color(this.hex);
+  final String hex;
+}
+
+final class Cents {
+  const Cents(this.amount);
+  final int amount;
+}
+
+final class Slug {
+  const Slug(this.value);
+  final String value;
+}
+
+final class Box<A extends Object> {
+  const Box(this.value);
+  final A value;
+
+  static AckSchema<Object, Box<A>> schema<A extends Object>(
+    AckSchema<Object, A> value,
+  ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
+}
+''',
+      );
+    },
+  );
+
+  test(
+    'rejects ambiguous auto-detected top-level schemas for the same type',
+    () async {
+      final errors = await _errors(
+        r'''
+final hexColorSchema = Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+final namedColorSchema = Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+@Schemable()
+final class Theme with _$ThemeAck {
+  const Theme({required this.primary});
+
+  final Color primary;
+}
+''',
+        types: '''
+final class Color {
+  const Color(this.hex);
+  final String hex;
+}
+''',
+      );
+
+      expect(
+        errors,
+        contains(
+          contains(
+            'Theme.primary has multiple top-level schemas for Color in this '
+            'library (hexColorSchema, namedColorSchema). Disambiguate with '
+            '@Schemable(schemas: [...]) or @AckField(schema: ...).',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'rejects an auto-detected top-level schema that uses a one-way transform',
+    () async {
+      final errors = await _errors(
+        r'''
+final colorSchema = Ack.string().transform<Color>(Color.new);
+
+@Schemable()
+final class Theme with _$ThemeAck {
+  const Theme({required this.primary});
+
+  final Color primary;
+}
+''',
+        types: '''
+final class Color {
+  const Color(this.hex);
+  final String hex;
+}
+''',
+      );
+
+      expect(
+        errors,
+        contains(
+          contains(
+            'Theme.primary resolves to top-level schema colorSchema, which '
+            'reaches one-way schema transform.',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    '@Schemable(schemas: [...]) on a class resolves imported schemas, disambiguates local schemas, and overrides DateTime',
+    () async {
+      await _expectOutput(
+        r'''
+AckSchema<String, Color> hexColorSchema() => Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+AckSchema<String, Color> altColorSchema() => Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+@Schemable(schemas: [hexColorSchema, importedMoneySchema, epochDateTimeSchema])
+final class Order with _$OrderAck {
+  const Order({
+    required this.color,
+    required this.total,
+    required this.createdAt,
+    required this.timestamps,
+  });
+
+  final Color color;
+  final Money total;
+  final DateTime createdAt;
+  final List<DateTime> timestamps;
+}
+''',
+        allOf(
+          _containsCode("'color': hexColorSchema(),"),
+          _containsCode("'total': importedMoneySchema(),"),
+          _containsCode("'createdAt': epochDateTimeSchema(),"),
+          _containsCode("'timestamps': Ack.list(epochDateTimeSchema())"),
+        ),
+        types: '''
+import 'package:ack/ack.dart';
+
+final class Color {
+  const Color(this.hex);
+  final String hex;
+}
+
+final class Money {
+  const Money(this.cents);
+  final int cents;
+}
+
+AckSchema<int, Money> importedMoneySchema() => Ack.integer().codec<Money>(
+  decode: Money.new,
+  encode: (money) => money.cents,
+);
+
+AckSchema<int, DateTime> epochDateTimeSchema() => Ack.integer().codec<DateTime>(
+  decode: DateTime.fromMillisecondsSinceEpoch,
+  encode: (dt) => dt.millisecondsSinceEpoch,
+);
+''',
+      );
+    },
+  );
+
+  test(
+    '@Schemable(schemas: [...]) on a library directive applies across models and imported schema libraries',
+    () async {
+      await _expectOutput(
+        r'''
+@Schemable()
+final class Palette with _$PaletteAck {
+  const Palette({required this.primary, required this.budget});
+
+  final Color primary;
+  final Money budget;
+}
+''',
+        allOf(
+          _containsCode("'primary': libraryColorSchema(),"),
+          _containsCode("'budget': sharedMoneySchema()"),
+        ),
+        head: '''
+@Schemable(schemas: [libraryColorSchema])
+library;
+
+import 'package:ack/ack.dart';
+import 'types.dart';
+
+part 'model.g.dart';
+
+AckSchema<String, Color> libraryColorSchema() => Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+''',
+        types: '''
+@Schemable(schemas: [sharedMoneySchema])
+library;
+
+import 'package:ack/ack.dart';
+
+final class Color {
+  const Color(this.hex);
+  final String hex;
+}
+
+final class Money {
+  const Money(this.cents);
+  final int cents;
+}
+
+AckSchema<int, Money> sharedMoneySchema() => Ack.integer().codec<Money>(
+  decode: Money.new,
+  encode: (money) => money.cents,
+);
+''',
+      );
+    },
+  );
+
+  test(
+    'rejects core primitive types and duplicate runtime types in @Schemable(schemas: [...])',
+    () async {
+      final coreErrors = await _errors(r'''
+AckSchema<String, String> customStringSchema() => Ack.string();
+
+@Schemable(schemas: [customStringSchema])
+final class Post with _$PostAck {
+  const Post({required this.title});
+
+  final String title;
+}
+''');
+
+      expect(
+        coreErrors,
+        contains(
+          contains(
+            'Post @Schemable(schemas: ...) cannot override core type String; '
+            'use @AckField(schema: customStringSchema) on the specific field '
+            'instead.',
+          ),
+        ),
+      );
+
+      final duplicateErrors = await _errors(
+        r'''
+AckSchema<String, Color> firstColorSchema() => Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+AckSchema<String, Color> secondColorSchema() => Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+@Schemable(schemas: [firstColorSchema, secondColorSchema])
+final class Theme with _$ThemeAck {
+  const Theme({required this.primary});
+
+  final Color primary;
+}
+''',
+        types: '''
+final class Color {
+  const Color(this.hex);
+  final String hex;
+}
+''',
+      );
+
+      expect(
+        duplicateErrors,
+        contains(
+          contains(
+            'Theme @Schemable(schemas: ...) registers multiple schemas for '
+            'Color: firstColorSchema and secondColorSchema.',
+          ),
+        ),
+      );
+    },
+  );
 }

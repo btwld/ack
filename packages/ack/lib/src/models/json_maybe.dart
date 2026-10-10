@@ -25,9 +25,6 @@ sealed class JsonMaybe<T> {
   /// A present JSON property with [value] (which may be `null`).
   const factory JsonMaybe.value(T? value) = JsonValue<T>;
 
-  /// Alias for [JsonMaybe.value].
-  const factory JsonMaybe.present(T? value) = JsonValue<T>;
-
   /// A present JSON property with an explicit `null` value.
   const factory JsonMaybe.nullValue() = JsonValue<T>.nullValue;
 

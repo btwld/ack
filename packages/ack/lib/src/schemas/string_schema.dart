@@ -237,16 +237,22 @@ final class StringSchema extends AckSchema<String, String>
     baseFieldsHashCode,
     const ListEquality<_StringNormalizerStep>().hash(_normalizers),
   );
+
+  /// Trims leading and trailing whitespace from the string.
+  ///
+  /// Runs in declaration order with any constraints and refinements chained
+  /// before or after this call, on both `parse` and `encode`.
+  StringSchema trim() => _withNormalizer(_StringNormalizer.trim);
+
+  /// Converts the string to lowercase.
+  ///
+  /// Runs in declaration order with any constraints and refinements chained
+  /// before or after this call, on both `parse` and `encode`.
+  StringSchema toLowerCase() => _withNormalizer(_StringNormalizer.toLowerCase);
+
+  /// Converts the string to uppercase.
+  ///
+  /// Runs in declaration order with any constraints and refinements chained
+  /// before or after this call, on both `parse` and `encode`.
+  StringSchema toUpperCase() => _withNormalizer(_StringNormalizer.toUpperCase);
 }
-
-@internal
-StringSchema trimStringSchemaInternal(StringSchema schema) =>
-    schema._withNormalizer(_StringNormalizer.trim);
-
-@internal
-StringSchema lowercaseStringSchemaInternal(StringSchema schema) =>
-    schema._withNormalizer(_StringNormalizer.toLowerCase);
-
-@internal
-StringSchema uppercaseStringSchemaInternal(StringSchema schema) =>
-    schema._withNormalizer(_StringNormalizer.toUpperCase);

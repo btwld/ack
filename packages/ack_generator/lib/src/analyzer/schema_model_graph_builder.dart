@@ -163,6 +163,7 @@ final class SchemaModelGraphBuilder {
       if (index('unknownProperties') != 0) 'unknownProperties',
       if (reader.read('captureField').stringValue != 'additionalProperties')
         'captureField',
+      if (!reader.read('schemas').isNull) 'schemas',
     ];
     if (configured.isEmpty) return;
     throw InvalidGenerationSource(

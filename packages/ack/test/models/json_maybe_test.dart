@@ -17,9 +17,9 @@ void main() {
       expect(absent1.toString(), equals('JsonMaybe.absent()'));
     });
 
-    test('JsonMaybe.value() / present() / nullValue() state and equality', () {
+    test('JsonMaybe.value() / nullValue() state and equality', () {
       const present = JsonMaybe<String>.value('Ada');
-      const presentAlias = JsonMaybe<String>.present('Ada');
+      const presentCopy = JsonValue<String>('Ada');
       const explicitNull = JsonMaybe<String>.nullValue();
       const valueNull = JsonMaybe<String>.value(null);
 
@@ -28,8 +28,8 @@ void main() {
       expect(present.isAbsent, isFalse);
       expect(present.isNull, isFalse);
       expect(present.valueOrNull, equals('Ada'));
-      expect(present, equals(presentAlias));
-      expect(present.hashCode, equals(presentAlias.hashCode));
+      expect(present, equals(presentCopy));
+      expect(present.hashCode, equals(presentCopy.hashCode));
       expect(present.toString(), equals('JsonMaybe.value(Ada)'));
 
       expect(explicitNull.isPresent, isTrue);

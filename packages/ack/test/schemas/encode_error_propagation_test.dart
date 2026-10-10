@@ -230,17 +230,16 @@ void main() {
     });
   });
 
-  group('decoder policy is unchanged', () {
-    test('a decoder Error still becomes a SchemaTransformError', () {
+  group('decoder policy matches encoder policy', () {
+    test('a decoder Error propagates unchanged', () {
+      final error = StateError('decode boom');
       final schema = Ack.string().codec<int>(
-        decode: (_) => throw StateError('decode boom'),
+        decode: (_) => throw error,
         encode: (value) => value.toString(),
       );
 
-      final result = schema.safeParse('1');
-
-      expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaTransformError>());
+      expect(() => schema.safeParse('1'), throwsA(same(error)));
+      expect(() => schema.parse('1'), throwsA(same(error)));
     });
   });
 }

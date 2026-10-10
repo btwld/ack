@@ -218,7 +218,7 @@ void main() {
 
     test('decoder exceptions use codec decode wording', () {
       final transformSchema = Ack.string().transform<int>(
-        (_) => throw StateError('transform decoder failed'),
+        (_) => throw const FormatException('transform decoder failed'),
       );
       final transformResult = transformSchema.safeParse('value');
 
@@ -228,7 +228,7 @@ void main() {
       expect(transformError.message, startsWith('Codec decode failed:'));
 
       final codecSchema = Ack.string().codec<int>(
-        decode: (_) => throw StateError('codec decoder failed'),
+        decode: (_) => throw const FormatException('codec decoder failed'),
         encode: (value) => value.toString(),
       );
       final codecResult = codecSchema.safeParse('value');

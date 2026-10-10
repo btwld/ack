@@ -125,28 +125,4 @@ extension StringSchemaExtensions on StringSchema {
 
   /// Adds a constraint that the string must be a valid IPv6 address.
   StringSchema ipv6() => ip(version: 6);
-
-  /// Trims leading and trailing whitespace from the string.
-  ///
-  /// Runs in declaration order with any constraints and refinements chained
-  /// before or after this call, on both `parse` and `encode`.
-  StringSchema trim() {
-    return trimStringSchemaInternal(this);
-  }
-
-  /// Converts the string to lowercase.
-  ///
-  /// Runs in declaration order with any constraints and refinements chained
-  /// before or after this call, on both `parse` and `encode`.
-  StringSchema toLowerCase() {
-    return lowercaseStringSchemaInternal(this);
-  }
-
-  /// Converts the string to uppercase.
-  ///
-  /// Runs in declaration order with any constraints and refinements chained
-  /// before or after this call, on both `parse` and `encode`.
-  StringSchema toUpperCase() {
-    return uppercaseStringSchemaInternal(this);
-  }
 }
