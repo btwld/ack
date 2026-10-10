@@ -162,7 +162,7 @@ final class Habit with _$HabitAck {
 
   final String name;
 
-  static final schema = HabitSchema.schema;
+  static final schema = _habitSchema;
 }
 
 @Schemable(schemas: [importedMoneySchema])

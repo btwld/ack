@@ -25,13 +25,13 @@
   `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`,
   `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`,
   `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems`) in
-  favor of `@Check.*` (`#191`).
+  favor of `@Validate.*` (`#191`).
 
 ### Added
 
-* Add unified `@Check.*` constraint annotation namespace (`final class Check`)
-  exported from both `package:ack/ack.dart` and `package:ack/annotations.dart`
-  (`#191`).
+* Add unified `@Validate.*` constraint annotation namespace
+  (`final class Validate`) exported from both `package:ack/ack.dart` and
+  `package:ack/annotations.dart` (`#191`).
 * Add `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) with
   `JsonMaybe.absent()`, `JsonMaybe.value(T? value)`, and `JsonMaybe.nullValue()`
   for PATCH tri-state presence (`#148`).

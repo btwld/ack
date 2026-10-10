@@ -1355,7 +1355,58 @@ final class User with _\$UserAck {
   });
 
   test(
-    'rejects invalid @Check.* constraints on mismatched field types or values',
+    'allows an imported class-first model with hidden facade when it exposes static schema',
+    () async {
+      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+      await readerWriter.testing.loadIsolateSources();
+      await testBuilder(
+        ackModelBuilder(BuilderOptions.empty),
+        {
+          'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+import 'address.dart' show Address;
+
+part 'model.g.dart';
+
+@Schemable()
+final class Order with _\$OrderAck {
+  const Order({required this.address});
+
+  final Address address;
+}
+''',
+          'test_pkg|lib/address.dart': '''
+import 'package:ack/ack.dart';
+
+part 'address.g.dart';
+
+@Schemable()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+
+  static final schema = _addressSchema;
+}
+''',
+        },
+        generateFor: const {
+          'test_pkg|lib/model.dart',
+          'test_pkg|lib/address.dart',
+        },
+        readerWriter: readerWriter,
+        outputs: {
+          'test_pkg|lib/address.g.dart': decodedMatches(anything),
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            contains('Address.schema'),
+          ),
+        },
+      );
+    },
+  );
+
+  test(
+    'rejects invalid @Validate.* constraints on mismatched field types or values',
     () async {
       await _expectFailure(
         '''
@@ -1363,11 +1414,11 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Check.min(1)
+  @Validate.min(1)
   final String name;
 }
 ''',
-        ['User.name', '@Check.min', 'String', '@Check.minLength'],
+        ['User.name', '@Validate.min', 'String', '@Validate.minLength'],
       );
       await _expectFailure(
         '''
@@ -1375,22 +1426,67 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.ip});
 
-  @Check.ip(version: 5)
+  @Validate.ip(version: 5)
   final String ip;
 }
 ''',
-        ['User.ip', '@Check.ip(version: 5)', 'version must be 4 or 6.'],
+        ['User.ip', '@Validate.ip(version: 5)', 'version must be 4 or 6.'],
       );
       await _expectFailure(
         '''
 @Schemable()
 final class User with _\$UserAck {
-  const User({@Check.minLength(1) required this.age});
+  const User({@Validate.minLength(1) required this.age});
 
   final int age;
 }
 ''',
-        ['User.age', '@Check.minLength', 'int', '@Check.min'],
+        ['User.age', '@Validate.minLength', 'int', '@Validate.min'],
+      );
+    },
+  );
+
+  test(
+    'resolves constructor parameter annotations alongside same-build schema-first generated model',
+    () async {
+      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+      await readerWriter.testing.loadIsolateSources();
+      await testBuilder(
+        ackModelBuilder(BuilderOptions.empty),
+        {
+          'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+
+part 'model.g.dart';
+
+@Schemable()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@Schemable()
+final class Order with _\$OrderAck {
+  const Order({
+    @AckField(name: 'shipping_address') required this.shipping,
+    @Validate.minItems(1) this.history = const [],
+  });
+
+  final Address shipping;
+  final List<Address> history;
+
+  static final schema = _orderSchema;
+}
+''',
+        },
+        generateFor: const {'test_pkg|lib/model.dart'},
+        readerWriter: readerWriter,
+        outputs: {
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            allOf([
+              contains("'shipping_address': Address.\$ack.schema"),
+              contains('Ack.list(Address.\$ack.schema)'),
+              contains('.minItems(1)'),
+            ]),
+          ),
+        },
       );
     },
   );

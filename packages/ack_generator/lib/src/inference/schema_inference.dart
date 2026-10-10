@@ -22,8 +22,8 @@ final class AckSchemaInference {
 
   final String? ackPrefix;
 
-  static const _check = TypeChecker.typeNamed(
-    annotations.Check,
+  static const _validate = TypeChecker.typeNamed(
+    annotations.Validate,
     inPackage: 'ack',
   );
   static const _min = TypeChecker.typeNamed(annotations.Min, inPackage: 'ack');
@@ -180,44 +180,44 @@ final class AckSchemaInference {
       final value = metadata.computeConstantValue();
       final valueType = value?.type;
       if (value == null || valueType == null) continue;
-      if (_check.isExactlyType(valueType)) {
+      if (_validate.isExactlyType(valueType)) {
         final kind = value.getField('kind')!.toStringValue()!;
         switch (kind) {
           case 'min':
             _require(
               declaration,
               type,
-              '@Check.min',
+              '@Validate.min',
               isNumeric,
-              '@Check.minLength',
+              '@Validate.minLength',
             );
             output =
-                '$output.min(${_number(declaration, '@Check.min', value)})';
+                '$output.min(${_number(declaration, '@Validate.min', value)})';
           case 'max':
             _require(
               declaration,
               type,
-              '@Check.max',
+              '@Validate.max',
               isNumeric,
-              '@Check.maxLength',
+              '@Validate.maxLength',
             );
             output =
-                '$output.max(${_number(declaration, '@Check.max', value)})';
+                '$output.max(${_number(declaration, '@Validate.max', value)})';
           case 'multipleOf':
             _require(
               declaration,
               type,
-              '@Check.multipleOf',
+              '@Validate.multipleOf',
               isNumeric,
               'numeric field',
             );
             output =
-                '$output.multipleOf(${_number(declaration, '@Check.multipleOf', value)})';
+                '$output.multipleOf(${_number(declaration, '@Validate.multipleOf', value)})';
           case 'positive':
             _require(
               declaration,
               type,
-              '@Check.positive',
+              '@Validate.positive',
               isNumeric,
               'numeric field',
             );
@@ -226,7 +226,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.negative',
+              '@Validate.negative',
               isNumeric,
               'numeric field',
             );
@@ -235,9 +235,9 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.minLength',
+              '@Validate.minLength',
               isString,
-              '@Check.min',
+              '@Validate.min',
             );
             output =
                 '$output.minLength(${value.getField('value')!.toIntValue()})';
@@ -245,9 +245,9 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.maxLength',
+              '@Validate.maxLength',
               isString,
-              '@Check.max',
+              '@Validate.max',
             );
             output =
                 '$output.maxLength(${value.getField('value')!.toIntValue()})';
@@ -255,7 +255,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.matches',
+              '@Validate.matches',
               isString,
               'String field',
             );
@@ -265,7 +265,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.notEmpty',
+              '@Validate.notEmpty',
               isString,
               'String field',
             );
@@ -274,22 +274,34 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.email',
+              '@Validate.email',
               isString,
               'String field',
             );
             output = '$output.email()';
           case 'url':
-            _require(declaration, type, '@Check.url', isString, 'String field');
+            _require(
+              declaration,
+              type,
+              '@Validate.url',
+              isString,
+              'String field',
+            );
             output = '$output.url()';
           case 'uri':
-            _require(declaration, type, '@Check.uri', isString, 'String field');
+            _require(
+              declaration,
+              type,
+              '@Validate.uri',
+              isString,
+              'String field',
+            );
             output = '$output.uri()';
           case 'uuid':
             _require(
               declaration,
               type,
-              '@Check.uuid',
+              '@Validate.uuid',
               isString,
               'String field',
             );
@@ -298,7 +310,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.date',
+              '@Validate.date',
               isString,
               'String field',
             );
@@ -307,18 +319,24 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.$kind',
+              '@Validate.$kind',
               isString,
               'String field',
             );
             output = '$output.datetime()';
           case 'ip':
-            _require(declaration, type, '@Check.ip', isString, 'String field');
+            _require(
+              declaration,
+              type,
+              '@Validate.ip',
+              isString,
+              'String field',
+            );
             final version = value.getField('value')?.toIntValue();
             if (version != null) {
               if (version != 4 && version != 6) {
                 throw InvalidGenerationSource(
-                  '${_qualifiedName(declaration)} has @Check.ip(version: '
+                  '${_qualifiedName(declaration)} has @Validate.ip(version: '
                   '$version); version must be 4 or 6.',
                   element: declaration,
                 );
@@ -331,7 +349,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.ipv4',
+              '@Validate.ipv4',
               isString,
               'String field',
             );
@@ -340,7 +358,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.ipv6',
+              '@Validate.ipv6',
               isString,
               'String field',
             );
@@ -349,7 +367,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.minItems',
+              '@Validate.minItems',
               isCollection,
               'List or Set field',
             );
@@ -360,7 +378,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.maxItems',
+              '@Validate.maxItems',
               isCollection,
               'List or Set field',
             );
@@ -371,7 +389,7 @@ final class AckSchemaInference {
             _require(
               declaration,
               type,
-              '@Check.$kind',
+              '@Validate.$kind',
               isCollection,
               'List or Set field',
             );

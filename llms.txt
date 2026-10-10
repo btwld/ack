@@ -7,7 +7,7 @@ factory. Annotate a top-level schema with `@Schemable()` to generate a model, or
 annotate a hand-written class with `@Schemable()` to generate its schema and
 JSON helpers. `package:ack/ack.dart` exports `@Schemable`, the model
 annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the
-`@Check.*` constraint namespace. There is no `@AckSchema()` annotation;
+`@Validate.*` constraint namespace. There is no `@AckSchema()` annotation;
 `AckSchema` is the runtime schema type.
 
 ## Packages
@@ -94,7 +94,8 @@ Generated object models provide:
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 
-For class-first generation:
+For class-first generation (supporting both standard constructors and Dart 3.12+
+primary constructors):
 
 ```dart
 import 'package:ack/ack.dart';
@@ -105,10 +106,11 @@ part 'account.g.dart';
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
-  @Check.minLength(2)
+  @Validate.minLength(2)
   final String displayName;
   final String role;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
@@ -120,7 +122,7 @@ equality. The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`,
 `fromJson`, `encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`.
 `schemaName:` overrides the exact public UpperCamelCase facade name; no public
 lower-camel alias is emitted. Constructor parameters determine presence and
-defaults. Field types and `@Check.*` constraint annotations determine the schema. Sealed
+defaults. Field types and `@Validate.*` constraint annotations determine the schema. Sealed
 classes use `@Schemable(discriminatorKey: ...)`; same-library concrete branches
 are included automatically. Use `@Optional()` or `@Required()` to override
 inferred key presence, `@NotNull()` to reject an explicit JSON `null` without
@@ -185,17 +187,19 @@ static `schema` or a `@Schemable(schemas: [...])` entry resolves to it instead o
 
 Extension types work the same way when they implement `Object`. The schema
 must produce the field type, or generation fails. A class-first model
-may expose its facade as `static final schema = AccountSchema.schema;`.
-Schema-first objects may reference the same members (`'header': Slot.schema`,
-`'open': Command.schema<void>()`).
+may expose its generated codec as `static final schema = _accountSchema;` (or
+`AccountSchema.schema`). Schema-first objects may reference the same members
+(`'header': Slot.schema`, `'open': Command.schema<void>()`).
 
-Nested class-first models compose through `AddressSchema.schema`, preserving
-import prefixes. Import combinators and barrels must expose both `Address` and
-`AddressSchema`. Schema-first declarations may explicitly use the facade, and
-class-first fields may use schema-first generated model types; both directions
-work from a clean build. Nullable/list/set wrappers are preserved. Automatic
-recursive class-first graphs are rejected; use schema-first named `Ack.lazy`
-for recursive contracts.
+Nested class-first models compose through `AddressSchema.schema` (or
+`Address.schema` when declared on `Address`), preserving import prefixes. Import
+combinators and barrels can expose just `Address` when `Address.schema` is
+declared, or both `Address` and `AddressSchema` otherwise. Schema-first
+declarations may explicitly use `Address.schema` or the facade, and class-first
+fields may use schema-first generated model types; both directions work from a
+clean build. Nullable/list/set wrappers are preserved. Automatic recursive
+class-first graphs are rejected; use schema-first named `Ack.lazy` for recursive
+contracts.
 
 Generated models do not implement `Map`, `List`, or scalar interfaces. Scalar
 and collection roots are value models with a `.value` field. Use model fields
@@ -223,7 +227,7 @@ Class-first generation supports object models, inferred scalar and enum
 fields, JSON-safe `Object` fields, nested lists, sets through list codecs,
 string-keyed maps, `JsonMaybe<T>`, custom schemas (`@AckField(schema: ...)`,
 `@Schemable(schemas: [...])`, `T.schema`, or auto-detected top-level library
-schemas), `@Optional()`, `@Required()`, `@NotNull()`, `@Check.*` constraints,
+schemas), `@Optional()`, `@Required()`, `@NotNull()`, `@Validate.*` constraints,
 constructor defaults, case styles, `AckUnknownPropertyPolicy`, and same-library
 sealed discriminated unions. It rejects `dynamic`, nullable list or set
 elements, non-String map keys, recursive class-first graphs, class-first value

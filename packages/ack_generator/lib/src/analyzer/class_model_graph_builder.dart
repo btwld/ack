@@ -938,10 +938,18 @@ final class ClassModelGraphBuilder {
   Future<_FutureGeneratedType> _futureGeneratedType(FieldElement field) async {
     final resolved = await _resolvedLibraryFor(field.library);
     AstNode? node = resolved.getFragmentDeclaration(field.firstFragment)?.node;
-    while (node != null && node is! FieldDeclaration) {
+    while (node != null &&
+        node is! FieldDeclaration &&
+        node is! NormalFormalParameter) {
       node = node.parent;
     }
-    final annotation = node is FieldDeclaration ? node.fields.type : null;
+    final annotation = switch (node) {
+      FieldDeclaration() => node.fields.type,
+      SimpleFormalParameter() => node.type,
+      FieldFormalParameter() => node.type,
+      SuperFormalParameter() => node.type,
+      _ => null,
+    };
     final futureType = annotation == null
         ? null
         : _futureGeneratedTypeForAnnotation(annotation, field);
@@ -1353,6 +1361,11 @@ final class ClassModelGraphBuilder {
       final facadeName = _classFirstFacadeName(target);
       if (facadeName != null) {
         final prefix = _visiblePrefix(target, field);
+        if (target.library != library.element &&
+            !_isClassFirstFacadeVisible(target, facadeName, prefix: prefix)) {
+          final typeOwned = await _typeOwnedSchema(interfaceType, field);
+          if (typeOwned != null) return typeOwned;
+        }
         _validateClassFirstFacadeImport(
           target,
           facadeName,
@@ -1867,6 +1880,9 @@ final class ClassModelGraphBuilder {
       return null;
     }
     if (_containsInvalidType(returnType)) {
+      if (target is ClassElement && _classFirstFacadeName(target) != null) {
+        return expression;
+      }
       throw InvalidGenerationSource(
         '$path resolves to ${target.name}.schema, whose type does not resolve '
         'yet. Declare the type of ${target.name}.schema explicitly.',
@@ -1926,6 +1942,36 @@ final class ClassModelGraphBuilder {
       'explicit @AckField(schema: ...) codec.',
       element: field,
     );
+  }
+
+  bool _isClassFirstFacadeVisible(
+    ClassElement target,
+    String facadeName, {
+    required String? prefix,
+  }) {
+    if (target.library == library.element) return true;
+    final modelName = target.name!;
+    var modelVisible = false;
+    var facadeVisible = false;
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      final importPrefix = import.prefix?.element.name;
+      if (importPrefix != prefix) continue;
+      final candidate = prefix == null
+          ? import.namespace.get2(modelName)
+          : import.namespace.getPrefixed2(prefix, modelName);
+      if (candidate?.baseElement == target.baseElement) {
+        modelVisible = true;
+      }
+      if (importExposesGeneratedCompanion(
+        import,
+        definingLibrary: target.library,
+        generatedName: facadeName,
+      )) {
+        facadeVisible = true;
+      }
+    }
+    return modelVisible && facadeVisible;
   }
 
   void _validateClassFirstFacadeImport(

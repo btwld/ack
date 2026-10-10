@@ -487,16 +487,18 @@ final class Color {
     );
   });
 
-  test('a Schemable class may expose its facade as a static schema', () async {
-    await _expectOutput(
-      r'''
+  test(
+    'a Schemable class may expose its backing schema or facade as a static schema',
+    () async {
+      await _expectOutput(
+        r'''
 @Schemable()
 final class Habit with _$HabitAck {
   const Habit({required this.name});
 
   final String name;
 
-  static final schema = HabitSchema.schema;
+  static final schema = _habitSchema;
 }
 
 @Schemable()
@@ -506,12 +508,13 @@ final class Routine with _$RoutineAck {
   final List<Habit> habits;
 }
 ''',
-      allOf(
-        _containsCode("Ack.object({'habits': Ack.list(HabitSchema.schema)})"),
-        isNot(contains('Habit.schema')),
-      ),
-    );
-  });
+        allOf(
+          _containsCode("Ack.object({'habits': Ack.list(HabitSchema.schema)})"),
+          isNot(contains('Habit.schema')),
+        ),
+      );
+    },
+  );
 
   test('a Schemable class rejects a static schema of another type', () async {
     final errors = await _errors(r'''
@@ -545,7 +548,7 @@ final class Habit with _\$HabitAck {
 
   final String name;
 
-  static final schema = HabitSchema.schema;
+  static final schema = _habitSchema;
 }
 
 @Schemable()

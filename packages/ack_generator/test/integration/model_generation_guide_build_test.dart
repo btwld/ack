@@ -101,6 +101,7 @@ void main() {
       'role': 'member',
     };
     expect(account.toJson(), encoded);
+    expect(Account.schema.parse(json)!.displayName, 'Ada');
     expect(AccountSchema.parse(json).displayName, 'Ada');
     expect(AccountSchema.safeParse({...json, 'email': 'invalid'}).isFail, isTrue);
     expect(AccountSchema.encode(account), encoded);

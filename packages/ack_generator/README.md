@@ -3,7 +3,7 @@
 `ack_generator` supports two directions through `@Schemable()`:
 it turns a top-level Ack schema into an immutable model and derives an Ack
 codec schema from a hand-written class. `@Schemable()`, the model annotations
-(`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the `@Check.*`
+(`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the `@Validate.*`
 constraint namespace are all exported from `package:ack/ack.dart`.
 
 ## Schema-first usage
@@ -58,8 +58,8 @@ names must be unchanged UpperCamelCase identifiers.
 
 ## Class-first usage
 
-In a class-first library, keep the model in source and apply the generated
-mixin:
+In a class-first library, keep the model in source (using a standard or Dart 3.12+
+primary constructor) and apply the generated mixin:
 
 ```dart
 import 'package:ack/ack.dart';
@@ -70,21 +70,22 @@ part 'account.g.dart';
 final class Account with _$AccountAck {
   const Account({required this.name});
 
-  @Check.minLength(2)
+  @Validate.minLength(2)
   final String name;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
 
-After generation, the public facade and model JSON methods use the same Ack
-codec boundary:
+After generation, `Account.schema`, the public `AccountSchema` facade, and model
+JSON methods all use the same Ack codec boundary:
 
 ```dart
 void main() {
   final account = Account.fromJson({'name': 'Ada'});
   print(account.toJson());
-  print(AccountSchema.toJsonSchema());
+  print(Account.schema.toJsonSchema());
 }
 ```
 
@@ -107,8 +108,8 @@ or `Command.schema<void>()`. A `schema<A>()` that declares one positional
 `AckSchema<Object, A>` parameter per type parameter `A` receives each type
 argument's inferred schema, as in `Box.schema<Row>(RowSchema.schema)`. An enum
 with a static `schema` or a `@Schemable(schemas: [...])` entry resolves to it
-instead of `Ack.enumValues`. A class may also expose its own facade with
-`static final schema = AccountSchema.schema;`.
+instead of `Ack.enumValues`. A class may also expose its own generated codec
+with `static final schema = _accountSchema;` (or `AccountSchema.schema`).
 
 Use `@Schemable(description: ...)` and `@AckField(description: ...)` for schema
 descriptions. A single-line `@description` tag in a `///` or `/** */` doc
@@ -196,8 +197,8 @@ their concrete branches must also be final. Use `@Optional()` or `@Required()`
 to override inferred key presence, `@NotNull()` to reject JSON `null` without
 requiring the key, `JsonMaybe<T>` to distinguish omitted keys from explicit
 `null` on both parse and encode, and `@AckField(name: 'wire_name')` to override
-a single field's JSON key. Constraint annotations use `@Check.*` (such as
-`@Check.matches(pattern)` for `Ack.string().matches(pattern)`). See the
+a single field's JSON key. Constraint annotations use `@Validate.*` (such as
+`@Validate.matches(pattern)` for `Ack.string().matches(pattern)`). See the
 [Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas)
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.
@@ -219,11 +220,12 @@ For a hand-written `Account`, class-first generation exposes an
 provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
 typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
 `_$AccountAck` mixin, which supplies `toJson`, `safeToJson`, a typed `copyWith`,
-and deep collection-aware equality. Add
-`static final fromJson = AccountSchema.fromJson;` when the class should expose
-the conventional one-argument entry point. Imported nested models compose as
-`prefix.AddressSchema.schema`. Across all imports and barrel exports,
-`show`/`hide` combinators must expose both the authored declaration and its
-generated companion (`Address` plus `AddressSchema` for class-first, or
-`addressSchema` plus `Address` for schema-first). Visibility may be split
-across multiple imports that use the same prefix.
+and deep collection-aware equality. Add `static final schema = _accountSchema;`
+and `static final fromJson = AccountSchema.fromJson;` when the class should
+expose the schema and one-argument JSON constructor directly. Imported nested
+models compose as `prefix.AddressSchema.schema` (or `prefix.Address.schema` when
+`Address.schema` is declared and `AddressSchema` is hidden by a combinator).
+Across all imports and barrel exports, `show`/`hide` combinators must expose the
+authored declaration and either `Address.schema` or its generated companion
+(`AddressSchema` for class-first, or `Address` for schema-first). Visibility may
+be split across multiple imports that use the same prefix.

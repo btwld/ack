@@ -15,12 +15,13 @@ final class Account with _$AccountAck {
   });
 
   /// The name shown to other users.
-  @Check.minLength(2)
+  @Validate.minLength(2)
   @AckField(description: 'The name shown to other users.')
   final String displayName;
   final Uri? website;
   final String role;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 
@@ -39,8 +40,8 @@ sealed class Pet with _$PetAck {
 final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
 
-  @Check.min(1)
-  @Check.max(9)
+  @Validate.min(1)
+  @Validate.max(9)
   final int lives;
 }
 

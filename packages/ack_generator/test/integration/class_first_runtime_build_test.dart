@@ -203,7 +203,7 @@ final class Profile with _$ProfileAck {
   final Uri? website;
   final String? nickname;
   final String role;
-  @Check.uniqueItems()
+  @Validate.uniqueItems()
   final Set<String> tags;
   @AckField(schema: colorSchema)
   final Color color;
@@ -291,7 +291,7 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
   });
 
   final List<List<String>> matrix;
-  @Check.uniqueItems()
+  @Validate.uniqueItems()
   final Set<String> labels;
   @AckField(schema: groupsSchema)
   final Map<String, List<String>> groups;
@@ -307,7 +307,7 @@ final class Example with _$ExampleAck {
 
   @Optional()
   @NotNull()
-  @Check.notEmpty()
+  @Validate.notEmpty()
   final String? title;
 
   static final fromJson = ExampleSchema.fromJson;
@@ -562,7 +562,7 @@ final class UserPatch with _$UserPatchAck {
   final JsonMaybe<String> nickname;
 
   @NotNull()
-  @Check.notEmpty()
+  @Validate.notEmpty()
   final JsonMaybe<String> title;
 
   final JsonMaybe<List<String>> tags;

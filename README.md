@@ -125,7 +125,7 @@ Generate immutable models for hand-written schemas with `@Schemable()`. Add
 `ack` to `dependencies` and `ack_generator` + `build_runner` to
 `dev_dependencies`, then annotate a top-level schema. `@Schemable()`, the model
 annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the
-`@Check.*` constraint namespace are all exported from `package:ack/ack.dart`:
+`@Validate.*` constraint namespace are all exported from `package:ack/ack.dart`:
 
 ```dart
 import 'package:ack/ack.dart';
@@ -160,9 +160,10 @@ because a generated model must be encodable. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 Already own the model class? Put `@Schemable()` on it to derive a codec schema from
-constructor-backed fields while keeping the class hand-written. A class named
-`Account` receives an `AccountSchema` facade for parsing, encoding, schema
-export, and nested composition; the backing codec remains private:
+constructor-backed fields (including Dart 3.12+ primary constructors) while
+keeping the class hand-written. A class named `Account` receives a private
+`_accountSchema` codec and a public `AccountSchema` facade for parsing, encoding,
+schema export, and nested composition:
 
 ```dart
 import 'package:ack/ack.dart';
@@ -173,15 +174,16 @@ part 'account.g.dart';
 final class Account with _$AccountAck {
   const Account({required this.name});
 
-  @Check.minLength(2)
+  @Validate.minLength(2)
   final String name;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
 
-`Account.fromJson({'name': 'Ada'})` validates and constructs the model, while
-`account.toJson()` validates and encodes it.
+`Account.fromJson({'name': 'Ada'})` (or `Account.schema.parse(...)`) validates
+and constructs the model, while `account.toJson()` validates and encodes it.
 
 Custom field types resolve automatically through a static `schema` on the type
 (`Slot.schema`, `Ack.list(Slot.schema)`, `Command.schema<Action>()`), a unique

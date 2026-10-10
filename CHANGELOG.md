@@ -22,15 +22,16 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   `StandardSchemaV1` interface and extensions (`standard_schema.dart`).
   `AckSchema<Boundary, Runtime>` with `SchemaResult<T>` and `AckSchemaModel` is
   the single canonical schema and shape contract across Ack and all adapters.
-* **Unified `@Check.*` constraint annotation namespace (`#191`)**: Added
-  `final class Check` (exported from both `package:ack/ack.dart` and
-  `package:ack/annotations.dart`) with `const Check.min(...)`, `Check.max(...)`,
-  `Check.multipleOf(...)`, `Check.positive()`, `Check.negative()`,
-  `Check.minLength(...)`, `Check.maxLength(...)`, `Check.matches(...)`,
-  `Check.notEmpty()`, `Check.email()`, `Check.url()`, `Check.uuid()`,
-  `Check.date()`, `Check.dateTime()`, `Check.uri()`, `Check.ip()`,
-  `Check.ipv4()`, `Check.ipv6()`, `Check.minItems(...)`, `Check.maxItems(...)`,
-  and `Check.uniqueItems()` / `Check.unique()`. Legacy top-level constraint
+* **Unified `@Validate.*` constraint annotation namespace (`#191`)**: Added
+  `final class Validate` (exported from both `package:ack/ack.dart` and
+  `package:ack/annotations.dart`) with `const Validate.min(...)`,
+  `Validate.max(...)`, `Validate.multipleOf(...)`, `Validate.positive()`,
+  `Validate.negative()`, `Validate.minLength(...)`, `Validate.maxLength(...)`,
+  `Validate.matches(...)`, `Validate.notEmpty()`, `Validate.email()`,
+  `Validate.url()`, `Validate.uuid()`, `Validate.date()`, `Validate.dateTime()`,
+  `Validate.uri()`, `Validate.ip()`, `Validate.ipv4()`, `Validate.ipv6()`,
+  `Validate.minItems(...)`, `Validate.maxItems(...)`, and
+  `Validate.uniqueItems()` / `Validate.unique()`. Legacy top-level constraint
   annotation classes (`@Min`, `@MinLength`, `@Email`, etc.) are deprecated.
 * **Sealed `SchemaError` and `AckSchema` hierarchies**: `SchemaError` and
   `AckSchema` are now `sealed class`es so `switch (error)` and `switch (schema)`

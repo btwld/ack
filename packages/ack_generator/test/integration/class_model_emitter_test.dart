@@ -1008,7 +1008,7 @@ final class Account with _\$AccountAck {
   });
 
   test(
-    '@Check.* constraints work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
+    '@Validate.* constraints work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
     () async {
       await _build(
         {
@@ -1043,52 +1043,52 @@ final class CheckedRecord with _\$CheckedRecordAck {
     required this.score,
     required this.debt,
     required this.tags,
-    @Check.minLength(2) @Check.maxLength(20) required this.handle,
+    @Validate.minLength(2) @Validate.maxLength(20) required this.handle,
   });
 
-  @Check.email()
+  @Validate.email()
   final String email;
 
-  @Check.uuid()
+  @Validate.uuid()
   final String id;
 
-  @Check.url()
+  @Validate.url()
   final String website;
 
-  @Check.uri()
+  @Validate.uri()
   final String resourceUri;
 
-  @Check.date()
+  @Validate.date()
   final String birthDate;
 
-  @Check.dateTime()
+  @Validate.dateTime()
   final String createdAt;
 
-  @Check.ip(version: 4)
+  @Validate.ip(version: 4)
   final String clientIp;
 
-  @Check.ipv4()
+  @Validate.ipv4()
   final String v4;
 
-  @Check.ipv6()
+  @Validate.ipv6()
   final String v6;
 
-  @Check.notEmpty()
-  @Check.matches(r'^[A-Z]+\$')
+  @Validate.notEmpty()
+  @Validate.matches(r'^[A-Z]+\$')
   final String code;
 
-  @Check.min(0)
-  @Check.max(100)
-  @Check.multipleOf(5)
-  @Check.positive()
+  @Validate.min(0)
+  @Validate.max(100)
+  @Validate.multipleOf(5)
+  @Validate.positive()
   final int score;
 
-  @Check.negative()
+  @Validate.negative()
   final double debt;
 
-  @Check.minItems(1)
-  @Check.maxItems(5)
-  @Check.uniqueItems()
+  @Validate.minItems(1)
+  @Validate.maxItems(5)
+  @Validate.uniqueItems()
   final List<String> tags;
 
   final String handle;
@@ -1148,7 +1148,7 @@ final class UserPatch with _$UserPatchAck {
   final JsonMaybe<String> nickname;
 
   @NotNull()
-  @Check.notEmpty()
+  @Validate.notEmpty()
   final JsonMaybe<String> title;
 
   final JsonMaybe<List<String>> tags;

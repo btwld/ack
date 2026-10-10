@@ -50,5 +50,5 @@ export 'src/validation/schema_error.dart';
 export 'src/validation/schema_result.dart';
 // Model annotations. Legacy top-level constraint annotations live in annotations.dart.
 export 'src/annotations/ack_field.dart';
-export 'src/annotations/constraints.dart' show Check;
+export 'src/annotations/constraints.dart' show Validate;
 export 'src/annotations/schemable.dart';

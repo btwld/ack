@@ -42,10 +42,10 @@ final settingsSchema = Ack.object({
 final class Product {
   const Product({required this.displayName, required this.priceCents});
 
-  @Check.notEmpty()
+  @Validate.notEmpty()
   final String displayName;
 
-  @Check.min(0)
+  @Validate.min(0)
   final int priceCents;
 }
 

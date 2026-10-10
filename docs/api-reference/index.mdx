@@ -314,7 +314,7 @@ either direction with one annotation, `@Schemable()`: on a top-level schema it
 generates a model, on a class it generates a schema, and on a `library;`
 directive it registers shared custom schemas via `@Schemable(schemas: [...])`.
 `package:ack/ack.dart` exports `@Schemable`, the model annotations (`@AckField`,
-`@Optional`, `@Required`, `@NotNull`), and the `@Check.*` constraint namespace.
+`@Optional`, `@Required`, `@NotNull`), and the `@Validate.*` constraint namespace.
 `AckSchema` is the runtime schema type; there is no `@AckSchema()` annotation.
 After adding a `part '<file>.g.dart';` directive, run:
 
@@ -380,31 +380,32 @@ constructors remain responsible for defensively copying direct inputs.
 **Target**: Public, constructable classes
 
 **Generates**: A public `<ClassName>Schema` facade backed by a private raw
-`wireSchema` and typed codec, plus the `_$ClassAck` mixin for `toJson`,
-`safeToJson`, `copyWith`, and deep collection-aware `==` / `hashCode` /
-`toString`
+`wireSchema` and typed codec (`_<className>Schema`), plus the `_$ClassAck` mixin
+for `toJson`, `safeToJson`, `copyWith`, and deep collection-aware `==` /
+`hashCode` / `toString`
 
-Ack infers schema fields from constructor-backed fields. Required parameters,
-nullable types, optional parameters, `JsonMaybe<T>`, and constructor defaults
-determine field presence. Use `caseStyle` for model-wide JSON naming and
-`@AckField(name: ...)` on the field for a wire-name override. Instantiable
-models and implicit union branches must apply the generated mixin. In
-`copyWith`, omission keeps the current value and explicit `null` clears a
-nullable field. `copyWith` returns a typed interface, so a wrongly typed
-argument is a compile-time error.
+Ack infers schema fields from constructor-backed fields (including Dart 3.12+
+primary constructors). Required parameters, nullable types, optional parameters,
+`JsonMaybe<T>`, and constructor defaults determine field presence. Use
+`caseStyle` for model-wide JSON naming and `@AckField(name: ...)` on the field
+or primary constructor parameter for a wire-name override. Instantiable models
+and implicit union branches must apply the generated mixin. In `copyWith`,
+omission keeps the current value and explicit `null` clears a nullable field.
+`copyWith` returns a typed interface, so a wrongly typed argument is a
+compile-time error.
 
 **Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, `JsonMaybe<T>`, nested lists, sets, and string-keyed maps
 
-**Constraint annotations (`@Check.*` from `package:ack/ack.dart`):**
+**Constraint annotations (`@Validate.*` from `package:ack/ack.dart`):**
 
-- numeric: `@Check.min`, `@Check.max`, `@Check.multipleOf`, `@Check.positive`, `@Check.negative`
-- strings: `@Check.minLength`, `@Check.maxLength`, `@Check.matches`, `@Check.email`, `@Check.notEmpty`
-- string formats: `@Check.url`, `@Check.uri`, `@Check.uuid`, `@Check.date`, `@Check.dateTime` (`@Check.datetime`), `@Check.ip`, `@Check.ipv4`, `@Check.ipv6`
-- collections: `@Check.minItems`, `@Check.maxItems`, `@Check.uniqueItems` (`@Check.unique`)
+- numeric: `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`
+- strings: `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.email`, `@Validate.notEmpty`
+- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime` (`@Validate.datetime`), `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`
+- collections: `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems` (`@Validate.unique`)
 
 **Custom schemas:** a field of custom type `T` resolves through:
-1. `@AckField(schema: ...)` on the field;
+1. `@AckField(schema: ...)` on the field or constructor parameter;
 2. `@Schemable(schemas: [...])` on the class, union base, `library;` directive, or an imported `library;` directive;
 3. a static `T.schema` / `T.schema<A>(...)` on the type;
 4. a unique top-level `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the current library.
@@ -426,29 +427,32 @@ part 'account.g.dart';
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
-  @Check.minLength(2)
+  @Validate.minLength(2)
   final String displayName;
   final String role;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 
-final account = AccountSchema.parse({'display_name': 'Ada'});
+final account = Account.schema.parse({'display_name': 'Ada'})!;
 print(account.toJson());
-print(AccountSchema.toJsonSchema());
+print(Account.schema.toJsonSchema());
 ```
 
 The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`, `fromJson`,
 `encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`. The backing
-`_accountSchema` is library-private and no public lower-camel alias is
+`_accountSchema` is library-private (`static final schema = _accountSchema;`
+attaches it directly to `Account.schema`) and no public lower-camel alias is
 generated. Set `schemaName: 'WireAccountSchema'` to choose the exact facade
 class name.
 
-Nested class-first fields compose through `AddressSchema.schema`. Imports with
-combinators must expose both names (`show Address, AddressSchema`). A
-schema-first `@Schemable()` declaration may also compose the facade explicitly,
-and class-first models can use schema-first generated model types on a clean
-build.
+Nested class-first fields compose through `AddressSchema.schema` (or
+`Address.schema` when declared on `Address`). Imports with combinators can
+expose just `show Address` when `Address.schema` is declared, or
+`show Address, AddressSchema` otherwise. A schema-first `@Schemable()`
+declaration may also compose the facade explicitly, and class-first models can
+use schema-first generated model types on a clean build.
 
 A class-first `@Schemable()` cannot share a class with `@JsonSerializable()`,
 and `name` is rejected on a class. Class-first value roots, automatic recursive

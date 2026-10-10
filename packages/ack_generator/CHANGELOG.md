@@ -14,8 +14,9 @@
 
 ### Added
 
-* Support `@Check.*` constraint annotations from `package:ack/ack.dart` across
-  field declarations and primary/ generative constructor parameters (`#191`).
+* Support `@Validate.*` constraint annotations from `package:ack/ack.dart`
+  across field declarations and primary/generative constructor parameters, as
+  well as `static final schema = _<name>Schema;` on class-first models (`#191`).
 * Support `JsonMaybe<T>` fields in `@Schemable()` class-first models for PATCH
   tri-state presence (`#148`).
 * Support `@AckField(name: '...')` directly without `package:json_annotation`

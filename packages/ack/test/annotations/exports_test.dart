@@ -16,25 +16,25 @@ final class Contact {
 final class SingleImportContact {
   const SingleImportContact(this.email, this.id);
 
-  @Check.email()
+  @Validate.email()
   final Email email;
 
-  @Check.uuid()
+  @Validate.uuid()
   final Uuid id;
 }
 
 void main() {
-  test('package:ack/ack.dart exports the model and Check annotations', () {
+  test('package:ack/ack.dart exports the model and Validate annotations', () {
     const values = <Object>[
       Schemable(caseStyle: AckCaseStyle.snake),
       AckField(description: 'id'),
       Required(),
       Optional(),
       NotNull(),
-      Check.email(),
-      Check.minLength(2),
-      Check.matches(r'^\d+$'),
-      ack.Check.uuid(),
+      Validate.email(),
+      Validate.minLength(2),
+      Validate.matches(r'^\d+$'),
+      ack.Validate.uuid(),
     ];
 
     expect(values, hasLength(9));

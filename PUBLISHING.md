@@ -14,15 +14,15 @@ accepted exception to this major-version policy.
 
 The next candidate is **2.0.0-beta.1**. It introduces single-pass `.g.dart`
 code generation without a runtime `json_serializable` delegation step, the
-unified `@Check.*` constraint annotation namespace, custom schema resolution via
-`@Schemable(schemas: [...])` and automatic same-library detection, `JsonMaybe<T>`
-PATCH presence semantics, two-way `StringSchema` normalizers (`.trim()`,
-`.toLowerCase()`, `.toUpperCase()`), sealed `SchemaError` and `AckSchema`
-hierarchies, full JSON Schema Draft 2020-12 runtime validation and `.schema.json`
-model generation with default Draft 2020-12 preservation on `toJsonSchema()`,
-and removal of deprecated 1.x compatibility shims (`StandardSchemaV1`,
-`@AckType`, `@AckInfer`, `@AckModel`, and `.ack.dart` / `.ack.g.dart` dual-part
-generation).
+unified `@Validate.*` constraint annotation namespace, custom schema resolution
+via `@Schemable(schemas: [...])` and automatic same-library detection,
+`JsonMaybe<T>` PATCH presence semantics, two-way `StringSchema` normalizers
+(`.trim()`, `.toLowerCase()`, `.toUpperCase()`), sealed `SchemaError` and
+`AckSchema` hierarchies, full JSON Schema Draft 2020-12 runtime validation and
+`.schema.json` model generation with default Draft 2020-12 preservation on
+`toJsonSchema()`, and removal of deprecated 1.x compatibility shims
+(`StandardSchemaV1`, `@AckType`, `@AckInfer`, `@AckModel`, and `.ack.dart` /
+`.ack.g.dart` dual-part generation).
 
 The shared API baseline for this release is 1.6.2. Confirm that all five
 packages have published 1.6.2 versions before preparing the release.
