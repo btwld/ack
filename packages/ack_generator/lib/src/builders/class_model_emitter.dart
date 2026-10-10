@@ -319,6 +319,35 @@ ${node.className} $function(Map<String, Object?> value) {
     AckConstructorParameter parameter,
     AckFieldNode field,
   ) {
+    if (parameter.typeRef case AckJsonMaybeTypeRef(:final valueType)) {
+      final keyLiteral = dartStringLiteral(field.jsonKey);
+      final raw = 'value[$keyLiteral]';
+      final innerType = _type(valueType);
+      final baseValueType = _nonNullable(valueType);
+      final absentExpr =
+          parameter.defaultExpression != null &&
+              parameter.defaultExpression != 'null'
+          ? parameter.defaultExpression!
+          : 'const ${_ack('JsonMaybe')}<$innerType>.absent()';
+      final String presentExpr;
+      if (baseValueType is AckScalarTypeRef ||
+          baseValueType is AckExternalTypeRef) {
+        final cast =
+            baseValueType is AckScalarTypeRef &&
+                baseValueType.dartType == 'Object'
+            ? raw
+            : '$raw as ${_type(baseValueType)}?';
+        presentExpr = '${_ack('JsonMaybe')}<$innerType>.value($cast)';
+      } else {
+        presentExpr =
+            'switch ($raw) {'
+            ' null => const ${_ack('JsonMaybe')}<$innerType>.value(null),'
+            ' final fieldValue => ${_ack('JsonMaybe')}<$innerType>.value('
+            '${_fromRuntime(baseValueType, 'fieldValue')}),'
+            ' }';
+      }
+      return '!value.containsKey($keyLiteral) ? $absentExpr : $presentExpr';
+    }
     final raw = 'value[${dartStringLiteral(field.jsonKey)}]';
     final defaultExpr =
         parameter.defaultExpression != null &&
@@ -352,8 +381,7 @@ ${node.className} $function(Map<String, Object?> value) {
     final fieldEntries = <String>[
       for (final field in node.fields)
         if (discriminatorValue == null || field.jsonKey != discriminatorKey)
-          '${dartStringLiteral(field.jsonKey)}: '
-              '${_omitIfNull(field) ? '?' : ''}${_encodeField(field)}',
+          _fieldRuntimeMapEntry(field),
       if (discriminatorKey != null && discriminatorValue != null)
         '${dartStringLiteral(discriminatorKey)}: '
             '${dartStringLiteral(discriminatorValue)}',
@@ -375,6 +403,21 @@ Map<String, Object?> $function(${node.className} model) {
     ${entries.join(',\n    ')},
   };
 }''';
+  }
+
+  String _fieldRuntimeMapEntry(AckFieldNode field) {
+    if (field.runtimeRef case AckJsonMaybeTypeRef(:final valueType)) {
+      final baseValueType = _nonNullable(valueType);
+      final encodedValue =
+          baseValueType is AckScalarTypeRef ||
+              baseValueType is AckExternalTypeRef
+          ? 'value'
+          : _toRuntime(AckNullableTypeRef(baseValueType), 'value');
+      return 'if (model.${field.dartName} case ${_ack('JsonValue')}(:final value)) '
+          '${dartStringLiteral(field.jsonKey)}: $encodedValue';
+    }
+    return '${dartStringLiteral(field.jsonKey)}: '
+        '${_omitIfNull(field) ? '?' : ''}${_encodeField(field)}';
   }
 
   bool _omitIfNull(AckFieldNode field) =>
@@ -469,6 +512,8 @@ Map<String, Object?> $function(${node.className} model) {
     AckListTypeRef(:final elementType) => 'List<${_type(elementType)}>',
     AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
     AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
+    AckJsonMaybeTypeRef(:final valueType) =>
+      '${_ack('JsonMaybe')}<${_type(valueType)}>',
   };
 
   Set<String> _declaredKeys(AckObjectModelNode node) => {

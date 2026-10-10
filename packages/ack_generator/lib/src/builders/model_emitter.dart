@@ -968,6 +968,8 @@ return $_runtimeMapLiteral{
       AckListTypeRef(:final elementType) => 'List<${_type(elementType)}>',
       AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
       AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
+      AckJsonMaybeTypeRef(:final valueType) =>
+        '${_ack('JsonMaybe')}<${_type(valueType)}>',
     };
   }
 

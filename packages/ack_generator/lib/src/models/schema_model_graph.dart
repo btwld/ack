@@ -130,6 +130,12 @@ final class AckMapTypeRef extends AckInferRef {
   final AckInferRef valueType;
 }
 
+final class AckJsonMaybeTypeRef extends AckInferRef {
+  const AckJsonMaybeTypeRef(this.valueType);
+
+  final AckInferRef valueType;
+}
+
 /// A field in a normalized object model.
 final class AckFieldNode {
   const AckFieldNode({

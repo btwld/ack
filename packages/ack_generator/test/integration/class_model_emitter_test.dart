@@ -1126,4 +1126,62 @@ final class CheckedRecord with _\$CheckedRecordAck {
       );
     },
   );
+
+  test(
+    'emits JsonMaybe<T> decode and encode presence checks for PATCH models',
+    () async {
+      await _build(
+        {
+          'patch_models.dart': r'''
+import 'package:ack/ack.dart';
+
+part 'patch_models.g.dart';
+
+@Schemable()
+final class UserPatch with _$UserPatchAck {
+  const UserPatch({
+    required this.nickname,
+    this.title = const JsonMaybe.absent(),
+    this.tags = const JsonMaybe.absent(),
+  });
+
+  final JsonMaybe<String> nickname;
+
+  @NotNull()
+  @Check.notEmpty()
+  final JsonMaybe<String> title;
+
+  final JsonMaybe<List<String>> tags;
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/patch_models.g.dart': decodedMatches(
+            allOf([
+              _containsCode("'nickname': Ack.string().optional().nullable()"),
+              _containsCode(
+                "'title': Ack.string().notEmpty().optional().nullable(value: false)",
+              ),
+              _containsCode(
+                "'tags': Ack.list(Ack.string()).optional().nullable()",
+              ),
+              _containsCode("value.containsKey('nickname')"),
+              _containsCode(
+                "JsonMaybe<String>.value(value['nickname'] as String?)",
+              ),
+              _containsCode('const JsonMaybe<String>.absent()'),
+              _containsCode('const JsonMaybe.absent()'),
+              _containsCode(
+                "if (model.nickname case JsonValue(:final value)) 'nickname': value",
+              ),
+              _containsCode(
+                "if (model.title case JsonValue(:final value)) 'title': value",
+              ),
+              contains('JsonMaybe<String>? nickname'),
+            ]),
+          ),
+        },
+      );
+    },
+  );
 }
