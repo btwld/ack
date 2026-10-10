@@ -147,6 +147,7 @@ final class Handwritten with _$HandwrittenAck {
         );
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
+// ignore_for_file: deprecated_member_use
 import 'package:ack/ack.dart';
 import 'package:json_annotation/json_annotation.dart'
     show JsonKey, JsonSerializable;
@@ -549,6 +550,23 @@ final class Square extends Shape with _$SquareAck {
 
 @Schemable()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
+
+@Schemable()
+final class UserPatch with _$UserPatchAck {
+  const UserPatch({
+    this.nickname = const JsonMaybe.absent(),
+    this.title = const JsonMaybe.absent(),
+    this.tags = const JsonMaybe.absent(),
+  });
+
+  final JsonMaybe<String> nickname;
+
+  @NotNull()
+  @Check.notEmpty()
+  final JsonMaybe<String> title;
+
+  final JsonMaybe<List<String>> tags;
+}
 
 @JsonSerializable()
 final class PlainJson {
@@ -1136,10 +1154,59 @@ void main() {
     expect(Modern.parse({'name': 'modern'}).name, 'modern');
     expect(HandwrittenSchema.parse({'enabled': true}).enabled, isTrue);
   });
+
+  test('JsonMaybe<T> fields distinguish omitted vs explicit null on decode and encode', () {
+    final empty = UserPatchSchema.parse({});
+    expect(empty.nickname, const JsonMaybe<String>.absent());
+    expect(empty.title, const JsonMaybe<String>.absent());
+    expect(empty.tags, const JsonMaybe<List<String>>.absent());
+    expect(empty.toJson(), <String, Object?>{});
+
+    final cleared = UserPatchSchema.parse({'nickname': null, 'tags': null});
+    expect(cleared.nickname, const JsonMaybe<String>.nullValue());
+    expect(cleared.nickname.isNull, isTrue);
+    expect(cleared.tags, const JsonMaybe<List<String>>.nullValue());
+    expect(cleared.toJson(), <String, Object?>{'nickname': null, 'tags': null});
+
+    final populated = UserPatchSchema.parse({
+      'nickname': 'Ada',
+      'title': 'Countess',
+      'tags': ['math', 'code'],
+    });
+    expect(populated.nickname, const JsonMaybe.value('Ada'));
+    expect(populated.title, const JsonMaybe.value('Countess'));
+    expect(populated.tags, const JsonMaybe.value(['math', 'code']));
+    expect(populated.toJson(), {
+      'nickname': 'Ada',
+      'title': 'Countess',
+      'tags': ['math', 'code'],
+    });
+
+    expect(
+      UserPatchSchema.safeParse({'title': null}).isFail,
+      isTrue,
+    );
+    expect(
+      UserPatchSchema.safeParse({'title': ''}).isFail,
+      isTrue,
+    );
+
+    final copied = populated.copyWith(
+      nickname: const JsonMaybe.absent(),
+      tags: const JsonMaybe.nullValue(),
+    );
+    expect(copied.toJson(), {
+      'title': 'Countess',
+      'tags': null,
+    });
+  });
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',

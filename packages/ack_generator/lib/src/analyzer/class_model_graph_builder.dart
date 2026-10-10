@@ -1,4 +1,4 @@
-import 'package:ack/ack.dart' show AckModelAdapter, AckSchema;
+import 'package:ack/ack.dart' show AckModelAdapter, AckSchema, JsonMaybe;
 import 'package:ack/annotations.dart' as annotations;
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -148,6 +148,10 @@ final class ClassModelGraphBuilder {
   );
   static const _ackModelAdapterChecker = TypeChecker.typeNamed(
     AckModelAdapter,
+    inPackage: 'ack',
+  );
+  static const _jsonMaybeChecker = TypeChecker.typeNamed(
+    JsonMaybe,
     inPackage: 'ack',
   );
   static const _jsonSerializableChecker = TypeChecker.typeNamedLiterally(
@@ -646,9 +650,28 @@ final class ClassModelGraphBuilder {
         );
       }
 
-      _rejectUnsupportedStaticType(field, field.type);
-      _validateMapKey(field, field.type);
+      if (_isJsonMaybe(field.type) && _isNullable(field.type)) {
+        throw InvalidGenerationSource(
+          '${element.name}.$name uses nullable '
+          '${field.type.getDisplayString()}; use non-nullable JsonMaybe<...> '
+          'instead, which already models both absent and null values.',
+          element: field,
+        );
+      }
+      final unwrappedFieldType = _unwrapJsonMaybeType(field.type);
+      _rejectUnsupportedStaticType(field, unwrappedFieldType);
+      _validateMapKey(field, unwrappedFieldType);
       final futureType = futureTypes[name];
+      if (futureType?.runtimeRef case AckNullableTypeRef(
+        inner: AckJsonMaybeTypeRef(),
+      )) {
+        throw InvalidGenerationSource(
+          '${element.name}.$name uses nullable JsonMaybe; use non-nullable '
+          'JsonMaybe<...> instead, which already models both absent and null '
+          'values.',
+          element: field,
+        );
+      }
       _recordClassFirstDependencies(element, field.type, field);
       final jsonKey =
           _jsonKey(field, parameter) ?? _rename(name, options.caseStyle);
@@ -669,15 +692,19 @@ final class ClassModelGraphBuilder {
       }
       ownerByJsonKey[jsonKey] = field;
 
+      final isJsonMaybe =
+          futureType?.runtimeRef is AckJsonMaybeTypeRef ||
+          _isJsonMaybe(field.type);
       final dartNullable =
           futureType?.runtimeRef is AckNullableTypeRef ||
           _isNullable(field.type);
       final rejectNull = _hasAnnotation(_notNullChecker, field, parameter);
-      final acceptsNull = dartNullable && !rejectNull;
+      final acceptsNull = (dartNullable || isJsonMaybe) && !rejectNull;
       final presence = _effectivePresence(
         field,
         parameter: parameter,
         isDiscriminator: isDiscriminator,
+        isJsonMaybe: isJsonMaybe,
       );
       var schema = isDiscriminator && discriminatorValue != null
           ? '${_ack('Ack')}.literal(${dartStringLiteral(discriminatorValue)})'
@@ -812,14 +839,18 @@ final class ClassModelGraphBuilder {
       _rejectNullableFutureCollectionElement(field, futureType.runtimeRef);
       final setListSchema = futureType.setListSchema;
       if (setListSchema != null) {
+        final effectiveRef = switch (futureType.runtimeRef) {
+          AckJsonMaybeTypeRef(:final valueType) => valueType,
+          final other => other,
+        };
         return _setCodec(
           _applySugar(setListSchema, field, parameter),
-          futureType.runtimeRef,
+          effectiveRef,
         );
       }
       return _applySugar(futureType.schemaExpression, field, parameter);
     }
-    final type = field.type;
+    final type = _unwrapJsonMaybeType(field.type);
     if (type is InterfaceType &&
         type.isDartCoreSet &&
         type.typeArguments.length == 1) {
@@ -827,7 +858,7 @@ final class ClassModelGraphBuilder {
       _rejectNullableCollectionElement(field, itemType);
       final item = await _schemaForType(itemType, field);
       final list = _applySugar('${_ack('Ack')}.list($item)', field, parameter);
-      return _setCodec(list, _typeRef(type, field));
+      return _setCodec(list, _typeRef(type, field, allowJsonMaybe: false));
     }
     return _applySugar(await _schemaForType(type, field), field, parameter);
   }
@@ -859,6 +890,7 @@ final class ClassModelGraphBuilder {
     AckMapTypeRef(:final valueType) => AckMapTypeRef(
       _schemaRuntimeRef(valueType),
     ),
+    AckJsonMaybeTypeRef(:final valueType) => _schemaRuntimeRef(valueType),
     _ => type,
   };
 
@@ -902,15 +934,35 @@ final class ClassModelGraphBuilder {
 
   _FutureGeneratedType? _futureGeneratedTypeForAnnotation(
     TypeAnnotation annotation,
-    FieldElement field,
-  ) {
+    FieldElement field, {
+    bool allowJsonMaybe = true,
+  }) {
     if (annotation is! NamedType) return null;
     final name = annotation.name.lexeme;
     final prefix = annotation.importPrefix?.name.lexeme;
     final arguments = annotation.typeArguments?.arguments ?? const [];
     _FutureGeneratedType? result;
-    if (prefix == null && name == 'List' && arguments.length == 1) {
-      final item = _futureGeneratedTypeForAnnotation(arguments.single, field);
+    if (allowJsonMaybe &&
+        name == 'JsonMaybe' &&
+        (prefix == null || prefix == ackPrefix) &&
+        arguments.length == 1) {
+      final item = _futureGeneratedTypeForAnnotation(
+        arguments.single,
+        field,
+        allowJsonMaybe: false,
+      );
+      if (item == null) return null;
+      result = (
+        schemaExpression: item.schemaExpression,
+        runtimeRef: AckJsonMaybeTypeRef(item.runtimeRef),
+        setListSchema: item.setListSchema,
+      );
+    } else if (prefix == null && name == 'List' && arguments.length == 1) {
+      final item = _futureGeneratedTypeForAnnotation(
+        arguments.single,
+        field,
+        allowJsonMaybe: false,
+      );
       if (item == null) return null;
       result = (
         schemaExpression: '${_ack('Ack')}.list(${item.schemaExpression})',
@@ -918,7 +970,11 @@ final class ClassModelGraphBuilder {
         setListSchema: null,
       );
     } else if (prefix == null && name == 'Set' && arguments.length == 1) {
-      final item = _futureGeneratedTypeForAnnotation(arguments.single, field);
+      final item = _futureGeneratedTypeForAnnotation(
+        arguments.single,
+        field,
+        allowJsonMaybe: false,
+      );
       if (item == null) return null;
       final runtimeRef = AckSetTypeRef(item.runtimeRef);
       final listSchema = '${_ack('Ack')}.list(${item.schemaExpression})';
@@ -1088,13 +1144,15 @@ final class ClassModelGraphBuilder {
       );
     }
     final runtime = _ackSchemaRuntimeType(function.returnType);
-    if (runtime == null || !_sameTypeIgnoringNullability(runtime, field.type)) {
+    final expectedFieldType = _unwrapJsonMaybeType(field.type);
+    if (runtime == null ||
+        !_sameTypeIgnoringNullability(runtime, expectedFieldType)) {
       throw InvalidGenerationSource(
         '$path @AckField schema function ${function.name} produces '
         '${runtime?.getDisplayString() ?? 'an untyped value'}, but the field '
-        'type is ${field.type.getDisplayString()}.',
+        'type is ${expectedFieldType.getDisplayString()}.',
         element: field,
-        todo: 'Return AckSchema<..., ${field.type.getDisplayString()}>.',
+        todo: 'Return AckSchema<..., ${expectedFieldType.getDisplayString()}>.',
       );
     }
     final resolved = await _resolvedLibraryFor(function.library);
@@ -1124,6 +1182,18 @@ final class ClassModelGraphBuilder {
     return '${prefix == null ? '' : '$prefix.'}${function.name}()';
   }
 
+  /// The boundary type argument of [type] as an `AckSchema<Boundary, Runtime>`.
+  DartType? _ackSchemaBoundaryType(DartType type) {
+    if (type is! InterfaceType) return null;
+    for (final candidate in [type, ...type.allSupertypes]) {
+      if (_ackSchemaChecker.isExactlyType(candidate) &&
+          candidate.typeArguments.length == 2) {
+        return candidate.typeArguments[0];
+      }
+    }
+    return null;
+  }
+
   /// The runtime type argument of [type] as an `AckSchema<Boundary, Runtime>`.
   DartType? _ackSchemaRuntimeType(DartType type) {
     if (type is! InterfaceType) return null;
@@ -1133,6 +1203,57 @@ final class ClassModelGraphBuilder {
         return candidate.typeArguments[1];
       }
     }
+    return null;
+  }
+
+  DartType? _inferredBoundaryType(DartType type) {
+    if (type is! InterfaceType) return null;
+    final provider = library.element.typeProvider;
+    if (_isCore(type, 'int') ||
+        _isCore(type, 'double') ||
+        _isCore(type, 'num')) {
+      return provider.numType;
+    }
+    if (_isCore(type, 'String') ||
+        _isCore(type, 'DateTime') ||
+        _isCore(type, 'Uri')) {
+      return provider.stringType;
+    }
+    if (_isCore(type, 'bool')) return provider.boolType;
+    if (_isCore(type, 'Duration')) return provider.intType;
+    if (_isCore(type, 'Object')) return provider.objectType;
+    if (type.isDartCoreList || type.isDartCoreSet) {
+      return provider.listType(provider.objectQuestionType);
+    }
+    if (type.isDartCoreMap) {
+      return provider.mapType(provider.stringType, provider.objectQuestionType);
+    }
+    final target = type.element;
+    if (target is ClassElement && _classFirstFacadeName(target) != null) {
+      return provider.mapType(provider.stringType, provider.objectQuestionType);
+    }
+    final ackGetter = target.getGetter(r'$ack');
+    final ackReturnType = ackGetter?.returnType;
+    if (ackGetter != null &&
+        ackGetter.isStatic &&
+        ackReturnType is InterfaceType &&
+        _ackModelAdapterChecker.isExactlyType(ackReturnType) &&
+        ackReturnType.typeArguments.length == 3) {
+      return ackReturnType.typeArguments[0];
+    }
+    final schemaGetter = target.getGetter('schema');
+    if (schemaGetter != null && schemaGetter.isStatic) {
+      return _ackSchemaBoundaryType(schemaGetter.returnType);
+    }
+    final schemaMethod = target.getMethod('schema');
+    if (schemaMethod != null &&
+        schemaMethod.isStatic &&
+        schemaMethod.typeParameters.length == type.typeArguments.length) {
+      return _ackSchemaBoundaryType(
+        schemaMethod.type.instantiate(type.typeArguments).returnType,
+      );
+    }
+    if (target is EnumElement) return provider.stringType;
     return null;
   }
 
@@ -1166,7 +1287,8 @@ final class ClassModelGraphBuilder {
       _inference.inferType(
         type,
         visibleTypeName: (type) => _visibleTypeName(type, field),
-        renderType: (type) => _renderType(_typeRef(type, field)),
+        renderType: (type) =>
+            _renderType(_typeRef(type, field, allowJsonMaybe: false)),
         resolveNamed: (type) => _namedSchemaForType(type, field),
         unsupported: (type) => _unsupportedFieldType(field, type),
         rejectNullableCollectionElement: (type) =>
@@ -1215,7 +1337,7 @@ final class ClassModelGraphBuilder {
         : null;
     return runtimeType == null || _containsInvalidType(runtimeType)
         ? _jsonMapRef
-        : _typeRef(runtimeType, field);
+        : _typeRef(runtimeType, field, allowJsonMaybe: false);
   }
 
   /// Resolves [type] through a static `schema` that the type declares.
@@ -1248,6 +1370,28 @@ final class ClassModelGraphBuilder {
           element: field,
         );
       }
+      for (var i = 0; i < method.typeParameters.length; i++) {
+        final typeParam = method.typeParameters[i];
+        final rawBound = typeParam.bound;
+        if (rawBound == null) continue;
+        final bound =
+            rawBound is TypeParameterType &&
+                method.typeParameters.contains(rawBound.element)
+            ? type.typeArguments[method.typeParameters.indexOf(
+                rawBound.element,
+              )]
+            : rawBound;
+        final argument = type.typeArguments[i];
+        if (!library.element.typeSystem.isSubtypeOf(argument, bound)) {
+          throw InvalidGenerationSource(
+            '$path resolves to ${target.name}.schema, whose type parameter '
+            '${typeParam.name} requires a subtype of '
+            '${bound.getDisplayString()}; received '
+            '${argument.getDisplayString()}.',
+            element: field,
+          );
+        }
+      }
       final parameters = method.formalParameters;
       if (parameters.isNotEmpty &&
           (parameters.length != type.typeArguments.length ||
@@ -1273,6 +1417,23 @@ final class ClassModelGraphBuilder {
             '${parameters[i].name} must be an AckSchema of '
             '${argument.getDisplayString()}; it is '
             '${parameterType.getDisplayString()}.',
+            element: field,
+          );
+        }
+        final expectedBoundary = _ackSchemaBoundaryType(parameterType);
+        final inferredBoundary = _inferredBoundaryType(argument);
+        if (expectedBoundary != null &&
+            inferredBoundary != null &&
+            !library.element.typeSystem.isSubtypeOf(
+              inferredBoundary,
+              expectedBoundary,
+            )) {
+          throw InvalidGenerationSource(
+            '$path resolves to ${target.name}.schema, whose parameter '
+            '${parameters[i].name} expects boundary type '
+            '${expectedBoundary.getDisplayString()}, but the schema inferred '
+            'for ${argument.getDisplayString()} has boundary type '
+            '${inferredBoundary.getDisplayString()}.',
             element: field,
           );
         }
@@ -1327,6 +1488,8 @@ final class ClassModelGraphBuilder {
     switch (type) {
       case AckNullableTypeRef(:final inner):
         _rejectNullableFutureCollectionElement(field, inner);
+      case AckJsonMaybeTypeRef(:final valueType):
+        _rejectNullableFutureCollectionElement(field, valueType);
       case AckListTypeRef(:final elementType) ||
           AckSetTypeRef(:final elementType):
         if (elementType is AckNullableTypeRef) {
@@ -1395,15 +1558,16 @@ final class ClassModelGraphBuilder {
     FieldElement field,
     FormalParameterElement? parameter,
   ) {
+    final effectiveType = _unwrapJsonMaybeType(field.type);
     if (field.isOriginDeclaringFormalParameter) {
       final target = field.metadata.annotations.isNotEmpty
           ? field
           : (parameter ?? field);
-      return _inference.applyConstraints(schema, target, field.type);
+      return _inference.applyConstraints(schema, target, effectiveType);
     }
-    var output = _inference.applyConstraints(schema, field, field.type);
+    var output = _inference.applyConstraints(schema, field, effectiveType);
     if (parameter != null && !identical(parameter, field)) {
-      output = _inference.applyConstraints(output, parameter, field.type);
+      output = _inference.applyConstraints(output, parameter, effectiveType);
     }
     return output;
   }
@@ -1481,35 +1645,77 @@ final class ClassModelGraphBuilder {
     );
   }
 
+  bool _isJsonMaybe(DartType type) =>
+      type is InterfaceType &&
+      type.typeArguments.length == 1 &&
+      _jsonMaybeChecker.isExactlyType(type);
+
+  DartType _unwrapJsonMaybeType(DartType type) =>
+      _isJsonMaybe(type) ? (type as InterfaceType).typeArguments.single : type;
+
   /// A type argument of an application type, where `void` is also valid,
   /// as in `Trigger<void>`. It is never a field or collection item type.
   AckInferRef _typeArgumentRef(DartType type, FieldElement field) =>
       type is VoidType
       ? const AckExternalTypeRef(name: 'void')
-      : _typeRef(type, field);
+      : _typeRef(type, field, allowJsonMaybe: false);
 
-  AckInferRef _typeRef(DartType type, FieldElement field) {
+  AckInferRef _typeRef(
+    DartType type,
+    FieldElement field, {
+    bool allowJsonMaybe = true,
+  }) {
     if (type is DynamicType || type is TypeParameterType) {
       _unsupportedFieldType(field, type);
     }
     if (type is! InterfaceType) _unsupportedFieldType(field, type);
     final interfaceType = type;
     final nullable = _isNullable(interfaceType);
+    if (_isJsonMaybe(interfaceType)) {
+      if (!allowJsonMaybe) {
+        _unsupportedFieldType(field, type);
+      }
+      if (nullable) {
+        throw InvalidGenerationSource(
+          '${field.enclosingElement.name}.${field.name} uses nullable '
+          '${interfaceType.getDisplayString()}; use non-nullable JsonMaybe<...> '
+          'instead, which already models both absent and null values.',
+          element: field,
+        );
+      }
+      return AckJsonMaybeTypeRef(
+        _typeRef(
+          interfaceType.typeArguments.single,
+          field,
+          allowJsonMaybe: false,
+        ),
+      );
+    }
     late final AckInferRef result;
     if (interfaceType.isDartCoreList &&
         interfaceType.typeArguments.length == 1) {
       result = AckListTypeRef(
-        _typeRef(interfaceType.typeArguments.single, field),
+        _typeRef(
+          interfaceType.typeArguments.single,
+          field,
+          allowJsonMaybe: false,
+        ),
       );
     } else if (interfaceType.isDartCoreSet &&
         interfaceType.typeArguments.length == 1) {
       result = AckSetTypeRef(
-        _typeRef(interfaceType.typeArguments.single, field),
+        _typeRef(
+          interfaceType.typeArguments.single,
+          field,
+          allowJsonMaybe: false,
+        ),
       );
     } else if (interfaceType.isDartCoreMap &&
         interfaceType.typeArguments.length == 2) {
       _validateMapKey(field, interfaceType);
-      result = AckMapTypeRef(_typeRef(interfaceType.typeArguments[1], field));
+      result = AckMapTypeRef(
+        _typeRef(interfaceType.typeArguments[1], field, allowJsonMaybe: false),
+      );
     } else if (interfaceType.element.library.uri.toString() == 'dart:core' &&
         const {
           'String',
@@ -1599,6 +1805,7 @@ final class ClassModelGraphBuilder {
     FieldElement field, {
     required FormalParameterElement? parameter,
     required bool isDiscriminator,
+    bool isJsonMaybe = false,
   }) {
     final inferred = _fieldPresence(parameter);
     final hasOptional = _hasAnnotation(_optionalChecker, field, parameter);
@@ -1623,6 +1830,12 @@ final class ClassModelGraphBuilder {
           element: field,
         );
       }
+    }
+
+    if (isJsonMaybe) {
+      return hasRequired
+          ? AckSchemaFieldPresence.required
+          : AckSchemaFieldPresence.optional;
     }
 
     final AckSchemaFieldPresence? override;
@@ -2157,6 +2370,8 @@ final class ClassModelGraphBuilder {
     AckListTypeRef(:final elementType) => 'List<${_renderType(elementType)}>',
     AckSetTypeRef(:final elementType) => 'Set<${_renderType(elementType)}>',
     AckMapTypeRef(:final valueType) => 'Map<String, ${_renderType(valueType)}>',
+    AckJsonMaybeTypeRef(:final valueType) =>
+      '${_ack('JsonMaybe')}<${_renderType(valueType)}>',
   };
 
   String _ack(String symbol) {

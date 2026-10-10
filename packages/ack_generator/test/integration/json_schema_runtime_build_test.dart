@@ -175,7 +175,10 @@ void main() {
 }
 ''');
 
-        _succeeds(await _run(project, ['pub', 'get']), 'dart pub get');
+        _succeeds(
+          await _run(project, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _succeeds(
           await _run(project, ['run', 'build_runner', 'build']),
           'first build_runner build',

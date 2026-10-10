@@ -186,6 +186,7 @@ final class Shelf with _$ShelfAck {
 final panelSchema = Ack.object({
   'header': Slot.schema,
   'commands': Ack.list(Command.schema<CompletionAction>()),
+  'openAll': Trigger.schema<void>(),
   'habit': Habit.schema.optional(),
 });
 ''',
@@ -275,17 +276,22 @@ void main() {
     final panel = Panel.parse({
       'header': 'h',
       'commands': ['go'],
+      'openAll': 'open',
       'habit': {'name': 'run'},
     });
 
     expect(panel.header, const Slot('h'));
     expect(panel.commands.single, isA<Command<CompletionAction>>());
+    expect(panel.openAll, isA<Trigger<void>>());
     expect(panel.habit, const Habit(name: 'run'));
   });
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',

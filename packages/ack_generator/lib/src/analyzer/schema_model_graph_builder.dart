@@ -1127,6 +1127,11 @@ final class SchemaModelGraphBuilder {
     return _ackSchemaChecker.isExactlyType(type);
   }
 
+  AckInferRef _typeArgumentRef(DartType type, String path, Element context) =>
+      type is VoidType
+      ? const AckExternalTypeRef(name: 'void')
+      : _typeRef(type, path, context);
+
   AckInferRef _typeRef(DartType type, String path, Element context) {
     if (type is DynamicType) {
       return const AckNullableTypeRef(AckScalarTypeRef('Object'));
@@ -1180,7 +1185,7 @@ final class SchemaModelGraphBuilder {
         importPrefix: _visiblePrefix(type.element, path, context),
         typeArguments: [
           for (final argument in type.typeArguments)
-            _typeRef(argument, path, context),
+            _typeArgumentRef(argument, path, context),
         ],
       );
     }
