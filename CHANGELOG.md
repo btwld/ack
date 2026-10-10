@@ -3,6 +3,89 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2.0.0-beta.1
+
+### Breaking
+
+* **Single-pass `.g.dart` code generation (`#189`)**: `ack_generator` now emits
+  a single `<file>.g.dart` part via `SharedPartBuilder` (`ack_generator:ack`)
+  with direct JSON serialization (`toJson` / `fromJson`). Consumer packages no
+  longer need `json_serializable` or `json_annotation` dependencies, nor a
+  separate `.ack.dart` / `.ack.g.dart` two-part setup. Replace
+  `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single
+  `part '<file>.g.dart';`.
+* **Removed legacy 1.x generator annotations and shims (`#188`)**: Removed
+  `@AckType`, `@AckInfer`, `@AckModel`, `JsonKeyCaseStyle`, `AckTypeDef`, and
+  generated `*Type` extension-type model generation. Use `@Schemable()` on both
+  top-level schemas and hand-written classes/unions.
+* **Removed `StandardSchemaV1` (`#129`)**: Removed the unused TypeScript-origin
+  `StandardSchemaV1` interface and extensions (`standard_schema.dart`).
+  `AckSchema<Boundary, Runtime>` with `SchemaResult<T>` and `AckSchemaModel` is
+  the single canonical schema and shape contract across Ack and all adapters.
+* **Unified `@Check.*` constraint annotation namespace (`#191`)**: Added
+  `final class Check` (exported from both `package:ack/ack.dart` and
+  `package:ack/annotations.dart`) with `const Check.min(...)`, `Check.max(...)`,
+  `Check.multipleOf(...)`, `Check.positive()`, `Check.negative()`,
+  `Check.minLength(...)`, `Check.maxLength(...)`, `Check.matches(...)`,
+  `Check.notEmpty()`, `Check.email()`, `Check.url()`, `Check.uuid()`,
+  `Check.date()`, `Check.dateTime()`, `Check.uri()`, `Check.ip()`,
+  `Check.ipv4()`, `Check.ipv6()`, `Check.minItems(...)`, `Check.maxItems(...)`,
+  and `Check.uniqueItems()` / `Check.unique()`. Legacy top-level constraint
+  annotation classes (`@Min`, `@MinLength`, `@Email`, etc.) are deprecated.
+* **Sealed `SchemaError` and `AckSchema` hierarchies**: `SchemaError` and
+  `AckSchema` are now `sealed class`es so `switch (error)` and `switch (schema)`
+  are exhaustively checked by the Dart analyzer without a wildcard branch.
+* **Decoder `Error` propagation (`#163`)**: `CodecSchema` now rethrows
+  programmer `Error`s (`TypeError`, `StateError`, etc.) with their original
+  stack trace during `parse` / `safeParse` (matching `encode` / `safeEncode`),
+  catching only `Exception`s as `SchemaTransformError`.
+* **JSON Schema Draft 2020-12 default export and `format` annotation mode
+  (`#186`, `#171`)**: `Ack.fromJsonSchema()` now defaults to `assertFormats: false`
+  (matching JSON Schema Draft 2020-12's default Core/Applicator/Validation
+  vocabularies; pass `assertFormats: true` or declare the `format-assertion`
+  vocabulary in `$vocabulary` to enforce format assertions). `schema.toJsonSchema()`
+  and `schema.toSchemaModel()` (and `toJsonSchemaBuilder()` in
+  `ack_json_schema_builder`) now preserve imported Draft 2020-12 resources by
+  default; use `toJsonSchemaDraft7()`, `toSchemaModelDraft7()`, or
+  `toJsonSchemaBuilderDraft7()` when legacy Draft-07 `definitions` lowering is
+  required.
+
+### Added
+
+* **`JsonMaybe<T>` PATCH tri-state presence (`#148`)**: Added
+  `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) with
+  `const JsonMaybe.absent()`, `const JsonMaybe.value(T? value)`, and
+  `const JsonMaybe.nullValue()`, plus full `@Schemable()` class-first codegen
+  support so omitted keys decode to `JsonAbsent`, explicit `null` decodes to
+  `JsonValue(null)`, and `toJson()` omits keys whose value is `JsonAbsent`.
+* **Custom schema resolution via `@Schemable(schemas: [...])` and automatic
+  same-library detection (`#185`)**: Class-first `@Schemable()` models now
+  resolve third-party or custom value types (`Money`, `LatLng`, `Decimal`, etc.)
+  via:
+  1. `@AckField(schema: ...)` (undeprecated for field-specific overrides)
+  2. `@Schemable(schemas: [...])` on the class, enclosing sealed union, current
+     `library;` directive, or an imported `library;` directive
+  3. Type-owned `T.schema` / `T.schema<...>()`
+  4. Automatic detection of a unique top-level `AckSchema<Boundary, T>`
+     variable, getter, or zero-argument function in the current library.
+* **Native `@AckField(name: ...)` wire key override (`#189`)**: Override a
+  field's JSON wire key directly with `@AckField(name: 'wire_key')` without
+  importing `package:json_annotation`.
+* **Two-way `StringSchema` normalizers**: `.trim()`, `.toLowerCase()`, and
+  `.toUpperCase()` now live directly on `StringSchema`, run in declaration order
+  alongside constraints during both `parse` and `encode`, preserve
+  `StringSchema` chaining, work in `@Schemable()` models, and export cleanly to
+  JSON Schema as `type: 'string'` without `'x-transformed': true`.
+* **Full JSON Schema Draft 2020-12 runtime and `.schema.json` model generator
+  (`#186`, `#171`, `#167`)**: `Ack.fromJsonSchema()` now supports the complete
+  Draft 2020-12 validation runtime (`$dynamicRef`, `$dynamicAnchor`,
+  `unevaluatedProperties`, `unevaluatedItems`, `prefixItems`,
+  `dependentRequired`, `dependentSchemas`, `patternProperties`, `minContains`,
+  `maxContains`, bundled offline 2020-12 meta-schemas, and the full Draft
+  2020-12 format suite when `assertFormats: true`). `ack_generator` adds the
+  `ack_generator:ack_json_schema` builder to compile `lib/**/*.schema.json`
+  into `<name>.schema.g.dart` typed or value-model libraries.
+
 ## 1.7.0-beta.7
 
 * Strict JSON Schema import (`Ack.fromJsonSchema()`) now supports `multipleOf`

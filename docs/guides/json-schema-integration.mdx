@@ -68,23 +68,23 @@ Exports containing unsupported keywords are rejected.
 
 ### Importing `format`
 
-Ack's strict supported-subset importer recognizes Ack's exported string formats
-(`date-time`, `date`, `email`, `uuid`, `uri`, `ipv4`, `ipv6`) and standard
-numeric format ranges (`int32`, `int64`, `uint32`, `uint64`, `float`, `double`),
-and validates them automatically:
+By default, `Ack.fromJsonSchema()` treats `format` as an annotation (matching
+JSON Schema Draft 2020-12's default Core/Applicator/Validation vocabularies).
+Pass `assertFormats: true` (or declare the Draft 2020-12 `format-assertion`
+vocabulary in `$vocabulary`) to enable runtime format assertions for the full
+Draft 2020-12 format suite (`date-time`, `date`, `time`, `duration`, `email`,
+`idn-email`, `hostname`, `idn-hostname`, `ipv4`, `ipv6`, `uri`, `uri-reference`,
+`iri`, `iri-reference`, `uuid`, `uri-template`, `json-pointer`,
+`relative-json-pointer`, `regex`) as well as standard numeric format bounds
+(`int32`, `int64`, `uint32`, `uint64`, `float`, `double`):
 
 ```dart
 final timestamp = Ack.fromJsonSchema(
   {'type': 'string', 'format': 'date-time'},
+  assertFormats: true,
 );
 timestamp.parse('2024-02-29T12:34:56.123456789+02:00');
 ```
-
-Other format labels remain unsupported and produce an `unsupported_keyword`
-diagnostic at their source location. This is Ack's strict import subset, not a
-claim that draft 2020-12 requires format assertions or that Ack implements the
-full Format-Assertion vocabulary. A format-only schema still accepts values of
-other types because `format` does not imply a `type`; add `type` when needed.
 
 Date-time validation uses RFC 3339 syntax, calendar dates, offsets, and the
 bundled list of announced positive leap-second dates. The list is updated in
@@ -92,8 +92,7 @@ Ack releases when IERS announces new leap seconds; validation never fetches
 data at runtime. Parsing preserves the original string, including its
 fractional precision and offset. It does not convert it to a Dart `DateTime`.
 
-Export retains `format` in imported schemas. Reimport through the same strict
-Ack importer to keep validation behavior. External JSON Schema validators may
+Export retains `format` in imported schemas. External JSON Schema validators may
 treat `format` as an annotation unless configured to assert it.
 
 ### Supported import subset
@@ -102,14 +101,14 @@ treat `format` as an annotation unless configured to assert it.
 | --- | --- |
 | Schemas and types | Boolean schemas, `type` (including lists and `null`) |
 | Equality | `enum`, `const`, including nested JSON values and empty enums |
-| Objects | `properties`, `required`, boolean/schema `additionalProperties`, `propertyNames`, `minProperties`, `maxProperties` |
-| Arrays | Single-schema `items`, `contains`, `minItems`, `maxItems`, `uniqueItems` |
+| Objects | `properties`, `required`, boolean/schema `additionalProperties`, `patternProperties`, `propertyNames`, `minProperties`, `maxProperties`, `dependentRequired`, `dependentSchemas`, `unevaluatedProperties` |
+| Arrays | Single-schema `items`, `prefixItems`, `contains`, `minContains`, `maxContains`, `minItems`, `maxItems`, `uniqueItems`, `unevaluatedItems` |
 | Strings | `minLength`, `maxLength` (Unicode code points), `pattern` (unanchored ECMA-262 search in Unicode mode) |
 | Numbers | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf` (exact decimal division) |
 | Composition | `anyOf`, `allOf`, exclusive `oneOf`, `not`, `if`/`then`/`else`; sibling assertions are intersected |
-| References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`; local/cross-document JSON Pointers and structural recursion |
-| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated`, `x-*` vendor extensions |
-| Format | `date-time`, `date`, `email`, `uuid`, `uri`, `ipv4`, `ipv6` (strings); `int32`, `int64`, `uint32`, `uint64`, `float`, `double` (numbers) |
+| References | `$ref`, `$id`, `$anchor`, `$defs`, `definitions`, `$dynamicRef`, `$dynamicAnchor`, bundled offline 2020-12 meta-schemas; local/cross-document JSON Pointers and structural recursion |
+| Annotations | `title`, `description`, `default`, `examples`, `$comment`, `readOnly`, `writeOnly`, `deprecated`, `contentEncoding`, `contentMediaType`, `contentSchema`, `x-*` vendor extensions |
+| Format | Full Draft 2020-12 format suite and standard numeric formats (`int32`, `int64`, `uint32`, `uint64`, `float`, `double`); asserted when `assertFormats: true` or `$vocabulary` enables `format-assertion` |
 
 `pattern` compiles with ECMA-262's `u` flag, as the JSON Schema Test Suite
 requires and Ajv does by default. `.` matches one code point, so
@@ -128,20 +127,16 @@ decimal digits of the number, as the JSON Schema Test Suite requires, so `0.3`
 and `0.6` are multiples of `0.1`, `1e308` is a multiple of `0.5`, and an
 unrounded binary-float sum such as `0.1 + 0.2` (`0.30000000000000004`) is not.
 
-This is deliberately not a complete JSON Schema validator. Unsupported
-keywords include `patternProperties`, `prefixItems`,
-`minContains`, `maxContains`, dependent/unevaluated keywords, dynamic
-references, and custom vocabulary declarations. Non-`x-*` unknown extension
-keywords and unsupported format labels are also reported. References to the
-2020-12 meta-schema fail strict import.
-The meta-schema itself is not validated.
+Custom non-standard `$vocabulary` URIs that require assertion semantics and
+non-`x-*` unknown keywords fail import with `unsupported_keyword`.
 
-### References and bundles
+### References, default Draft 2020-12 export, and Draft-7 lowering
 
 Supply decoded documents by retrieval URI. Relative keys and references resolve
 against `baseUri`; nested `$id` values establish new resource scopes. When no
 base is provided, the importer uses `ack-import:///root.json`. The importer
-never reads files or fetches URLs.
+never reads files or fetches URLs (standard `https://json-schema.org/draft/2020-12/...`
+meta-schemas are bundled offline).
 
 ```dart
 final AckSchema<Object, Object> schema = Ack.fromJsonSchema(
@@ -161,31 +156,20 @@ final AckSchema<Object, Object> schema = Ack.fromJsonSchema(
 );
 ```
 
-Exports are self-contained, Draft-7-compatible documents with root-scoped
-`definitions` and rewritten references. Original IDs, reference spellings,
-and document layout are not preserved. Validation equivalence is the contract,
-not textual identity. Imported schemas can be nested inside native objects and
-combined with other imported or lazy schemas without losing reference scope.
-Explicit JSON Pointers may also target schemas inside extension containers,
-such as A2UI's `#/components/Text`. Such containers are not scanned as schemas
-unless referenced. Empty and duplicate enums are normalized to valid Draft-7
-representations without changing the values they accept.
+In Ack 2.0, `schema.toJsonSchema()` and `schema.toSchemaModel()` **preserve
+imported Draft 2020-12 resources by default** (`$defs`, `$dynamicRef`,
+`unevaluatedProperties`, `prefixItems`, etc.). When you need a legacy
+self-contained Draft-7 document with root-scoped `definitions` and rewritten
+references, call `schema.toJsonSchemaDraft7()` or `schema.toSchemaModelDraft7()`
+(which throws `UnsupportedError` if the imported schema relies on 2020-12-only
+semantics).
 
-### Import failures and diagnostics
+### Generating Dart models from `.schema.json` files
 
-Unsupported features throw
-`JsonSchemaImportException`, whose `diagnostics` identify each source document,
-keyword, JSON Pointer, reason code, and explanation. Assertion diagnostics
-cover the validation graph reachable from the imported root. Unsupported
-assertions in unused definitions or unrelated supplied documents do not make
-the import fail. Schema resource IDs still need to be unambiguous.
-
-Malformed supported keywords, unresolved references, duplicate resource IDs,
-unsupported dialects, and reference cycles that do not descend into an instance
-are errors. The importer checks schema structure and the keywords it compiles;
-it is not full meta-schema validation of unused definitions or unsupported
-vocabularies. Structural recursion is supported without adding an arbitrary
-validation-depth constraint.
+With `ack_generator`, any `lib/**/*.schema.json` asset is compiled by the
+`ack_generator:ack_json_schema` builder into `<name>.schema.g.dart`, emitting
+typed `@Schemable()` Dart models when representable or a validated value-model
+wrapper around `Ack.fromJsonSchema(...)` for dynamic/open schemas.
 
 ### Validation errors
 
@@ -240,31 +224,18 @@ final AckSchema<Object, Object> ackSchema =
 final builderSchema = ackSchema.toJsonSchemaBuilder();
 ```
 
-`toAckSchema({baseUri, documents})` is strict and returns the validator directly.
-It accepts `Map<Uri, jsb.Schema>` bundles and asserts supported `date-time`
-formats through Ack's importer.
-
-MCP registration compatibility is deferred to separate work; importing a
-schema does not establish compatibility with a tool-registration API.
+`toAckSchema({baseUri, documents, assertFormats})` returns the validator
+directly and accepts `Map<Uri, jsb.Schema>` bundles. `toJsonSchemaBuilder()`
+preserves imported Draft 2020-12 resources by default; use
+`toJsonSchemaBuilderDraft7()` when Draft-7 lowering is required.
 
 ### A2UI compatibility and verification
 
 Offline regression fixtures pin five representative A2UI v0.9 protocol schemas
-to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`.
-
-The basic catalog is **not an exact supported import**: it additionally uses
-unevaluated-property checks, conditionals, formats, and an extension
-keyword. Import therefore fails with diagnostics. The client event schema
-imports successfully and validates its action timestamp as `date-time`, while
-client capabilities report the three meta-schema references. Test the specific
-catalog your application uses; successful validation of examples does not prove
-complete catalog conformance.
-
-The supported-subset fixture contains 678 upstream JSON Schema instance cases
-across 205 groups, including supplied remote documents. A separate optional
-date-time fixture adds 43 cases. The supported-subset tests check parse,
-encode, and re-imported exports without network access. Unsupported cases are
-not silently skipped within that fixture.
+to upstream commit `f5e945a93da36a5d126228f2ad6fbe68809ef8f7`. All five A2UI
+v0.9 schemas (including the basic catalog with `unevaluatedProperties`,
+conditionals, and meta-schema references) import and validate cleanly in Ack 2.0,
+and the full upstream JSON Schema Draft 2020-12 test suite passes offline.
 
 ## Generating JSON schemas
 

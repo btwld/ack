@@ -133,7 +133,7 @@ final class AckJsonSchemaLibrary {
 ///
 /// [documentUri] identifies the document in diagnostics and resolves its
 /// references. [documents] supplies offline external resources. [partStem]
-/// names typed model parts (`<stem>.ack.dart`); value-model fallback needs no
+/// names typed model parts (`<stem>.g.dart`); value-model fallback needs no
 /// parts. Set [includeParts] to `false` for a plain typed schema library.
 ///
 /// Throws an [AckJsonSchemaGenerationException] for invalid or unresolvable
