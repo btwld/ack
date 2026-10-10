@@ -15,8 +15,8 @@ Transport, negotiation, cancellation, and lifecycle remain in `mcp_dart`.
 
 ```yaml
 dependencies:
-  ack: ^1.2.0
-  ack_mcp_dart: ^1.7.0-beta.7
+  ack: ^2.0.0-beta.1
+  ack_mcp_dart: ^2.0.0-beta.1
   mcp_dart: ^2.4.2
 ```
 
@@ -59,9 +59,11 @@ Both registration helpers return `RegisteredTool` and forward `title`,
 `description`, `annotations`, and `meta`. Callbacks may be synchronous or
 asynchronous and receive the original `RequestHandlerExtra`.
 
-Use `server.registerAckModelTool('search', model: SearchSchema.model,
+Use `server.registerAckModelTool('search', model: Search.$ack,
 callback: (args, extra) { ... })` with an `AckModelAdapter<JsonMap, Object, M>`
-(such as a generated model adapter) to receive a typed `M` instead of a map.
+(such as a schema-first generated model adapter, or pass a class-first
+`SearchSchema.schema` directly to `registerAckTool`) to receive a typed `M`
+instead of a map.
 The model is constructed after ACK parses defaults and codecs.
 
 ## Bare conversion and parsing
@@ -112,7 +114,7 @@ It does not throw `McpError`. A parsed null is also rejected by the wrapper.
 | --- | --- | --- |
 | Optional default | `default` annotation; field may be omitted | ACK fills the value during parse |
 | Refinement | Predicate is not exported | ACK runs the predicate |
-| Codec / transform | Boundary shape and `x-transformed` metadata | ACK produces typed values, e.g. `DateTime` |
+| Codec / transform | Boundary shape | ACK produces typed values, e.g. `DateTime` |
 | Integer | JSON Schema integer semantics | `2.0` becomes `int 2`; `2.5` fails |
 | Structural failure | Rejected by `mcp_dart` | ACK and custom invalid handler are not reached |
 

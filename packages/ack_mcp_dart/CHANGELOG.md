@@ -1,3 +1,10 @@
+## 2.0.0-beta.1
+
+### Breaking
+
+* Requires `ack: ^2.0.0-beta.1` and aligns with the coordinated Ack 2.0.0-beta.1
+  release.
+
 ## 1.7.0-beta.7
 
 ### Changed

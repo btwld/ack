@@ -25,21 +25,26 @@ final value = schema.parse({'name': 'Ada'});
 final exported = schema.toJsonSchemaBuilder();
 ```
 
-Imports use ACK's strict draft 2020-12 importer. Supply
+Imports use ACK's Draft 2020-12 and Draft-07 importer. Supply
 cross-document references through `documents: <Uri, jsb.Schema>{...}` and an
-optional `baseUri`; no network requests are made. Strict imports reject
+optional `baseUri`; no network requests are made. Imports reject
 unsupported features with `JsonSchemaImportException`; its diagnostics identify
-the source keyword and location. `toAckSchema()` returns the executable
-validator. Exports preserve supported validation behavior, not textual
-round-trip identity.
+the source keyword and location. `toAckSchema({baseUri, documents, assertFormats})`
+returns the executable validator. Exports preserve imported Draft 2020-12
+resources by default (or lower compatible schemas to Draft-07 via
+`toJsonSchemaBuilderDraft7()`).
 
-The subset includes objects, arrays, primitives, enum/const, numeric bounds,
-length constraints, `anyOf`/`allOf`/exclusive `oneOf`/`not`, and recursive
-references. Formats, patterns, multiples, dynamic references, and meta-schema
-validation are not supported. Exports contain only enforced assertions.
-The published A2UI basic catalog also requires unsupported unevaluated-property
-checks and conditionals, so strict import rejects it. Full A2UI support and MCP
-registration compatibility remain separate work.
+Supported keywords include objects (`properties`, `required`,
+`additionalProperties`, `patternProperties`, `propertyNames`, `minProperties`,
+`maxProperties`, `dependentRequired`, `dependentSchemas`,
+`unevaluatedProperties`), arrays (`items`, `prefixItems`, `contains`,
+`minContains`, `maxContains`, `minItems`, `maxItems`, `uniqueItems`,
+`unevaluatedItems`), primitives, `enum`/`const`, numeric bounds and `multipleOf`,
+length constraints, ECMA-262 Unicode `pattern`, `anyOf`/`allOf`/exclusive
+`oneOf`/`not`, `if`/`then`/`else`, `$ref`/`$defs`/`definitions`,
+`$dynamicRef`/`$dynamicAnchor`, offline 2020-12 meta-schemas, `x-*` vendor
+extensions, and opt-in `assertFormats: true` for built-in string and numeric
+formats.
 See the [import guide](https://concepta.dev/documentation/ack/guides/json-schema-integration)
 for the complete support matrix and reference/diagnostic behavior.
 
@@ -47,14 +52,14 @@ for the complete support matrix and reference/diagnostic behavior.
 
 ```yaml
 dependencies:
-  ack: ^1.7.0-beta.7
-  ack_json_schema_builder: ^1.7.0-beta.7
+  ack: ^2.0.0-beta.1
+  ack_json_schema_builder: ^2.0.0-beta.1
   json_schema_builder: ^0.1.3
 ```
 
 ### Compatibility
 
-Requires `ack: >=1.6.0 <2.0.0` and
+Requires `ack: ^2.0.0-beta.1` and
 `json_schema_builder: >=0.1.3 <1.0.0` as peer dependencies. Report
 [compatibility issues](https://github.com/btwld/ack/issues).
 
@@ -95,9 +100,12 @@ other logic that JSON Schema cannot represent.
 
 ### Target Schema Support
 
-The converter emits ACK's generic Draft-7 JSON Schema map before constructing
-the `json_schema_builder` schema. If a downstream validator or consumer ignores
-a JSON Schema keyword, validate with ACK after parsing.
+The converter uses `AckSchema.toJsonSchema()` before constructing the
+`json_schema_builder` schema, preserving imported Draft 2020-12 resources by
+default and emitting Draft-7 for native ACK schemas. To lower an imported
+schema into legacy Draft-7 `definitions`, call
+`schema.toJsonSchemaBuilderDraft7()`. If a downstream validator or consumer
+ignores a JSON Schema keyword, validate with ACK after parsing.
 
 ```dart
 final schema = Ack.date().min(DateTime(2026));

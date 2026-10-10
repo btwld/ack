@@ -101,6 +101,7 @@ void main() {
       'role': 'member',
     };
     expect(account.toJson(), encoded);
+    expect(Account.schema.parse(json)!.displayName, 'Ada');
     expect(AccountSchema.parse(json).displayName, 'Ada');
     expect(AccountSchema.safeParse({...json, 'email': 'invalid'}).isFail, isTrue);
     expect(AccountSchema.encode(account), encoded);
@@ -114,7 +115,10 @@ void main() {
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',

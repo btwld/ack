@@ -7,16 +7,11 @@ import '../utils/string_literal.dart';
 
 /// Emits immutable model declarations solely from a normalized model graph.
 final class AckModelEmitter {
-  AckModelEmitter({
-    this.ackPrefix,
-    this.schemablePrefix,
-    this.schemaPrefixInScope = false,
-  });
+  AckModelEmitter({this.ackPrefix, this.schemaPrefixInScope = false});
 
   static const _schemaShorthandName = 'schema';
 
   final String? ackPrefix;
-  final String? schemablePrefix;
 
   /// Whether the annotated library imports a prefix named `schema`.
   final bool schemaPrefixInScope;
@@ -59,7 +54,6 @@ final class AckModelEmitter {
       (b) => b
         ..name = node.className
         ..modifier = ClassModifier.final$
-        ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable model'))
         ..fields.addAll([
           for (final field in fields) _field(field),
@@ -83,20 +77,18 @@ final class AckModelEmitter {
           ..._valueMembers(node.className, _objectDataClass(node)),
           _objectFromRuntime(node, fields: fields),
           _objectToRuntime(node, fields: fields),
-          ..._fieldBridges(fields),
-          if (node.additionalProperties) ..._additionalPropertyBridges(),
         ]),
     );
   }
 
   Class _value(AckValueModelNode node) {
     final runtimeRef = _type(node.runtimeRef);
+    final schemaRuntimeRef = _schemaRuntimeType(node.runtimeRef);
     final boundaryType = _type(node.boundaryType);
     return Class(
       (b) => b
         ..name = node.className
         ..modifier = ClassModifier.final$
-        ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable value model'))
         ..fields.addAll([
           Field(
@@ -146,24 +138,21 @@ final class AckModelEmitter {
                 Parameter(
                   (p) => p
                     ..name = 'value'
-                    ..type = refer(runtimeRef),
+                    ..type = refer(schemaRuntimeRef),
                 ),
               )
               ..lambda = true
               ..body = Code(
-                '${jsonFromHelperName(node.className)}(<String, dynamic>{\'value\': value})',
+                '${node.className}(${_valueFromRuntime(node.runtimeRef, 'value')})',
               ),
           ),
           Method(
             (m) => m
               ..name = '_toAckRuntime'
-              ..returns = refer(runtimeRef)
+              ..returns = refer(schemaRuntimeRef)
               ..lambda = true
-              ..body = Code(
-                '${jsonToHelperName(node.className)}(this)[\'value\'] as $runtimeRef',
-              ),
+              ..body = Code(_toRuntime(node.runtimeRef, 'value')),
           ),
-          ..._valueBridges(node),
         ]),
     );
   }
@@ -249,7 +238,6 @@ return switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
         ..name = node.className
         ..modifier = ClassModifier.final$
         ..extend = refer(union.className)
-        ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Discriminated model branch'))
         ..fields.addAll([
           for (final field in fields) _field(field),
@@ -293,8 +281,6 @@ return switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
             leadingEntries: {discriminator: dartStringLiteral(value)},
             isOverride: true,
           ),
-          ..._fieldBridges(fields),
-          if (node.additionalProperties) ..._additionalPropertyBridges(),
         ]),
     );
   }
@@ -304,9 +290,7 @@ return switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
       ..name = field.dartName
       ..modifier = FieldModifier.final$
       ..type = refer(_fieldType(field))
-      ..docs.addAll([
-        if (field.description != null) '/// ${field.description}',
-      ]),
+      ..docs.addAll(_descriptionDocs(field.description)),
   );
 
   Field _additionalPropertiesField() => Field(
@@ -688,7 +672,12 @@ ${_ack('AckModelAdapter')}(
     List<AckFieldNode>? fields,
     Set<String> additionalKnownKeys = const {},
   }) {
-    final helper = jsonFromHelperName(node.className);
+    final effectiveFields = fields ?? _storedFields(node);
+    final arguments = [
+      for (final field in effectiveFields)
+        '${field.dartName}: '
+            '${_decodeField(field, 'value[${dartStringLiteral(field.jsonKey)}]')}',
+    ];
     if (!node.additionalProperties) {
       return Method(
         (m) => m
@@ -703,15 +692,20 @@ ${_ack('AckModelAdapter')}(
             ),
           )
           ..lambda = true
-          ..body = Code('$helper(Map<String, dynamic>.from(value))'),
+          ..body = Code('${node.className}(${arguments.join(', ')})'),
       );
     }
 
-    final effectiveFields = fields ?? _storedFields(node);
     final keys = _declaredJsonKeys(
       effectiveFields,
       additionalKeys: additionalKnownKeys,
     );
+    final allArguments = [
+      ...arguments,
+      'additionalProperties: Map<String, Object?>.fromEntries(\n'
+          '    value.entries.where((entry) => !declared.contains(entry.key)),\n'
+          '  )',
+    ];
     return Method(
       (m) => m
         ..name = '_fromAckRuntime'
@@ -726,12 +720,9 @@ ${_ack('AckModelAdapter')}(
         )
         ..body = Code('''
 const declared = ${_declaredKeysLiteral(keys)};
-return $helper(<String, dynamic>{
-  ...value,
-  'additionalProperties': Map<String, Object?>.fromEntries(
-    value.entries.where((entry) => !declared.contains(entry.key)),
-  ),
-});'''),
+return ${node.className}(
+  ${allArguments.join(',\n  ')},
+);'''),
     );
   }
 
@@ -742,203 +733,75 @@ return $helper(<String, dynamic>{
     bool isOverride = false,
   }) {
     final effectiveFields = fields ?? _storedFields(node);
-    final requiredNulls = [
+    final entries = <String>[
+      for (final entry in leadingEntries.entries)
+        '${dartStringLiteral(entry.key)}: ${entry.value}',
       for (final field in effectiveFields)
-        if (field.isRequired && field.nullable) field,
+        '${dartStringLiteral(field.jsonKey)}: '
+            '${!field.isRequired ? '?' : ''}${_encodeField(field)}',
     ];
-    final helper = jsonToHelperName(node.className);
-    final needsBlock = node.additionalProperties || requiredNulls.isNotEmpty;
-    final declaredLiteral = node.additionalProperties
-        ? _declaredKeysLiteral(
-            _declaredJsonKeys(
-              effectiveFields,
-              additionalKeys: leadingEntries.keys,
-            ),
-          )
-        : null;
-
     return Method((m) {
       m
         ..name = '_toAckRuntime'
         ..returns = refer(_runtimeMapType);
       if (isOverride) m.annotations.add(refer('override'));
 
-      if (!needsBlock) {
-        final entries = <String>[
-          for (final entry in leadingEntries.entries)
-            '${dartStringLiteral(entry.key)}: ${entry.value}',
-          '...$helper(this)',
-        ];
+      if (!node.additionalProperties) {
         m
           ..lambda = true
           ..body = Code('$_runtimeMapLiteral{${entries.join(', ')}}');
         return;
       }
 
-      final lines = <String>[
-        if (declaredLiteral != null) 'const declared = $declaredLiteral;',
-        'final result = $_runtimeMapLiteral{...$helper(this)};',
-        if (declaredLiteral != null) "result.remove('additionalProperties');",
-      ];
-      for (final field in requiredNulls) {
-        lines.add(
-          'if (${field.dartName} == null) {'
-          ' result[${dartStringLiteral(field.jsonKey)}] = null;'
-          ' }',
-        );
-      }
-      final returnEntries = <String>[
-        if (declaredLiteral != null)
-          'for (final entry in additionalProperties.entries)\n'
-              '    if (!declared.contains(entry.key)) entry.key: entry.value',
-        for (final entry in leadingEntries.entries)
-          '${dartStringLiteral(entry.key)}: ${entry.value}',
-        '...result',
-      ];
-      lines.add(
-        'return $_runtimeMapLiteral{\n  ${returnEntries.join(',\n  ')},\n};',
+      final declaredLiteral = _declaredKeysLiteral(
+        _declaredJsonKeys(effectiveFields, additionalKeys: leadingEntries.keys),
       );
-      m.body = Code(lines.join('\n'));
+      final allEntries = <String>[
+        'for (final entry in additionalProperties.entries)\n'
+            '    if (!declared.contains(entry.key)) entry.key: entry.value',
+        ...entries,
+      ];
+      m.body = Code('''
+const declared = $declaredLiteral;
+return $_runtimeMapLiteral{
+  ${allEntries.join(',\n  ')},
+};''');
     });
   }
 
-  List<Method> _fieldBridges(List<AckFieldNode> fields) => [
-    for (final field in fields) ...[_fromBridge(field), _toBridge(field)],
-  ];
-
-  List<Method> _valueBridges(AckValueModelNode node) {
-    final type = _type(node.runtimeRef);
-    return [
-      Method(
-        (m) => m
-          ..name = ackFromRuntimeBridgeName('value')
-          ..static = true
-          ..returns = refer(type)
-          ..requiredParameters.add(
-            Parameter(
-              (p) => p
-                ..name = 'value'
-                ..type = refer('Object?'),
-            ),
-          )
-          ..lambda = true
-          ..body = Code(_fromRuntime(node.runtimeRef, 'value')),
-      ),
-      Method(
-        (m) => m
-          ..name = ackToRuntimeBridgeName('value')
-          ..static = true
-          ..returns = refer('Object?')
-          ..requiredParameters.add(
-            Parameter(
-              (p) => p
-                ..name = 'value'
-                ..type = refer(type),
-            ),
-          )
-          ..lambda = true
-          ..body = Code(_toRuntime(node.runtimeRef, 'value')),
-      ),
-    ];
-  }
-
-  List<Method> _additionalPropertyBridges() => [
-    Method(
-      (m) => m
-        ..name = ackFromRuntimeBridgeName('additionalProperties')
-        ..static = true
-        ..returns = refer('$_runtimeMapType?')
-        ..requiredParameters.add(
-          Parameter(
-            (p) => p
-              ..name = 'value'
-              ..type = refer('Object?'),
-          ),
-        )
-        ..lambda = true
-        ..body = const Code('value as Map<String, Object?>?'),
-    ),
-    Method(
-      (m) => m
-        ..name = ackToRuntimeBridgeName('additionalProperties')
-        ..static = true
-        ..returns = refer('Object?')
-        ..requiredParameters.add(
-          Parameter(
-            (p) => p
-              ..name = 'value'
-              ..type = refer(_runtimeMapType),
-          ),
-        )
-        ..lambda = true
-        ..body = const Code('value'),
-    ),
-  ];
-
-  Method _fromBridge(AckFieldNode field) {
+  String _decodeField(AckFieldNode field, String rawExpression) {
     final runtimeRef = _nonNullable(field.runtimeRef);
     final needsNullGuard = !field.isRequired || field.nullable;
-    late final String body;
     if (!needsNullGuard) {
-      body = _fromRuntime(runtimeRef, 'value');
-    } else if (!_requiresRuntimeConversion(runtimeRef)) {
+      return _fromRuntime(runtimeRef, rawExpression);
+    }
+    if (!_requiresRuntimeConversion(runtimeRef)) {
       final type = '${_type(runtimeRef)}?';
-      // The bridge parameter is already Object?.
-      body = type == 'Object?' ? 'value' : 'value as $type';
-    } else {
-      body =
-          'switch (value) {'
-          ' null => null,'
-          ' final fieldValue => ${_fromRuntime(runtimeRef, 'fieldValue')},'
-          ' }';
+      // The runtime map entry is already Object?.
+      return type == 'Object?' ? rawExpression : '$rawExpression as $type';
     }
-    return Method(
-      (m) => m
-        ..name = ackFromRuntimeBridgeName(field.dartName)
-        ..static = true
-        ..returns = refer(_fieldType(field))
-        ..requiredParameters.add(
-          Parameter(
-            (p) => p
-              ..name = 'value'
-              ..type = refer('Object?'),
-          ),
-        )
-        ..lambda = true
-        ..body = Code(body),
-    );
+    return 'switch ($rawExpression) {'
+        ' null => null,'
+        ' final fieldValue => ${_fromRuntime(runtimeRef, 'fieldValue')},'
+        ' }';
   }
 
-  Method _toBridge(AckFieldNode field) {
+  String _encodeField(AckFieldNode field) {
     final runtimeRef = _nonNullable(field.runtimeRef);
+    final name = field.dartName;
     final needsNullGuard = !field.isRequired || field.nullable;
-    late final String body;
-    if (!needsNullGuard) {
-      body = _toRuntime(runtimeRef, 'value');
-    } else if (!_requiresRuntimeConversion(runtimeRef)) {
-      body = 'value';
-    } else {
-      body =
-          'switch (value) {'
-          ' null => null,'
-          ' final fieldValue => ${_toRuntime(runtimeRef, 'fieldValue')},'
-          ' }';
+    if (!needsNullGuard || !_requiresRuntimeConversion(runtimeRef)) {
+      return _toRuntime(runtimeRef, name);
     }
-    return Method(
-      (m) => m
-        ..name = ackToRuntimeBridgeName(field.dartName)
-        ..static = true
-        ..returns = refer('Object?')
-        ..requiredParameters.add(
-          Parameter(
-            (p) => p
-              ..name = 'value'
-              ..type = refer(_fieldType(field)),
-          ),
-        )
-        ..lambda = true
-        ..body = Code(body),
-    );
+    if (runtimeRef is AckListTypeRef ||
+        runtimeRef is AckSetTypeRef ||
+        runtimeRef is AckMapTypeRef) {
+      return _toRuntime(AckNullableTypeRef(runtimeRef), name);
+    }
+    return 'switch ($name) {'
+        ' null => null,'
+        ' final fieldValue => ${_toRuntime(runtimeRef, 'fieldValue')},'
+        ' }';
   }
 
   String _fromRuntime(AckInferRef type, String expression) {
@@ -1055,6 +918,44 @@ return $helper(<String, dynamic>{
     };
   }
 
+  bool _containsModelRef(AckInferRef type) => switch (type) {
+    AckNullableTypeRef(:final inner) => _containsModelRef(inner),
+    AckModelTypeRef() => true,
+    AckListTypeRef(:final elementType) ||
+    AckSetTypeRef(:final elementType) => _containsModelRef(elementType),
+    AckMapTypeRef(:final valueType) => _containsModelRef(valueType),
+    _ => false,
+  };
+
+  String _schemaRuntimeType(AckInferRef type) => switch (type) {
+    AckNullableTypeRef(:final inner) => '${_schemaRuntimeType(inner)}?',
+    AckModelTypeRef(:final runtimeRef) => _schemaRuntimeType(runtimeRef),
+    AckListTypeRef(:final elementType) =>
+      'List<${_schemaRuntimeType(elementType)}>',
+    AckSetTypeRef(:final elementType) =>
+      'Set<${_schemaRuntimeType(elementType)}>',
+    AckMapTypeRef(:final valueType) =>
+      'Map<String, ${_schemaRuntimeType(valueType)}>',
+    _ => _type(type),
+  };
+
+  String _valueFromRuntime(AckInferRef type, String expression) {
+    if (!_containsModelRef(type)) return expression;
+    return switch (type) {
+      AckNullableTypeRef(:final inner) =>
+        '$expression == null ? null : ${_valueFromRuntime(inner, expression)}',
+      AckModelTypeRef(:final visibleName) =>
+        '$visibleName.\$ack.fromRuntime($expression)',
+      AckListTypeRef(:final elementType) =>
+        '$expression.map((item) => ${_valueFromRuntime(elementType, 'item')}).toList()',
+      AckSetTypeRef(:final elementType) =>
+        '$expression.map((item) => ${_valueFromRuntime(elementType, 'item')}).toSet()',
+      AckMapTypeRef(:final valueType) =>
+        '$expression.map((key, item) => MapEntry(key, ${_valueFromRuntime(valueType, 'item')}))',
+      _ => expression,
+    };
+  }
+
   String _type(AckInferRef type) {
     return switch (type) {
       AckNullableTypeRef(:final inner) => '${_type(inner)}?',
@@ -1067,21 +968,23 @@ return $helper(<String, dynamic>{
       AckListTypeRef(:final elementType) => 'List<${_type(elementType)}>',
       AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
       AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
+      AckJsonMaybeTypeRef(:final valueType) =>
+        '${_ack('JsonMaybe')}<${_type(valueType)}>',
     };
   }
 
   List<String> _docs(AckModelNode node, String kind) => [
     '/// $kind generated from `${node.id.declarationName}`.',
-    if (node.description != null) '/// ${node.description}',
+    ..._descriptionDocs(node.description),
   ];
 
-  Expression _jsonMarker() {
-    final prefix = schemablePrefix;
-    final typeName = prefix == null || prefix.isEmpty
-        ? 'Schemable'
-        : '$prefix.Schemable';
-    return refer(typeName).property('generatedJson');
-  }
+  /// One doc-comment line per description line, so multi-line descriptions
+  /// keep the generated declaration valid.
+  List<String> _descriptionDocs(String? description) => [
+    if (description != null)
+      for (final line in description.split(RegExp(r'\r?\n')))
+        line.trimRight().isEmpty ? '///' : '/// ${line.trimRight()}',
+  ];
 
   String _ack(String symbol) {
     final prefix = ackPrefix;
@@ -1091,20 +994,18 @@ return $helper(<String, dynamic>{
   static const _runtimeMapType = 'Map<String, Object?>';
   static const _runtimeMapLiteral = '<String, Object?>';
   static const _objectJsonType = 'Map<String, dynamic>';
+  static const _toJsonDocs = [
+    '/// Validates this model and encodes it for JSON.',
+    '///',
+    '/// Throws an `AckException` when validation fails.',
+  ];
+  static const _safeToJsonDocs = [
+    '/// Validates this model and encodes it for JSON, returning the validation',
+    '/// failure instead of throwing.',
+  ];
 }
 
 typedef _AckDataClass = ({
   List<AckFieldNode> fields,
   List<AckConstructorParameter> constructorParameters,
 });
-
-const _toJsonDocs = [
-  '/// Validates this model and encodes it for JSON.',
-  '///',
-  '/// Throws an `AckException` when validation fails.',
-];
-
-const _safeToJsonDocs = [
-  '/// Validates this model and encodes it for JSON, returning the validation',
-  '/// failure instead of throwing.',
-];

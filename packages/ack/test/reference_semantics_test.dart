@@ -96,11 +96,7 @@ void main() {
       // not claim its mapping preserves keywords, so it is enforced locally
       // and reported as omitted rather than published.
       final model = schema.toSchemaModel();
-      expect(model.toJsonSchema(), {
-        'type': 'string',
-        'minLength': 10,
-        'x-transformed': true,
-      });
+      expect(model.toJsonSchema(), {'type': 'string', 'minLength': 10});
       expect(model.warnings.map((warning) => warning.code), [
         'codec_runtime_constraint_not_exported',
       ]);

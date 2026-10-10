@@ -12,20 +12,17 @@ new compatible features/packages, and major when any stable public API breaks.
 For 1.7.0, the imported-pattern Unicode behavior change is a deliberately
 accepted exception to this major-version policy.
 
-The next candidate is **1.7.0-beta.7**. It adds `multipleOf` validation,
-built-in string and numeric `format` assertions, `x-*` vendor extension
-annotation tolerance, and Draft-07 `$schema` URI support to strict JSON Schema
-import (`Ack.fromJsonSchema()`), and speeds up imported-schema compilation and
-validation, `toJsonSchema()`, and collection parse/encode results.
-The beta.5 imported-pattern change to ECMA-262 Unicode mode still applies when
-upgrading from stable 1.6.2 or earlier 1.7.0 betas; review imported patterns,
-including identity escapes and expressions that count UTF-16 code units. Native
-`Ack.string().matches()` keeps its Dart regex contract. The beta.3 annotation
-and generator migration still applies to consumers coming from earlier
-versions; beta.7 adds no new generator migration. The API check compares all
-five packages against 1.6.2; generator compatibility also requires the consumer
-build and runtime tests because the API check cannot inspect generated consumer
-code.
+The next candidate is **2.0.0-beta.1**. It introduces single-pass `.g.dart`
+code generation without a runtime `json_serializable` delegation step, the
+unified `@Validate.*` constraint annotation namespace, custom schema resolution
+via `@Schemable(schemas: [...])` and automatic same-library detection,
+`JsonMaybe<T>` PATCH presence semantics, two-way `StringSchema` normalizers
+(`.trim()`, `.toLowerCase()`, `.toUpperCase()`), sealed `SchemaError` and
+`AckSchema` hierarchies, full JSON Schema Draft 2020-12 runtime validation and
+`.schema.json` model generation with default Draft 2020-12 preservation on
+`toJsonSchema()`, and removal of deprecated 1.x compatibility shims
+(`StandardSchemaV1`, `@AckType`, `@AckInfer`, `@AckModel`, and `.ack.dart` /
+`.ack.g.dart` dual-part generation).
 
 The shared API baseline for this release is 1.6.2. Confirm that all five
 packages have published 1.6.2 versions before preparing the release.
@@ -60,7 +57,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 3. Preview/prepare a coordinated version without creating commits or tags:
 
    ```sh
-   dart run melos version --manual-version=ack:1.7.0-beta.7 --yes --no-git-commit-version
+   dart run melos version --manual-version=ack:2.0.0-beta.1 --yes --no-git-commit-version
    ```
 
    Use the named flag, not a positional package argument: the positional form
@@ -87,7 +84,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 7. Validate the complete release from that clean commit:
 
    ```sh
-   dart scripts/verify_release_tag.dart v1.7.0-beta.7 --skip-ancestry
+   dart scripts/verify_release_tag.dart v2.0.0-beta.1 --skip-ancestry
    dart run melos run ci
    dart scripts/api_check.dart 1.6.2
    dart scripts/publish_dry_run.dart
@@ -141,9 +138,9 @@ After the release commit's CI/preflight succeeds:
 ```sh
 git fetch origin main --tags
 # Use the exact reviewed release merge commit, not an arbitrary later main head.
-git tag -a v1.7.0-beta.7 <release-merge-sha> -m 'Ack 1.7.0 beta 7'
-dart scripts/verify_release_tag.dart v1.7.0-beta.7
-git push origin v1.7.0-beta.7
+git tag -a v2.0.0-beta.1 <release-merge-sha> -m 'Ack 2.0.0 beta 1'
+dart scripts/verify_release_tag.dart v2.0.0-beta.1
+git push origin v2.0.0-beta.1
 ```
 
 Pushing the tag triggers `.github/workflows/release.yml`; there is no Melos
@@ -173,4 +170,4 @@ After all five exact versions are visible, create the GitHub Release from the
 existing tag using the prepared release notes and mark it as a prerelease for
 beta versions. Before the first subsequent code
 change, begin a new unreleased changelog section instead of editing the
-1.7.0-beta.7 notes.
+2.0.0-beta.1 notes.

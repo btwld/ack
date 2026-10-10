@@ -1,14 +1,16 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:punycoder/punycoder.dart' as punycoder;
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 import '../common_types.dart';
 import '../constraints/comparison_constraint.dart';
 import '../constraints/constraint.dart';
 import '../constraints/number_finite_constraint.dart';
 import '../constraints/pattern_constraint.dart';
-import '../constraints/string_ip_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
@@ -17,7 +19,9 @@ import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
 part '../json_schema/json_schema_compiler.dart';
+part '../json_schema/json_schema_formats.dart';
 part '../json_schema/json_schema_import_error.dart';
+part '../json_schema/standard_meta_schemas.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boundary_schema.dart';
@@ -71,7 +75,7 @@ enum SchemaOperation { parse, encode }
 /// methods. Subclasses override the three methods; they should not override
 /// the public wrappers.
 @immutable
-abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
+sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
@@ -493,11 +497,11 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Converts this schema to a JSON Schema Draft-7 representation.
+  /// Converts this schema to a JSON Schema representation.
   ///
   /// Delegates to the sealed [AckSchemaModel] boundary so all renderers share
-  /// the same Draft-7 output. Subclasses should not override this directly;
-  /// instead they are dispatched in `ack_schema_model_builder.dart`.
+  /// the same output. Subclasses should not override this directly; instead
+  /// they are dispatched in `ack_schema_model_builder.dart`.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
 
   Map<String, Object?> toMap() {

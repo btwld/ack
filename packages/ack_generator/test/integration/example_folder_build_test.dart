@@ -102,8 +102,8 @@ dependency_overrides:
         );
 
         _expectSuccess(
-          await _run(temporaryExample, ['pub', 'get']),
-          'dart pub get',
+          await _run(temporaryExample, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
         );
         _expectSuccess(
           await _run(temporaryExample, ['run', 'build_runner', 'build']),
@@ -112,52 +112,32 @@ dependency_overrides:
 
         final first = _generatedContents(temporaryExample);
         expect(first.keys, {
-          'lib/additional_properties_example.ack.dart',
-          'lib/additional_properties_example.ack.g.dart',
-          'lib/class_first_models.ack.dart',
-          'lib/class_first_models.ack.g.dart',
-          'lib/pet.ack.dart',
-          'lib/pet.ack.g.dart',
-          'lib/schema_types_discriminated.ack.dart',
-          'lib/schema_types_discriminated.ack.g.dart',
-          'lib/schema_types_edge_cases.ack.dart',
-          'lib/schema_types_edge_cases.ack.g.dart',
-          'lib/schema_types_primitives.ack.dart',
-          'lib/schema_types_primitives.ack.g.dart',
-          'lib/schema_types_simple.ack.dart',
-          'lib/schema_types_simple.ack.g.dart',
-          'lib/schema_types_transforms.ack.dart',
-          'lib/schema_types_transforms.ack.g.dart',
-          'lib/user_with_color.ack.dart',
-          'lib/user_with_color.ack.g.dart',
+          'lib/additional_properties_example.g.dart',
+          'lib/class_first_models.g.dart',
+          'lib/pet.g.dart',
+          'lib/schema_types_discriminated.g.dart',
+          'lib/schema_types_edge_cases.g.dart',
+          'lib/schema_types_primitives.g.dart',
+          'lib/schema_types_simple.g.dart',
+          'lib/schema_types_transforms.g.dart',
+          'lib/user_with_color.g.dart',
         });
         for (final entry in first.entries) {
           final isClassFirst = entry.key.contains('class_first_models');
-          if (entry.key.endsWith('.ack.dart')) {
-            if (isClassFirst) {
-              expect(entry.value, contains(r'mixin _$AccountAck'));
-              expect(entry.value, contains('final _accountSchema'));
-              expect(
-                entry.value,
-                contains('abstract final class AccountSchema'),
-              );
-              expect(entry.value, isNot(contains('final accountSchema')));
-            } else {
-              expect(entry.value, contains('class '));
-              expect(entry.value, contains('generatedJson'));
-            }
-            expect(entry.value, isNot(contains('extension type')));
-            expect(entry.value, isNot(contains('fromMap')));
-            expect(entry.value, isNot(contains('toMap')));
+          if (isClassFirst) {
+            expect(entry.value, contains(r'mixin _$AccountAck'));
+            expect(entry.value, contains('final _accountSchema'));
+            expect(entry.value, contains('abstract final class AccountSchema'));
+            expect(entry.value, contains(r'decode: _$AccountFromRuntime'));
+            expect(entry.value, isNot(contains('final accountSchema')));
           } else {
-            expect(entry.value, contains('JsonSerializableGenerator'));
-            expect(
-              entry.value,
-              contains(
-                isClassFirst ? '_ackAccountFromRuntime' : '_ackFromRuntime',
-              ),
-            );
+            expect(entry.value, contains('class '));
           }
+          expect(entry.value, isNot(contains('generatedJson')));
+          expect(entry.value, isNot(contains('JsonSerializableGenerator')));
+          expect(entry.value, isNot(contains('extension type')));
+          expect(entry.value, isNot(contains('fromMap')));
+          expect(entry.value, isNot(contains('toMap')));
         }
 
         _expectSuccess(
@@ -224,8 +204,8 @@ dependency_overrides:
         );
 
         _expectSuccess(
-          await _run(temporaryExample, ['pub', 'get']),
-          'dart pub get',
+          await _run(temporaryExample, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
         );
 
         final schemaFile = File(
@@ -238,7 +218,7 @@ dependency_overrides:
           ),
         );
         final generatedFile = File(
-          p.join(temporaryExample.path, 'lib', 'schema_types_simple.ack.dart'),
+          p.join(temporaryExample.path, 'lib', 'schema_types_simple.g.dart'),
         );
         final before = generatedFile.readAsStringSync();
 

@@ -1,4 +1,3 @@
-// These tests also cover the deprecated AckField.presence API.
 // ignore_for_file: deprecated_member_use_from_same_package
 
 import 'package:ack/annotations.dart';
@@ -48,19 +47,20 @@ void main() {
     },
   );
 
-  test('AckField accepts a schema tear-off and a presence override', () {
-    const inferred = AckField(schema: _customSchema);
+  test('AckField accepts name, schema tear-off, and description', () {
+    const inferred = AckField(
+      name: 'wire_key',
+      schema: _customSchema,
+      description: 'Field description',
+    );
+    expect(inferred.name, 'wire_key');
     expect(inferred.schema, same(_customSchema));
-    expect(inferred.presence, AckFieldPresence.inferred);
+    expect(inferred.description, 'Field description');
 
-    const optional = AckField(presence: AckFieldPresence.optional);
-    expect(optional.schema, isNull);
-    expect(optional.presence, AckFieldPresence.optional);
-    expect(AckFieldPresence.values, const [
-      AckFieldPresence.inferred,
-      AckFieldPresence.required,
-      AckFieldPresence.optional,
-    ]);
+    const defaults = AckField();
+    expect(defaults.name, isNull);
+    expect(defaults.schema, isNull);
+    expect(defaults.description, isNull);
   });
 
   test('presence and null annotations are const', () {
@@ -72,7 +72,69 @@ void main() {
     expect(notNull, isA<NotNull>());
   });
 
-  test('constraint sugar annotations are const data', () {
+  test(
+    'Validate.* constraint annotations are const and expose kind + value',
+    () {
+      const checks = <Validate>[
+        Validate.min(1),
+        Validate.max(9.5),
+        Validate.multipleOf(2),
+        Validate.positive(),
+        Validate.negative(),
+        Validate.minLength(1),
+        Validate.maxLength(100),
+        Validate.matches(r'^[a-z]+$'),
+        Validate.notEmpty(),
+        Validate.email(),
+        Validate.url(),
+        Validate.uri(),
+        Validate.uuid(),
+        Validate.date(),
+        Validate.dateTime(),
+        Validate.datetime(),
+        Validate.ip(),
+        Validate.ip(version: 4),
+        Validate.ipv4(),
+        Validate.ipv6(),
+        Validate.minItems(1),
+        Validate.maxItems(10),
+        Validate.uniqueItems(),
+        Validate.unique(),
+      ];
+
+      expect(
+        checks.map((c) => (c.kind, c.value)).toList(),
+        const <(String, Object?)>[
+          ('min', 1),
+          ('max', 9.5),
+          ('multipleOf', 2),
+          ('positive', null),
+          ('negative', null),
+          ('minLength', 1),
+          ('maxLength', 100),
+          ('matches', r'^[a-z]+$'),
+          ('notEmpty', null),
+          ('email', null),
+          ('url', null),
+          ('uri', null),
+          ('uuid', null),
+          ('date', null),
+          ('dateTime', null),
+          ('datetime', null),
+          ('ip', null),
+          ('ip', 4),
+          ('ipv4', null),
+          ('ipv6', null),
+          ('minItems', 1),
+          ('maxItems', 10),
+          ('uniqueItems', null),
+          ('unique', null),
+        ],
+      );
+    },
+  );
+
+  test('legacy constraint sugar annotations remain const data', () {
     const annotations = <Object>[
       Min(1),
       Max(9),
@@ -81,7 +143,7 @@ void main() {
       Negative(),
       MinLength(1),
       MaxLength(100),
-      Pattern(r'^[a-z]+$'),
+      Matches(r'^[a-z]+$'),
       Email(),
       NotEmpty(),
       MinItems(1),
@@ -94,7 +156,7 @@ void main() {
     expect((annotations[2] as MultipleOf).value, 2);
     expect((annotations[5] as MinLength).length, 1);
     expect((annotations[6] as MaxLength).length, 100);
-    expect((annotations[7] as Pattern).pattern, r'^[a-z]+$');
+    expect((annotations[7] as Matches).pattern, r'^[a-z]+$');
     expect((annotations[10] as MinItems).count, 1);
     expect((annotations[11] as MaxItems).count, 10);
   });

@@ -1,3 +1,40 @@
+## 2.0.0-beta.1
+
+### Breaking
+
+* Requires `ack: ^2.0.0-beta.1`.
+* **Single-pass `.g.dart` builder (`#189`)**: `ack_generator:ack` is now a
+  `SharedPartBuilder` that emits `<file>.g.dart` directly with generated
+  `toJson()` / `fromJson()` helpers. The two-part `.ack.dart` and `.ack.g.dart`
+  builders (`ack_generator`, `ack_json`) and runtime `json_serializable`
+  delegation are removed. Replace `part '<file>.ack.dart';` and
+  `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
+* Remove legacy `@AckType`, `@AckInfer`, `@AckModel`, and `*Type` extension-type
+  model generation (`#188`).
+
+### Added
+
+* Support `@Validate.*` constraint annotations from `package:ack/ack.dart`
+  across field declarations and primary/generative constructor parameters, as
+  well as `static final schema = _<name>Schema;` on class-first models (`#191`).
+* Support `JsonMaybe<T>` fields in `@Schemable()` class-first models for PATCH
+  tri-state presence (`#148`).
+* Support `@AckField(name: '...')` directly without `package:json_annotation`
+  (`#189`).
+* Support custom schema resolution on `@Schemable()` class fields via:
+  1. `@AckField(schema: ...)`
+  2. `@Schemable(schemas: [...])` on the class, enclosing sealed union, current
+     `library;` directive, or an imported `library;` directive
+  3. Type-owned `T.schema` / `T.schema<...>()`
+  4. Automatic detection of a unique top-level `AckSchema<Boundary, T>`
+     variable, getter, or zero-argument function in the current library (`#185`).
+* Support two-way `StringSchema` normalizers (`.trim()`, `.toLowerCase()`,
+  `.toUpperCase()`) in schema-first `@Schemable()` models.
+* Add `ack_generator:ack_json_schema` builder and `generateAckSchemaLibrary()`
+  API to compile `lib/**/*.schema.json` Draft 2020-12 documents into
+  `<name>.schema.g.dart` typed models or validated value-model libraries
+  (`#167`).
+
 ## 1.7.0-beta.7
 
 ### Changed

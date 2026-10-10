@@ -1,3 +1,54 @@
+## 2.0.0-beta.1
+
+### Breaking
+
+* Remove legacy 1.x generator annotations (`@AckType`, `@AckInfer`, `@AckModel`,
+  `JsonKeyCaseStyle`, and `@Schemable.generatedJson`). Use `@Schemable()` on
+  both top-level schemas and hand-written classes/unions (`#188`, `#189`).
+* Remove unused `StandardSchemaV1` (`standard_schema.dart`). `AckSchema`,
+  `SchemaResult`, and `AckSchemaModel` form the single canonical schema and
+  shape contract (`#129`).
+* Seal `SchemaError` and `AckSchema` so pattern matching across all error and
+  schema subtypes is exhaustive without a wildcard branch.
+* Rethrow programmer `Error`s (`TypeError`, `StateError`, etc.) with their
+  original stack trace during `CodecSchema` decode (`parse` / `safeParse`),
+  matching `encode` / `safeEncode` (`#163`).
+* `Ack.fromJsonSchema()` now defaults to `assertFormats: false` to match JSON
+  Schema Draft 2020-12's default Core/Applicator/Validation vocabularies; pass
+  `assertFormats: true` (or declare the `format-assertion` vocabulary in
+  `$vocabulary`) to enforce format assertions (`#171`, `#186`).
+* `schema.toJsonSchema()` and `schema.toSchemaModel()` now preserve imported
+  Draft 2020-12 resources by default (`$defs`, `$dynamicRef`,
+  `unevaluatedProperties`, `prefixItems`, etc.). Use `toJsonSchemaDraft7()` or
+  `toSchemaModelDraft7()` for legacy Draft-07 `definitions` lowering (`#171`).
+* Deprecate legacy top-level constraint annotation classes (`@Min`, `@Max`,
+  `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`,
+  `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`,
+  `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems`) in
+  favor of `@Validate.*` (`#191`).
+
+### Added
+
+* Add unified `@Validate.*` constraint annotation namespace
+  (`final class Validate`) exported from both `package:ack/ack.dart` and
+  `package:ack/annotations.dart` (`#191`).
+* Add `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) with
+  `JsonMaybe.absent()`, `JsonMaybe.value(T? value)`, and `JsonMaybe.nullValue()`
+  for PATCH tri-state presence (`#148`).
+* Add `@Schemable(schemas: [...])` (supported on classes, sealed unions, and
+  `library;` directives) and `@AckField(name: ..., schema: ...)` for custom
+  schema registration and field wire-name overrides (`#185`, `#189`).
+* Make `.trim()`, `.toLowerCase()`, and `.toUpperCase()` two-way normalizers
+  directly on `StringSchema` that execute in declaration order alongside
+  constraints during both `parse` and `encode`, preserve `StringSchema`
+  chaining, and export as `type: 'string'` without `'x-transformed': true`.
+* Support the complete JSON Schema Draft 2020-12 validation runtime in
+  `Ack.fromJsonSchema()`, including `$dynamicRef`, `$dynamicAnchor`,
+  `unevaluatedProperties`, `unevaluatedItems`, `prefixItems`,
+  `dependentRequired`, `dependentSchemas`, `patternProperties`, `minContains`,
+  `maxContains`, bundled offline 2020-12 meta-schemas, and the full Draft
+  2020-12 format suite (`#171`, `#186`).
+
 ## 1.7.0-beta.7
 
 ### Added

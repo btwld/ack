@@ -17,11 +17,11 @@ flutter pub add ack
 ```
 
 The unversioned commands select the latest stable release. To select the
-1.7.0-beta.7 prerelease, add it to your `pubspec.yaml`:
+2.0.0-beta.1 prerelease, add it to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^1.7.0-beta.7
+  ack: ^2.0.0-beta.1
 ```
 
 ## Optional code generator
@@ -38,25 +38,25 @@ Or add them to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^1.7.0-beta.7
+  ack: ^2.0.0-beta.1
 
 dev_dependencies:
-  ack_generator: ^1.7.0-beta.7
+  ack_generator: ^2.0.0-beta.1
   build_runner: ^2.4.0
 ```
 
 The generator works in both directions with one annotation, `@Schemable()`,
-from `package:ack/ack.dart`. Constraint annotations such as `@MinLength()` come
-from `package:ack/annotations.dart`. `@Schemable()` on a top-level schema generates an
-immutable model. `@Schemable()` on a hand-written class generates a public
-`<ClassName>Schema` facade, a private Ack codec, and JSON helpers.
-There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
+and one constraint namespace, `@Validate.*`, both exported from
+`package:ack/ack.dart`. `@Schemable()` on a top-level schema generates an
+immutable model. `@Schemable()` on a hand-written class generates a
+`_<className>Schema` codec, a public `<ClassName>Schema` facade, and JSON
+helpers. There is no `@AckSchema()` annotation; `AckSchema` is the runtime
+schema type.
 
 ```dart
 import 'package:ack/ack.dart';
 
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -67,8 +67,11 @@ final userSchema = Ack.object({
 @Schemable()
 final class Account with _$AccountAck {
   const Account({required this.name});
+
+  @Validate.minLength(2)
   final String name;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```

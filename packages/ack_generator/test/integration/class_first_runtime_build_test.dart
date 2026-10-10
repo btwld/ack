@@ -41,8 +41,7 @@ Future<void> _expectConsumerSafeParts(
   const lintSuppression = '// ignore_for_file: type=lint\n';
   final modern = {
     for (final MapEntry(key: path, value: source) in generated.entries)
-      if (path.endsWith('.ack.dart') || path.endsWith('.ack.g.dart'))
-        path: source,
+      if (path.endsWith('.g.dart')) path: source,
   };
   expect(modern, isNotEmpty);
   for (final MapEntry(key: path, value: source) in modern.entries) {
@@ -50,7 +49,7 @@ Future<void> _expectConsumerSafeParts(
     expect(source, contains('// coverage:ignore-file\n'), reason: path);
     File(
       p.join(project.path, path),
-    ).writeAsStringSync(source.replaceFirst(lintSuppression, ''));
+    ).writeAsStringSync(source.replaceAll(lintSuppression, ''));
   }
   try {
     _expectSuccess(
@@ -123,17 +122,6 @@ linter:
     - prefer_null_aware_operators
 ''',
         );
-        File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
-targets:
-  \$default:
-    builders:
-      ack_generator:ack_generator:
-        generate_for:
-          - lib/coexist.dart
-      source_gen:combining_builder:
-        generate_for:
-          - lib/models.dart
-''');
         File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final String value; }\n',
         );
@@ -143,15 +131,8 @@ targets:
         File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'coexist.g.dart';
-part 'coexist.ack.dart';
-part 'coexist.ack.g.dart';
-
-// ignore: deprecated_member_use
-@AckType()
-final frozenSchema = Ack.object({'id': Ack.string()});
 
 @Schemable()
 final modernSchema = Ack.object({'name': Ack.string()});
@@ -166,16 +147,14 @@ final class Handwritten with _$HandwrittenAck {
         );
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
+// ignore_for_file: deprecated_member_use
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 import 'package:json_annotation/json_annotation.dart'
     show JsonKey, JsonSerializable;
 
 import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
 part 'models.g.dart';
 
 final class Color {
@@ -224,7 +203,7 @@ final class Profile with _$ProfileAck {
   final Uri? website;
   final String? nickname;
   final String role;
-  @UniqueItems()
+  @Validate.uniqueItems()
   final Set<String> tags;
   @AckField(schema: colorSchema)
   final Color color;
@@ -312,7 +291,7 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
   });
 
   final List<List<String>> matrix;
-  @UniqueItems()
+  @Validate.uniqueItems()
   final Set<String> labels;
   @AckField(schema: groupsSchema)
   final Map<String, List<String>> groups;
@@ -328,7 +307,7 @@ final class Example with _$ExampleAck {
 
   @Optional()
   @NotNull()
-  @NotEmpty()
+  @Validate.notEmpty()
   final String? title;
 
   static final fromJson = ExampleSchema.fromJson;
@@ -572,6 +551,23 @@ final class Square extends Shape with _$SquareAck {
 @Schemable()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
 
+@Schemable()
+final class UserPatch with _$UserPatchAck {
+  const UserPatch({
+    this.nickname = const JsonMaybe.absent(),
+    this.title = const JsonMaybe.absent(),
+    this.tags = const JsonMaybe.absent(),
+  });
+
+  final JsonMaybe<String> nickname;
+
+  @NotNull()
+  @Validate.notEmpty()
+  final JsonMaybe<String> title;
+
+  final JsonMaybe<List<String>> tags;
+}
+
 @JsonSerializable()
 final class PlainJson {
   const PlainJson({required this.value});
@@ -643,7 +639,7 @@ void main() {
       throwsA(isA<AckException>()),
     );
     expect(ProfileSchema.safeParse({'name': 'Ada'}).isFail, isTrue);
-    expect(ProfileSchema.toJsonSchema()['x-transformed'], isTrue);
+    expect(ProfileSchema.toJsonSchema().containsKey('x-transformed'), isFalse);
     expect(
       ProfileSchema.toSchemaModel().toJsonSchema(),
       ProfileSchema.toJsonSchema(),
@@ -1154,15 +1150,63 @@ void main() {
     expect(plain.toJson(), {'value': 'plain'});
   });
 
-  test('all three Ack model generators coexist in one build-runner library', () {
-    expect(FrozenType.parse({'id': 'frozen'}).id, 'frozen');
+  test('schema-first and class-first Ack models coexist in one build-runner library', () {
     expect(Modern.parse({'name': 'modern'}).name, 'modern');
     expect(HandwrittenSchema.parse({'enabled': true}).enabled, isTrue);
+  });
+
+  test('JsonMaybe<T> fields distinguish omitted vs explicit null on decode and encode', () {
+    final empty = UserPatchSchema.parse({});
+    expect(empty.nickname, const JsonMaybe<String>.absent());
+    expect(empty.title, const JsonMaybe<String>.absent());
+    expect(empty.tags, const JsonMaybe<List<String>>.absent());
+    expect(empty.toJson(), <String, Object?>{});
+
+    final cleared = UserPatchSchema.parse({'nickname': null, 'tags': null});
+    expect(cleared.nickname, const JsonMaybe<String>.nullValue());
+    expect(cleared.nickname.isNull, isTrue);
+    expect(cleared.tags, const JsonMaybe<List<String>>.nullValue());
+    expect(cleared.toJson(), <String, Object?>{'nickname': null, 'tags': null});
+
+    final populated = UserPatchSchema.parse({
+      'nickname': 'Ada',
+      'title': 'Countess',
+      'tags': ['math', 'code'],
+    });
+    expect(populated.nickname, const JsonMaybe.value('Ada'));
+    expect(populated.title, const JsonMaybe.value('Countess'));
+    expect(populated.tags, const JsonMaybe.value(['math', 'code']));
+    expect(populated.toJson(), {
+      'nickname': 'Ada',
+      'title': 'Countess',
+      'tags': ['math', 'code'],
+    });
+
+    expect(
+      UserPatchSchema.safeParse({'title': null}).isFail,
+      isTrue,
+    );
+    expect(
+      UserPatchSchema.safeParse({'title': ''}).isFail,
+      isTrue,
+    );
+
+    final copied = populated.copyWith(
+      nickname: const JsonMaybe.absent(),
+      tags: const JsonMaybe.nullValue(),
+    );
+    expect(copied.toJson(), {
+      'title': 'Countess',
+      'tags': null,
+    });
   });
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',
@@ -1170,63 +1214,49 @@ void main() {
         final generated = _generatedFiles(temporary);
         expect(
           generated.keys,
-          containsAll([
-            'lib/coexist.g.dart',
-            'lib/coexist.ack.dart',
-            'lib/coexist.ack.g.dart',
-            'lib/models.ack.dart',
-            'lib/models.ack.g.dart',
-            'lib/models.g.dart',
-          ]),
+          containsAll(['lib/coexist.g.dart', 'lib/models.g.dart']),
         );
         expect(
-          generated['lib/models.ack.g.dart'],
-          contains('_ackProfileFromRuntimeName'),
+          generated['lib/models.g.dart'],
+          contains(r'decode: _$ProfileFromRuntime'),
         );
         expect(
           generated['lib/models.g.dart'],
           contains(r'_$PlainJsonFromJson'),
         );
-        expect(generated['lib/models.ack.dart'], contains('class Legacy'));
+        expect(generated['lib/models.g.dart'], contains('class Legacy'));
+        expect(generated['lib/models.g.dart'], contains(r'mixin _$ProfileAck'));
         expect(
-          generated['lib/models.ack.dart'],
-          contains(r'mixin _$ProfileAck'),
-        );
-        expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains(r'implements $ParentCopyWith<$Result>'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains(r'implements $RabbitCopyWith<$Result>'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains('abstract final class ProfileSchema'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains('final _profileSchema'),
         );
+        expect(generated['lib/coexist.g.dart'], contains('class Modern'));
         expect(
           generated['lib/coexist.g.dart'],
-          contains('extension type FrozenType'),
-        );
-        expect(generated['lib/coexist.ack.dart'], contains('class Modern'));
-        expect(
-          generated['lib/coexist.ack.dart'],
           contains(r'mixin _$HandwrittenAck'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           isNot(contains('final profileSchema =')),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains('parameters: parameters ?? _source.parameters'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           isNot(contains('parameters as Map<String, ParameterEntry>?')),
         );
 

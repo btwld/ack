@@ -1,3 +1,15 @@
+## 2.0.0-beta.1
+
+### Breaking
+
+* Requires `ack: ^2.0.0-beta.1` and aligns with the coordinated Ack 2.0.0-beta.1
+  release.
+
+### Changed
+
+* Regenerate Firebase AI response JSON Schema fixtures for two-way `StringSchema`
+  normalizer exports (`Ack.string().trim()`, `.toLowerCase()`, `.toUpperCase()`).
+
 ## 1.7.0-beta.7
 
 ### Changed

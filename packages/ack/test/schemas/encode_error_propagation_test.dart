@@ -1,7 +1,5 @@
 import 'package:ack/ack.dart';
-// `Refinement` is intentionally hidden from the public ack.dart export; the
-// test-local schema below reaches into the source path to declare it.
-import 'package:ack/src/schemas/schema.dart' show Refinement;
+import 'package:ack/src/schemas/schema.dart' show TestThrowingLeafAckSchema;
 import 'package:test/test.dart';
 
 CodecSchema<String, int> _throwingCodec(Object error) {
@@ -17,57 +15,6 @@ CodecSchema<String, int> _countingCodec(List<int> calls) {
       return value.toString();
     },
   );
-}
-
-/// A non-codec schema whose encode throws an ordinary [Exception], used to pin
-/// that composite catch blocks still attribute a child path.
-final class _ThrowingLeafSchema extends AckSchema<String, String>
-    with FluentSchema<String, String, _ThrowingLeafSchema> {
-  const _ThrowingLeafSchema({
-    super.isNullable,
-    super.isOptional,
-    super.description,
-    super.constraints,
-    super.refinements,
-  });
-
-  @override
-  SchemaType get schemaType => SchemaType.string;
-
-  @override
-  SchemaResult<String> validateRuntimeWithContext(
-    Object? value,
-    SchemaContext context,
-  ) => SchemaResult.ok(value as String);
-
-  @override
-  SchemaResult<String> encodeWithContext(String value, SchemaContext context) {
-    throw const FormatException('leaf encode refused');
-  }
-
-  @override
-  _ThrowingLeafSchema copyWith({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    List<Constraint<String>>? constraints,
-    List<Refinement<String>>? refinements,
-  }) {
-    return _ThrowingLeafSchema(
-      isNullable: isNullable ?? this.isNullable,
-      isOptional: isOptional ?? this.isOptional,
-      description: description ?? this.description,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      other is _ThrowingLeafSchema && baseFieldsEqual(other);
-
-  @override
-  int get hashCode => baseFieldsHashCode;
 }
 
 Iterable<SchemaError> _flatten(SchemaError error) sync* {
@@ -245,7 +192,7 @@ void main() {
     });
 
     test('a non-codec child Exception is still attributed to #/leaf', () {
-      final schema = Ack.object({'leaf': const _ThrowingLeafSchema()});
+      final schema = Ack.object({'leaf': const TestThrowingLeafAckSchema()});
 
       final result = schema.safeEncode({'leaf': 'v'});
 
@@ -283,17 +230,16 @@ void main() {
     });
   });
 
-  group('decoder policy is unchanged', () {
-    test('a decoder Error still becomes a SchemaTransformError', () {
+  group('decoder policy matches encoder policy', () {
+    test('a decoder Error propagates unchanged', () {
+      final error = StateError('decode boom');
       final schema = Ack.string().codec<int>(
-        decode: (_) => throw StateError('decode boom'),
+        decode: (_) => throw error,
         encode: (value) => value.toString(),
       );
 
-      final result = schema.safeParse('1');
-
-      expect(result.isFail, isTrue);
-      expect(result.getError(), isA<SchemaTransformError>());
+      expect(() => schema.safeParse('1'), throwsA(same(error)));
+      expect(() => schema.parse('1'), throwsA(same(error)));
     });
   });
 }

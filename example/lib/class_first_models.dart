@@ -1,8 +1,6 @@
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
-part 'class_first_models.ack.dart';
-part 'class_first_models.ack.g.dart';
+part 'class_first_models.g.dart';
 
 /// A signed-in user's account.
 @Schemable(
@@ -17,12 +15,13 @@ final class Account with _$AccountAck {
   });
 
   /// The name shown to other users.
-  @MinLength(2)
+  @Validate.minLength(2)
   @AckField(description: 'The name shown to other users.')
   final String displayName;
   final Uri? website;
   final String role;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 
@@ -41,8 +40,8 @@ sealed class Pet with _$PetAck {
 final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
 
-  @Min(1)
-  @Max(9)
+  @Validate.min(1)
+  @Validate.max(9)
   final int lives;
 }
 

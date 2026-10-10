@@ -107,8 +107,7 @@ linter:
           r'''
 import 'package:ack/ack.dart';
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 
 final class Box {
   const Box(this.values);
@@ -265,8 +264,7 @@ final countedSchema = Ack.object({
           r'''
 import 'package:ack/ack.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -282,8 +280,7 @@ import 'package:ack/ack.dart';
 import 'address.dart' as direct;
 import 'exports.dart' as exported;
 
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({
@@ -589,7 +586,10 @@ void main() {
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',
@@ -600,27 +600,19 @@ void main() {
               in temporary
                   .listSync(recursive: true)
                   .whereType<File>()
-                  .where(
-                    (file) =>
-                        file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.ack.g.dart'),
-                  ))
+                  .where((file) => file.path.endsWith('.g.dart')))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),
         };
+        expect(generated.keys, contains('lib/models.g.dart'));
         expect(
-          generated.keys,
-          containsAll(['lib/models.ack.dart', 'lib/models.ack.g.dart']),
+          generated['lib/models.g.dart'],
+          contains('static Extras _fromAckRuntime'),
         );
         expect(
-          generated['lib/models.ack.g.dart'],
-          contains(r'_$ExtrasFromJson'),
+          generated['lib/models.g.dart'],
+          contains('Map<String, Object?> _toAckRuntime()'),
         );
-        expect(
-          generated['lib/models.ack.g.dart'],
-          contains('Extras._ackFromRuntimeName'),
-        );
-        expect(generated['lib/models.ack.dart'], contains(r'_$ExtrasFromJson'));
 
         _expectSuccess(
           await _run(temporary, ['analyze', '--fatal-infos']),
@@ -642,11 +634,7 @@ Extras misuse(Extras extras) => extras.copyWith(nickname: const Object());
               in temporary
                   .listSync(recursive: true)
                   .whereType<File>()
-                  .where(
-                    (file) =>
-                        file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.ack.g.dart'),
-                  ))
+                  .where((file) => file.path.endsWith('.g.dart')))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),
         };

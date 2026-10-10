@@ -195,7 +195,7 @@ Raised when `encode()` or `safeEncode()` can't turn a runtime value back into it
 
 ### Working with error types
 
-Use pattern matching to handle specific error types:
+`SchemaError` (and `AckSchema`) is a `sealed class`, so you can use exhaustive pattern matching without a wildcard branch:
 
 ```dart
 final result = schema.safeParse(data);
@@ -211,13 +211,11 @@ if (result.isFail) {
     case SchemaNestedError():
       print('Nested validation failed at ${error.errors.length} locations');
     case SchemaValidationError():
-      print('Custom validation failed: ${error.message}');
+      print('Custom or JSON Schema validation failed: ${error.message}');
     case SchemaTransformError():
       print('Transformation failed: ${error.cause}');
     case SchemaEncodeError():
       print('Could not encode value: ${error.message}');
-    default:
-      print('Validation failed: ${error.message}');
   }
 }
 ```

@@ -1,18 +1,5 @@
 import 'package:meta/meta_meta.dart';
 
-// The deprecated presence API is defined in this file.
-// ignore_for_file: deprecated_member_use_from_same_package
-
-/// Overrides inferred input-presence for a class-first field.
-///
-/// [inferred] keeps constructor-based presence. [required] always requires the
-/// JSON key. [optional] is valid only when the constructor can accept a missing
-/// value, with a discriminator-specific exception for union branches.
-@Deprecated(
-  'Use @Optional() or @Required(). AckFieldPresence will be removed in 2.0.0.',
-)
-enum AckFieldPresence { inferred, required, optional }
-
 /// Marks a class-first field as optional on the wire.
 ///
 /// The JSON key may be omitted. This does not change whether a present JSON
@@ -47,38 +34,26 @@ final class NotNull {
   const NotNull();
 }
 
-/// Overrides the inferred schema and/or presence for a class-first field.
+/// Overrides the JSON key, inferred schema, and/or description for a
+/// class-first field.
 ///
+/// [name] overrides the wire JSON key for this field.
 /// [schema] must be a const tear-off of a top-level function returning an Ack
 /// schema. The generator validates the declaration and follows its expression.
 /// [description] describes this property, not a nested model's schema.
 /// It takes precedence over an `@description` doc tag. A no-op `@AckField()`
 /// is rejected.
-///
-/// Prefer `@Optional()` and `@Required()` for key presence. [presence] is
-/// deprecated and will be removed in 2.0.0.
 @Target({TargetKind.field, TargetKind.parameter})
 final class AckField {
   /// Creates a field annotation.
-  const AckField({
-    this.schema,
-    this.description,
-    @Deprecated(
-      'Use @Optional() or @Required(). AckField.presence will be removed in '
-      '2.0.0.',
-    )
-    this.presence = AckFieldPresence.inferred,
-  });
+  const AckField({this.name, this.schema, this.description});
+
+  /// Explicit JSON key for this property.
+  final String? name;
 
   /// Top-level schema-function tear-off followed by `ack_generator`.
   final Object Function()? schema;
 
   /// Schema description for this property.
   final String? description;
-
-  /// Presence override applied after constructor inference.
-  @Deprecated(
-    'Use @Optional() or @Required(). AckField.presence will be removed in 2.0.0.',
-  )
-  final AckFieldPresence presence;
 }

@@ -2,8 +2,7 @@
 
 This package demonstrates both code-generation directions with `@Schemable()`:
 schemas converted to immutable models, and hand-written classes converted to
-codec schemas. Annotated examples declare both `.ack.dart`
-and `.ack.g.dart` parts.
+codec schemas. Annotated examples declare a single `.g.dart` part.
 
 ## Included examples
 

@@ -123,15 +123,14 @@ if (result.isOk) {
 
 Generate immutable models for hand-written schemas with `@Schemable()`. Add
 `ack` to `dependencies` and `ack_generator` + `build_runner` to
-`dev_dependencies`, then annotate a top-level schema. `@Schemable()` comes
-from `package:ack/ack.dart`; constraint annotations such as `@MinLength()` come
-from `package:ack/annotations.dart`:
+`dev_dependencies`, then annotate a top-level schema. `@Schemable()`, the model
+annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the
+`@Validate.*` constraint namespace are all exported from `package:ack/ack.dart`:
 
 ```dart
 import 'package:ack/ack.dart';
 
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -160,72 +159,38 @@ named recursion, and discriminated unions. One-way transforms are rejected
 because a generated model must be encodable. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
-### Legacy Ack 1.1 generation
-
-`@AckType()` remains available for source compatibility and keeps the Ack 1.1
-extension-type API and `.g.dart` output unchanged. It is deprecated and will be
-removed in Ack 2.0:
-
-```dart
-import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
-
-part 'legacy_user.g.dart';
-
-@AckType()
-final userSchema = Ack.object({'name': Ack.string()});
-```
-
-This still generates `UserType`, including its Map interface, typed getters,
-`parse` / `safeParse`, and `.args`. New code should use `@Schemable()`.
-
-| Ack 1.1 source | Optional immutable-model migration |
-|---|---|
-| Keep `@AckType()` | Rename it to `@Schemable()` |
-| Keep `part 'file.g.dart';` | Add `file.ack.dart` and `file.ack.g.dart` parts |
-| Use `*Type`, Map access, and `.args` | Use the generated class, typed fields, `parse`, `fromJson`, and `toJson` |
-
-Legacy and modern declarations may coexist when they are unrelated. A nested
-reference graph cannot cross between them; migrate that connected graph
-together.
-
 Already own the model class? Put `@Schemable()` on it to derive a codec schema from
-constructor-backed fields while keeping the class hand-written. A class named
-`Account` receives an `AccountSchema` facade for parsing, encoding, schema
-export, and nested composition; the backing codec remains private:
+constructor-backed fields (including Dart 3.12+ primary constructors) while
+keeping the class hand-written. A class named `Account` receives a private
+`_accountSchema` codec and a public `AccountSchema` facade for parsing, encoding,
+schema export, and nested composition:
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
+
+part 'account.g.dart';
 
 @Schemable()
 final class Account with _$AccountAck {
   const Account({required this.name});
 
-  @MinLength(2)
+  @Validate.minLength(2)
   final String name;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
 
-`Account.fromJson({'name': 'Ada'})` validates and constructs the model, while
-`account.toJson()` validates and encodes it.
+`Account.fromJson({'name': 'Ada'})` (or `Account.schema.parse(...)`) validates
+and constructs the model, while `account.toJson()` validates and encodes it.
 
-A field whose type declares a static `schema` needs no annotation: a `Slot`
-field resolves to `Slot.schema`, a `List<Slot>` to `Ack.list(Slot.schema)`,
-and a generic `Command<Action>` to `Command.schema<Action>()`. See the
+Custom field types resolve automatically through a static `schema` on the type
+(`Slot.schema`, `Ack.list(Slot.schema)`, `Command.schema<Action>()`), a unique
+top-level `AckSchema<Boundary, T>` in the same library, `@Schemable(schemas: [...])`
+on the class, union, or `library;` directive, or `@AckField(schema: ...)` on a
+specific field. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
-
-Upgrading from 1.7.0-beta.2: drop `ack_annotations`, import
-`package:ack/ack.dart` for `@Schemable()`, and replace
-`package:ack_annotations/ack_annotations.dart` with
-`package:ack/annotations.dart` (and `.../format_annotations.dart` with
-`package:ack/format_annotations.dart`) where you use constraint annotations.
-Rename `@Pattern` to `@Matches`, and replace the deprecated `@AckInfer()` /
-`@AckModel()` with `@Schemable()`. A field renamed with `@JsonKey(name: ...)`
-now imports `JsonKey` from `package:json_annotation`, with `json_annotation`
-in the app's dependencies.
 
 ## Codecs
 

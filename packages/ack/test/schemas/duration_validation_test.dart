@@ -182,12 +182,12 @@ void main() {
     });
 
     group('JSON Schema', () {
-      test('emits type integer and x-transformed', () {
+      test('emits type integer without x-transformed', () {
         final schema = Ack.duration();
         final jsonSchema = schema.toJsonSchema();
 
         expect(jsonSchema['type'], 'integer');
-        expect(jsonSchema['x-transformed'], isTrue);
+        expect(jsonSchema.containsKey('x-transformed'), isFalse);
       });
 
       test('emits minimum with milliseconds value', () {
@@ -212,7 +212,6 @@ void main() {
 
         expect(model.toJsonSchema(), {
           'type': 'integer',
-          'x-transformed': true,
           'minimum': 5000,
           'maximum': 10000,
         });
@@ -228,7 +227,7 @@ void main() {
         final model = schema.toSchemaModel();
 
         expect(model.toJsonSchema()['anyOf'], [
-          {'type': 'integer', 'minimum': 5000, 'x-transformed': true},
+          {'type': 'integer', 'minimum': 5000},
           {'type': 'null'},
         ]);
         expect(model.warnings, isEmpty);
