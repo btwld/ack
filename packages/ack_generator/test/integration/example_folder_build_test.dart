@@ -102,8 +102,8 @@ dependency_overrides:
         );
 
         _expectSuccess(
-          await _run(temporaryExample, ['pub', 'get']),
-          'dart pub get',
+          await _run(temporaryExample, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
         );
         _expectSuccess(
           await _run(temporaryExample, ['run', 'build_runner', 'build']),
@@ -204,8 +204,8 @@ dependency_overrides:
         );
 
         _expectSuccess(
-          await _run(temporaryExample, ['pub', 'get']),
-          'dart pub get',
+          await _run(temporaryExample, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
         );
 
         final schemaFile = File(

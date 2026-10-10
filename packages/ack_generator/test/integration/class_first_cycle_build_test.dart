@@ -70,7 +70,7 @@ final class Child with _$ChildAck {
 }
 ''');
 
-      final pubGet = await _run(temporary, ['pub', 'get']);
+      final pubGet = await _run(temporary, ['pub', 'get', '--offline']);
       expect(
         pubGet.exitCode,
         0,

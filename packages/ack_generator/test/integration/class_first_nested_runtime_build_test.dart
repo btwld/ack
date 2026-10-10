@@ -434,7 +434,10 @@ void main() {
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         final runtimeDependencies = await _run(temporary, [
           'pub',
           'deps',

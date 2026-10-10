@@ -59,9 +59,11 @@ Both registration helpers return `RegisteredTool` and forward `title`,
 `description`, `annotations`, and `meta`. Callbacks may be synchronous or
 asynchronous and receive the original `RequestHandlerExtra`.
 
-Use `server.registerAckModelTool('search', model: SearchSchema.model,
+Use `server.registerAckModelTool('search', model: Search.$ack,
 callback: (args, extra) { ... })` with an `AckModelAdapter<JsonMap, Object, M>`
-(such as a generated model adapter) to receive a typed `M` instead of a map.
+(such as a schema-first generated model adapter, or pass a class-first
+`SearchSchema.schema` directly to `registerAckTool`) to receive a typed `M`
+instead of a map.
 The model is constructed after ACK parses defaults and codecs.
 
 ## Bare conversion and parsing

@@ -4,8 +4,7 @@
 // analyzes without running `build_runner`. A real library adds them:
 //
 // ```dart
-// part 'example.ack.dart';   // the model class and its parse/JSON API
-// part 'example.ack.g.dart'; // the structural field mapping
+// part 'example.g.dart';
 // ```
 //
 // Then run:

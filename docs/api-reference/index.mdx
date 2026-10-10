@@ -311,16 +311,12 @@ Schema reference for recursive object graphs.
 
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
 either direction with one annotation, `@Schemable()`: on a top-level schema it
-generates a model, and on a class it generates a schema. `package:ack/ack.dart`
-exports `@Schemable` and the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`). Constraint annotations come from
-`package:ack/annotations.dart`, imported with a prefix (`as ack`, then
-`@ack.Email()`) where a name clashes with another type, and `@Uri()` /
-`@DateTime()` from `package:ack/format_annotations.dart`. `@AckInfer()` and
-`@AckModel()` are
-deprecated spellings that keep working until 2.0.0. `AckSchema` is the
-runtime schema type; there is no `@AckSchema()` annotation. After adding matching
-`.ack.dart` and `.ack.g.dart` part directives, run:
+generates a model, on a class it generates a schema, and on a `library;`
+directive it registers shared custom schemas via `@Schemable(schemas: [...])`.
+`package:ack/ack.dart` exports `@Schemable`, the model annotations (`@AckField`,
+`@Optional`, `@Required`, `@NotNull`), and the `@Check.*` constraint namespace.
+`AckSchema` is the runtime schema type; there is no `@AckSchema()` annotation.
+After adding a `part '<file>.g.dart';` directive, run:
 
 ```bash
 dart run build_runner build
@@ -355,8 +351,7 @@ here. For `Ack.discriminated(...)` constraints, see
 ```dart
 import 'package:ack/ack.dart';
 
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -390,42 +385,31 @@ constructors remain responsible for defensively copying direct inputs.
 `toString`
 
 Ack infers schema fields from constructor-backed fields. Required parameters,
-nullable types, optional parameters, and constructor defaults determine field
-presence. Use `caseStyle` for model-wide JSON naming and `@JsonKey(name: ...)`
-on the field for an override; `JsonKey` comes from
-`package:json_annotation/json_annotation.dart`, which the app then depends on.
-Other `JsonKey` options, constructor-parameter placement, and `JsonConverter`
-annotations are rejected. Instantiable models and implicit union branches must
-apply the generated mixin. In `copyWith`, omission keeps the current value and
-explicit `null` clears a nullable field. `copyWith` returns a typed interface,
-so a wrongly typed argument is a compile-time error.
+nullable types, optional parameters, `JsonMaybe<T>`, and constructor defaults
+determine field presence. Use `caseStyle` for model-wide JSON naming and
+`@AckField(name: ...)` on the field for a wire-name override. Instantiable
+models and implicit union branches must apply the generated mixin. In
+`copyWith`, omission keeps the current value and explicit `null` clears a
+nullable field. `copyWith` returns a typed interface, so a wrongly typed
+argument is a compile-time error.
 
 **Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
-`Duration`, enums, nested lists, and sets
+`Duration`, enums, `JsonMaybe<T>`, nested lists, sets, and string-keyed maps
 
-**Constraint annotations:**
+**Constraint annotations (`@Check.*` from `package:ack/ack.dart`):**
 
-- numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`
-- strings: `@MinLength`, `@MaxLength`, `@Matches`, `@Email`, `@NotEmpty`
-- string formats: `@Url`, `@Uuid`, `@Date`; `@Uri()` and `@DateTime()` from
-  `package:ack/format_annotations.dart` imported with a prefix
-  (`@formats.Uri()`)
-- collections: `@MinItems`, `@MaxItems`, `@UniqueItems`
+- numeric: `@Check.min`, `@Check.max`, `@Check.multipleOf`, `@Check.positive`, `@Check.negative`
+- strings: `@Check.minLength`, `@Check.maxLength`, `@Check.matches`, `@Check.email`, `@Check.notEmpty`
+- string formats: `@Check.url`, `@Check.uri`, `@Check.uuid`, `@Check.date`, `@Check.dateTime` (`@Check.datetime`), `@Check.ip`, `@Check.ipv4`, `@Check.ipv6`
+- collections: `@Check.minItems`, `@Check.maxItems`, `@Check.uniqueItems` (`@Check.unique`)
 
-`@Matches` replaces `@Pattern`, which remains a deprecated alias in
-`package:ack/annotations.dart` only.
+**Custom schemas:** a field of custom type `T` resolves through:
+1. `@AckField(schema: ...)` on the field;
+2. `@Schemable(schemas: [...])` on the class, union base, `library;` directive, or an imported `library;` directive;
+3. a static `T.schema` / `T.schema<A>(...)` on the type;
+4. a unique top-level `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the current library.
 
-**Type-owned schemas:** a field whose type declares a static `schema` resolves
-to it with no annotation, also per `List` / `Set` item and as a `Map` value. A
-generic type declares `static AckSchema<B, T<A>> schema<A>()`, which is called
-with the field's type arguments; if it declares one positional parameter typed
-`AckSchema<Object, A>` per type parameter `A`, it also receives each type argument's inferred
-schema. An enum's static `schema` wins over `Ack.enumValues`. The schema must
-produce the field type.
-
-Use `@AckField(schema: ...)` for a type you cannot edit; the non-generic
-function must produce the field type. A no-op `@AckField()` is rejected. A
-sealed base annotated with `@Schemable(discriminatorKey: ...)` generates a discriminated union from its
+A sealed base annotated with `@Schemable(discriminatorKey: ...)` generates a discriminated union from its
 same-library concrete branches. Unknown properties use
 `unknownProperties: AckUnknownPropertyPolicy.<policy>` (`reject` by default).
 Raw `Ack.object(..., additionalProperties: true)` schemas preserve extras.
@@ -435,13 +419,14 @@ select the target map with `captureField`.
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
+
+part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
-  @MinLength(2)
+  @Check.minLength(2)
   final String displayName;
   final String role;
 
