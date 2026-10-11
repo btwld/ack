@@ -205,57 +205,15 @@ sealed class AckSchemaModel {
       common = common.copyWith(defaultValue: keywords['default']);
     }
 
-    return switch (_rebuildWithCommon(common)) {
-      AckStringSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckIntegerSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckNumberSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckBooleanSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckArraySchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckObjectSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckAnyOfSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckOneOfSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckAllOfSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckRawSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckNullSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-      AckRefSchemaModel schema => schema._withJsonSchemaKeywords(
-        keywords,
-        commonHandled,
-      ),
-    };
+    return _rebuildWithCommon(
+      common,
+    )._withJsonSchemaKeywords(keywords, commonHandled);
   }
+
+  AckSchemaModel _withJsonSchemaKeywords(
+    Map<String, Object?> keywords,
+    Set<String> commonHandled,
+  ) => _withUnhandledKeywords(keywords, commonHandled);
 
   Map<String, Object?> finishTypeJson(Map<String, Object?> typeJson) {
     if (!nullable) {
@@ -378,11 +336,6 @@ final class AckRawSchemaModel extends AckSchemaModel {
   @override
   AckRawSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
       AckRawSchemaModel._(common, schema: schema);
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) => _withUnhandledKeywords(keywords, commonHandled);
 }
 
 Map<String, Object?> _relocateRootPointers(
@@ -495,13 +448,6 @@ final class AckRefSchemaModel extends AckSchemaModel {
   @override
   AckRefSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
       AckRefSchemaModel._(common, refName: refName);
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) {
-    return _withUnhandledKeywords(keywords, commonHandled);
-  }
 }
 
 final class AckStringSchemaModel extends AckSchemaModel {
@@ -561,65 +507,58 @@ final class AckStringSchemaModel extends AckSchemaModel {
         pattern: pattern,
       );
 
-  AckStringSchemaModel _copyWith({
-    String? format,
-    List<Object?>? enumValues,
-    Object? constValue = _unset,
-    int? minLength,
-    int? maxLength,
-    String? pattern,
-  }) {
-    return AckStringSchemaModel._(
-      _common,
-      format: format ?? this.format,
-      enumValues: enumValues ?? this.enumValues,
-      constValue: identical(constValue, _unset)
-          ? this.constValue
-          : constValue as String?,
-      minLength: minLength ?? this.minLength,
-      maxLength: maxLength ?? this.maxLength,
-      pattern: pattern ?? this.pattern,
-    );
-  }
-
+  @override
   AckSchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
     final handled = {...commonHandled};
-    var next = this;
+    var nextFormat = format;
+    var nextEnum = enumValues;
+    var nextConst = constValue;
+    var nextMinLength = minLength;
+    var nextMaxLength = maxLength;
+    var nextPattern = pattern;
 
     if (keywords['format'] case final String value) {
       handled.add('format');
-      next = next._copyWith(format: value);
+      nextFormat = value;
     }
     if (keywords['enum'] case final List values) {
       handled.add('enum');
-      next = next._copyWith(enumValues: List<Object?>.from(values));
+      nextEnum = List<Object?>.from(values);
     }
     if (keywords['const'] case final String value) {
       handled.add('const');
-      next = next._copyWith(constValue: value);
+      nextConst = value;
     }
     if (_readIntKeyword(keywords, 'minLength') case final value?) {
       handled.add('minLength');
-      next = next._copyWith(minLength: value);
+      nextMinLength = value;
     }
     if (_readIntKeyword(keywords, 'maxLength') case final value?) {
       handled.add('maxLength');
-      next = next._copyWith(maxLength: value);
+      nextMaxLength = value;
     }
     if (keywords['pattern'] case final String value) {
       handled.add('pattern');
-      next = next._copyWith(pattern: value);
+      nextPattern = value;
     }
 
-    return next._withUnhandledKeywords(keywords, handled);
+    return AckStringSchemaModel._(
+      _common,
+      format: nextFormat,
+      enumValues: nextEnum,
+      constValue: nextConst,
+      minLength: nextMinLength,
+      maxLength: nextMaxLength,
+      pattern: nextPattern,
+    )._withUnhandledKeywords(keywords, handled);
   }
 }
 
-final class AckIntegerSchemaModel extends AckSchemaModel {
-  const AckIntegerSchemaModel({
+sealed class _AckNumericSchemaModel<T extends num> extends AckSchemaModel {
+  const _AckNumericSchemaModel({
     this.format,
     this.constValue,
     this.minimum,
@@ -627,6 +566,137 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
     this.exclusiveMinimum,
     this.exclusiveMaximum,
     this.multipleOf,
+    super.title,
+    super.description,
+    super.nullable,
+    super.defaultValue,
+    super.warnings,
+    super.extensions,
+  });
+
+  _AckNumericSchemaModel._(
+    super.common, {
+    this.format,
+    this.constValue,
+    this.minimum,
+    this.maximum,
+    this.exclusiveMinimum,
+    this.exclusiveMaximum,
+    this.multipleOf,
+  }) : super._();
+
+  @override
+  final String? format;
+  final T? constValue;
+  final num? minimum;
+  final num? maximum;
+  final num? exclusiveMinimum;
+  final num? exclusiveMaximum;
+  final num? multipleOf;
+
+  String get _jsonType;
+
+  _AckNumericSchemaModel<T> _rebuildNumeric(
+    _AckSchemaModelCommon common, {
+    required String? format,
+    required T? constValue,
+    required num? minimum,
+    required num? maximum,
+    required num? exclusiveMinimum,
+    required num? exclusiveMaximum,
+    required num? multipleOf,
+  });
+
+  @override
+  Map<String, Object?> toJsonSchema() => finishTypeJson({
+    'type': _jsonType,
+    if (format != null) 'format': format,
+    if (constValue != null) 'const': constValue,
+    if (minimum != null) 'minimum': minimum,
+    if (maximum != null) 'maximum': maximum,
+    if (exclusiveMinimum != null) 'exclusiveMinimum': exclusiveMinimum,
+    if (exclusiveMaximum != null) 'exclusiveMaximum': exclusiveMaximum,
+    if (multipleOf != null) 'multipleOf': multipleOf,
+  });
+
+  @override
+  _AckNumericSchemaModel<T> _rebuildWithCommon(_AckSchemaModelCommon common) =>
+      _rebuildNumeric(
+        common,
+        format: format,
+        constValue: constValue,
+        minimum: minimum,
+        maximum: maximum,
+        exclusiveMinimum: exclusiveMinimum,
+        exclusiveMaximum: exclusiveMaximum,
+        multipleOf: multipleOf,
+      );
+
+  @override
+  AckSchemaModel _withJsonSchemaKeywords(
+    Map<String, Object?> keywords,
+    Set<String> commonHandled,
+  ) {
+    final handled = {...commonHandled};
+    var nextFormat = format;
+    var nextConst = constValue;
+    var nextMin = minimum;
+    var nextMax = maximum;
+    var nextExMin = exclusiveMinimum;
+    var nextExMax = exclusiveMaximum;
+    var nextMultipleOf = multipleOf;
+
+    if (keywords['format'] case final String value) {
+      handled.add('format');
+      nextFormat = value;
+    }
+    if (keywords['const'] case final T value) {
+      handled.add('const');
+      nextConst = value;
+    }
+    if (_readNumKeyword(keywords, 'minimum') case final value?) {
+      handled.add('minimum');
+      nextMin = value;
+    }
+    if (_readNumKeyword(keywords, 'maximum') case final value?) {
+      handled.add('maximum');
+      nextMax = value;
+    }
+    if (_readNumKeyword(keywords, 'exclusiveMinimum') case final value?) {
+      handled.add('exclusiveMinimum');
+      nextExMin = value;
+    }
+    if (_readNumKeyword(keywords, 'exclusiveMaximum') case final value?) {
+      handled.add('exclusiveMaximum');
+      nextExMax = value;
+    }
+    if (_readNumKeyword(keywords, 'multipleOf') case final value?) {
+      handled.add('multipleOf');
+      nextMultipleOf = value;
+    }
+
+    return _rebuildNumeric(
+      _common,
+      format: nextFormat,
+      constValue: nextConst,
+      minimum: nextMin,
+      maximum: nextMax,
+      exclusiveMinimum: nextExMin,
+      exclusiveMaximum: nextExMax,
+      multipleOf: nextMultipleOf,
+    )._withUnhandledKeywords(keywords, handled);
+  }
+}
+
+final class AckIntegerSchemaModel extends _AckNumericSchemaModel<int> {
+  const AckIntegerSchemaModel({
+    super.format,
+    super.constValue,
+    super.minimum,
+    super.maximum,
+    super.exclusiveMinimum,
+    super.exclusiveMaximum,
+    super.multipleOf,
     super.title,
     super.description,
     super.nullable,
@@ -636,122 +706,50 @@ final class AckIntegerSchemaModel extends AckSchemaModel {
   });
 
   AckIntegerSchemaModel._(
+    super.common, {
+    super.format,
+    super.constValue,
+    super.minimum,
+    super.maximum,
+    super.exclusiveMinimum,
+    super.exclusiveMaximum,
+    super.multipleOf,
+  }) : super._();
+
+  @override
+  String get _jsonType => 'integer';
+
+  @override
+  AckIntegerSchemaModel _rebuildNumeric(
     _AckSchemaModelCommon common, {
-    this.format,
-    this.constValue,
-    this.minimum,
-    this.maximum,
-    this.exclusiveMinimum,
-    this.exclusiveMaximum,
-    this.multipleOf,
-  }) : super._(common);
-
-  @override
-  final String? format;
-  final int? constValue;
-  final num? minimum;
-  final num? maximum;
-  final num? exclusiveMinimum;
-  final num? exclusiveMaximum;
-  final num? multipleOf;
-
-  @override
-  Map<String, Object?> toJsonSchema() => finishTypeJson({
-    'type': 'integer',
-    if (format != null) 'format': format,
-    if (constValue != null) 'const': constValue,
-    if (minimum != null) 'minimum': minimum,
-    if (maximum != null) 'maximum': maximum,
-    if (exclusiveMinimum != null) 'exclusiveMinimum': exclusiveMinimum,
-    if (exclusiveMaximum != null) 'exclusiveMaximum': exclusiveMaximum,
-    if (multipleOf != null) 'multipleOf': multipleOf,
-  });
-
-  @override
-  AckIntegerSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckIntegerSchemaModel._(
-        common,
-        format: format,
-        constValue: constValue,
-        minimum: minimum,
-        maximum: maximum,
-        exclusiveMinimum: exclusiveMinimum,
-        exclusiveMaximum: exclusiveMaximum,
-        multipleOf: multipleOf,
-      );
-
-  AckIntegerSchemaModel _copyWith({
-    String? format,
-    Object? constValue = _unset,
-    num? minimum,
-    num? maximum,
-    num? exclusiveMinimum,
-    num? exclusiveMaximum,
-    num? multipleOf,
-  }) {
-    return AckIntegerSchemaModel._(
-      _common,
-      format: format ?? this.format,
-      constValue: identical(constValue, _unset)
-          ? this.constValue
-          : constValue as int?,
-      minimum: minimum ?? this.minimum,
-      maximum: maximum ?? this.maximum,
-      exclusiveMinimum: exclusiveMinimum ?? this.exclusiveMinimum,
-      exclusiveMaximum: exclusiveMaximum ?? this.exclusiveMaximum,
-      multipleOf: multipleOf ?? this.multipleOf,
-    );
-  }
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) {
-    final handled = {...commonHandled};
-    var next = this;
-
-    if (keywords['format'] case final String value) {
-      handled.add('format');
-      next = next._copyWith(format: value);
-    }
-    if (keywords['const'] case final int value) {
-      handled.add('const');
-      next = next._copyWith(constValue: value);
-    }
-    if (_readNumKeyword(keywords, 'minimum') case final value?) {
-      handled.add('minimum');
-      next = next._copyWith(minimum: value);
-    }
-    if (_readNumKeyword(keywords, 'maximum') case final value?) {
-      handled.add('maximum');
-      next = next._copyWith(maximum: value);
-    }
-    if (_readNumKeyword(keywords, 'exclusiveMinimum') case final value?) {
-      handled.add('exclusiveMinimum');
-      next = next._copyWith(exclusiveMinimum: value);
-    }
-    if (_readNumKeyword(keywords, 'exclusiveMaximum') case final value?) {
-      handled.add('exclusiveMaximum');
-      next = next._copyWith(exclusiveMaximum: value);
-    }
-    if (_readNumKeyword(keywords, 'multipleOf') case final value?) {
-      handled.add('multipleOf');
-      next = next._copyWith(multipleOf: value);
-    }
-
-    return next._withUnhandledKeywords(keywords, handled);
-  }
+    required String? format,
+    required int? constValue,
+    required num? minimum,
+    required num? maximum,
+    required num? exclusiveMinimum,
+    required num? exclusiveMaximum,
+    required num? multipleOf,
+  }) => AckIntegerSchemaModel._(
+    common,
+    format: format,
+    constValue: constValue,
+    minimum: minimum,
+    maximum: maximum,
+    exclusiveMinimum: exclusiveMinimum,
+    exclusiveMaximum: exclusiveMaximum,
+    multipleOf: multipleOf,
+  );
 }
 
-final class AckNumberSchemaModel extends AckSchemaModel {
+final class AckNumberSchemaModel extends _AckNumericSchemaModel<num> {
   const AckNumberSchemaModel({
-    this.format,
-    this.constValue,
-    this.minimum,
-    this.maximum,
-    this.exclusiveMinimum,
-    this.exclusiveMaximum,
-    this.multipleOf,
+    super.format,
+    super.constValue,
+    super.minimum,
+    super.maximum,
+    super.exclusiveMinimum,
+    super.exclusiveMaximum,
+    super.multipleOf,
     super.title,
     super.description,
     super.nullable,
@@ -761,111 +759,39 @@ final class AckNumberSchemaModel extends AckSchemaModel {
   });
 
   AckNumberSchemaModel._(
+    super.common, {
+    super.format,
+    super.constValue,
+    super.minimum,
+    super.maximum,
+    super.exclusiveMinimum,
+    super.exclusiveMaximum,
+    super.multipleOf,
+  }) : super._();
+
+  @override
+  String get _jsonType => 'number';
+
+  @override
+  AckNumberSchemaModel _rebuildNumeric(
     _AckSchemaModelCommon common, {
-    this.format,
-    this.constValue,
-    this.minimum,
-    this.maximum,
-    this.exclusiveMinimum,
-    this.exclusiveMaximum,
-    this.multipleOf,
-  }) : super._(common);
-
-  @override
-  final String? format;
-  final num? constValue;
-  final num? minimum;
-  final num? maximum;
-  final num? exclusiveMinimum;
-  final num? exclusiveMaximum;
-  final num? multipleOf;
-
-  @override
-  Map<String, Object?> toJsonSchema() => finishTypeJson({
-    'type': 'number',
-    if (format != null) 'format': format,
-    if (constValue != null) 'const': constValue,
-    if (minimum != null) 'minimum': minimum,
-    if (maximum != null) 'maximum': maximum,
-    if (exclusiveMinimum != null) 'exclusiveMinimum': exclusiveMinimum,
-    if (exclusiveMaximum != null) 'exclusiveMaximum': exclusiveMaximum,
-    if (multipleOf != null) 'multipleOf': multipleOf,
-  });
-
-  @override
-  AckNumberSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckNumberSchemaModel._(
-        common,
-        format: format,
-        constValue: constValue,
-        minimum: minimum,
-        maximum: maximum,
-        exclusiveMinimum: exclusiveMinimum,
-        exclusiveMaximum: exclusiveMaximum,
-        multipleOf: multipleOf,
-      );
-
-  AckNumberSchemaModel _copyWith({
-    String? format,
-    Object? constValue = _unset,
-    num? minimum,
-    num? maximum,
-    num? exclusiveMinimum,
-    num? exclusiveMaximum,
-    num? multipleOf,
-  }) {
-    return AckNumberSchemaModel._(
-      _common,
-      format: format ?? this.format,
-      constValue: identical(constValue, _unset)
-          ? this.constValue
-          : constValue as num?,
-      minimum: minimum ?? this.minimum,
-      maximum: maximum ?? this.maximum,
-      exclusiveMinimum: exclusiveMinimum ?? this.exclusiveMinimum,
-      exclusiveMaximum: exclusiveMaximum ?? this.exclusiveMaximum,
-      multipleOf: multipleOf ?? this.multipleOf,
-    );
-  }
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) {
-    final handled = {...commonHandled};
-    var next = this;
-
-    if (keywords['format'] case final String value) {
-      handled.add('format');
-      next = next._copyWith(format: value);
-    }
-    if (keywords['const'] case final num value) {
-      handled.add('const');
-      next = next._copyWith(constValue: value);
-    }
-    if (_readNumKeyword(keywords, 'minimum') case final value?) {
-      handled.add('minimum');
-      next = next._copyWith(minimum: value);
-    }
-    if (_readNumKeyword(keywords, 'maximum') case final value?) {
-      handled.add('maximum');
-      next = next._copyWith(maximum: value);
-    }
-    if (_readNumKeyword(keywords, 'exclusiveMinimum') case final value?) {
-      handled.add('exclusiveMinimum');
-      next = next._copyWith(exclusiveMinimum: value);
-    }
-    if (_readNumKeyword(keywords, 'exclusiveMaximum') case final value?) {
-      handled.add('exclusiveMaximum');
-      next = next._copyWith(exclusiveMaximum: value);
-    }
-    if (_readNumKeyword(keywords, 'multipleOf') case final value?) {
-      handled.add('multipleOf');
-      next = next._copyWith(multipleOf: value);
-    }
-
-    return next._withUnhandledKeywords(keywords, handled);
-  }
+    required String? format,
+    required num? constValue,
+    required num? minimum,
+    required num? maximum,
+    required num? exclusiveMinimum,
+    required num? exclusiveMaximum,
+    required num? multipleOf,
+  }) => AckNumberSchemaModel._(
+    common,
+    format: format,
+    constValue: constValue,
+    minimum: minimum,
+    maximum: maximum,
+    exclusiveMinimum: exclusiveMinimum,
+    exclusiveMaximum: exclusiveMaximum,
+    multipleOf: multipleOf,
+  );
 }
 
 final class AckBooleanSchemaModel extends AckSchemaModel {
@@ -894,6 +820,7 @@ final class AckBooleanSchemaModel extends AckSchemaModel {
   AckBooleanSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
       AckBooleanSchemaModel._(common, constValue: constValue);
 
+  @override
   AckSchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
@@ -954,42 +881,36 @@ final class AckArraySchemaModel extends AckSchemaModel {
         uniqueItems: uniqueItems,
       );
 
-  AckArraySchemaModel _copyWith({
-    AckSchemaModel? items,
-    int? minItems,
-    int? maxItems,
-    bool? uniqueItems,
-  }) {
-    return AckArraySchemaModel._(
-      _common,
-      items: items ?? this.items,
-      minItems: minItems ?? this.minItems,
-      maxItems: maxItems ?? this.maxItems,
-      uniqueItems: uniqueItems ?? this.uniqueItems,
-    );
-  }
-
+  @override
   AckSchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
     final handled = {...commonHandled};
-    var next = this;
+    var nextMinItems = minItems;
+    var nextMaxItems = maxItems;
+    var nextUniqueItems = uniqueItems;
 
     if (_readIntKeyword(keywords, 'minItems') case final value?) {
       handled.add('minItems');
-      next = next._copyWith(minItems: value);
+      nextMinItems = value;
     }
     if (_readIntKeyword(keywords, 'maxItems') case final value?) {
       handled.add('maxItems');
-      next = next._copyWith(maxItems: value);
+      nextMaxItems = value;
     }
     if (keywords['uniqueItems'] case final bool value) {
       handled.add('uniqueItems');
-      next = next._copyWith(uniqueItems: value);
+      nextUniqueItems = value;
     }
 
-    return next._withUnhandledKeywords(keywords, handled);
+    return AckArraySchemaModel._(
+      _common,
+      items: items,
+      minItems: nextMinItems,
+      maxItems: nextMaxItems,
+      uniqueItems: nextUniqueItems,
+    )._withUnhandledKeywords(keywords, handled);
   }
 }
 
@@ -1059,50 +980,40 @@ final class AckObjectSchemaModel extends AckSchemaModel {
         additionalProperties: additionalProperties,
       );
 
-  AckObjectSchemaModel _copyWith({
-    Map<String, AckSchemaModel>? properties,
-    List<String>? required,
-    List<String>? propertyOrdering,
-    int? minProperties,
-    int? maxProperties,
-    AckAdditionalPropertiesModel? additionalProperties,
-  }) {
-    return AckObjectSchemaModel._(
-      _common,
-      properties: properties ?? this.properties,
-      required: required ?? this.required,
-      propertyOrdering: propertyOrdering ?? this.propertyOrdering,
-      minProperties: minProperties ?? this.minProperties,
-      maxProperties: maxProperties ?? this.maxProperties,
-      additionalProperties: additionalProperties ?? this.additionalProperties,
-    );
-  }
-
+  @override
   AckSchemaModel _withJsonSchemaKeywords(
     Map<String, Object?> keywords,
     Set<String> commonHandled,
   ) {
     final handled = {...commonHandled};
-    var next = this;
+    var nextMinProperties = minProperties;
+    var nextMaxProperties = maxProperties;
+    var nextAdditionalProperties = additionalProperties;
 
     if (_readIntKeyword(keywords, 'minProperties') case final value?) {
       handled.add('minProperties');
-      next = next._copyWith(minProperties: value);
+      nextMinProperties = value;
     }
     if (_readIntKeyword(keywords, 'maxProperties') case final value?) {
       handled.add('maxProperties');
-      next = next._copyWith(maxProperties: value);
+      nextMaxProperties = value;
     }
     if (keywords['additionalProperties'] case final bool value) {
       handled.add('additionalProperties');
-      next = next._copyWith(
-        additionalProperties: value
-            ? const AckAdditionalPropertiesAllowed()
-            : const AckAdditionalPropertiesDisallowed(),
-      );
+      nextAdditionalProperties = value
+          ? const AckAdditionalPropertiesAllowed()
+          : const AckAdditionalPropertiesDisallowed();
     }
 
-    return next._withUnhandledKeywords(keywords, handled);
+    return AckObjectSchemaModel._(
+      _common,
+      properties: properties,
+      required: required,
+      propertyOrdering: propertyOrdering,
+      minProperties: nextMinProperties,
+      maxProperties: nextMaxProperties,
+      additionalProperties: nextAdditionalProperties,
+    )._withUnhandledKeywords(keywords, handled);
   }
 }
 
@@ -1123,19 +1034,45 @@ final class AckNullSchemaModel extends AckSchemaModel {
   @override
   AckNullSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
       AckNullSchemaModel._(common.copyWith(nullable: false));
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) {
-    return _withUnhandledKeywords(keywords, commonHandled);
-  }
 }
 
-final class AckAnyOfSchemaModel extends AckSchemaModel {
-  const AckAnyOfSchemaModel({
+sealed class _AckCompositionSchemaModel extends AckSchemaModel {
+  const _AckCompositionSchemaModel({
     required this.schemas,
     this.discriminator,
+    super.title,
+    super.description,
+    super.nullable,
+    super.defaultValue,
+    super.warnings,
+    super.extensions,
+  });
+
+  _AckCompositionSchemaModel._(
+    super.common, {
+    required this.schemas,
+    this.discriminator,
+  }) : super._();
+
+  final List<AckSchemaModel> schemas;
+  final AckSchemaDiscriminatorModel? discriminator;
+
+  String get _compositionKeyword;
+
+  @override
+  Object? get _metadataEquality => {
+    if (discriminator != null) 'discriminator': discriminator,
+  };
+
+  @override
+  Map<String, Object?> toJsonSchema() =>
+      finishCompositionJson(_compositionKeyword, schemas);
+}
+
+final class AckAnyOfSchemaModel extends _AckCompositionSchemaModel {
+  const AckAnyOfSchemaModel({
+    required super.schemas,
+    super.discriminator,
     super.title,
     super.description,
     super.nullable,
@@ -1145,22 +1082,13 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
   });
 
   AckAnyOfSchemaModel._(
-    _AckSchemaModelCommon common, {
-    required this.schemas,
-    this.discriminator,
-  }) : super._(common);
-
-  final List<AckSchemaModel> schemas;
-  final AckSchemaDiscriminatorModel? discriminator;
+    super.common, {
+    required super.schemas,
+    super.discriminator,
+  }) : super._();
 
   @override
-  Object? get _metadataEquality => {
-    if (discriminator != null) 'discriminator': discriminator,
-  };
-
-  @override
-  Map<String, Object?> toJsonSchema() =>
-      finishCompositionJson('anyOf', schemas);
+  String get _compositionKeyword => 'anyOf';
 
   @override
   AckAnyOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
@@ -1169,19 +1097,12 @@ final class AckAnyOfSchemaModel extends AckSchemaModel {
         schemas: schemas,
         discriminator: discriminator,
       );
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) {
-    return _withUnhandledKeywords(keywords, commonHandled);
-  }
 }
 
-final class AckOneOfSchemaModel extends AckSchemaModel {
+final class AckOneOfSchemaModel extends _AckCompositionSchemaModel {
   const AckOneOfSchemaModel({
-    required this.schemas,
-    this.discriminator,
+    required super.schemas,
+    super.discriminator,
     super.title,
     super.description,
     super.nullable,
@@ -1191,22 +1112,13 @@ final class AckOneOfSchemaModel extends AckSchemaModel {
   });
 
   AckOneOfSchemaModel._(
-    _AckSchemaModelCommon common, {
-    required this.schemas,
-    this.discriminator,
-  }) : super._(common);
-
-  final List<AckSchemaModel> schemas;
-  final AckSchemaDiscriminatorModel? discriminator;
+    super.common, {
+    required super.schemas,
+    super.discriminator,
+  }) : super._();
 
   @override
-  Object? get _metadataEquality => {
-    if (discriminator != null) 'discriminator': discriminator,
-  };
-
-  @override
-  Map<String, Object?> toJsonSchema() =>
-      finishCompositionJson('oneOf', schemas);
+  String get _compositionKeyword => 'oneOf';
 
   @override
   AckOneOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
@@ -1215,18 +1127,11 @@ final class AckOneOfSchemaModel extends AckSchemaModel {
         schemas: schemas,
         discriminator: discriminator,
       );
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) {
-    return _withUnhandledKeywords(keywords, commonHandled);
-  }
 }
 
-final class AckAllOfSchemaModel extends AckSchemaModel {
+final class AckAllOfSchemaModel extends _AckCompositionSchemaModel {
   const AckAllOfSchemaModel({
-    required this.schemas,
+    required super.schemas,
     super.title,
     super.description,
     super.nullable,
@@ -1235,25 +1140,14 @@ final class AckAllOfSchemaModel extends AckSchemaModel {
     super.extensions,
   });
 
-  AckAllOfSchemaModel._(_AckSchemaModelCommon common, {required this.schemas})
-    : super._(common);
-
-  final List<AckSchemaModel> schemas;
+  AckAllOfSchemaModel._(super.common, {required super.schemas}) : super._();
 
   @override
-  Map<String, Object?> toJsonSchema() =>
-      finishCompositionJson('allOf', schemas);
+  String get _compositionKeyword => 'allOf';
 
   @override
   AckAllOfSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
       AckAllOfSchemaModel._(common, schemas: schemas);
-
-  AckSchemaModel _withJsonSchemaKeywords(
-    Map<String, Object?> keywords,
-    Set<String> commonHandled,
-  ) {
-    return _withUnhandledKeywords(keywords, commonHandled);
-  }
 }
 
 int? _readIntKeyword(Map<String, Object?> keywords, String key) {

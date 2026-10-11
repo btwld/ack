@@ -150,7 +150,7 @@ final class AckModelEmitter {
               ..name = '_toAckRuntime'
               ..returns = refer(schemaRuntimeRef)
               ..lambda = true
-              ..body = Code(_toRuntime(node.runtimeRef, 'value')),
+              ..body = Code(_dataClasses.toRuntime(node.runtimeRef, 'value')),
           ),
         ]),
     );
@@ -360,8 +360,8 @@ ${_ack('AckModelAdapter')}(
       '/// the model while encoding it.',
     ]);
     for (final field in fields) {
-      final copyType = _nonNullable(field.runtimeRef);
-      final needsCopy = _requiresImmutableCopy(copyType);
+      final copyType = _dataClasses.nonNullable(field.runtimeRef);
+      final needsCopy = _dataClasses.requiresImmutableCopy(copyType);
       c.optionalParameters.add(
         Parameter(
           (p) => p
@@ -375,13 +375,13 @@ ${_ack('AckModelAdapter')}(
       if (!needsCopy) continue;
 
       final value = field.dartName;
-      final copy = _immutableCopy(copyType, value);
+      final copy = _dataClasses.immutableCopy(copyType, value);
       var initializer = copy;
       if (!field.isRequired || field.nullable) {
         initializer =
             'switch ($value) {'
             ' null => null,'
-            ' final fieldValue => ${_immutableCopy(copyType, 'fieldValue')},'
+            ' final fieldValue => ${_dataClasses.immutableCopy(copyType, 'fieldValue')},'
             ' }';
       }
       c.initializers.add(Code('${field.dartName} = $initializer'));
@@ -406,7 +406,7 @@ ${_ack('AckModelAdapter')}(
   });
 
   Constructor _valueConstructor(AckValueModelNode node, String runtimeType) {
-    final needsCopy = _requiresImmutableCopy(node.runtimeRef);
+    final needsCopy = _dataClasses.requiresImmutableCopy(node.runtimeRef);
     return Constructor((c) {
       c.docs.addAll([
         '/// Creates a model without validating it.',
@@ -424,7 +424,9 @@ ${_ack('AckModelAdapter')}(
       );
       if (needsCopy) {
         c.initializers.add(
-          Code('value = ${_immutableCopy(node.runtimeRef, 'value')}'),
+          Code(
+            'value = ${_dataClasses.immutableCopy(node.runtimeRef, 'value')}',
+          ),
         );
       }
     });
@@ -654,7 +656,7 @@ ${_ack('AckModelAdapter')}(
           ),
         )
         ..body = Code('''
-const declared = ${_declaredKeysLiteral(keys)};
+const declared = ${_dataClasses.declaredKeysLiteral(keys)};
 return ${node.className}(
   ${allArguments.join(',\n  ')},
 );'''),
@@ -688,7 +690,7 @@ return ${node.className}(
         return;
       }
 
-      final declaredLiteral = _declaredKeysLiteral(
+      final declaredLiteral = _dataClasses.declaredKeysLiteral(
         _declaredJsonKeys(effectiveFields, additionalKeys: leadingEntries.keys),
       );
       final allEntries = <String>[
@@ -705,111 +707,27 @@ return $_runtimeMapLiteral{
   }
 
   String _decodeField(AckFieldNode field, String rawExpression) {
-    final runtimeRef = _nonNullable(field.runtimeRef);
+    final runtimeRef = _dataClasses.nonNullable(field.runtimeRef);
     final needsNullGuard = !field.isRequired || field.nullable;
     if (!needsNullGuard) {
-      return _fromRuntime(runtimeRef, rawExpression);
+      return _dataClasses.fromRuntime(runtimeRef, rawExpression);
     }
-    if (!_requiresRuntimeConversion(runtimeRef)) {
+    if (!_dataClasses.requiresRuntimeConversion(runtimeRef)) {
       final type = '${_type(runtimeRef)}?';
       // The runtime map entry is already Object?.
       return type == 'Object?' ? rawExpression : '$rawExpression as $type';
     }
     return 'switch ($rawExpression) {'
         ' null => null,'
-        ' final fieldValue => ${_fromRuntime(runtimeRef, 'fieldValue')},'
+        ' final fieldValue => ${_dataClasses.fromRuntime(runtimeRef, 'fieldValue')},'
         ' }';
   }
 
-  String _encodeField(AckFieldNode field) {
-    final runtimeRef = _nonNullable(field.runtimeRef);
-    final name = field.dartName;
-    final needsNullGuard = !field.isRequired || field.nullable;
-    if (!needsNullGuard || !_requiresRuntimeConversion(runtimeRef)) {
-      return _toRuntime(runtimeRef, name);
-    }
-    if (runtimeRef is AckListTypeRef ||
-        runtimeRef is AckSetTypeRef ||
-        runtimeRef is AckMapTypeRef) {
-      return _toRuntime(AckNullableTypeRef(runtimeRef), name);
-    }
-    return 'switch ($name) {'
-        ' null => null,'
-        ' final fieldValue => ${_toRuntime(runtimeRef, 'fieldValue')},'
-        ' }';
-  }
-
-  String _fromRuntime(AckInferRef type, String expression) {
-    return switch (type) {
-      // Any input is already assignable to Object?; a cast would be redundant.
-      AckNullableTypeRef(inner: AckScalarTypeRef(dartType: 'Object')) =>
-        expression,
-      AckNullableTypeRef(:final inner) =>
-        '$expression == null ? null : ${_fromRuntime(inner, '$expression!')}',
-      AckModelTypeRef(:final runtimeRef, :final visibleName) =>
-        '$visibleName.\$ack.fromRuntime($expression as ${_type(runtimeRef)})',
-      AckListTypeRef(:final elementType)
-          when !_requiresRuntimeConversion(elementType) =>
-        '($expression as List).cast<${_type(elementType)}>()',
-      AckListTypeRef(:final elementType) =>
-        '($expression as List).map((item) => ${_fromRuntime(elementType, 'item')}).toList()',
-      AckSetTypeRef(:final elementType)
-          when !_requiresRuntimeConversion(elementType) =>
-        '($expression as Set).cast<${_type(elementType)}>()',
-      AckSetTypeRef(:final elementType) =>
-        '($expression as Set).map((item) => ${_fromRuntime(elementType, 'item')}).toSet()',
-      AckMapTypeRef(:final valueType)
-          when !_requiresRuntimeConversion(valueType) =>
-        '($expression as Map).cast<String, ${_type(valueType)}>()',
-      AckMapTypeRef(:final valueType) =>
-        '($expression as Map).map((key, item) => MapEntry(key as String, ${_fromRuntime(valueType, 'item')}))',
-      _ => '$expression as ${_type(type)}',
-    };
-  }
-
-  String _toRuntime(AckInferRef type, String expression) {
-    return switch (type) {
-      AckNullableTypeRef(:final inner)
-          when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
-        expression,
-      // `value?.map(...)` satisfies prefer_null_aware_operators.
-      AckNullableTypeRef(:final inner)
-          when inner is AckListTypeRef ||
-              inner is AckSetTypeRef ||
-              inner is AckMapTypeRef =>
-        _toRuntime(inner, '$expression?'),
-      // Expressions are promotable locals, so the null check needs no `!`.
-      AckNullableTypeRef(:final inner) =>
-        '$expression == null ? null : ${_toRuntime(inner, expression)}',
-      AckModelTypeRef(:final visibleName) =>
-        '$visibleName.\$ack.toRuntime($expression)',
-      AckListTypeRef(:final elementType) =>
-        '$expression.map((item) => ${_toRuntime(elementType, 'item')}).toList(growable: false)',
-      AckSetTypeRef(:final elementType) =>
-        '$expression.map((item) => ${_toRuntime(elementType, 'item')}).toSet()',
-      AckMapTypeRef(:final valueType) =>
-        '$expression.map((key, item) => MapEntry(key, ${_toRuntime(valueType, 'item')}))',
-      _ => expression,
-    };
-  }
-
-  String _immutableCopy(AckInferRef type, String expression) {
-    return switch (type) {
-      AckNullableTypeRef(:final inner) when !_requiresImmutableCopy(inner) =>
-        expression,
-      AckNullableTypeRef(:final inner) =>
-        '$expression == null ? null : ${_immutableCopy(inner, expression)}',
-      AckListTypeRef(:final elementType) =>
-        'List<${_type(elementType)}>.unmodifiable($expression.map((item) => ${_immutableCopy(elementType, 'item')}))',
-      AckSetTypeRef(:final elementType) =>
-        'Set<${_type(elementType)}>.unmodifiable($expression.map((item) => ${_immutableCopy(elementType, 'item')}))',
-      AckMapTypeRef(:final valueType) when !_requiresImmutableCopy(valueType) =>
-        'Map<String, ${_type(valueType)}>.unmodifiable($expression)',
-      AckMapTypeRef(:final valueType) =>
-        'Map<String, ${_type(valueType)}>.unmodifiable($expression.map((key, item) => MapEntry(key, ${_immutableCopy(valueType, 'item')})))',
-      _ => expression,
-    };
-  }
+  String _encodeField(AckFieldNode field) => _dataClasses.encodeField(
+    field.runtimeRef,
+    field.dartName,
+    nullable: !field.isRequired || field.nullable,
+  );
 
   String _fieldType(AckFieldNode field) {
     final base = _type(field.runtimeRef);
@@ -830,29 +748,6 @@ return $_runtimeMapLiteral{
     Iterable<AckFieldNode> fields, {
     Iterable<String> additionalKeys = const [],
   }) => {...additionalKeys, for (final field in fields) field.jsonKey};
-
-  String _declaredKeysLiteral(Set<String> keys) =>
-      '<String>{${keys.map(dartStringLiteral).join(', ')}}';
-
-  AckInferRef _nonNullable(AckInferRef type) => switch (type) {
-    AckNullableTypeRef(:final inner) => inner,
-    _ => type,
-  };
-
-  bool _requiresImmutableCopy(AckInferRef type) => switch (type) {
-    AckNullableTypeRef(:final inner) => _requiresImmutableCopy(inner),
-    AckListTypeRef() || AckSetTypeRef() || AckMapTypeRef() => true,
-    _ => false,
-  };
-
-  bool _requiresRuntimeConversion(AckInferRef type) => switch (type) {
-    AckNullableTypeRef(:final inner) => _requiresRuntimeConversion(inner),
-    AckModelTypeRef() ||
-    AckListTypeRef() ||
-    AckSetTypeRef() ||
-    AckMapTypeRef() => true,
-    _ => false,
-  };
 
   String _valueToJsonBody(AckInferRef boundaryType) {
     return switch (boundaryType) {

@@ -308,7 +308,7 @@ ${node.className} $function(Map<String, Object?> value) =>
     final declared = _declaredKeys(node);
     return '''
 ${node.className} $function(Map<String, Object?> value) {
-  const declared = ${_keySet(declared)};
+  const declared = ${_dataClasses.declaredKeysLiteral(declared)};
   return ${node.className}(
     ${arguments.join(',\n    ')},
   );
@@ -323,7 +323,7 @@ ${node.className} $function(Map<String, Object?> value) {
       final keyLiteral = dartStringLiteral(field.jsonKey);
       final raw = 'value[$keyLiteral]';
       final innerType = _type(valueType);
-      final baseValueType = _nonNullable(valueType);
+      final baseValueType = _dataClasses.nonNullable(valueType);
       final absentExpr =
           parameter.defaultExpression != null &&
               parameter.defaultExpression != 'null'
@@ -354,7 +354,7 @@ ${node.className} $function(Map<String, Object?> value) {
             parameter.defaultExpression != 'null'
         ? parameter.defaultExpression
         : null;
-    final baseType = _nonNullable(parameter.typeRef);
+    final baseType = _dataClasses.nonNullable(parameter.typeRef);
     final isNullableOrDefaulted =
         parameter.typeRef is AckNullableTypeRef || defaultExpr != null;
     if (!isNullableOrDefaulted) {
@@ -398,7 +398,7 @@ Map<String, Object?> $function(${node.className} model) =>
     ];
     return '''
 Map<String, Object?> $function(${node.className} model) {
-  const declared = ${_keySet(_declaredKeys(node))};
+  const declared = ${_dataClasses.declaredKeysLiteral(_declaredKeys(node))};
   return <String, Object?>{
     ${entries.join(',\n    ')},
   };
@@ -407,12 +407,12 @@ Map<String, Object?> $function(${node.className} model) {
 
   String _fieldRuntimeMapEntry(AckFieldNode field) {
     if (field.runtimeRef case AckJsonMaybeTypeRef(:final valueType)) {
-      final baseValueType = _nonNullable(valueType);
+      final baseValueType = _dataClasses.nonNullable(valueType);
       final encodedValue =
           baseValueType is AckScalarTypeRef ||
               baseValueType is AckExternalTypeRef
           ? 'value'
-          : _toRuntime(AckNullableTypeRef(baseValueType), 'value');
+          : _dataClasses.toRuntime(AckNullableTypeRef(baseValueType), 'value');
       return 'if (model.${field.dartName} case ${_ack('JsonValue')}(:final value)) '
           '${dartStringLiteral(field.jsonKey)}: $encodedValue';
     }
@@ -423,83 +423,14 @@ Map<String, Object?> $function(${node.className} model) {
   bool _omitIfNull(AckFieldNode field) =>
       field.nullable && !(field.isRequired && field.acceptsNull);
 
-  String _encodeField(AckFieldNode field) {
-    final baseType = _nonNullable(field.runtimeRef);
-    final access = 'model.${field.dartName}';
-    if (!field.nullable) {
-      return _toRuntime(baseType, access);
-    }
-    if (baseType is AckScalarTypeRef || baseType is AckExternalTypeRef) {
-      return access;
-    }
-    if (baseType is AckListTypeRef ||
-        baseType is AckSetTypeRef ||
-        baseType is AckMapTypeRef) {
-      return _toRuntime(AckNullableTypeRef(baseType), access);
-    }
-    return 'switch ($access) {'
-        ' null => null,'
-        ' final fieldValue => ${_toRuntime(baseType, 'fieldValue')},'
-        ' }';
-  }
+  String _encodeField(AckFieldNode field) => _dataClasses.encodeField(
+    field.runtimeRef,
+    'model.${field.dartName}',
+    nullable: field.nullable,
+  );
 
-  AckInferRef _nonNullable(AckInferRef type) => switch (type) {
-    AckNullableTypeRef(:final inner) => inner,
-    _ => type,
-  };
-
-  String _fromRuntime(AckInferRef type, String expression) => switch (type) {
-    // Any input is already assignable to Object?; a cast would be redundant.
-    AckNullableTypeRef(inner: AckScalarTypeRef(dartType: 'Object')) =>
-      expression,
-    AckNullableTypeRef(:final inner)
-        when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
-      '$expression as ${_type(type)}',
-    AckNullableTypeRef(:final inner) =>
-      '$expression == null ? null : '
-          '${_fromRuntime(inner, expression)}',
-    AckModelTypeRef(:final runtimeRef, :final visibleName) =>
-      '$visibleName.\$ack.fromRuntime('
-          '$expression as ${_type(runtimeRef)})',
-    AckListTypeRef(:final elementType) =>
-      'List<${_type(elementType)}>.unmodifiable(('
-          '$expression as List).map((item) => '
-          '${_fromRuntime(elementType, 'item')}))',
-    AckSetTypeRef(:final elementType) =>
-      'Set<${_type(elementType)}>.unmodifiable(('
-          '$expression as Set).map((item) => '
-          '${_fromRuntime(elementType, 'item')}))',
-    AckMapTypeRef(:final valueType) =>
-      'Map<String, ${_type(valueType)}>.unmodifiable(('
-          '$expression as Map).map((key, item) => MapEntry('
-          'key as String, ${_fromRuntime(valueType, 'item')})))',
-    _ => '$expression as ${_type(type)}',
-  };
-
-  String _toRuntime(AckInferRef type, String expression) => switch (type) {
-    AckNullableTypeRef(:final inner)
-        when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
-      expression,
-    // `value?.map(...)` satisfies prefer_null_aware_operators.
-    AckNullableTypeRef(:final inner)
-        when inner is AckListTypeRef ||
-            inner is AckSetTypeRef ||
-            inner is AckMapTypeRef =>
-      _toRuntime(inner, '$expression?'),
-    AckNullableTypeRef(:final inner) =>
-      '$expression == null ? null : ${_toRuntime(inner, expression)}',
-    AckModelTypeRef(:final visibleName) =>
-      '$visibleName.\$ack.toRuntime($expression)',
-    AckListTypeRef(:final elementType) =>
-      '$expression.map((item) => ${_toRuntime(elementType, 'item')})'
-          '.toList(growable: false)',
-    AckSetTypeRef(:final elementType) =>
-      '$expression.map((item) => ${_toRuntime(elementType, 'item')}).toSet()',
-    AckMapTypeRef(:final valueType) =>
-      '$expression.map((key, item) => '
-          'MapEntry(key, ${_toRuntime(valueType, 'item')}))',
-    _ => expression,
-  };
+  String _fromRuntime(AckInferRef type, String expression) => _dataClasses
+      .fromRuntime(type, expression, wrapImmutableCollections: true);
 
   String _type(AckInferRef type) => type.render(ackPrefix: ackPrefix);
 
@@ -507,9 +438,6 @@ Map<String, Object?> $function(${node.className} model) {
     for (final field in node.fields) field.jsonKey,
     if (node.discriminatorKey case final discriminator?) discriminator,
   };
-
-  String _keySet(Set<String> keys) =>
-      '<String>{${keys.map(dartStringLiteral).join(', ')}}';
 
   AckClassModelMetadata _metadata(AckModelGraph graph, AckModelNode node) {
     final metadata = graph.classMetadataFor(node.id);

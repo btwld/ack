@@ -1,6 +1,4 @@
-import 'package:ack/ack.dart' show AckModelAdapter, AckSchema, JsonMaybe;
 import 'package:ack/annotations.dart' as annotations;
-import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -8,12 +6,13 @@ import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 
+import '../inference/schema_inference.dart';
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
-import '../inference/schema_inference.dart';
 import '../utils/doc_comment_utils.dart';
-import 'generated_companion_visibility.dart';
 import '../utils/string_literal.dart';
+import 'custom_schema_resolver.dart';
+import 'model_graph_builder_base.dart';
 
 typedef _ModelOptions = ({
   String? schemaName,
@@ -25,27 +24,14 @@ typedef _ModelOptions = ({
   String captureField,
 });
 
-typedef _FutureGeneratedType = ({
-  String schemaExpression,
-  AckInferRef runtimeRef,
-  String? setListSchema,
-});
-
 typedef _ClassFirstDependency = ({ClassElement target, FieldElement field});
-
-typedef _RegisteredSchema = ({
-  Element declaration,
-  DartType boundary,
-  DartType runtime,
-  bool isFunction,
-});
 
 /// Builds normalized Ack model nodes from hand-written `@Schemable` classes.
 ///
 /// Analyzer elements and AST nodes are consumed here; emitters receive only
 /// structural type references and source expressions stored in [AckModelGraph].
-final class ClassModelGraphBuilder {
-  ClassModelGraphBuilder(this.library, {this.ackPrefix});
+final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
+  ClassModelGraphBuilder(super.library, {super.ackPrefix});
 
   static const _reservedMembers = {
     r'$ack',
@@ -70,28 +56,6 @@ final class ClassModelGraphBuilder {
     '==',
   };
 
-  static const _oneWayTransformMethods = {'transform'};
-
-  static const _schemableChecker = TypeChecker.typeNamed(
-    annotations.Schemable,
-    inPackage: 'ack',
-  );
-  static const _ackFieldChecker = TypeChecker.typeNamed(
-    annotations.AckField,
-    inPackage: 'ack',
-  );
-  static const _ackSchemaChecker = TypeChecker.typeNamed(
-    AckSchema,
-    inPackage: 'ack',
-  );
-  static const _ackModelAdapterChecker = TypeChecker.typeNamed(
-    AckModelAdapter,
-    inPackage: 'ack',
-  );
-  static const _jsonMaybeChecker = TypeChecker.typeNamed(
-    JsonMaybe,
-    inPackage: 'ack',
-  );
   static const _jsonSerializableChecker = TypeChecker.typeNamedLiterally(
     'JsonSerializable',
     inPackage: 'json_annotation',
@@ -118,39 +82,20 @@ final class ClassModelGraphBuilder {
     inPackage: 'ack',
   );
 
-  final LibraryReader library;
-  final String? ackPrefix;
   AckSchemaInference get _inference => AckSchemaInference(ackPrefix: ackPrefix);
-  final AckModelGraph _graph = AckModelGraph();
+  late final CustomSchemaResolver _customSchemas = CustomSchemaResolver(this);
   final Set<ClassElement> _consumed = {};
   final Map<String, ClassElement> _schemaNameOwners = {};
   final Map<ClassElement, List<_ClassFirstDependency>> _dependencies = {};
-  final List<_RegisteredSchema> _librarySchemas = [];
-  final List<_RegisteredSchema> _importedLibrarySchemas = [];
-  final Map<ClassElement, List<_RegisteredSchema>> _classSchemas = {};
-  final Map<ClassElement, ClassElement> _unionBaseByBranch = {};
-  final List<_RegisteredSchema> _libraryTopLevelSchemaCandidates = [];
   ClassElement? _activeClass;
-  ResolvedLibraryResult? _inputResolved;
-  final Map<Uri, ResolvedLibraryResult> _resolvedByUri = {};
 
   Future<AckModelGraph> build(List<ClassElement> annotatedClasses) async {
-    final libraryElement = library.element;
-    final resolved = await libraryElement.session.getResolvedLibraryByElement(
-      libraryElement,
-    );
-    if (resolved is! ResolvedLibraryResult) {
-      throw InvalidGenerationSource(
-        'Could not resolve ${libraryElement.uri} for Ack model generation.',
-      );
-    }
-    _inputResolved = resolved;
-    _resolvedByUri[libraryElement.uri] = resolved;
+    await initInputLibrary();
 
     for (final element in annotatedClasses) {
       _validateAnnotatedClass(element);
     }
-    await _initRegisteredAndLibrarySchemas();
+    await _customSchemas.initRegisteredAndLibrarySchemas();
 
     for (final element in annotatedClasses.where((item) => item.isSealed)) {
       await _buildUnion(element);
@@ -161,13 +106,13 @@ final class ClassModelGraphBuilder {
       if (options.discriminatorValue != null) {
         throw InvalidGenerationSource(
           '${element.name} sets discriminatorValue but is not a concrete '
-          'branch of an annotated sealed ${_annotationName(element)} base.',
+          'branch of an annotated sealed ${annotationName(element)} base.',
           element: element,
         );
       }
       if (element.isAbstract || !element.isConstructable) {
         throw InvalidGenerationSource(
-          '${_annotationName(element)} requires a constructable class; '
+          '${annotationName(element)} requires a constructable class; '
           '${element.name} is abstract.',
           element: element,
         );
@@ -176,14 +121,11 @@ final class ClassModelGraphBuilder {
     }
     _rejectRecursiveClassFirstGraphs();
     _validateGeneratedNames();
-    return _graph;
+    return graph;
   }
 
   void _validateGeneratedNames() {
-    final localNames = {
-      for (final element in library.allElements)
-        if (element.name case final name?) name,
-    };
+    final localNames = localDeclarationNames();
     final generatedOwners = <String, ClassElement>{};
     final classes = {
       for (final element in library.classes) element.name!: element,
@@ -208,8 +150,8 @@ final class ClassModelGraphBuilder {
       generatedOwners[name] = element;
     }
 
-    for (final node in _graph.nodes) {
-      final metadata = _graph.classMetadataFor(node.id);
+    for (final node in graph.nodes) {
+      final metadata = graph.classMetadataFor(node.id);
       if (metadata == null) {
         throw StateError('Missing class-first metadata for ${node.id}.');
       }
@@ -233,13 +175,14 @@ final class ClassModelGraphBuilder {
     final name = element.name ?? '';
     if (name.startsWith('_')) {
       throw InvalidGenerationSource(
-        '${_annotationName(element)} requires a public class; received '
+        '${annotationName(element)} requires a public class; received '
         '"$name".',
         element: element,
         todo: 'Annotate a public class.',
       );
     }
-    final schemable = _schemableChecker.firstAnnotationOfExact(element);
+    final schemable = ModelGraphBuilderBase.schemableChecker
+        .firstAnnotationOfExact(element);
     if (schemable != null && !ConstantReader(schemable).read('name').isNull) {
       throw InvalidGenerationSource(
         '$name sets @Schemable(name: ...), which applies only to top-level '
@@ -252,18 +195,18 @@ final class ClassModelGraphBuilder {
     _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {
       throw InvalidGenerationSource(
-        '$name cannot use ${_annotationName(element)} and @JsonSerializable '
+        '$name cannot use ${annotationName(element)} and @JsonSerializable '
         'together because both generate the same _\$$name JSON helpers.',
         element: element,
         todo:
-            'Remove @JsonSerializable; ${_annotationName(element)} owns JSON '
+            'Remove @JsonSerializable; ${annotationName(element)} owns JSON '
             'generation.',
       );
     }
     final options = _options(element)!;
     if (element.isSealed && options.discriminatorKey == null) {
       throw InvalidGenerationSource(
-        'Sealed ${_annotationName(element)} $name requires discriminatorKey.',
+        'Sealed ${annotationName(element)} $name requires discriminatorKey.',
         element: element,
       );
     }
@@ -275,7 +218,7 @@ final class ClassModelGraphBuilder {
     }
     if (element.isSealed && options.discriminatorValue != null) {
       throw InvalidGenerationSource(
-        'Sealed ${_annotationName(element)} $name cannot set '
+        'Sealed ${annotationName(element)} $name cannot set '
         'discriminatorValue.',
         element: element,
       );
@@ -290,12 +233,12 @@ final class ClassModelGraphBuilder {
     final getter = element.getGetter('schema');
     if (getter == null ||
         !getter.isStatic ||
-        _containsInvalidType(getter.returnType)) {
+        containsInvalidType(getter.returnType)) {
       return;
     }
-    final runtime = _ackSchemaRuntimeType(getter.returnType);
+    final runtime = ackSchemaRuntimeType(getter.returnType);
     if (runtime != null &&
-        _sameTypeIgnoringNullability(runtime, element.thisType)) {
+        sameTypeIgnoringNullability(runtime, element.thisType)) {
       return;
     }
     throw InvalidGenerationSource(
@@ -334,14 +277,14 @@ final class ClassModelGraphBuilder {
   void _rejectRedirectingFactory(ClassElement element) {
     final constructor = element.unnamedConstructor;
     if (constructor == null || !constructor.isFactory) return;
-    final node = _inputResolved
-        ?.getFragmentDeclaration(constructor.firstFragment)
-        ?.node;
+    final node = inputResolved == null
+        ? null
+        : declarationNode(inputResolved!, constructor);
     if (node is! ConstructorDeclaration) return;
     final target = node.redirectedConstructor;
     if (target == null) return;
     throw InvalidGenerationSource(
-      '${_annotationName(element)} ${element.name} redirects its unnamed '
+      '${annotationName(element)} ${element.name} redirects its unnamed '
       'constructor to ${target.toSource()}. Redirecting factory models are '
       'not supported; declare a final class whose unnamed generative '
       'constructor initializes its fields.',
@@ -387,14 +330,14 @@ final class ClassModelGraphBuilder {
     }
     if (candidates.isEmpty) {
       throw InvalidGenerationSource(
-        'Sealed ${_annotationName(base)} ${base.name} has no concrete '
+        'Sealed ${annotationName(base)} ${base.name} has no concrete '
         'same-library branches.',
         element: base,
       );
     }
 
     final baseId = _id(base);
-    _graph.begin(baseId);
+    graph.begin(baseId);
     _registerMetadata(base, baseOptions, baseId);
     _consumed.add(base);
 
@@ -428,7 +371,7 @@ final class ClassModelGraphBuilder {
         );
       }
       valueOwners[value] = branch;
-      _unionBaseByBranch[branch] = base;
+      _customSchemas.unionBaseByBranch[branch] = base;
       _validateBranchDiscriminator(branch, discriminatorKey, value);
       final branchNode = await _buildObject(
         branch,
@@ -441,7 +384,7 @@ final class ClassModelGraphBuilder {
       _consumed.add(branch);
     }
 
-    _graph.complete(
+    graph.complete(
       AckUnionModelNode(
         id: baseId,
         className: base.name!,
@@ -482,12 +425,12 @@ final class ClassModelGraphBuilder {
     String? discriminatorValue,
   }) async {
     final id = _id(element);
-    _graph.begin(id);
+    graph.begin(id);
     _registerMetadata(element, options, id);
     final constructor = element.unnamedConstructor;
     if (constructor == null || !constructor.isGenerative) {
       throw InvalidGenerationSource(
-        '${_annotationName(element)} ${element.name} requires an unnamed '
+        '${annotationName(element)} ${element.name} requires an unnamed '
         'generative constructor.',
         element: element,
       );
@@ -501,7 +444,7 @@ final class ClassModelGraphBuilder {
       if (field.isFinal) continue;
       throw InvalidGenerationSource(
         '${element.name}.${field.name} must be final because '
-        '${_annotationName(element)} generates immutable value semantics.',
+        '${annotationName(element)} generates immutable value semantics.',
         element: field,
         todo: 'Declare the stored field as final.',
       );
@@ -529,12 +472,15 @@ final class ClassModelGraphBuilder {
       );
     }
 
-    final futureTypes = <String, _FutureGeneratedType>{};
+    final futureTypes = <String, FutureGeneratedType>{};
     for (final field in fields.values) {
       final name = field.name;
       if (name == null) continue;
-      if (!_containsInvalidType(field.type)) continue;
-      futureTypes[name] = await _futureGeneratedType(field);
+      if (!containsInvalidType(field.type)) continue;
+      futureTypes[name] = await _customSchemas.futureGeneratedType(
+        field,
+        setCodec: _setCodec,
+      );
     }
 
     final parameters = <String, FormalParameterElement>{};
@@ -597,7 +543,7 @@ final class ClassModelGraphBuilder {
         if (parameters.containsKey(name)) {
           throw InvalidGenerationSource(
             '${element.name}.$name is private and cannot participate in '
-            '${_annotationName(element)} generation.',
+            '${annotationName(element)} generation.',
             element: field,
           );
         }
@@ -613,7 +559,7 @@ final class ClassModelGraphBuilder {
         );
       }
 
-      if (_isJsonMaybe(field.type) && _isNullable(field.type)) {
+      if (isJsonMaybeType(field.type) && isNullableType(field.type)) {
         throw InvalidGenerationSource(
           '${element.name}.$name uses nullable '
           '${field.type.getDisplayString()}; use non-nullable JsonMaybe<...> '
@@ -621,7 +567,7 @@ final class ClassModelGraphBuilder {
           element: field,
         );
       }
-      final unwrappedFieldType = _unwrapJsonMaybeType(field.type);
+      final unwrappedFieldType = unwrapJsonMaybeType(field.type);
       _rejectUnsupportedStaticType(field, unwrappedFieldType);
       _validateMapKey(field, unwrappedFieldType);
       final futureType = futureTypes[name];
@@ -657,10 +603,10 @@ final class ClassModelGraphBuilder {
 
       final isJsonMaybe =
           futureType?.runtimeRef is AckJsonMaybeTypeRef ||
-          _isJsonMaybe(field.type);
+          isJsonMaybeType(field.type);
       final dartNullable =
           futureType?.runtimeRef is AckNullableTypeRef ||
-          _isNullable(field.type);
+          isNullableType(field.type);
       final rejectNull = _hasAnnotation(_notNullChecker, field, parameter);
       final acceptsNull = (dartNullable || isJsonMaybe) && !rejectNull;
       final presence = _effectivePresence(
@@ -670,7 +616,7 @@ final class ClassModelGraphBuilder {
         isJsonMaybe: isJsonMaybe,
       );
       var schema = isDiscriminator && discriminatorValue != null
-          ? '${_ack('Ack')}.literal(${dartStringLiteral(discriminatorValue)})'
+          ? '${ack('Ack')}.literal(${dartStringLiteral(discriminatorValue)})'
           : await _fieldSchema(
               field,
               parameter: parameter,
@@ -720,7 +666,7 @@ final class ClassModelGraphBuilder {
       discriminatorValue: discriminatorValue,
       description: _classDescription(element, options),
     );
-    _graph.complete(node);
+    graph.complete(node);
     return node;
   }
 
@@ -731,7 +677,7 @@ final class ClassModelGraphBuilder {
   ) {
     if (type is! InterfaceType) return;
     final target = type.element;
-    if (target is ClassElement && _classFirstFacadeName(target) != null) {
+    if (target is ClassElement && classFirstFacadeName(target) != null) {
       _dependencies.putIfAbsent(owner, () => []).add((
         target: target,
         field: field,
@@ -785,13 +731,17 @@ final class ClassModelGraphBuilder {
   Future<String> _fieldSchema(
     FieldElement field, {
     FormalParameterElement? parameter,
-    _FutureGeneratedType? futureType,
+    FutureGeneratedType? futureType,
   }) async {
-    final override = _firstAnnotation(_ackFieldChecker, field, parameter);
+    final override = _firstAnnotation(
+      ModelGraphBuilderBase.ackFieldChecker,
+      field,
+      parameter,
+    );
     if (override != null) {
       final reader = ConstantReader(override);
       if (!reader.read('schema').isNull) {
-        final base = await _escapeHatchExpression(field, reader);
+        final base = await _customSchemas.escapeHatchExpression(field, reader);
         return _applySugar(base, field, parameter);
       }
     }
@@ -810,14 +760,14 @@ final class ClassModelGraphBuilder {
       }
       return _applySugar(futureType.schemaExpression, field, parameter);
     }
-    final type = _unwrapJsonMaybeType(field.type);
+    final type = unwrapJsonMaybeType(field.type);
     if (type is InterfaceType &&
         type.isDartCoreSet &&
         type.typeArguments.length == 1) {
       final itemType = type.typeArguments.single;
       _rejectNullableCollectionElement(field, itemType);
       final item = await _schemaForType(itemType, field);
-      final list = _applySugar('${_ack('Ack')}.list($item)', field, parameter);
+      final list = _applySugar('${ack('Ack')}.list($item)', field, parameter);
       return _setCodec(list, _typeRef(type, field, allowJsonMaybe: false));
     }
     return _applySugar(await _schemaForType(type, field), field, parameter);
@@ -854,407 +804,6 @@ final class ClassModelGraphBuilder {
     _ => type,
   };
 
-  bool _containsInvalidType(DartType type) =>
-      type is InvalidType ||
-      (type is InterfaceType && type.typeArguments.any(_containsInvalidType));
-
-  Future<_FutureGeneratedType> _futureGeneratedType(FieldElement field) async {
-    final resolved = await _resolvedLibraryFor(field.library);
-    AstNode? node = resolved.getFragmentDeclaration(field.firstFragment)?.node;
-    while (node != null &&
-        node is! FieldDeclaration &&
-        node is! NormalFormalParameter) {
-      node = node.parent;
-    }
-    final annotation = switch (node) {
-      FieldDeclaration() => node.fields.type,
-      SimpleFormalParameter() => node.type,
-      FieldFormalParameter() => node.type,
-      SuperFormalParameter() => node.type,
-      _ => null,
-    };
-    final futureType = annotation == null
-        ? null
-        : _futureGeneratedTypeForAnnotation(annotation, field);
-    if (futureType != null) return futureType;
-    final path = '${field.enclosingElement.name}.${field.name}';
-    final arguments = annotation is NamedType
-        ? annotation.typeArguments?.arguments ?? const <TypeAnnotation>[]
-        : const <TypeAnnotation>[];
-    if (annotation is NamedType &&
-        annotation.importPrefix == null &&
-        annotation.name.lexeme == 'Map' &&
-        arguments.length == 2 &&
-        _futureGeneratedTypeForAnnotation(arguments.last, field) != null) {
-      throw InvalidGenerationSource(
-        '$path uses ${annotation.toSource()}. A model generated from a '
-        '@Schemable schema in this build can be a field type directly or a '
-        'List or Set item, but not a Map value.',
-        element: field,
-      );
-    }
-    throw InvalidGenerationSource(
-      '$path uses ${annotation?.toSource() ?? 'a type'}, which does not '
-      'resolve. Check that it is imported.',
-      element: field,
-    );
-  }
-
-  _FutureGeneratedType? _futureGeneratedTypeForAnnotation(
-    TypeAnnotation annotation,
-    FieldElement field, {
-    bool allowJsonMaybe = true,
-  }) {
-    if (annotation is! NamedType) return null;
-    final name = annotation.name.lexeme;
-    final prefix = annotation.importPrefix?.name.lexeme;
-    final arguments = annotation.typeArguments?.arguments ?? const [];
-    _FutureGeneratedType? result;
-    if (allowJsonMaybe &&
-        name == 'JsonMaybe' &&
-        (prefix == null || prefix == ackPrefix) &&
-        arguments.length == 1) {
-      final item = _futureGeneratedTypeForAnnotation(
-        arguments.single,
-        field,
-        allowJsonMaybe: false,
-      );
-      if (item == null) return null;
-      result = (
-        schemaExpression: item.schemaExpression,
-        runtimeRef: AckJsonMaybeTypeRef(item.runtimeRef),
-        setListSchema: item.setListSchema,
-      );
-    } else if (prefix == null && name == 'List' && arguments.length == 1) {
-      final item = _futureGeneratedTypeForAnnotation(
-        arguments.single,
-        field,
-        allowJsonMaybe: false,
-      );
-      if (item == null) return null;
-      result = (
-        schemaExpression: '${_ack('Ack')}.list(${item.schemaExpression})',
-        runtimeRef: AckListTypeRef(item.runtimeRef),
-        setListSchema: null,
-      );
-    } else if (prefix == null && name == 'Set' && arguments.length == 1) {
-      final item = _futureGeneratedTypeForAnnotation(
-        arguments.single,
-        field,
-        allowJsonMaybe: false,
-      );
-      if (item == null) return null;
-      final runtimeRef = AckSetTypeRef(item.runtimeRef);
-      final listSchema = '${_ack('Ack')}.list(${item.schemaExpression})';
-      result = (
-        schemaExpression: _setCodec(listSchema, runtimeRef),
-        runtimeRef: runtimeRef,
-        setListSchema: listSchema,
-      );
-    } else {
-      final target = _futureGeneratedTarget(
-        className: name,
-        prefix: prefix,
-        field: field,
-      );
-      if (target == null) return null;
-      final visibleName = qualifySymbol(prefix, name);
-      result = (
-        schemaExpression: '$visibleName.\$ack.schema',
-        runtimeRef: AckModelTypeRef(
-          schemaId: AckSchemaId(
-            libraryUri: target.library!.uri,
-            declarationName: target.name!,
-          ),
-          className: name,
-          runtimeRef: _jsonMapRef,
-          importPrefix: prefix,
-        ),
-        setListSchema: null,
-      );
-    }
-    if (annotation.question == null) return result;
-    return (
-      schemaExpression: result.schemaExpression,
-      runtimeRef: AckNullableTypeRef(result.runtimeRef),
-      setListSchema: result.setListSchema,
-    );
-  }
-
-  Element? _futureGeneratedTarget({
-    required String className,
-    required String? prefix,
-    required FieldElement field,
-  }) {
-    final matches = <Element>{};
-    final candidates = <Element>{};
-    final imports = <LibraryImport>[];
-    String? hiddenDeclaration;
-
-    Element? candidateFor(Element element) {
-      final declaration = _schemableDeclaration(element);
-      if (declaration == null ||
-          _generatedSchemaClassName(declaration) != className) {
-        return null;
-      }
-      return declaration.baseElement;
-    }
-
-    if (prefix == null) {
-      for (final element in library.allElements) {
-        final candidate = candidateFor(element);
-        if (candidate != null) matches.add(candidate);
-      }
-    }
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
-      final importPrefix = import.prefix?.element.name;
-      if (importPrefix != prefix) continue;
-      imports.add(import);
-      final importedLibrary = import.importedLibrary;
-      final elements = <Element>{
-        if (importedLibrary != null)
-          ...LibraryReader(importedLibrary).allElements,
-        ...import.namespace.definedNames2.values,
-      };
-      for (final element in elements) {
-        final candidate = candidateFor(element);
-        if (candidate != null) candidates.add(candidate);
-      }
-    }
-    for (final candidate in candidates) {
-      final definingLibrary = candidate.library;
-      final generatedClassVisible =
-          definingLibrary != null &&
-          imports.any(
-            (import) => importExposesGeneratedCompanion(
-              import,
-              definingLibrary: definingLibrary,
-              generatedName: className,
-            ),
-          );
-      if (generatedClassVisible) {
-        matches.add(candidate);
-      } else {
-        hiddenDeclaration = candidate.name;
-      }
-    }
-    if (matches.isEmpty) {
-      if (hiddenDeclaration != null) {
-        final fieldPath = '${field.enclosingElement.name}.${field.name}';
-        throw InvalidGenerationSource(
-          '$fieldPath resolves to generated schema-first type "$className", '
-          'which is hidden by an import combinator or an upstream export '
-          'combinator. Expose $className through the full import route.',
-          element: field,
-        );
-      }
-      return null;
-    }
-    if (matches.length > 1) {
-      throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} resolves future generated '
-        'type "$className" ambiguously.',
-        element: field,
-      );
-    }
-    return matches.single;
-  }
-
-  Element? _schemableDeclaration(Element element) {
-    final declaration = switch (element) {
-      GetterElement(isOriginVariable: true) => element.variable.baseElement,
-      TopLevelVariableElement() => element.baseElement,
-      _ => null,
-    };
-    return declaration != null &&
-            _schemableChecker.hasAnnotationOfExact(declaration)
-        ? declaration
-        : null;
-  }
-
-  String _generatedSchemaClassName(Element declaration) {
-    final annotation = _schemableChecker.firstAnnotationOfExact(declaration)!;
-    final custom = ConstantReader(annotation).read('name');
-    return ackInferModelClassName(
-      declaration.name!,
-      override: custom.isNull ? null : custom.stringValue,
-    );
-  }
-
-  Future<String> _escapeHatchExpression(
-    FieldElement field,
-    ConstantReader annotation,
-  ) async {
-    final function = annotation.read('schema').objectValue.toFunctionValue();
-    if (function is! TopLevelFunctionElement) {
-      throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField schema must '
-        'be a const tear-off of a top-level function.',
-        element: field,
-      );
-    }
-    final path = '${field.enclosingElement.name}.${field.name}';
-    if (function.typeParameters.isNotEmpty) {
-      throw InvalidGenerationSource(
-        '$path @AckField schema function ${function.name} is generic, and the '
-        'generated call cannot keep its type arguments. Use a non-generic '
-        'function, or declare a static schema method on the field type.',
-        element: field,
-      );
-    }
-    if (function.formalParameters.isNotEmpty ||
-        !_ackSchemaChecker.isAssignableFromType(function.returnType)) {
-      throw InvalidGenerationSource(
-        '$path @AckField top-level function must have type AckSchema '
-        'Function().',
-        element: field,
-      );
-    }
-    final runtime = _ackSchemaRuntimeType(function.returnType);
-    final expectedFieldType = _unwrapJsonMaybeType(field.type);
-    if (runtime == null ||
-        !_sameTypeIgnoringNullability(runtime, expectedFieldType)) {
-      throw InvalidGenerationSource(
-        '$path @AckField schema function ${function.name} produces '
-        '${runtime?.getDisplayString() ?? 'an untyped value'}, but the field '
-        'type is ${expectedFieldType.getDisplayString()}.',
-        element: field,
-        todo: 'Return AckSchema<..., ${expectedFieldType.getDisplayString()}>.',
-      );
-    }
-    final resolved = await _resolvedLibraryFor(function.library);
-    final declaration = resolved
-        .getFragmentDeclaration(function.firstFragment)
-        ?.node;
-    final bodyExpression = declaration is FunctionDeclaration
-        ? _functionBodyExpression(declaration.functionExpression.body)
-        : null;
-    if (bodyExpression == null) {
-      throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField function must '
-        'have a statically resolvable expression or single return.',
-        element: field,
-      );
-    }
-    final oneWaySource = await _oneWayTransformSource(bodyExpression);
-    if (oneWaySource != null) {
-      throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField schema '
-        'function ${function.name} reaches one-way schema $oneWaySource. '
-        'Migrate this .transform() path to .codec() with an encoder.',
-        element: field,
-      );
-    }
-    final prefix = _visiblePrefix(function, field);
-    return '${prefix == null ? '' : '$prefix.'}${function.name}()';
-  }
-
-  /// The boundary type argument of [type] as an `AckSchema<Boundary, Runtime>`.
-  DartType? _ackSchemaBoundaryType(DartType type) {
-    if (type is! InterfaceType) return null;
-    for (final candidate in [type, ...type.allSupertypes]) {
-      if (_ackSchemaChecker.isExactlyType(candidate) &&
-          candidate.typeArguments.length == 2) {
-        return candidate.typeArguments[0];
-      }
-    }
-    return null;
-  }
-
-  /// The runtime type argument of [type] as an `AckSchema<Boundary, Runtime>`.
-  DartType? _ackSchemaRuntimeType(DartType type) {
-    if (type is! InterfaceType) return null;
-    for (final candidate in [type, ...type.allSupertypes]) {
-      if (_ackSchemaChecker.isExactlyType(candidate) &&
-          candidate.typeArguments.length == 2) {
-        return candidate.typeArguments[1];
-      }
-    }
-    return null;
-  }
-
-  DartType? _inferredBoundaryType(DartType type, FieldElement field) {
-    if (type is! InterfaceType) return null;
-    final registered = _registeredSchemaForType(type, field);
-    if (registered != null) return registered.boundary;
-    final provider = library.element.typeProvider;
-    if (_isCore(type, 'int') ||
-        _isCore(type, 'double') ||
-        _isCore(type, 'num')) {
-      return provider.numType;
-    }
-    if (_isCore(type, 'String') ||
-        _isCore(type, 'DateTime') ||
-        _isCore(type, 'Uri')) {
-      return provider.stringType;
-    }
-    if (_isCore(type, 'bool')) return provider.boolType;
-    if (_isCore(type, 'Duration')) return provider.intType;
-    if (_isCore(type, 'Object')) return provider.objectType;
-    if (type.isDartCoreList || type.isDartCoreSet) {
-      return provider.listType(provider.objectQuestionType);
-    }
-    if (type.isDartCoreMap) {
-      return provider.mapType(provider.stringType, provider.objectQuestionType);
-    }
-    final target = type.element;
-    if (target is ClassElement && _classFirstFacadeName(target) != null) {
-      return provider.mapType(provider.stringType, provider.objectQuestionType);
-    }
-    final ackGetter = target.getGetter(r'$ack');
-    final ackReturnType = ackGetter?.returnType;
-    if (ackGetter != null &&
-        ackGetter.isStatic &&
-        ackReturnType is InterfaceType &&
-        _ackModelAdapterChecker.isExactlyType(ackReturnType) &&
-        ackReturnType.typeArguments.length == 3) {
-      return ackReturnType.typeArguments[0];
-    }
-    final schemaGetter = target.getGetter('schema');
-    if (schemaGetter != null && schemaGetter.isStatic) {
-      return _ackSchemaBoundaryType(schemaGetter.returnType);
-    }
-    final schemaMethod = target.getMethod('schema');
-    if (schemaMethod != null &&
-        schemaMethod.isStatic &&
-        schemaMethod.typeParameters.length == type.typeArguments.length) {
-      return _ackSchemaBoundaryType(
-        schemaMethod.type.instantiate(type.typeArguments).returnType,
-      );
-    }
-    if (target is EnumElement) return provider.stringType;
-    final autoDetected = _uniqueLibrarySchemaCandidate(type);
-    if (autoDetected != null) return autoDetected.boundary;
-    return null;
-  }
-
-  /// Whether a schema producing [left] can back a field of type [right].
-  ///
-  /// The types must match apart from nullability: collection schemas such as
-  /// `Ack.map` type their values as nullable.
-  bool _sameTypeIgnoringNullability(DartType left, DartType right) {
-    final typeSystem = library.element.typeSystem;
-    final a = typeSystem.promoteToNonNull(left);
-    final b = typeSystem.promoteToNonNull(right);
-    if (a is InterfaceType && b is InterfaceType) {
-      if (a.element.baseElement != b.element.baseElement ||
-          a.typeArguments.length != b.typeArguments.length) {
-        return false;
-      }
-      for (var i = 0; i < a.typeArguments.length; i++) {
-        if (!_sameTypeIgnoringNullability(
-          a.typeArguments[i],
-          b.typeArguments[i],
-        )) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return typeSystem.isSubtypeOf(a, b) && typeSystem.isSubtypeOf(b, a);
-  }
-
   Future<String> _schemaForType(DartType type, FieldElement field) =>
       _inference.inferType(
         type,
@@ -1264,577 +813,22 @@ final class ClassModelGraphBuilder {
           field,
           allowJsonMaybe: false,
         ).render(ackPrefix: ackPrefix),
-        resolveNamed: (type) => _namedSchemaForType(type, field),
+        resolveNamed: (type) => _customSchemas.namedSchemaForType(
+          type,
+          field,
+          activeClass: _activeClass,
+          schemaForType: _schemaForType,
+          typeRef: (t, f) => _typeRef(t, f, allowJsonMaybe: false),
+          typeArgumentRef: _typeArgumentRef,
+        ),
         unsupported: (type) => _unsupportedFieldType(field, type),
         rejectNullableCollectionElement: (type) =>
             _nullableCollectionElementError(field, type.getDisplayString()),
         validateMapKey: (type) => _validateMapKey(field, type),
       );
 
-  Future<String?> _namedSchemaForType(
-    InterfaceType interfaceType,
-    FieldElement field,
-  ) async {
-    final registered = _registeredSchemaForType(interfaceType, field);
-    if (registered != null) {
-      return _renderRegisteredSchema(registered, field);
-    }
-    if (_isOverridableBuiltInScalar(interfaceType)) {
-      return null;
-    }
-    final target = interfaceType.element;
-    if (target is ClassElement) {
-      final facadeName = _classFirstFacadeName(target);
-      if (facadeName != null) {
-        final prefix = _visiblePrefix(target, field);
-        if (target.library != library.element &&
-            !_isClassFirstFacadeVisible(target, facadeName, prefix: prefix)) {
-          final typeOwned = await _typeOwnedSchema(interfaceType, field);
-          if (typeOwned != null) return typeOwned;
-        }
-        _validateClassFirstFacadeImport(
-          target,
-          facadeName,
-          prefix: prefix,
-          field: field,
-        );
-        return '${prefix == null ? '' : '$prefix.'}$facadeName.schema';
-      }
-    }
-    if (_schemaFirstRuntimeRef(target, field) != null) {
-      return '${_visibleTypeName(interfaceType, field)}.\$ack.schema';
-    }
-    final typeOwned = await _typeOwnedSchema(interfaceType, field);
-    if (typeOwned != null) return typeOwned;
-    if (target is EnumElement) return null;
-    return await _autoDetectedLibrarySchema(interfaceType, field);
-  }
-
-  Future<void> _initRegisteredAndLibrarySchemas() async {
-    final libraryAnnotation = _schemableChecker.firstAnnotationOfExact(
-      library.element,
-    );
-    if (libraryAnnotation != null) {
-      _librarySchemas.addAll(
-        await _parseSchemasList(
-          library.element,
-          ConstantReader(libraryAnnotation),
-        ),
-      );
-    }
-
-    final seenImportedLibraries = <LibraryElement>{};
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
-      final importedLibrary = import.importedLibrary;
-      if (importedLibrary == null ||
-          importedLibrary == library.element ||
-          !seenImportedLibraries.add(importedLibrary)) {
-        continue;
-      }
-      final importedAnnotation = _schemableChecker.firstAnnotationOfExact(
-        importedLibrary,
-      );
-      if (importedAnnotation == null) continue;
-      _importedLibrarySchemas.addAll(
-        await _parseSchemasList(
-          importedLibrary,
-          ConstantReader(importedAnnotation),
-        ),
-      );
-    }
-
-    for (final classElement in library.classes) {
-      final annotation = _schemableChecker.firstAnnotationOfExact(classElement);
-      if (annotation == null) continue;
-      final parsed = await _parseSchemasList(
-        classElement,
-        ConstantReader(annotation),
-      );
-      if (parsed.isNotEmpty) {
-        _classSchemas[classElement] = parsed;
-      }
-    }
-
-    for (final variable in library.element.topLevelVariables) {
-      if (!variable.isOriginDeclaration ||
-          _schemableChecker.hasAnnotationOfExact(variable)) {
-        continue;
-      }
-      _addLibrarySchemaCandidate(
-        declaration: variable,
-        schemaType: variable.type,
-        isFunction: false,
-      );
-    }
-    for (final getter in library.element.getters) {
-      if (!getter.isOriginDeclaration ||
-          _schemableChecker.hasAnnotationOfExact(getter)) {
-        continue;
-      }
-      _addLibrarySchemaCandidate(
-        declaration: getter,
-        schemaType: getter.returnType,
-        isFunction: false,
-      );
-    }
-    for (final function in library.element.topLevelFunctions) {
-      if (!function.isOriginDeclaration ||
-          function.typeParameters.isNotEmpty ||
-          function.formalParameters.isNotEmpty) {
-        continue;
-      }
-      _addLibrarySchemaCandidate(
-        declaration: function,
-        schemaType: function.returnType,
-        isFunction: true,
-      );
-    }
-  }
-
-  void _addLibrarySchemaCandidate({
-    required Element declaration,
-    required DartType schemaType,
-    required bool isFunction,
-  }) {
-    if (_containsInvalidType(schemaType) ||
-        !_ackSchemaChecker.isAssignableFromType(schemaType)) {
-      return;
-    }
-    final boundary = _ackSchemaBoundaryType(schemaType);
-    final runtime = _ackSchemaRuntimeType(schemaType);
-    if (boundary == null ||
-        runtime == null ||
-        _containsInvalidType(boundary) ||
-        _containsInvalidType(runtime) ||
-        runtime is DynamicType ||
-        (runtime is InterfaceType && _isCore(runtime, 'Object'))) {
-      return;
-    }
-    _libraryTopLevelSchemaCandidates.add((
-      declaration: declaration,
-      boundary: boundary,
-      runtime: library.element.typeSystem.promoteToNonNull(runtime),
-      isFunction: isFunction,
-    ));
-  }
-
-  Future<List<_RegisteredSchema>> _parseSchemasList(
-    Element owner,
-    ConstantReader reader,
-  ) async {
-    final schemasReader = reader.read('schemas');
-    if (schemasReader.isNull) return const [];
-    final ownerLabel = owner is LibraryElement
-        ? 'library'
-        : (owner.name ?? '@Schemable');
-    final list = schemasReader.listValue;
-    if (list.isEmpty) {
-      throw InvalidGenerationSource(
-        '$ownerLabel @Schemable(schemas: ...) must not be empty.',
-        element: owner,
-      );
-    }
-    final result = <_RegisteredSchema>[];
-    for (final item in list) {
-      final function = item.toFunctionValue();
-      if (function is! TopLevelFunctionElement) {
-        throw InvalidGenerationSource(
-          '$ownerLabel @Schemable(schemas: ...) entries must be const '
-          'tear-offs of top-level functions.',
-          element: owner,
-        );
-      }
-      if (function.typeParameters.isNotEmpty) {
-        throw InvalidGenerationSource(
-          '$ownerLabel @Schemable(schemas: ...) function ${function.name} is '
-          'generic. Use a non-generic top-level function, or declare a static '
-          'schema method on the type.',
-          element: owner,
-        );
-      }
-      if (function.formalParameters.isNotEmpty ||
-          !_ackSchemaChecker.isAssignableFromType(function.returnType)) {
-        throw InvalidGenerationSource(
-          '$ownerLabel @Schemable(schemas: ...) function ${function.name} must '
-          'have type AckSchema Function().',
-          element: owner,
-        );
-      }
-      final boundary = _ackSchemaBoundaryType(function.returnType);
-      final runtime = _ackSchemaRuntimeType(function.returnType);
-      if (boundary == null ||
-          runtime == null ||
-          runtime is DynamicType ||
-          (runtime is InterfaceType && _isCore(runtime, 'Object'))) {
-        throw InvalidGenerationSource(
-          '$ownerLabel @Schemable(schemas: ...) function ${function.name} must '
-          'return a typed AckSchema<Boundary, Runtime> for a specific runtime '
-          'type.',
-          element: owner,
-        );
-      }
-      if (runtime is InterfaceType && _isNonOverridableCoreType(runtime)) {
-        throw InvalidGenerationSource(
-          '$ownerLabel @Schemable(schemas: ...) cannot override core type '
-          '${runtime.getDisplayString()}; use @AckField(schema: '
-          '${function.name}) on the specific field instead.',
-          element: owner,
-        );
-      }
-      final resolved = await _resolvedLibraryFor(function.library);
-      final declaration = resolved
-          .getFragmentDeclaration(function.firstFragment)
-          ?.node;
-      final bodyExpression = declaration is FunctionDeclaration
-          ? _functionBodyExpression(declaration.functionExpression.body)
-          : null;
-      if (bodyExpression == null) {
-        throw InvalidGenerationSource(
-          '$ownerLabel @Schemable(schemas: ...) function ${function.name} must '
-          'have a statically resolvable expression or single return.',
-          element: owner,
-        );
-      }
-      final oneWaySource = await _oneWayTransformSource(bodyExpression);
-      if (oneWaySource != null) {
-        throw InvalidGenerationSource(
-          '$ownerLabel @Schemable(schemas: ...) function ${function.name} '
-          'reaches one-way schema $oneWaySource. Migrate this .transform() '
-          'path to .codec() with an encoder.',
-          element: owner,
-        );
-      }
-      final nonNullRuntime = library.element.typeSystem.promoteToNonNull(
-        runtime,
-      );
-      for (final prior in result) {
-        if (_sameTypeIgnoringNullability(prior.runtime, nonNullRuntime)) {
-          throw InvalidGenerationSource(
-            '$ownerLabel @Schemable(schemas: ...) registers multiple schemas '
-            'for ${nonNullRuntime.getDisplayString()}: '
-            '${prior.declaration.name} and ${function.name}.',
-            element: owner,
-          );
-        }
-      }
-      result.add((
-        declaration: function,
-        boundary: boundary,
-        runtime: nonNullRuntime,
-        isFunction: true,
-      ));
-    }
-    return result;
-  }
-
-  _RegisteredSchema? _registeredSchemaForType(
-    InterfaceType interfaceType,
-    FieldElement field,
-  ) {
-    final activeOwner = _activeClass;
-    final fieldOwner = field.enclosingElement;
-    for (final scope in [
-      if (activeOwner != null) ...[
-        if (_classSchemas[activeOwner] case final classList?) classList,
-        if (_unionBaseByBranch[activeOwner] case final base?)
-          if (_classSchemas[base] case final baseList?) baseList,
-      ],
-      if (fieldOwner is ClassElement && fieldOwner != activeOwner)
-        if (_classSchemas[fieldOwner] case final ownerList?) ownerList,
-      _librarySchemas,
-    ]) {
-      for (final entry in scope) {
-        if (_sameTypeIgnoringNullability(entry.runtime, interfaceType)) {
-          return entry;
-        }
-      }
-    }
-    final importedMatches = <Element, _RegisteredSchema>{};
-    for (final entry in _importedLibrarySchemas) {
-      if (_sameTypeIgnoringNullability(entry.runtime, interfaceType)) {
-        importedMatches[entry.declaration.baseElement] = entry;
-      }
-    }
-    if (importedMatches.length > 1) {
-      final path = '${field.enclosingElement.name}.${field.name}';
-      final display = library.element.typeSystem
-          .promoteToNonNull(interfaceType)
-          .getDisplayString();
-      final names = importedMatches.values
-          .map((m) => m.declaration.name)
-          .join(', ');
-      throw InvalidGenerationSource(
-        '$path has multiple imported library schemas for $display ($names). '
-        'Disambiguate with @Schemable(schemas: [...]) or '
-        '@AckField(schema: ...).',
-        element: field,
-      );
-    }
-    if (importedMatches.length == 1) return importedMatches.values.single;
-    return null;
-  }
-
-  _RegisteredSchema? _uniqueLibrarySchemaCandidate(
-    InterfaceType interfaceType,
-  ) {
-    if (_isNonOverridableCoreType(interfaceType) ||
-        _isOverridableBuiltInScalar(interfaceType) ||
-        interfaceType.element is EnumElement) {
-      return null;
-    }
-    final matches = [
-      for (final candidate in _libraryTopLevelSchemaCandidates)
-        if (_sameTypeIgnoringNullability(candidate.runtime, interfaceType))
-          candidate,
-    ];
-    return matches.length == 1 ? matches.single : null;
-  }
-
-  Future<String?> _autoDetectedLibrarySchema(
-    InterfaceType interfaceType,
-    FieldElement field,
-  ) async {
-    if (_isNonOverridableCoreType(interfaceType) ||
-        _isOverridableBuiltInScalar(interfaceType) ||
-        interfaceType.element is EnumElement) {
-      return null;
-    }
-    final matches = [
-      for (final candidate in _libraryTopLevelSchemaCandidates)
-        if (_sameTypeIgnoringNullability(candidate.runtime, interfaceType))
-          candidate,
-    ];
-    if (matches.isEmpty) return null;
-    final path = '${field.enclosingElement.name}.${field.name}';
-    final display = library.element.typeSystem
-        .promoteToNonNull(interfaceType)
-        .getDisplayString();
-    if (matches.length > 1) {
-      final names = matches.map((m) => m.declaration.name).join(', ');
-      throw InvalidGenerationSource(
-        '$path has multiple top-level schemas for $display in this library '
-        '($names). Disambiguate with @Schemable(schemas: [...]) or '
-        '@AckField(schema: ...).',
-        element: field,
-      );
-    }
-    final candidate = matches.single;
-    final resolved = await _resolvedLibraryFor(candidate.declaration.library!);
-    final node = resolved
-        .getFragmentDeclaration(candidate.declaration.firstFragment)
-        ?.node;
-    final bodyExpression = switch (node) {
-      VariableDeclaration() => node.initializer,
-      FunctionDeclaration() => _functionBodyExpression(
-        node.functionExpression.body,
-      ),
-      _ => null,
-    };
-    if (bodyExpression == null) {
-      throw InvalidGenerationSource(
-        '$path resolves to top-level schema ${candidate.declaration.name}, '
-        'which must have a statically resolvable expression or single return.',
-        element: field,
-      );
-    }
-    final oneWaySource = await _oneWayTransformSource(bodyExpression);
-    if (oneWaySource != null) {
-      throw InvalidGenerationSource(
-        '$path resolves to top-level schema ${candidate.declaration.name}, '
-        'which reaches one-way schema $oneWaySource. Migrate this '
-        '.transform() path to .codec() with an encoder.',
-        element: field,
-      );
-    }
-    return _renderRegisteredSchema(candidate, field);
-  }
-
-  String _renderRegisteredSchema(_RegisteredSchema schema, FieldElement field) {
-    final prefix = _visiblePrefix(schema.declaration, field);
-    final qualified =
-        '${prefix == null ? '' : '$prefix.'}${schema.declaration.name}';
-    return schema.isFunction ? '$qualified()' : qualified;
-  }
-
-  bool _isOverridableBuiltInScalar(InterfaceType type) =>
-      _isCore(type, 'DateTime') ||
-      _isCore(type, 'Uri') ||
-      _isCore(type, 'Duration');
-
-  bool _isNonOverridableCoreType(InterfaceType type) =>
-      _isCore(type, 'String') ||
-      _isCore(type, 'int') ||
-      _isCore(type, 'double') ||
-      _isCore(type, 'num') ||
-      _isCore(type, 'bool') ||
-      _isCore(type, 'Object') ||
-      type.isDartCoreList ||
-      type.isDartCoreSet ||
-      type.isDartCoreMap ||
-      _isJsonMaybe(type);
-
-  AckInferRef? _schemaFirstRuntimeRef(
-    InterfaceElement target,
-    FieldElement field,
-  ) {
-    final getter = target.getGetter(r'$ack');
-    final returnType = getter?.returnType;
-    if (getter == null ||
-        !getter.isStatic ||
-        returnType is! InterfaceType ||
-        !_ackModelAdapterChecker.isExactlyType(returnType)) {
-      return null;
-    }
-    final runtimeType = returnType.typeArguments.length == 3
-        ? returnType.typeArguments[1]
-        : null;
-    return runtimeType == null || _containsInvalidType(runtimeType)
-        ? _jsonMapRef
-        : _typeRef(runtimeType, field, allowJsonMaybe: false);
-  }
-
-  /// Resolves [type] through a static `schema` that the type declares.
-  ///
-  /// A non-generic type declares a static field or getter. A generic type
-  /// declares a static method with one type parameter per type argument,
-  /// which is called with the field's type arguments. The method may also take
-  /// one schema parameter per type parameter; it then receives the schema
-  /// inferred for each type argument.
-  Future<String?> _typeOwnedSchema(
-    InterfaceType type,
-    FieldElement field,
-  ) async {
-    final target = type.element;
-    final getter = target.getGetter('schema');
-    final method = target.getMethod('schema');
-    final path = '${field.enclosingElement.name}.${field.name}';
-    final fieldType = library.element.typeSystem.promoteToNonNull(type);
-    final display = fieldType.getDisplayString();
-    final String expression;
-    final DartType returnType;
-    if (getter != null && getter.isStatic) {
-      expression = '${_visibleTypeName(type, field)}.schema';
-      returnType = getter.returnType;
-    } else if (method != null && method.isStatic) {
-      if (method.typeParameters.length != type.typeArguments.length) {
-        throw InvalidGenerationSource(
-          '$path resolves to ${target.name}.schema, which must declare one '
-          'type parameter per type argument of $display.',
-          element: field,
-        );
-      }
-      for (var i = 0; i < method.typeParameters.length; i++) {
-        final typeParam = method.typeParameters[i];
-        final rawBound = typeParam.bound;
-        if (rawBound == null) continue;
-        final bound =
-            rawBound is TypeParameterType &&
-                method.typeParameters.contains(rawBound.element)
-            ? type.typeArguments[method.typeParameters.indexOf(
-                rawBound.element,
-              )]
-            : rawBound;
-        final argument = type.typeArguments[i];
-        if (!library.element.typeSystem.isSubtypeOf(argument, bound)) {
-          throw InvalidGenerationSource(
-            '$path resolves to ${target.name}.schema, whose type parameter '
-            '${typeParam.name} requires a subtype of '
-            '${bound.getDisplayString()}; received '
-            '${argument.getDisplayString()}.',
-            element: field,
-          );
-        }
-      }
-      final parameters = method.formalParameters;
-      if (parameters.isNotEmpty &&
-          (parameters.length != type.typeArguments.length ||
-              parameters.any((parameter) => !parameter.isRequiredPositional))) {
-        throw InvalidGenerationSource(
-          '$path resolves to ${target.name}.schema, which must take no '
-          'parameters or one positional AckSchema parameter per type '
-          'parameter; it takes ${parameters.length} for '
-          '${type.typeArguments.length} type parameters.',
-          element: field,
-        );
-      }
-      final instantiated = method.type.instantiate(type.typeArguments);
-      final schemas = <String>[];
-      for (var i = 0; i < parameters.length; i++) {
-        final argument = type.typeArguments[i];
-        final parameterType = instantiated.formalParameters[i].type;
-        final expected = _ackSchemaRuntimeType(parameterType);
-        if (expected == null ||
-            !_sameTypeIgnoringNullability(expected, argument)) {
-          throw InvalidGenerationSource(
-            '$path resolves to ${target.name}.schema, whose parameter '
-            '${parameters[i].name} must be an AckSchema of '
-            '${argument.getDisplayString()}; it is '
-            '${parameterType.getDisplayString()}.',
-            element: field,
-          );
-        }
-        final expectedBoundary = _ackSchemaBoundaryType(parameterType);
-        final inferredBoundary = _inferredBoundaryType(argument, field);
-        if (expectedBoundary != null &&
-            inferredBoundary != null &&
-            !library.element.typeSystem.isSubtypeOf(
-              inferredBoundary,
-              expectedBoundary,
-            )) {
-          throw InvalidGenerationSource(
-            '$path resolves to ${target.name}.schema, whose parameter '
-            '${parameters[i].name} expects boundary type '
-            '${expectedBoundary.getDisplayString()}, but the schema inferred '
-            'for ${argument.getDisplayString()} has boundary type '
-            '${inferredBoundary.getDisplayString()}.',
-            element: field,
-          );
-        }
-        schemas.add(await _schemaForType(argument, field));
-      }
-      final arguments = [
-        for (final argument in type.typeArguments)
-          _typeArgumentRef(argument, field).render(ackPrefix: ackPrefix),
-      ];
-      final name = _visibleTypeName(type, field);
-      expression = arguments.isEmpty
-          ? '$name.schema(${schemas.join(', ')})'
-          : '$name.schema<${arguments.join(', ')}>(${schemas.join(', ')})';
-      returnType = instantiated.returnType;
-    } else {
-      return null;
-    }
-    if (_containsInvalidType(returnType)) {
-      if (target is ClassElement && _classFirstFacadeName(target) != null) {
-        return expression;
-      }
-      throw InvalidGenerationSource(
-        '$path resolves to ${target.name}.schema, whose type does not resolve '
-        'yet. Declare the type of ${target.name}.schema explicitly.',
-        element: field,
-      );
-    }
-    final runtime = _ackSchemaRuntimeType(returnType);
-    if (runtime == null || !_sameTypeIgnoringNullability(runtime, fieldType)) {
-      final generic = type.typeArguments.isEmpty
-          ? ''
-          : ' A generic type declares static AckSchema<..., '
-                '${target.name}<${target.typeParameters.map((p) => p.name).join(', ')}>> '
-                'schema<${target.typeParameters.map((p) => p.name).join(', ')}>() '
-                'instead.';
-      throw InvalidGenerationSource(
-        '$path resolves to ${target.name}.schema, which produces '
-        '${runtime?.getDisplayString() ?? 'an untyped value'}, but the field '
-        'type is $display.$generic',
-        element: field,
-      );
-    }
-    return expression;
-  }
-
   void _rejectNullableCollectionElement(FieldElement field, DartType itemType) {
-    if (!_isNullable(itemType)) return;
+    if (!isNullableType(itemType)) return;
     _nullableCollectionElementError(field, itemType.getDisplayString());
   }
 
@@ -1873,82 +867,12 @@ final class ClassModelGraphBuilder {
     );
   }
 
-  bool _isClassFirstFacadeVisible(
-    ClassElement target,
-    String facadeName, {
-    required String? prefix,
-  }) {
-    if (target.library == library.element) return true;
-    final modelName = target.name!;
-    var modelVisible = false;
-    var facadeVisible = false;
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
-      final importPrefix = import.prefix?.element.name;
-      if (importPrefix != prefix) continue;
-      final candidate = prefix == null
-          ? import.namespace.get2(modelName)
-          : import.namespace.getPrefixed2(prefix, modelName);
-      if (candidate?.baseElement == target.baseElement) {
-        modelVisible = true;
-      }
-      if (importExposesGeneratedCompanion(
-        import,
-        definingLibrary: target.library,
-        generatedName: facadeName,
-      )) {
-        facadeVisible = true;
-      }
-    }
-    return modelVisible && facadeVisible;
-  }
-
-  void _validateClassFirstFacadeImport(
-    ClassElement target,
-    String facadeName, {
-    required String? prefix,
-    required FieldElement field,
-  }) {
-    if (target.library == library.element) return;
-    final modelName = target.name!;
-    var modelVisible = false;
-    var facadeVisible = false;
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
-      final importPrefix = import.prefix?.element.name;
-      if (importPrefix != prefix) continue;
-      final candidate = prefix == null
-          ? import.namespace.get2(modelName)
-          : import.namespace.getPrefixed2(prefix, modelName);
-      if (candidate?.baseElement == target.baseElement) {
-        modelVisible = true;
-      }
-      if (importExposesGeneratedCompanion(
-        import,
-        definingLibrary: target.library,
-        generatedName: facadeName,
-      )) {
-        facadeVisible = true;
-      }
-    }
-    if (modelVisible && facadeVisible) return;
-    if (modelVisible) {
-      throw InvalidGenerationSource(
-        'Generated class-first facade "$facadeName" is hidden by an import '
-        'combinator or an upstream export combinator for $modelName. Expose '
-        'both through the full import route (for example, show $modelName, '
-        '$facadeName).',
-        element: field,
-      );
-    }
-  }
-
   String _applySugar(
     String schema,
     FieldElement field,
     FormalParameterElement? parameter,
   ) {
-    final effectiveType = _unwrapJsonMaybeType(field.type);
+    final effectiveType = unwrapJsonMaybeType(field.type);
     if (field.isOriginDeclaringFormalParameter) {
       final target = field.metadata.annotations.isNotEmpty
           ? field
@@ -1967,9 +891,13 @@ final class ClassModelGraphBuilder {
     FieldElement field,
     FormalParameterElement? parameter,
   ) {
-    final target = _ackFieldChecker.hasAnnotationOfExact(field)
+    final target =
+        ModelGraphBuilderBase.ackFieldChecker.hasAnnotationOfExact(field)
         ? field
-        : (parameter != null && _ackFieldChecker.hasAnnotationOfExact(parameter)
+        : (parameter != null &&
+                  ModelGraphBuilderBase.ackFieldChecker.hasAnnotationOfExact(
+                    parameter,
+                  )
               ? parameter
               : field);
     return _inference.applyDescription(
@@ -2026,8 +954,7 @@ final class ClassModelGraphBuilder {
         type.typeArguments.length != 2) {
       return;
     }
-    final key = type.typeArguments.first;
-    if (key is InterfaceType && _isCore(key, 'String')) return;
+    if (isSupportedMapKey(type)) return;
     throw InvalidGenerationSource(
       '${field.enclosingElement.name}.${field.name} must use Map<String, V>; '
       'received ${type.getDisplayString()}.',
@@ -2035,109 +962,52 @@ final class ClassModelGraphBuilder {
     );
   }
 
-  bool _isJsonMaybe(DartType type) =>
-      type is InterfaceType &&
-      type.typeArguments.length == 1 &&
-      _jsonMaybeChecker.isExactlyType(type);
-
-  DartType _unwrapJsonMaybeType(DartType type) =>
-      _isJsonMaybe(type) ? (type as InterfaceType).typeArguments.single : type;
-
   /// A type argument of an application type, where `void` is also valid,
   /// as in `Trigger<void>`. It is never a field or collection item type.
   AckInferRef _typeArgumentRef(DartType type, FieldElement field) =>
-      type is VoidType
-      ? const AckExternalTypeRef(name: 'void')
-      : _typeRef(type, field, allowJsonMaybe: false);
+      inferTypeArgumentRef(
+        type,
+        path: '${field.enclosingElement.name}.${field.name}',
+        context: field,
+        onUnsupportedType: (t) => _unsupportedFieldType(field, t),
+        validateMapKey: (mapType) => _validateMapKey(field, mapType),
+        resolveModelType: (element) => _resolveModelTypeRef(element, field),
+      );
 
   AckInferRef _typeRef(
     DartType type,
     FieldElement field, {
     bool allowJsonMaybe = true,
-  }) {
-    if (type is DynamicType || type is TypeParameterType) {
-      _unsupportedFieldType(field, type);
-    }
-    if (type is! InterfaceType) _unsupportedFieldType(field, type);
-    final interfaceType = type;
-    final nullable = _isNullable(interfaceType);
-    if (_isJsonMaybe(interfaceType)) {
-      if (!allowJsonMaybe) {
-        _unsupportedFieldType(field, type);
-      }
-      if (nullable) {
-        throw InvalidGenerationSource(
-          '${field.enclosingElement.name}.${field.name} uses nullable '
-          '${interfaceType.getDisplayString()}; use non-nullable JsonMaybe<...> '
-          'instead, which already models both absent and null values.',
-          element: field,
-        );
-      }
-      return AckJsonMaybeTypeRef(
-        _typeRef(
-          interfaceType.typeArguments.single,
-          field,
-          allowJsonMaybe: false,
-        ),
-      );
-    }
-    late final AckInferRef result;
-    if (interfaceType.isDartCoreList &&
-        interfaceType.typeArguments.length == 1) {
-      result = AckListTypeRef(
-        _typeRef(
-          interfaceType.typeArguments.single,
-          field,
-          allowJsonMaybe: false,
-        ),
-      );
-    } else if (interfaceType.isDartCoreSet &&
-        interfaceType.typeArguments.length == 1) {
-      result = AckSetTypeRef(
-        _typeRef(
-          interfaceType.typeArguments.single,
-          field,
-          allowJsonMaybe: false,
-        ),
-      );
-    } else if (interfaceType.isDartCoreMap &&
-        interfaceType.typeArguments.length == 2) {
-      _validateMapKey(field, interfaceType);
-      result = AckMapTypeRef(
-        _typeRef(interfaceType.typeArguments[1], field, allowJsonMaybe: false),
-      );
-    } else if (interfaceType.element.library.uri.toString() == 'dart:core' &&
-        const {
-          'String',
-          'int',
-          'double',
-          'num',
-          'bool',
-          'Object',
-        }.contains(interfaceType.element.name)) {
-      result = AckScalarTypeRef(interfaceType.element.name!);
-    } else if (_schemaFirstRuntimeRef(interfaceType.element, field)
-        case final runtimeRef?) {
-      result = AckModelTypeRef(
-        schemaId: AckSchemaId(
-          libraryUri: interfaceType.element.library.uri,
-          declarationName: interfaceType.element.name!,
-        ),
-        className: interfaceType.element.name!,
-        runtimeRef: runtimeRef,
-        importPrefix: _visiblePrefix(interfaceType.element, field),
-      );
-    } else {
-      result = AckExternalTypeRef(
-        name: interfaceType.element.name!,
-        importPrefix: _visiblePrefix(interfaceType.element, field),
-        typeArguments: [
-          for (final argument in interfaceType.typeArguments)
-            _typeArgumentRef(argument, field),
-        ],
-      );
-    }
-    return nullable ? AckNullableTypeRef(result) : result;
+  }) => inferTypeRef(
+    type,
+    path: '${field.enclosingElement.name}.${field.name}',
+    context: field,
+    allowJsonMaybe: allowJsonMaybe,
+    onUnsupportedType: (t) => _unsupportedFieldType(field, t),
+    validateMapKey: (mapType) => _validateMapKey(field, mapType),
+    resolveModelType: (element) => _resolveModelTypeRef(element, field),
+  );
+
+  AckInferRef? _resolveModelTypeRef(
+    InterfaceElement element,
+    FieldElement field,
+  ) {
+    final runtimeRef = _customSchemas.schemaFirstRuntimeRef(
+      element,
+      field,
+      typeRef: (t, f) => _typeRef(t, f, allowJsonMaybe: false),
+    );
+    if (runtimeRef == null) return null;
+    final path = '${field.enclosingElement.name}.${field.name}';
+    return AckModelTypeRef(
+      schemaId: AckSchemaId(
+        libraryUri: element.library.uri,
+        declarationName: element.name!,
+      ),
+      className: element.name!,
+      runtimeRef: runtimeRef,
+      importPrefix: visiblePrefixFor(element, path: path, context: field),
+    );
   }
 
   Map<String, FieldElement> _instanceFields(ClassElement element) {
@@ -2163,7 +1033,7 @@ final class ClassModelGraphBuilder {
     if (element.isAbstract || element.isSealed || element.isFinal) return;
     throw InvalidGenerationSource(
       '${element.name} must be declared as a final class because '
-      '${_annotationName(element)} generates immutable value semantics.',
+      '${annotationName(element)} generates immutable value semantics.',
       element: element,
       todo: 'Add the final class modifier.',
     );
@@ -2208,7 +1078,11 @@ final class ClassModelGraphBuilder {
       );
     }
 
-    final annotation = _firstAnnotation(_ackFieldChecker, field, parameter);
+    final annotation = _firstAnnotation(
+      ModelGraphBuilderBase.ackFieldChecker,
+      field,
+      parameter,
+    );
     if (annotation != null) {
       final reader = ConstantReader(annotation);
       if (reader.read('name').isNull &&
@@ -2241,7 +1115,7 @@ final class ClassModelGraphBuilder {
       final canBeOptional =
           isDiscriminator ||
           (parameter != null &&
-              (!parameter.isRequired || _isNullable(parameter.type)));
+              (!parameter.isRequired || isNullableType(parameter.type)));
       if (!canBeOptional) {
         throw InvalidGenerationSource(
           '${field.enclosingElement.name}.${field.name} cannot be optional '
@@ -2263,9 +1137,9 @@ final class ClassModelGraphBuilder {
     final key = type.typeArguments[0];
     final value = type.typeArguments[1];
     return key is InterfaceType &&
-        _isCore(key, 'String') &&
+        isCoreType(key, 'String') &&
         value is InterfaceType &&
-        _isCore(value, 'Object') &&
+        isCoreType(value, 'Object') &&
         value.nullabilitySuffix == NullabilitySuffix.question;
   }
 
@@ -2274,8 +1148,8 @@ final class ClassModelGraphBuilder {
     if (getter == null) return;
     final type = getter.returnType;
     if (type is InterfaceType &&
-        _isCore(type, 'String') &&
-        !_isNullable(type)) {
+        isCoreType(type, 'String') &&
+        !isNullableType(type)) {
       return;
     }
     throw InvalidGenerationSource(
@@ -2293,14 +1167,17 @@ final class ClassModelGraphBuilder {
     if (getter == null) return;
     final type = getter.returnType;
     if (type is! InterfaceType ||
-        !_isCore(type, 'String') ||
-        _isNullable(type)) {
+        !isCoreType(type, 'String') ||
+        isNullableType(type)) {
       throw InvalidGenerationSource(
         '${branch.name}.$key discriminator member must be String.',
         element: getter,
       );
     }
-    final expression = _memberExpression(getter);
+    final resolved = inputResolved;
+    final expression = resolved == null
+        ? null
+        : declarationExpression(resolved, propertyDeclaration(getter));
     if (expression is SimpleStringLiteral && expression.value == expected) {
       return;
     }
@@ -2308,88 +1185,6 @@ final class ClassModelGraphBuilder {
       '${branch.name}.$key must be a String literal matching "$expected".',
       element: getter,
     );
-  }
-
-  Expression? _memberExpression(GetterElement getter) {
-    Element target = getter;
-    if (getter.isOriginVariable) target = getter.variable;
-    final resolved = _inputResolved;
-    if (resolved == null) return null;
-    final node = resolved.getFragmentDeclaration(target.firstFragment)?.node;
-    if (node is VariableDeclaration) return node.initializer;
-    if (node is FunctionDeclaration) {
-      return _functionBodyExpression(node.functionExpression.body);
-    }
-    if (node is MethodDeclaration) {
-      return _functionBodyExpression(node.body);
-    }
-    return null;
-  }
-
-  Expression? _functionBodyExpression(FunctionBody body) {
-    if (body is ExpressionFunctionBody) return body.expression;
-    if (body is BlockFunctionBody && body.block.statements.length == 1) {
-      final statement = body.block.statements.single;
-      if (statement is ReturnStatement) return statement.expression;
-    }
-    return null;
-  }
-
-  Future<String?> _oneWayTransformSource(
-    Expression expression, {
-    Set<Element> visited = const {},
-  }) async {
-    Expression? current = expression;
-    while (current is ParenthesizedExpression) {
-      current = current.expression;
-    }
-    Element? referenced;
-    while (current is MethodInvocation) {
-      if (_oneWayTransformMethods.contains(current.methodName.name)) {
-        return current.methodName.name;
-      }
-      final method = current.methodName.element;
-      if (method is TopLevelFunctionElement) referenced = method;
-      current = current.target;
-    }
-    referenced ??= switch (current) {
-      SimpleIdentifier() => current.element,
-      PrefixedIdentifier() => current.identifier.element,
-      PropertyAccess() => current.propertyName.element,
-      _ => null,
-    };
-    if (referenced == null) return null;
-
-    Element declaration = referenced.baseElement;
-    if (declaration is GetterElement && declaration.isOriginVariable) {
-      declaration = declaration.variable.baseElement;
-    }
-    if (declaration is! TopLevelVariableElement &&
-        declaration is! GetterElement &&
-        declaration is! TopLevelFunctionElement) {
-      return null;
-    }
-    final canonical = declaration.baseElement;
-    if (visited.contains(canonical) || visited.length >= 16) return null;
-    final owningLibrary = declaration.library;
-    if (owningLibrary == null) return null;
-    final resolved = await _resolvedLibraryFor(owningLibrary);
-    final node = resolved
-        .getFragmentDeclaration(declaration.firstFragment)
-        ?.node;
-    final referencedExpression = switch (node) {
-      VariableDeclaration() => node.initializer,
-      FunctionDeclaration() => _functionBodyExpression(
-        node.functionExpression.body,
-      ),
-      _ => null,
-    };
-    if (referencedExpression == null) return null;
-    final nested = await _oneWayTransformSource(
-      referencedExpression,
-      visited: {...visited, canonical},
-    );
-    return nested == null ? null : '${declaration.name} → $nested';
   }
 
   void _requireMixin(ClassElement element) {
@@ -2406,9 +1201,9 @@ final class ClassModelGraphBuilder {
     if (element.mixins.any((type) => type.element.name == mixinName)) {
       return true;
     }
-    final resolved = _inputResolved;
+    final resolved = inputResolved;
     if (resolved == null) return false;
-    final node = resolved.getFragmentDeclaration(element.firstFragment)?.node;
+    final node = declarationNode(resolved, element);
     if (node is! ClassDeclaration) return false;
     final withClause = node.withClause;
     if (withClause == null) return false;
@@ -2455,7 +1250,7 @@ final class ClassModelGraphBuilder {
     if (!RegExp(r'^[A-Z][A-Za-z0-9_$]*$').hasMatch(facadeName) ||
         isDartKeyword(facadeName)) {
       throw InvalidGenerationSource(
-        'Invalid ${_annotationName(element)} schema facade name "$facadeName" on '
+        'Invalid ${annotationName(element)} schema facade name "$facadeName" on '
         '${element.name}; schemaName must be a public UpperCamel identifier.',
         element: element,
       );
@@ -2471,7 +1266,7 @@ final class ClassModelGraphBuilder {
       }
       _schemaNameOwners[name] = element;
     }
-    _graph.setClassMetadata(
+    graph.setClassMetadata(
       id,
       AckClassModelMetadata(
         facadeName: facadeName,
@@ -2482,7 +1277,7 @@ final class ClassModelGraphBuilder {
               // Implicit sealed-union branches also receive value members.
               if (parent.library == element.library &&
                   !parent.isSealed &&
-                  _classFirstFacadeName(parent) != null)
+                  classFirstFacadeName(parent) != null)
                 ackCopyWithInterfaceName(parent.name!),
         }.toList(),
       ),
@@ -2490,7 +1285,8 @@ final class ClassModelGraphBuilder {
   }
 
   _ModelOptions? _options(ClassElement element) {
-    final annotation = _schemableChecker.firstAnnotationOfExact(element);
+    final annotation = ModelGraphBuilderBase.schemableChecker
+        .firstAnnotationOfExact(element);
     if (annotation == null) return null;
     final reader = ConstantReader(annotation);
     final caseStyle = reader.read('caseStyle').objectValue;
@@ -2512,15 +1308,12 @@ final class ClassModelGraphBuilder {
     );
   }
 
-  /// The annotation spelling that marks [element] or its sealed base.
-  String _annotationName(Element element) => '@Schemable';
-
   String? _classDescription(ClassElement element, _ModelOptions options) {
     final tag = _descriptionTag(element);
     final explicit = options.description;
     if (explicit != null && explicit.trim().isEmpty) {
       throw InvalidGenerationSource(
-        '${element.name} ${_annotationName(element)}.description must not be '
+        '${element.name} ${annotationName(element)}.description must not be '
         'blank.',
         element: element,
       );
@@ -2547,27 +1340,16 @@ final class ClassModelGraphBuilder {
   String _facadeName(ClassElement element, _ModelOptions options) =>
       ackClassSchemaFacadeName(element.name!, override: options.schemaName);
 
-  String? _classFirstFacadeName(ClassElement element) {
-    final direct = _options(element);
-    if (direct != null) return _facadeName(element, direct);
-    final isImplicitUnionBranch = element.allSupertypes.any((supertype) {
-      final base = supertype.element;
-      return base is ClassElement &&
-          base.library == element.library &&
-          base.isSealed &&
-          _schemableChecker.hasAnnotationOfExact(base);
-    });
-    return isImplicitUnionBranch
-        ? ackClassSchemaFacadeName(element.name!)
-        : null;
-  }
-
   String? _jsonKey(FieldElement field, [FormalParameterElement? parameter]) {
     _rejectJsonKey(field.enclosingElement as ClassElement, field);
     if (parameter != null) {
       _rejectJsonKey(field.enclosingElement as ClassElement, parameter);
     }
-    final ackField = _firstAnnotation(_ackFieldChecker, field, parameter);
+    final ackField = _firstAnnotation(
+      ModelGraphBuilderBase.ackFieldChecker,
+      field,
+      parameter,
+    );
     if (ackField == null) return null;
     final nameReader = ConstantReader(ackField).read('name');
     if (nameReader.isNull) return null;
@@ -2586,7 +1368,7 @@ final class ClassModelGraphBuilder {
     if (!_jsonKeyChecker.hasAnnotationOfExact(element)) return;
     throw InvalidGenerationSource(
       '${owner.name}.${element.name} uses @JsonKey, which is not supported on '
-      '${_annotationName(owner)} classes in Ack 2.0. Use @AckField(name: ...) '
+      '${annotationName(owner)} classes in Ack 2.0. Use @AckField(name: ...) '
       'instead.',
       element: element,
     );
@@ -2630,63 +1412,12 @@ final class ClassModelGraphBuilder {
     };
   }
 
-  bool _isCore(InterfaceType type, String name) =>
-      type.element.library.uri.toString() == 'dart:core' &&
-      type.element.name == name;
-
-  bool _isNullable(DartType type) =>
-      type.nullabilitySuffix == NullabilitySuffix.question;
-
   String _visibleTypeName(InterfaceType type, FieldElement field) =>
-      qualifySymbol(_visiblePrefix(type.element, field), type.element.name!);
-
-  /// The import prefix that names [target] in this library, or null when an
-  /// unprefixed name reaches it.
-  ///
-  /// Throws when [target] is not visible, because a part cannot add imports.
-  String? _visiblePrefix(Element target, FieldElement field) {
-    if (target.library == library.element) return null;
-    final name = target.name;
-    if (name == null) return null;
-    String? prefixed;
-    var unprefixed = false;
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
-      final prefix = import.prefix?.element.name;
-      final candidate = prefix == null
-          ? import.namespace.get2(name)
-          : import.namespace.getPrefixed2(prefix, name);
-      if (candidate?.baseElement != target.baseElement) continue;
-      if (prefix != null && prefix.isNotEmpty) {
-        prefixed ??= prefix;
-      } else {
-        unprefixed = true;
-      }
-    }
-    if (prefixed != null || unprefixed) return prefixed;
-    final inScope = library.element.firstFragment.scope.lookup(name).getter;
-    if (inScope?.baseElement == target.baseElement) return null;
-    throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} uses $name, which is not '
-      'visible in this library. Import ${target.library?.uri}.',
-      element: field,
-    );
-  }
-
-  Future<ResolvedLibraryResult> _resolvedLibraryFor(
-    LibraryElement element,
-  ) async {
-    final cached = _resolvedByUri[element.uri];
-    if (cached != null) return cached;
-    final result = await element.session.getResolvedLibraryByElement(element);
-    if (result is! ResolvedLibraryResult) {
-      throw InvalidGenerationSource(
-        'Could not resolve ${element.uri} for Ack model generation.',
+      visibleTypeNameFor(
+        type,
+        path: '${field.enclosingElement.name}.${field.name}',
+        context: field,
       );
-    }
-    _resolvedByUri[element.uri] = result;
-    return result;
-  }
 
   void _rejectInvalidMemberName(
     String name,
@@ -2703,14 +1434,8 @@ final class ClassModelGraphBuilder {
     }
   }
 
-  String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
-
   AckSchemaId _id(ClassElement element) => AckSchemaId(
     libraryUri: library.element.uri,
     declarationName: element.name!,
-  );
-
-  static const AckInferRef _jsonMapRef = AckMapTypeRef(
-    AckNullableTypeRef(AckScalarTypeRef('Object')),
   );
 }

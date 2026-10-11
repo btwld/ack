@@ -360,6 +360,181 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
 
   String _hash(String expression) => '${_ack('deepHashCode')}($expression)';
 
+  AckInferRef nonNullable(AckInferRef type) => switch (type) {
+    AckNullableTypeRef(:final inner) => inner,
+    _ => type,
+  };
+
+  bool requiresImmutableCopy(AckInferRef type) => switch (type) {
+    AckNullableTypeRef(:final inner) => requiresImmutableCopy(inner),
+    AckListTypeRef() || AckSetTypeRef() || AckMapTypeRef() => true,
+    _ => false,
+  };
+
+  bool requiresRuntimeConversion(AckInferRef type) => switch (type) {
+    AckNullableTypeRef(:final inner) => requiresRuntimeConversion(inner),
+    AckModelTypeRef() ||
+    AckListTypeRef() ||
+    AckSetTypeRef() ||
+    AckMapTypeRef() => true,
+    _ => false,
+  };
+
+  String immutableCopy(AckInferRef type, String expression) {
+    return switch (type) {
+      AckNullableTypeRef(:final inner) when !requiresImmutableCopy(inner) =>
+        expression,
+      AckNullableTypeRef(:final inner) =>
+        '$expression == null ? null : ${immutableCopy(inner, expression)}',
+      AckListTypeRef(:final elementType) =>
+        'List<${_type(elementType)}>.unmodifiable($expression.map((item) => ${immutableCopy(elementType, 'item')}))',
+      AckSetTypeRef(:final elementType) =>
+        'Set<${_type(elementType)}>.unmodifiable($expression.map((item) => ${immutableCopy(elementType, 'item')}))',
+      AckMapTypeRef(:final valueType) when !requiresImmutableCopy(valueType) =>
+        'Map<String, ${_type(valueType)}>.unmodifiable($expression)',
+      AckMapTypeRef(:final valueType) =>
+        'Map<String, ${_type(valueType)}>.unmodifiable($expression.map((key, item) => MapEntry(key, ${immutableCopy(valueType, 'item')})))',
+      _ => expression,
+    };
+  }
+
+  String fromRuntime(
+    AckInferRef type,
+    String expression, {
+    bool wrapImmutableCollections = false,
+  }) {
+    return switch (type) {
+      // Any input is already assignable to Object?; a cast would be redundant.
+      AckNullableTypeRef(inner: AckScalarTypeRef(dartType: 'Object')) =>
+        expression,
+      AckNullableTypeRef(:final inner)
+          when wrapImmutableCollections &&
+              (inner is AckScalarTypeRef || inner is AckExternalTypeRef) =>
+        '$expression as ${_type(type)}',
+      AckNullableTypeRef(:final inner) =>
+        '$expression == null ? null : ${fromRuntime(inner, wrapImmutableCollections ? expression : '$expression!', wrapImmutableCollections: wrapImmutableCollections)}',
+      AckModelTypeRef(:final runtimeRef, :final visibleName) =>
+        '$visibleName.\$ack.fromRuntime($expression as ${_type(runtimeRef)})',
+      AckListTypeRef(:final elementType) => _listFromRuntime(
+        elementType,
+        expression,
+        wrapImmutableCollections: wrapImmutableCollections,
+      ),
+      AckSetTypeRef(:final elementType) => _setFromRuntime(
+        elementType,
+        expression,
+        wrapImmutableCollections: wrapImmutableCollections,
+      ),
+      AckMapTypeRef(:final valueType) => _mapFromRuntime(
+        valueType,
+        expression,
+        wrapImmutableCollections: wrapImmutableCollections,
+      ),
+      _ => '$expression as ${_type(type)}',
+    };
+  }
+
+  String _listFromRuntime(
+    AckInferRef elementType,
+    String expression, {
+    required bool wrapImmutableCollections,
+  }) {
+    final elementTypeName = _type(elementType);
+    if (wrapImmutableCollections) {
+      return 'List<$elementTypeName>.unmodifiable(($expression as List).map('
+          '(item) => ${fromRuntime(elementType, 'item', wrapImmutableCollections: true)}))';
+    }
+    if (!requiresRuntimeConversion(elementType)) {
+      return '($expression as List).cast<$elementTypeName>()';
+    }
+    return '($expression as List).map('
+        '(item) => ${fromRuntime(elementType, 'item')}).toList()';
+  }
+
+  String _setFromRuntime(
+    AckInferRef elementType,
+    String expression, {
+    required bool wrapImmutableCollections,
+  }) {
+    final elementTypeName = _type(elementType);
+    if (wrapImmutableCollections) {
+      return 'Set<$elementTypeName>.unmodifiable(($expression as Set).map('
+          '(item) => ${fromRuntime(elementType, 'item', wrapImmutableCollections: true)}))';
+    }
+    if (!requiresRuntimeConversion(elementType)) {
+      return '($expression as Set).cast<$elementTypeName>()';
+    }
+    return '($expression as Set).map('
+        '(item) => ${fromRuntime(elementType, 'item')}).toSet()';
+  }
+
+  String _mapFromRuntime(
+    AckInferRef valueType,
+    String expression, {
+    required bool wrapImmutableCollections,
+  }) {
+    final valueTypeName = _type(valueType);
+    if (wrapImmutableCollections) {
+      return 'Map<String, $valueTypeName>.unmodifiable(($expression as Map).map('
+          '(key, item) => MapEntry(key as String, '
+          '${fromRuntime(valueType, 'item', wrapImmutableCollections: true)})))';
+    }
+    if (!requiresRuntimeConversion(valueType)) {
+      return '($expression as Map).cast<String, $valueTypeName>()';
+    }
+    return '($expression as Map).map((key, item) => MapEntry('
+        'key as String, ${fromRuntime(valueType, 'item')}))';
+  }
+
+  String toRuntime(AckInferRef type, String expression) {
+    return switch (type) {
+      AckNullableTypeRef(:final inner)
+          when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
+        expression,
+      // `value?.map(...)` satisfies prefer_null_aware_operators.
+      AckNullableTypeRef(:final inner)
+          when inner is AckListTypeRef ||
+              inner is AckSetTypeRef ||
+              inner is AckMapTypeRef =>
+        toRuntime(inner, '$expression?'),
+      // Expressions are promotable locals, so the null check needs no `!`.
+      AckNullableTypeRef(:final inner) =>
+        '$expression == null ? null : ${toRuntime(inner, expression)}',
+      AckModelTypeRef(:final visibleName) =>
+        '$visibleName.\$ack.toRuntime($expression)',
+      AckListTypeRef(:final elementType) =>
+        '$expression.map((item) => ${toRuntime(elementType, 'item')}).toList(growable: false)',
+      AckSetTypeRef(:final elementType) =>
+        '$expression.map((item) => ${toRuntime(elementType, 'item')}).toSet()',
+      AckMapTypeRef(:final valueType) =>
+        '$expression.map((key, item) => MapEntry(key, ${toRuntime(valueType, 'item')}))',
+      _ => expression,
+    };
+  }
+
+  String encodeField(
+    AckInferRef runtimeRef,
+    String access, {
+    required bool nullable,
+  }) {
+    final baseType = nonNullable(runtimeRef);
+    if (!nullable || !requiresRuntimeConversion(baseType)) {
+      return toRuntime(baseType, access);
+    }
+    if (baseType is AckListTypeRef ||
+        baseType is AckSetTypeRef ||
+        baseType is AckMapTypeRef) {
+      return toRuntime(AckNullableTypeRef(baseType), access);
+    }
+    return 'switch ($access) {'
+        ' null => null,'
+        ' final fieldValue => ${toRuntime(baseType, 'fieldValue')},'
+        ' }';
+  }
+
+  String declaredKeysLiteral(Iterable<String> keys) =>
+      '<String>{${keys.map(dartStringLiteral).join(', ')}}';
+
   String _type(AckInferRef type) => type.render(ackPrefix: ackPrefix);
 
   String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
