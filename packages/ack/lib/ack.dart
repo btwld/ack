@@ -40,15 +40,14 @@ export 'src/schemas/schema.dart'
         ImportedJsonSchema,
         Refinement,
         SchemaOperation,
-        TestOperationRecordingAckSchema,
-        TestThrowingLeafAckSchema,
         WrapperSchema,
-        createCodecSchemaInternal;
+        createCodecSchemaInternal,
+        jsonMapOrNull;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results
 export 'src/validation/schema_result.dart';
-// Model annotations. Legacy top-level constraint annotations live in annotations.dart.
+// Model annotations
 export 'src/annotations/ack_field.dart';
 export 'src/annotations/constraints.dart' show Validate;
 export 'src/annotations/schemable.dart';

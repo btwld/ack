@@ -1,12 +1,7 @@
 import 'package:ack/ack.dart';
 // These symbols are intentionally hidden from the public ack.dart export;
 // the internal characterization tests below reach into the source path.
-import 'package:ack/src/schemas/schema.dart'
-    show
-        AnyAckSchema,
-        SchemaOperation,
-        TestOperationRecordingAckSchema,
-        WrapperSchema;
+import 'package:ack/src/schemas/schema.dart' show AnyAckSchema, WrapperSchema;
 import 'package:test/test.dart';
 
 final class _Event {
@@ -33,6 +28,24 @@ final class _StartsWithConstraint extends Constraint<String>
 
   @override
   String buildMessage(String value) => 'Expected value to start with $prefix';
+}
+
+final class _RecordingConstraint extends Constraint<String>
+    with Validator<String> {
+  _RecordingConstraint(this.events, {required this.passes})
+    : super(constraintKey: 'recording', description: 'Records validation');
+
+  final List<String> events;
+  final bool Function(String value) passes;
+
+  @override
+  bool isValid(String value) {
+    events.add('constraint:$value');
+    return passes(value);
+  }
+
+  @override
+  String buildMessage(String value) => 'Constraint rejected $value';
 }
 
 void main() {
@@ -250,54 +263,6 @@ void main() {
     });
   });
 
-  group('Ack.enumCodec', () {
-    test('returns a CodecSchema with String boundary and enum runtime', () {
-      final schema = Ack.enumCodec(_Role.values);
-      expect(schema, isA<CodecSchema<String, _Role>>());
-    });
-
-    test('parses .name into the typed enum value', () {
-      final schema = Ack.enumCodec(_Role.values);
-      // Static-type check: boundary is String, runtime is _Role.
-      // The String → _Role mapping is performed inside the underlying
-      // EnumSchema (via `.name` lookup), not by the codec's identity
-      // decoder.
-      const String boundaryInput = 'admin';
-      final _Role? parsed = schema.parse(boundaryInput);
-      expect(parsed, _Role.admin);
-      expect(schema.parse('member'), _Role.member);
-    });
-
-    test('encodes the enum value back to .name', () {
-      final schema = Ack.enumCodec(_Role.values);
-      // Static-type check: encoder takes _Role, returns String.
-      const _Role runtimeValue = _Role.admin;
-      final String? encoded = schema.encode(runtimeValue);
-      expect(encoded, 'admin');
-      expect(schema.encode(_Role.member), 'member');
-    });
-
-    test('round-trips through the codec without losing identity', () {
-      final schema = Ack.enumCodec(_Role.values);
-      for (final value in _Role.values) {
-        final encoded = schema.encode(value);
-        expect(schema.parse(encoded), value);
-      }
-    });
-
-    test('rejects strings outside the allowed values', () {
-      final schema = Ack.enumCodec(_Role.values);
-      final result = schema.safeParse('owner');
-      expect(result.isFail, true);
-    });
-
-    test('rejects non-string boundary input', () {
-      final schema = Ack.enumCodec(_Role.values);
-      final result = schema.safeParse(42);
-      expect(result.isFail, true);
-    });
-  });
-
   group('DefaultSchema wrapper', () {
     test('parse(null) returns runtime default', () {
       final schema = Ack.string().withDefault('fallback');
@@ -490,36 +455,45 @@ void main() {
     });
   });
 
-  group('SchemaContext.operation', () {
-    test('parse path observes SchemaOperation.parse', () {
-      final parseOperations = <SchemaOperation>[];
-      final validateOperations = <SchemaOperation>[];
-      final schema = TestOperationRecordingAckSchema(
-        parseOperations: parseOperations,
-        validateOperations: validateOperations,
-        encodeOperations: [],
-      );
+  group('Constraint and refinement execution order', () {
+    test('parse and encode run constraints before refinements', () {
+      final events = <String>[];
+      final schema = Ack.string()
+          .withConstraint(_RecordingConstraint(events, passes: (_) => true))
+          .refine((value) {
+            events.add('refine:$value');
+            return true;
+          });
 
-      schema.parse('x');
+      expect(schema.parse('x'), 'x');
+      expect(events, ['constraint:x', 'refine:x']);
 
-      expect(parseOperations, [SchemaOperation.parse]);
-      expect(validateOperations, [SchemaOperation.parse]);
+      events.clear();
+      expect(schema.encode('y'), 'y');
+      expect(events, ['constraint:y', 'refine:y']);
     });
 
-    test('encode path observes SchemaOperation.encode', () {
-      final validateOperations = <SchemaOperation>[];
-      final encodeOperations = <SchemaOperation>[];
-      final schema = TestOperationRecordingAckSchema(
-        parseOperations: [],
-        validateOperations: validateOperations,
-        encodeOperations: encodeOperations,
-      );
+    test(
+      'failing constraint short-circuits refinements on parse and encode',
+      () {
+        final events = <String>[];
+        final schema = Ack.string()
+            .withConstraint(
+              _RecordingConstraint(events, passes: (value) => value != 'bad'),
+            )
+            .refine((value) {
+              events.add('refine:$value');
+              return true;
+            });
 
-      schema.encode('x');
+        expect(schema.safeParse('bad').isFail, true);
+        expect(events, ['constraint:bad']);
 
-      expect(encodeOperations, [SchemaOperation.encode]);
-      expect(validateOperations, [SchemaOperation.encode]);
-    });
+        events.clear();
+        expect(schema.safeEncode('bad').isFail, true);
+        expect(events, ['constraint:bad']);
+      },
+    );
   });
 
   group('Sealed SchemaError exhaustiveness', () {

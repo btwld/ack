@@ -10,6 +10,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
+import '../utils/string_literal.dart';
 import 'generated_companion_visibility.dart';
 import 'schema_first_names.dart';
 
@@ -54,7 +55,6 @@ final class SchemaModelGraphBuilder {
   SchemaModelGraphBuilder(this.library);
 
   static const _reservedMembers = ackSchemaFirstReservedMembers;
-  static const _dartKeywords = ackDartReservedWords;
 
   static const _oneWayTransformMethods = {'transform'};
 
@@ -271,7 +271,7 @@ final class SchemaModelGraphBuilder {
         _localDeclaration(chain.reference!) != null) {
       node = await _aliasNode(declaration, chain.reference!, path);
     } else if (chain.reference != null &&
-        _isCrossLibraryAckInfer(chain.reference!)) {
+        _isCrossLibrarySchemable(chain.reference!)) {
       throw InvalidGenerationSource(
         '$path aliases a cross-library '
         '${_annotationLabel(_referencedElement(chain.reference!)!)} schema. '
@@ -362,12 +362,9 @@ final class SchemaModelGraphBuilder {
       return AckObjectModelNode(
         id: declaration.id,
         className: declaration.className,
-        boundaryType: source.boundaryType,
-        runtimeRef: source.runtimeRef,
         fields: source.fields,
         unknownPropertyPolicy: source.unknownPropertyPolicy,
         captureFieldName: source.captureFieldName,
-        captureJsonKey: source.captureJsonKey,
         constructorParameters: source.constructorParameters,
         description: source.description,
       );
@@ -379,12 +376,13 @@ final class SchemaModelGraphBuilder {
         element: declaration.element,
       );
     }
+    final valueSource = source as AckValueModelNode;
     return AckValueModelNode(
       id: declaration.id,
       className: declaration.className,
-      boundaryType: source.boundaryType,
-      runtimeRef: source.runtimeRef,
-      description: source.description,
+      boundaryType: valueSource.boundaryType,
+      runtimeRef: valueSource.runtimeRef,
+      description: valueSource.description,
     );
   }
 
@@ -416,17 +414,13 @@ final class SchemaModelGraphBuilder {
         );
       }
       final jsonKey = (entry.key as SimpleStringLiteral).value;
-      _rejectInvalidMemberName(jsonKey, path, declaration.element);
-      if (_reservedMembers.contains(jsonKey)) {
+      final problem = ackSchemaFirstFieldNameProblem(
+        jsonKey,
+        capturesExtras: additionalProperties,
+      );
+      if (problem != null) {
         throw InvalidGenerationSource(
-          '$path.$jsonKey conflicts with generated/Object member "$jsonKey".',
-          element: declaration.element,
-        );
-      }
-      if (additionalProperties && jsonKey == 'additionalProperties') {
-        throw InvalidGenerationSource(
-          '$path.$jsonKey conflicts with the generated additional-properties '
-          'member.',
+          '$path.$jsonKey $problem',
           element: declaration.element,
         );
       }
@@ -456,16 +450,9 @@ final class SchemaModelGraphBuilder {
         ),
       );
     }
-    final types = _schemaTypes(
-      declaration.expression,
-      path,
-      declaration.element,
-    );
     return AckObjectModelNode(
       id: declaration.id,
       className: declaration.className,
-      boundaryType: types.boundary,
-      runtimeRef: types.runtime,
       fields: fields,
       constructorParameters: _schemaFirstConstructorParameters(
         fields,
@@ -475,7 +462,6 @@ final class SchemaModelGraphBuilder {
           ? AckUnknownPropertyPolicy.capture
           : AckUnknownPropertyPolicy.reject,
       captureFieldName: additionalProperties ? 'additionalProperties' : null,
-      captureJsonKey: additionalProperties ? 'additionalProperties' : null,
       description: _description(declaration.expression),
     );
   }
@@ -553,13 +539,10 @@ final class SchemaModelGraphBuilder {
         AckObjectModelNode(
           id: branch.id,
           className: branch.className,
-          boundaryType: branch.boundaryType,
-          runtimeRef: branch.runtimeRef,
           fields: branch.fields,
           constructorParameters: branch.constructorParameters,
           unknownPropertyPolicy: branch.unknownPropertyPolicy,
           captureFieldName: branch.captureFieldName,
-          captureJsonKey: branch.captureJsonKey,
           unionId: declaration.id,
           discriminatorKey: discriminatorKey,
           discriminatorValue: value,
@@ -574,16 +557,9 @@ final class SchemaModelGraphBuilder {
         element: declaration.element,
       );
     }
-    final types = _schemaTypes(
-      declaration.expression,
-      path,
-      declaration.element,
-    );
     return AckUnionModelNode(
       id: declaration.id,
       className: declaration.className,
-      boundaryType: types.boundary,
-      runtimeRef: types.runtime,
       discriminatorKey: discriminatorKey,
       branches: branches,
       description: _description(declaration.expression),
@@ -769,7 +745,7 @@ final class SchemaModelGraphBuilder {
     if (element is! TopLevelVariableElement && element is! GetterElement) {
       return null;
     }
-    if (_hasAckInfer(element)) return null;
+    if (_hasSchemable(element)) return null;
     if (depth >= _maxReferenceDepth) {
       throw InvalidGenerationSource(
         '$path exceeds schema reference depth $_maxReferenceDepth.',
@@ -904,7 +880,7 @@ final class SchemaModelGraphBuilder {
         runtimeRef: runtime,
       );
     }
-    if (!_hasAckInfer(element)) return null;
+    if (!_hasSchemable(element)) return null;
     final declaration = _propertyDeclaration(element);
     final name = declaration.name;
     final owningLibrary = declaration.library;
@@ -1347,11 +1323,11 @@ final class SchemaModelGraphBuilder {
     return element == null ? null : _declarationsByElement[element.baseElement];
   }
 
-  bool _isCrossLibraryAckInfer(Expression expression) {
+  bool _isCrossLibrarySchemable(Expression expression) {
     final element = _referencedElement(expression);
     if (element == null) return false;
     if (_declarationsByElement[element.baseElement] != null) return false;
-    return _hasAckInfer(element);
+    return _hasSchemable(element);
   }
 
   String? _expressionPrefix(Expression expression) {
@@ -1362,7 +1338,7 @@ final class SchemaModelGraphBuilder {
     return null;
   }
 
-  bool _hasAckInfer(Element element) {
+  bool _hasSchemable(Element element) {
     final declaration = _propertyDeclaration(element);
     return _schemableChecker.hasAnnotationOfExact(declaration);
   }
@@ -1577,7 +1553,7 @@ final class SchemaModelGraphBuilder {
       );
     }
     if (!RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(jsonKey) ||
-        _dartKeywords.contains(jsonKey)) {
+        isDartKeyword(jsonKey)) {
       throw InvalidGenerationSource(
         '$path.$jsonKey cannot be represented as a Dart field name.',
         element: element,

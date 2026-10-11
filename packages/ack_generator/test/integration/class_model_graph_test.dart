@@ -103,11 +103,13 @@ final class Link with _\$LinkAck {
 final class Range with _\$RangeAck {
   const Range({required this.limit});
 
-  @Max(double.infinity)
+  @Validate.max(double.infinity)
   final double limit;
 }
 ''',
-      ['Range.limit has @Max(Infinity); the value must be a finite number.'],
+      [
+        'Range.limit has @Validate.max(Infinity); the value must be a finite number.',
+      ],
     );
     await _expectFailure(
       '''
@@ -115,11 +117,13 @@ final class Range with _\$RangeAck {
 final class Range with _\$RangeAck {
   const Range({required this.step});
 
-  @MultipleOf(double.nan)
+  @Validate.multipleOf(double.nan)
   final double step;
 }
 ''',
-      ['Range.step has @MultipleOf(NaN); the value must be a finite number.'],
+      [
+        'Range.step has @Validate.multipleOf(NaN); the value must be a finite number.',
+      ],
     );
   });
 
@@ -280,11 +284,11 @@ final class Item with _\$ItemAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Min(1)
+  @Validate.min(1)
   final String name;
 }
 ''',
-      ['@Min', 'String', '@MinLength'],
+      ['@Validate.min', 'String', '@Validate.minLength'],
     );
   });
 
@@ -295,11 +299,11 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.age});
 
-  @MinLength(1)
+  @Validate.minLength(1)
   final int age;
 }
 ''',
-      ['@MinLength', 'int', '@Min'],
+      ['@Validate.minLength', 'int', '@Validate.min'],
     );
   });
 
@@ -310,11 +314,11 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @UniqueItems()
+  @Validate.uniqueItems()
   final String name;
 }
 ''',
-      ['@UniqueItems', 'String', 'List or Set'],
+      ['@Validate.uniqueItems', 'String', 'List or Set'],
     );
   });
 
@@ -805,57 +809,25 @@ final class User with _\$UserAck {
     );
   });
 
-  test('rejects every unsupported JsonKey serialization option', () async {
+  test('rejects @JsonKey on fields', () async {
     await _expectFailure(
       '''
-enum Role { member, unknown }
-
-Role decodeRole(Object? value) => Role.member;
-String encodeRole(Role value) => value.name;
-Object? readRole(Map<dynamic, dynamic> map, String key) => map[key];
-
 @Schemable()
 final class User with _\$UserAck {
-  const User({required this.role});
+  const User({required this.name});
 
-  @JsonKey(
-    name: 'wire_role',
-    defaultValue: Role.member,
-    disallowNullValue: true,
-    explicitJsonNullWhenNonNullField: true,
-    fromJson: decodeRole,
-    ignore: true,
-    includeFromJson: false,
-    includeIfNull: false,
-    includeToJson: false,
-    readValue: readRole,
-    required: true,
-    toJson: encodeRole,
-    unknownEnumValue: Role.unknown,
-  )
-  final Role role;
+  @JsonKey(name: 'wire_name')
+  final String name;
 }
 ''',
       [
-        'User.role',
-        '@JsonKey',
-        'defaultValue',
-        'disallowNullValue',
-        'explicitJsonNullWhenNonNullField',
-        'fromJson',
-        'ignore',
-        'includeFromJson',
-        'includeIfNull',
-        'includeToJson',
-        'readValue',
-        'required',
-        'toJson',
-        'unknownEnumValue',
+        'User.name',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckField(name: ...) instead.',
       ],
     );
   });
 
-  test('requires JsonKey name overrides on the field', () async {
+  test('rejects @JsonKey on constructor parameters', () async {
     await _expectFailure(
       '''
 @Schemable()
@@ -865,7 +837,10 @@ final class User with _\$UserAck {
   final String name;
 }
 ''',
-      ['User.name', '@JsonKey', 'constructor parameter', 'field'],
+      [
+        'User.name',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckField(name: ...) instead.',
+      ],
     );
   });
 
@@ -1303,7 +1278,10 @@ final class User with _\$UserAck {
   final String name;
 }
 ''',
-        ['User.name', 'sets both @AckField(name: ...) and @JsonKey(name: ...)'],
+        [
+          'User.name',
+          'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckField(name: ...) instead.',
+        ],
       );
     },
   );

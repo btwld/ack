@@ -58,10 +58,3 @@ extension JsonSchemaBuilderExtension on AckSchema {
     return jsb.Schema.fromMap(toJsonSchemaDraft7());
   }
 }
-
-/// Converts a [AckSchemaModel] model directly to json_schema_builder [Schema] format.
-///
-/// This is useful for testing or when you have a pre-built AckSchemaModel model.
-jsb.Schema convertAckSchemaModelToBuilder(AckSchemaModel schema) {
-  return jsb.Schema.fromMap(schema.toJsonSchema());
-}

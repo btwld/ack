@@ -192,13 +192,12 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
-      # `.ack.dart` holds the generated models and `.ack.g.dart` holds the JSON
-      # mapping. Both are generated, so a clean rebuild must reproduce them.
-      # The `*.g.dart` glob below also matches `*.ack.g.dart`.
+      # `.g.dart` holds the generated Ack models, schemas, and JSON mapping.
+      # A clean rebuild must reproduce them identically.
       - name: Delete the committed generator output
         run: |
           set -euo pipefail
-          git ls-files -z -- '*.ack.dart' '*.g.dart' \
+          git ls-files -z -- '*.g.dart' \
             | xargs -0 --no-run-if-empty rm --
 
       - name: Regenerate from a clean tree

@@ -147,10 +147,8 @@ final class Handwritten with _$HandwrittenAck {
         );
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
-// ignore_for_file: deprecated_member_use
 import 'package:ack/ack.dart';
-import 'package:json_annotation/json_annotation.dart'
-    show JsonKey, JsonSerializable;
+import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
 
 import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;
@@ -215,7 +213,7 @@ final class Profile with _$ProfileAck {
 final class Account with _$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
   final String firstName;
-  @JsonKey(name: 'avatar')
+  @AckField(name: 'avatar')
   final Uri imageUrl;
 
   static final fromJson = AccountSchema.fromJson;

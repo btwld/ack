@@ -60,10 +60,10 @@ final class Email {
 final class Contact with _\$ContactAck {
   const Contact({required this.address, required this.id});
 
-  @ack.Email()
+  @ack.Validate.email()
   final String address;
 
-  @ack.Uuid()
+  @ack.Validate.uuid()
   final String id;
 }
 ''',
@@ -121,7 +121,7 @@ part 'grid.g.dart';
 final class Grid with _\$GridAck {
   const Grid({required this.cells});
 
-  @MinItems(2)
+  @Validate.minItems(2)
   final Set<Set<int>> cells;
 }
 ''',
@@ -347,7 +347,6 @@ final class Square extends Shape with _\$SquareAck {
         'formats.dart':
             '''
 $_imports
-import 'package:ack/format_annotations.dart' as formats;
 part 'formats.g.dart';
 
 @Schemable()
@@ -360,15 +359,15 @@ final class Formats with _\$FormatsAck {
     required this.timestamp,
   });
 
-  @Url()
+  @Validate.url()
   final String url;
-  @formats.Uri()
+  @Validate.uri()
   final String uri;
-  @Uuid()
+  @Validate.uuid()
   final String uuid;
-  @Date()
+  @Validate.date()
   final String date;
-  @formats.DateTime()
+  @Validate.dateTime()
   final String timestamp;
 }
 ''',
@@ -491,13 +490,13 @@ final class Profile with _\$ProfileAck {
     required this.tags,
   });
 
-  @MinLength(1)
-  @MaxLength(500)
+  @Validate.minLength(1)
+  @Validate.maxLength(500)
   final String bio;
   final Uri? website;
   final String? nickname;
   final String role;
-  @MinItems(1)
+  @Validate.minItems(1)
   final Set<String> tags;
 }
 ''',
@@ -643,48 +642,43 @@ final class Record with _\$RecordAck {
     },
   );
 
-  test(
-    'computes case-style, AckField(name:), and JsonKey schema keys once',
-    () async {
-      await _build(
-        {
-          'account.dart':
-              '''
+  test('computes case-style and AckField(name:) schema keys once', () async {
+    await _build(
+      {
+        'account.dart':
+            '''
 $_imports
-import 'package:json_annotation/json_annotation.dart' show JsonKey;
 part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _\$AccountAck {
   const Account({
     required this.firstName,
-    required this.imageUrl,
+    @AckField(name: 'avatar') required this.imageUrl,
     required this.handleName,
   });
 
   final String firstName;
-  @JsonKey(name: 'avatar')
   final String imageUrl;
   @AckField(name: 'handle')
   final String handleName;
 }
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/account.g.dart': decodedMatches(
-            allOf([
-              contains("'first_name': Ack.string()"),
-              contains("'avatar': Ack.string()"),
-              contains("'handle': Ack.string()"),
-              isNot(contains("'firstName':")),
-              isNot(contains("'image_url':")),
-              isNot(contains("'handle_name':")),
-            ]),
-          ),
-        },
-      );
-    },
-  );
+      },
+      outputs: {
+        'test_pkg|lib/account.g.dart': decodedMatches(
+          allOf([
+            contains("'first_name': Ack.string()"),
+            contains("'avatar': Ack.string()"),
+            contains("'handle': Ack.string()"),
+            isNot(contains("'firstName':")),
+            isNot(contains("'image_url':")),
+            isNot(contains("'handle_name':")),
+          ]),
+        ),
+      },
+    );
+  });
 
   test(
     'preserves prefixed field types and same-named import identity',
@@ -762,8 +756,8 @@ sealed class Pet with _\$PetAck {
 @Schemable(discriminatorValue: 'cat')
 final class Cat extends Pet with _\$CatAck {
   const Cat({required super.id, required this.lives});
-  @Min(1)
-  @Max(9)
+  @Validate.min(1)
+  @Validate.max(9)
   final int lives;
 }
 
@@ -867,7 +861,7 @@ final class Example with _\$ExampleAck {
 
   @Optional()
   @NotNull()
-  @NotEmpty()
+  @Validate.notEmpty()
   final String? title;
 }
 

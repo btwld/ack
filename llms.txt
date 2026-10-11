@@ -40,8 +40,7 @@ final result = userSchema.safeParse({
 Codecs decode a boundary value into a runtime value and encode it back.
 `parse` / `safeParse` decode; `encode` / `safeEncode` encode.
 
-- Built in: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, `Ack.duration()`, and
-  `Ack.enumCodec(values)`.
+- Built in: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, and `Ack.duration()`.
 - Custom: `Ack.codec(input: ..., decode: ..., encode: ...)`, or
   `schema.codec<R>(decode: ..., encode: ...)` on an existing schema.
 - Two-way string normalizers: `.trim()`, `.toLowerCase()`, and `.toUpperCase()`

@@ -501,20 +501,7 @@ Map<String, Object?> $function(${node.className} model) {
     _ => expression,
   };
 
-  String _type(AckInferRef type) => switch (type) {
-    AckNullableTypeRef(:final inner) => '${_type(inner)}?',
-    AckScalarTypeRef(:final dartType) => dartType,
-    AckExternalTypeRef(:final visibleName, :final typeArguments) =>
-      typeArguments.isEmpty
-          ? visibleName
-          : '$visibleName<${typeArguments.map(_type).join(', ')}>',
-    AckModelTypeRef(:final visibleName) => visibleName,
-    AckListTypeRef(:final elementType) => 'List<${_type(elementType)}>',
-    AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
-    AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
-    AckJsonMaybeTypeRef(:final valueType) =>
-      '${_ack('JsonMaybe')}<${_type(valueType)}>',
-  };
+  String _type(AckInferRef type) => type.render(ackPrefix: ackPrefix);
 
   Set<String> _declaredKeys(AckObjectModelNode node) => {
     for (final field in node.fields) field.jsonKey,
@@ -532,8 +519,5 @@ Map<String, Object?> $function(${node.className} model) {
     return metadata;
   }
 
-  String _ack(String symbol) {
-    final prefix = ackPrefix;
-    return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
+  String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
 }

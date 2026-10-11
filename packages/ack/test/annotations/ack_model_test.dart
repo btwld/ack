@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
 
@@ -19,6 +17,7 @@ void main() {
       expect(defaults.captureField, 'additionalProperties');
 
       const configured = Schemable(
+        name: 'WireUser',
         schemaName: 'WireUserSchema',
         caseStyle: AckCaseStyle.snake,
         discriminatorKey: 'type',
@@ -26,6 +25,7 @@ void main() {
         unknownProperties: AckUnknownPropertyPolicy.capture,
         captureField: 'args',
       );
+      expect(configured.name, 'WireUser');
       expect(configured.schemaName, 'WireUserSchema');
       expect(configured.caseStyle, AckCaseStyle.snake);
       expect(configured.discriminatorKey, 'type');
@@ -133,31 +133,4 @@ void main() {
       );
     },
   );
-
-  test('legacy constraint sugar annotations remain const data', () {
-    const annotations = <Object>[
-      Min(1),
-      Max(9),
-      MultipleOf(2),
-      Positive(),
-      Negative(),
-      MinLength(1),
-      MaxLength(100),
-      Matches(r'^[a-z]+$'),
-      Email(),
-      NotEmpty(),
-      MinItems(1),
-      MaxItems(10),
-      UniqueItems(),
-    ];
-
-    expect((annotations[0] as Min).value, 1);
-    expect((annotations[1] as Max).value, 9);
-    expect((annotations[2] as MultipleOf).value, 2);
-    expect((annotations[5] as MinLength).length, 1);
-    expect((annotations[6] as MaxLength).length, 100);
-    expect((annotations[7] as Matches).pattern, r'^[a-z]+$');
-    expect((annotations[10] as MinItems).count, 1);
-    expect((annotations[11] as MaxItems).count, 10);
-  });
 }

@@ -1,12 +1,9 @@
 part of '../schemas/schema.dart';
 
-String _importPointerToken(String token) =>
-    token.replaceAll('~', '~0').replaceAll('/', '~1');
-
 String _keywordPointer(_ImportedNode node, String keyword) {
   final pointer = keyword.isEmpty
       ? node.pointer
-      : '${node.pointer}/${_importPointerToken(keyword)}';
+      : '${node.pointer}/${escapeJsonPointerToken(keyword)}';
   // Internal pointers stay unencoded for lookup. Encode only the public
   // fragment, including literal '%' and '#' characters (RFC 6901 section 6).
   return '#${Uri.encodeFull(pointer.substring(1)).replaceAll('#', '%23')}';
@@ -141,6 +138,7 @@ final class _JsonSchemaCompiler {
   static final standardDialect = Uri.parse(
     'https://json-schema.org/draft/2020-12/schema',
   );
+  static final _anchorPattern = RegExp(r'^[A-Za-z_][-A-Za-z0-9._]*$');
   static const validationVocabularyUri =
       'https://json-schema.org/draft/2020-12/vocab/validation';
   static const formatAssertionVocabularyUri =
@@ -288,16 +286,14 @@ final class _JsonSchemaCompiler {
     if (source is! Map<String, Object?>) return node;
     if (source.containsKey(r'$anchor')) {
       final anchor = source[r'$anchor'];
-      if (anchor is! String ||
-          !RegExp(r'^[A-Za-z_][-A-Za-z0-9._]*$').hasMatch(anchor)) {
+      if (anchor is! String || !_anchorPattern.hasMatch(anchor)) {
         _fail(node, r'$anchor', 'Invalid anchor name.');
       }
       _register(anchors, base.replace(fragment: anchor), node, r'$anchor');
     }
     if (source.containsKey(r'$dynamicAnchor')) {
       final anchor = source[r'$dynamicAnchor'];
-      if (anchor is! String ||
-          !RegExp(r'^[A-Za-z_][-A-Za-z0-9._]*$').hasMatch(anchor)) {
+      if (anchor is! String || !_anchorPattern.hasMatch(anchor)) {
         _fail(node, r'$dynamicAnchor', 'Invalid dynamic anchor name.');
       }
       node.dynamicAnchorName = anchor;
@@ -308,7 +304,7 @@ final class _JsonSchemaCompiler {
     for (final entry in source.entries) {
       final key = entry.key;
       final value = entry.value;
-      final path = '$pointer/${_importPointerToken(key)}';
+      final path = '$pointer/${escapeJsonPointerToken(key)}';
       if (mapKeywords.contains(key)) {
         if (value is! Map<String, Object?>) {
           _fail(node, key, 'Expected a map of schemas.');
@@ -317,7 +313,7 @@ final class _JsonSchemaCompiler {
           _index(
             child.value ?? _invalidSchema(node, key),
             document,
-            '$path/${_importPointerToken(child.key)}',
+            '$path/${escapeJsonPointerToken(child.key)}',
             base,
             dialect: dialect,
           );
@@ -373,6 +369,37 @@ final class _JsonSchemaCompiler {
     }
   }
 
+  void _checkRequiredVocabularies(
+    _ImportedNode node,
+    String key,
+    Map<String, Object?> vocabulary,
+  ) {
+    for (final entry in vocabulary.entries) {
+      if (entry.value == true && !knownVocabularies.contains(entry.key)) {
+        _fail(
+          node,
+          key,
+          'Unknown required vocabulary: ${entry.key}.',
+          code: 'unsupported_vocabulary',
+        );
+      }
+    }
+  }
+
+  List<String> _requireUniqueStringList(
+    _ImportedNode node,
+    String key,
+    Object? value,
+    String message,
+  ) {
+    if (value is! List ||
+        value.any((v) => v is! String) ||
+        value.toSet().length != value.length) {
+      _fail(node, key, message);
+    }
+    return List<String>.unmodifiable(value);
+  }
+
   void compile(_ImportedNode root) {
     for (final node in locations.values) {
       _configureDialect(node);
@@ -412,16 +439,7 @@ final class _JsonSchemaCompiler {
         code: 'unsupported_dialect',
       );
     }
-    for (final entry in vocabulary.entries) {
-      if (entry.value == true && !knownVocabularies.contains(entry.key)) {
-        _fail(
-          node,
-          r'$schema',
-          'Unknown required vocabulary: ${entry.key}.',
-          code: 'unsupported_vocabulary',
-        );
-      }
-    }
+    _checkRequiredVocabularies(node, r'$schema', vocabulary);
     node.validationVocabulary = vocabulary.containsKey(validationVocabularyUri);
     node.formatAssertion =
         assertFormats || vocabulary.containsKey(formatAssertionVocabularyUri);
@@ -498,7 +516,7 @@ final class _JsonSchemaCompiler {
       } else {
         return null;
       }
-      pointer = '$pointer/${_importPointerToken(token)}';
+      pointer = '$pointer/${escapeJsonPointerToken(token)}';
       if (locations[(resource.documentUri, pointer)] case final indexed?) {
         base = indexed.baseUri;
       }
@@ -566,16 +584,7 @@ final class _JsonSchemaCompiler {
             value.values.any((required) => required is! bool)) {
           _fail(node, key, 'Expected a map of vocabulary URIs to booleans.');
         }
-        for (final entry in value.entries) {
-          if (entry.value == true && !knownVocabularies.contains(entry.key)) {
-            _fail(
-              node,
-              key,
-              'Unknown required vocabulary: ${entry.key}.',
-              code: 'unsupported_vocabulary',
-            );
-          }
-        }
+        _checkRequiredVocabularies(node, key, value);
         node.keywords[key] = value;
       } else if (key == r'$ref' || key == r'$dynamicRef') {
         if (value is! String) _fail(node, key, 'Expected a URI string.');
@@ -624,7 +633,7 @@ final class _JsonSchemaCompiler {
           key == 'dependentSchemas') {
         final compiledMap = {
           for (final name in (value as Map<String, Object?>).keys)
-            name: _child(node, '$key/${_importPointerToken(name)}'),
+            name: _child(node, '$key/${escapeJsonPointerToken(name)}'),
         };
         node.maps[key] = compiledMap;
         switch (key) {
@@ -709,27 +718,26 @@ final class _JsonSchemaCompiler {
         node.keywords[key] = value;
         node.types = values;
       } else if (key == 'required') {
-        if (value is! List ||
-            value.any((v) => v is! String) ||
-            value.toSet().length != value.length) {
-          _fail(node, key, 'Expected a list of unique property names.');
-        }
         node.keywords[key] = value;
-        node.required = List<String>.unmodifiable(value);
+        node.required = _requireUniqueStringList(
+          node,
+          key,
+          value,
+          'Expected a list of unique property names.',
+        );
       } else if (key == 'dependentRequired') {
-        if (value is! Map<String, Object?> ||
-            value.values.any(
-              (names) =>
-                  names is! List ||
-                  names.any((name) => name is! String) ||
-                  names.toSet().length != names.length,
-            )) {
+        if (value is! Map<String, Object?>) {
           _fail(node, key, 'Expected a map of unique property-name lists.');
         }
         node.keywords[key] = value;
         node.dependentRequired = {
           for (final entry in value.entries)
-            entry.key: List<String>.unmodifiable(entry.value! as List),
+            entry.key: _requireUniqueStringList(
+              node,
+              key,
+              entry.value,
+              'Expected a map of unique property-name lists.',
+            ),
         };
       } else if (key == 'enum') {
         if (value is! List) {

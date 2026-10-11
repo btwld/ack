@@ -1,5 +1,8 @@
+import 'package:code_builder/code_builder.dart';
+
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
+import '../utils/string_literal.dart';
 
 /// One generated `copyWith` parameter, typed by the emitter that owns type
 /// rendering.
@@ -89,6 +92,60 @@ ${includeValueMembers ? '${copyWithContract(className: className, parameters: co
 }''';
   }
 
+  /// Emits `copyWith`, `operator ==`, `hashCode`, and `toString` for a
+  /// schema-first model class.
+  List<Method> valueMethods({
+    required String className,
+    required List<AckFieldNode> fields,
+    required bool hasParameters,
+  }) => [
+    Method(
+      (m) => m
+        ..name = 'copyWith'
+        ..type = MethodType.getter
+        ..returns = refer('${ackCopyWithInterfaceName(className)}<$className>')
+        ..docs.add(
+          '/// Creates a copy of this model with selected fields replaced.',
+        )
+        ..lambda = true
+        ..body = Code(
+          _copyWithCreation(className, hasParameters: hasParameters),
+        ),
+    ),
+    Method(
+      (m) => m
+        ..name = 'operator =='
+        ..annotations.add(refer('override'))
+        ..returns = refer('bool')
+        ..requiredParameters.add(
+          Parameter(
+            (p) => p
+              ..name = 'other'
+              ..type = refer('Object'),
+          ),
+        )
+        ..lambda = true
+        ..body = Code(_directEqualsExpression(className, fields)),
+    ),
+    Method(
+      (m) => m
+        ..name = 'hashCode'
+        ..annotations.add(refer('override'))
+        ..type = MethodType.getter
+        ..returns = refer('int')
+        ..lambda = true
+        ..body = Code(_hashExpression(fields)),
+    ),
+    Method(
+      (m) => m
+        ..name = 'toString'
+        ..annotations.add(refer('override'))
+        ..returns = refer('String')
+        ..lambda = true
+        ..body = literalString(_toStringPreview(className, fields)).code,
+    ),
+  ];
+
   /// The typed `copyWith` interface and its implementation, plus the private
   /// sentinel type when a nullable field needs one.
   ///
@@ -160,10 +217,11 @@ $sentinelField$sourceField  @override
     required bool hasParameters,
     bool castSelf = false,
   }) {
-    final implementationName = ackCopyWithImplementationName(className);
-    final creation = hasParameters
-        ? '$implementationName(${castSelf ? 'this as $className' : 'this'})'
-        : 'const $implementationName()';
+    final creation = _copyWithCreation(
+      className,
+      hasParameters: hasParameters,
+      castSelf: castSelf,
+    );
     return '''
 /// Creates a copy of this model with selected fields replaced.
 ${ackCopyWithInterfaceName(className)}<$className> get copyWith => $creation;''';
@@ -174,17 +232,13 @@ ${ackCopyWithInterfaceName(className)}<$className> get copyWith => $creation;'''
     required List<AckFieldNode> fields,
     bool castSelf = false,
   }) {
-    final hashes = [
-      'runtimeType',
-      for (final field in fields)
-        _hash('${castSelf ? 'self' : 'this'}.${field.dartName}'),
-    ];
     if (castSelf && fields.isNotEmpty) {
       final fieldEquals = [
         for (final field in fields)
           _equals('self.${field.dartName}', 'other.${field.dartName}'),
       ];
       final equality = fieldEquals.isEmpty ? 'true' : fieldEquals.join(' && ');
+      final hashes = _hashExpression(fields, receiver: 'self');
       return '''
 @override
 bool operator ==(Object other) {
@@ -199,22 +253,16 @@ bool operator ==(Object other) {
 @override
 int get hashCode {
   final self = this as $className;
-  return Object.hashAll([${hashes.join(', ')}]);
+  return $hashes;
 }''';
     }
-    final comparisons = [
-      'other is $className',
-      'runtimeType == other.runtimeType',
-      for (final field in fields)
-        _equals('this.${field.dartName}', 'other.${field.dartName}'),
-    ];
     return '''
 @override
 bool operator ==(Object other) =>
-    identical(this, other) || (${comparisons.join(' && ')});
+    ${_directEqualsExpression(className, fields)};
 
 @override
-int get hashCode => Object.hashAll([${hashes.join(', ')}]);''';
+int get hashCode => ${_hashExpression(fields)};''';
   }
 
   String toStringMethod({
@@ -234,12 +282,9 @@ String toString() {
   return '$className(${parts.join(', ')})';
 }''';
     }
-    final parts = [
-      for (final field in fields) '${field.dartName}: \$${field.dartName}',
-    ];
     return '''
 @override
-String toString() => '$className(${parts.join(', ')})';''';
+String toString() => '${_toStringPreview(className, fields)}';''';
   }
 
   String jsonMembers({required String className, required String facadeName}) {
@@ -254,6 +299,43 @@ Map<String, dynamic> toJson() =>
 /// failure instead of throwing.
 ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
     $facadeName.safeEncode(this as $className);''';
+  }
+
+  String _copyWithCreation(
+    String className, {
+    required bool hasParameters,
+    bool castSelf = false,
+  }) {
+    final implementationName = ackCopyWithImplementationName(className);
+    return hasParameters
+        ? '$implementationName(${castSelf ? 'this as $className' : 'this'})'
+        : 'const $implementationName()';
+  }
+
+  String _directEqualsExpression(String className, List<AckFieldNode> fields) {
+    final comparisons = [
+      'other is $className',
+      'runtimeType == other.runtimeType',
+      for (final field in fields)
+        _equals(field.dartName, 'other.${field.dartName}'),
+    ];
+    return 'identical(this, other) || (${comparisons.join(' && ')})';
+  }
+
+  String _hashExpression(List<AckFieldNode> fields, {String? receiver}) {
+    final prefix = receiver == null ? '' : '$receiver.';
+    final hashes = [
+      'runtimeType',
+      for (final field in fields) _hash('$prefix${field.dartName}'),
+    ];
+    return 'Object.hashAll([${hashes.join(', ')}])';
+  }
+
+  String _toStringPreview(String className, List<AckFieldNode> fields) {
+    final parts = [
+      for (final field in fields) '${field.dartName}: \$${field.dartName}',
+    ];
+    return '$className(${parts.join(', ')})';
   }
 
   String _optional(String type) => type.endsWith('?') ? type : '$type?';
@@ -278,23 +360,7 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
 
   String _hash(String expression) => '${_ack('deepHashCode')}($expression)';
 
-  String _type(AckInferRef type) => switch (type) {
-    AckNullableTypeRef(:final inner) => '${_type(inner)}?',
-    AckScalarTypeRef(:final dartType) => dartType,
-    AckExternalTypeRef(:final visibleName, :final typeArguments) =>
-      typeArguments.isEmpty
-          ? visibleName
-          : '$visibleName<${typeArguments.map(_type).join(', ')}>',
-    AckModelTypeRef(:final visibleName) => visibleName,
-    AckListTypeRef(:final elementType) => 'List<${_type(elementType)}>',
-    AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
-    AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
-    AckJsonMaybeTypeRef(:final valueType) =>
-      '${_ack('JsonMaybe')}<${_type(valueType)}>',
-  };
+  String _type(AckInferRef type) => type.render(ackPrefix: ackPrefix);
 
-  String _ack(String symbol) {
-    final prefix = ackPrefix;
-    return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
+  String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
 }

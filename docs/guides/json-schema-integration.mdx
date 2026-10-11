@@ -2,7 +2,7 @@
 title: JSON Schema Integration
 ---
 
-Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's shape — so you can export it as JSON Schema (Draft-7) and reuse it to document an API, drive a form library, or define an LLM tool, all from one source of truth.
+Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's shape — so you can import and export JSON Schema (preserving Draft 2020-12 resources for imported schemas and emitting Draft-7 for native schemas) and reuse it to document an API, drive a form library, or define an LLM tool, all from one source of truth.
 
 ## Importing published schemas
 
@@ -166,10 +166,13 @@ semantics).
 
 ### Generating Dart models from `.schema.json` files
 
-With `ack_generator`, any `lib/**/*.schema.json` asset is compiled by the
-`ack_generator:ack_json_schema` builder into `<name>.schema.g.dart`, emitting
-typed `@Schemable()` Dart models when representable or a validated value-model
-wrapper around `Ack.fromJsonSchema(...)` for dynamic/open schemas.
+With `ack_generator`, enable `ack_generator:ack_json_schema` in `build.yaml` to
+emit `<name>.schema.dart` (with `part '<name>.schema.g.dart';`) from any
+`lib/**/*.schema.json` asset, which `ack_generator:ack_generator` then compiles
+into `<name>.schema.g.dart` (emitting typed `@Schemable()` Dart models when
+representable or a validated value-model wrapper around `Ack.fromJsonSchema(...)`
+for dynamic/open schemas; `generateAckSchemaLibrary()` is also available for
+programmatic generation).
 
 ### Validation errors
 

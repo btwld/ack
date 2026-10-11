@@ -77,7 +77,7 @@ void main() {
               '''
 import 'package:ack/annotations.dart';
 
-void widget({@Matches(${example.literal}) required String value}) {}
+void widget({@Validate.matches(${example.literal}) required String value}) {}
 ''',
         },
         generateFor: const {'test_pkg|lib/widget.dart'},

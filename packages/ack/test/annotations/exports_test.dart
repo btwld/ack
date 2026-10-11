@@ -1,21 +1,23 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart' as ack;
 import 'package:test/test.dart';
 
 import 'own_types.dart';
 
+@ack.Schemable(caseStyle: ack.AckCaseStyle.snake)
 final class Contact {
   const Contact(this.email);
 
-  @ack.Email()
+  @ack.AckField(name: 'email_address', description: 'Primary email')
+  @ack.Validate.email()
   final Email email;
 }
 
+@Schemable()
 final class SingleImportContact {
   const SingleImportContact(this.email, this.id);
 
+  @AckField(description: 'Contact email')
   @Validate.email()
   final Email email;
 
@@ -42,13 +44,14 @@ void main() {
   });
 
   test(
-    'constraint names from package:ack/ack.dart leave room for app types',
+    'constraint names from package:ack/ack.dart and annotations.dart leave room for app types',
     () {
       const uuid = Uuid('7c9e6679');
       const email = Email('ada@example.com');
       const url = Url('https://example.com');
       const date = Date('2026-10-01');
       const min = Min(1);
+      const max = Max(10);
       const pattern = Pattern('^a');
       const contact = SingleImportContact(email, uuid);
 
@@ -59,6 +62,7 @@ void main() {
           url.href,
           date.iso,
           min.value,
+          max.value,
           pattern.source,
           contact.email.address,
           contact.id.value,
@@ -69,6 +73,7 @@ void main() {
           'https://example.com',
           '2026-10-01',
           1,
+          10,
           '^a',
           'ada@example.com',
           '7c9e6679',
@@ -77,17 +82,21 @@ void main() {
     },
   );
 
-  test('a prefixed annotations import sits beside a same-named app type', () {
-    const contact = Contact(Email('ada@example.com'));
+  test(
+    'a prefixed annotations import exposes Schemable, AckField, and Validate',
+    () {
+      const contact = Contact(Email('ada@example.com'));
+      const schemable = ack.Schemable(name: 'Contact');
+      const field = ack.AckField(name: 'email_address', description: 'Primary');
+      const validate = ack.Validate.matches('^a');
 
-    expect(contact.email.address, 'ada@example.com');
-    expect(const ack.Email(), isA<ack.Email>());
-  });
-
-  test('Matches annotation exposes pattern', () {
-    const annotation = ack.Matches('^a');
-
-    expect(annotation, isA<ack.Matches>());
-    expect(annotation.pattern, '^a');
-  });
+      expect(contact.email.address, 'ada@example.com');
+      expect(schemable.name, 'Contact');
+      expect(field.name, 'email_address');
+      expect(field.description, 'Primary');
+      expect(validate, isA<Validate>());
+      expect(validate.kind, 'matches');
+      expect(validate.value, '^a');
+    },
+  );
 }

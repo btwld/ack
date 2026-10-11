@@ -144,54 +144,12 @@ final class StringSchema extends AckSchema<String, String>
     required int refinementStart,
     required int refinementEnd,
   }) {
-    if (constraintStart < constraintEnd) {
-      final constraintViolations = <ConstraintError>[];
-      for (var i = constraintStart; i < constraintEnd; i++) {
-        final constraint = _constraints[i];
-        if (constraint is! Validator<String>) continue;
-        try {
-          final violation = constraint.validate(value);
-          if (violation != null) constraintViolations.add(violation);
-        } catch (error, stackTrace) {
-          return _failFromThrown(
-            'Constraint "${constraint.constraintKey}" threw: $error',
-            context,
-            error,
-            stackTrace,
-          );
-        }
-      }
-      if (constraintViolations.isNotEmpty) {
-        return SchemaResult.fail(
-          SchemaConstraintsError(
-            constraints: constraintViolations,
-            context: context,
-          ),
-        );
-      }
-    }
-
-    for (var i = refinementStart; i < refinementEnd; i++) {
-      final refinement = _refinements[i];
-      final bool isValid;
-      try {
-        isValid = refinement.validate(value);
-      } catch (error, stackTrace) {
-        return _failFromThrown(
-          'Refinement threw: $error',
-          context,
-          error,
-          stackTrace,
-        );
-      }
-      if (!isValid) {
-        return SchemaResult.fail(
-          SchemaValidationError(message: refinement.message, context: context),
-        );
-      }
-    }
-
-    return SchemaResult.ok(value);
+    return applyConstraintsAndRefinements(
+      value,
+      context,
+      constraints: _constraints.getRange(constraintStart, constraintEnd),
+      refinements: _refinements.getRange(refinementStart, refinementEnd),
+    );
   }
 
   @override

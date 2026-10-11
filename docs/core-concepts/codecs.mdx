@@ -34,7 +34,6 @@ Ack ships codecs for the most common boundary conversions:
 | `Ack.datetime()` | ISO 8601 `String` ↔ `DateTime` | must be UTC; leap-second strings are rejected |
 | `Ack.uri()` | `String` ↔ `Uri` | absolute URI (scheme + host) |
 | `Ack.duration()` | milliseconds `int` ↔ `Duration` | whole milliseconds |
-| `Ack.enumCodec(values)` | enum-name `String` ↔ enum value | one of `values` |
 
 ```dart
 final schema = Ack.object({

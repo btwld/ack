@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
+import '../utils/json_utils.dart';
 import 'ack_schema_model_warning.dart';
 
 const _unset = Object();
@@ -477,7 +478,9 @@ final class AckRefSchemaModel extends AckSchemaModel {
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final refJson = {r'$ref': '#/definitions/${_jsonPointerToken(refName)}'};
+    final refJson = {
+      r'$ref': '#/definitions/${escapeJsonPointerToken(refName)}',
+    };
     if (nullable) return finishTypeJson(refJson);
 
     final commonJson = _common.toJson();
@@ -509,8 +512,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
     this.minLength,
     this.maxLength,
     this.pattern,
-    this.formatMinimum,
-    this.formatMaximum,
     super.title,
     super.description,
     super.nullable,
@@ -527,8 +528,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
     this.minLength,
     this.maxLength,
     this.pattern,
-    this.formatMinimum,
-    this.formatMaximum,
   }) : super._(common);
 
   @override
@@ -538,21 +537,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
   final int? minLength;
   final int? maxLength;
   final String? pattern;
-  final String? formatMinimum;
-  final String? formatMaximum;
-
-  @override
-  Object? get _metadataEquality => {
-    if (formatMinimum != null) 'formatMinimum': formatMinimum,
-    if (formatMaximum != null) 'formatMaximum': formatMaximum,
-  };
-
-  List<String>? get allowedStringValues {
-    if (constValue case final value?) return [value];
-    final values = enumValues;
-    if (values == null || values.isEmpty) return null;
-    return values.map((value) => value.toString()).toList();
-  }
 
   @override
   Map<String, Object?> toJsonSchema() => finishTypeJson({
@@ -575,8 +559,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
         minLength: minLength,
         maxLength: maxLength,
         pattern: pattern,
-        formatMinimum: formatMinimum,
-        formatMaximum: formatMaximum,
       );
 
   AckStringSchemaModel _copyWith({
@@ -586,8 +568,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
     int? minLength,
     int? maxLength,
     String? pattern,
-    String? formatMinimum,
-    String? formatMaximum,
   }) {
     return AckStringSchemaModel._(
       _common,
@@ -599,8 +579,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
       minLength: minLength ?? this.minLength,
       maxLength: maxLength ?? this.maxLength,
       pattern: pattern ?? this.pattern,
-      formatMinimum: formatMinimum ?? this.formatMinimum,
-      formatMaximum: formatMaximum ?? this.formatMaximum,
     );
   }
 
@@ -634,14 +612,6 @@ final class AckStringSchemaModel extends AckSchemaModel {
     if (keywords['pattern'] case final String value) {
       handled.add('pattern');
       next = next._copyWith(pattern: value);
-    }
-    if (keywords['formatMinimum'] case final String value) {
-      handled.add('formatMinimum');
-      next = next._copyWith(formatMinimum: value);
-    }
-    if (keywords['formatMaximum'] case final String value) {
-      handled.add('formatMaximum');
-      next = next._copyWith(formatMaximum: value);
     }
 
     return next._withUnhandledKeywords(keywords, handled);
@@ -1299,8 +1269,4 @@ int? _readIntKeyword(Map<String, Object?> keywords, String key) {
 num? _readNumKeyword(Map<String, Object?> keywords, String key) {
   final value = keywords[key];
   return value is num ? value : null;
-}
-
-String _jsonPointerToken(String value) {
-  return value.replaceAll('~', '~0').replaceAll('/', '~1');
 }

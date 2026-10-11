@@ -99,9 +99,9 @@ final class Product {
 
   static Product _fromAckRuntime(Map<String, Object?> value) => Product(
     name: value['name'] as String,
-    tags: (value['tags'] as List).map((item) => item as String).toList(),
-    scores: (value['scores'] as List).map((item) => item as int).toList(),
-    flags: (value['flags'] as List).map((item) => item as bool).toList(),
+    tags: (value['tags'] as List).cast<String>(),
+    scores: (value['scores'] as List).cast<int>(),
+    flags: (value['flags'] as List).cast<bool>(),
   );
 
   Map<String, Object?> _toAckRuntime() => <String, Object?>{
@@ -219,7 +219,7 @@ final class Grid {
   static Grid _fromAckRuntime(Map<String, Object?> value) => Grid(
     name: value['name'] as String,
     matrix: (value['matrix'] as List)
-        .map((item) => (item as List).map((item) => item as int).toList())
+        .map((item) => (item as List).cast<int>())
         .toList(),
   );
 
@@ -907,18 +907,14 @@ final class TaggedItem {
 
   static TaggedItem _fromAckRuntime(Map<String, Object?> value) => TaggedItem(
     name: value['name'] as String,
-    requiredTags: (value['requiredTags'] as List)
-        .map((item) => item as String)
-        .toList(),
+    requiredTags: (value['requiredTags'] as List).cast<String>(),
     optionalTags: switch (value['optionalTags']) {
       null => null,
-      final fieldValue =>
-        (fieldValue as List).map((item) => item as String).toList(),
+      final fieldValue => (fieldValue as List).cast<String>(),
     },
     nullableTags: switch (value['nullableTags']) {
       null => null,
-      final fieldValue =>
-        (fieldValue as List).map((item) => item as String).toList(),
+      final fieldValue => (fieldValue as List).cast<String>(),
     },
   );
 

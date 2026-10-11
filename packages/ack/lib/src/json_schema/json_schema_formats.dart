@@ -34,7 +34,7 @@ bool _isValidJsonSchemaFormat(String format, String value) => switch (format) {
   'idn-email' => _isEmail(value, international: true),
   'hostname' => _isHostname(value, international: false),
   'idn-hostname' => _isHostname(value, international: true),
-  'ipv4' => _isIpv4(value),
+  'ipv4' => StringIpConstraint.isIpv4(value),
   'ipv6' => _isIpv6(value),
   'uri' => _isUri(value, absolute: true, international: false),
   'uri-reference' => _isUri(value, absolute: false, international: false),
@@ -112,16 +112,6 @@ bool _isDuration(String value) {
   return true;
 }
 
-bool _isIpv4(String value) {
-  final parts = value.split('.');
-  if (parts.length != 4) return false;
-  for (final part in parts) {
-    if (!RegExp(r'^(0|[1-9][0-9]{0,2})$').hasMatch(part)) return false;
-    if (int.parse(part) > 255) return false;
-  }
-  return true;
-}
-
 bool _isIpv6(String value) {
   // Uri.parseIPv6Address differs across supported Dart SDKs (notably for
   // whitespace and IPv4 tails), so validate the RFC 3986 grammar ourselves.
@@ -134,7 +124,7 @@ bool _isIpv6(String value) {
     final separator = value.lastIndexOf(':');
     if (separator < 0) return false;
     final tail = value.substring(separator + 1);
-    if (!_isIpv4(tail)) return false;
+    if (!StringIpConstraint.isIpv4(tail)) return false;
     address = value.substring(0, separator);
     if (address.endsWith(':')) address += ':';
     if (address.contains('.')) return false;
@@ -394,7 +384,7 @@ bool _isEmail(String value, {required bool international}) {
     if (literal.toLowerCase().startsWith('ipv6:')) {
       return _isIpv6(literal.substring(5));
     }
-    return _isIpv4(literal);
+    return StringIpConstraint.isIpv4(literal);
   }
   return _isHostname(domain, international: international);
 }

@@ -25,20 +25,17 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
   types. Parses enum `.name` strings into typed enum values. Pass typed enum
   values to `encode` or `safeEncode` for the reverse direction. **Preferred
   over `enumString` when a Dart enum exists.**
-- `Ack.enumCodec(List<T> values)`: Like `enumValues`, but returns a
-  `CodecSchema<String, T>` instead of an `EnumSchema<T>`. Use this when
-  downstream code expects every value-shape to be a `CodecSchema` (e.g. a
-  registry of codecs). The decode and encode functions are identity — the
-  underlying `EnumSchema` still maps between `T` and the enum's `.name`.
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained
   to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
 - `Ack.fromJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object>
-  documents = const {}})`: Strictly imports a decoded draft 2020-12
-  JSON Schema. Referenced documents must be supplied explicitly; Ack never
-  fetches files or URLs. The supported `date-time` format is asserted; see
+  documents = const {}, bool assertFormats = false})`: Strictly imports a
+  decoded draft 2020-12 or Draft-7 JSON Schema. Referenced documents must be
+  supplied explicitly; Ack never fetches files or URLs. `format` is treated as
+  an annotation by default unless `assertFormats: true` (or the schema's
+  `$vocabulary` requires `format-assertion`); see
   [format import](../guides/json-schema-integration.mdx#importing-format).
 - `Ack.map(AckSchema valueSchema)`: Creates a `MapSchema` for a JSON object
   with arbitrary string keys whose values all match `valueSchema`. Use
@@ -46,7 +43,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.instance<T extends Object>()`: Creates a schema that checks a value is a
   Dart instance of `T` (runtime type check; handy as a codec `output` schema).
 - `Ack.codec(...)` / `Ack.date()` / `Ack.datetime()` / `Ack.uri()` /
-  `Ack.duration()` / `Ack.enumCodec(...)`: Create codecs. See
+  `Ack.duration()`: Create codecs. See
   [Codecs](../core-concepts/codecs.mdx).
 - `Ack.lazy(String name, AckSchema Function() builder, {int maxDepth = 100})`:
   Creates a memoized deferred schema reference for recursive schema graphs.
@@ -84,10 +81,10 @@ Base class for all schema types.
 
 - `SchemaResult<Runtime> safeParse(Object? data, {String? debugName})`: Validates
   `data` and returns a `SchemaResult`. Invalid input and recoverable `Exception`
-  values thrown by constraint/refinement callbacks become failures. `Error`
-  values from those callbacks are rethrown with their original stack trace.
-  Codec/transform decoder failures, including `Error` values, become
-  `SchemaTransformError` failures.
+  values thrown by constraint, refinement, or `CodecSchema` `decode`/`encode`
+  callbacks become validation failures (`SchemaValidationError` /
+  `SchemaTransformError` / `SchemaEncodeError`), while programmer `Error` values
+  are rethrown with their original stack trace.
 - `Runtime? parse(Object? data, {String? debugName})`: Validates `data` and returns the value; throws `AckException` on failure.
 - `SchemaResult<TOut> safeParseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Parses and maps the validated value to `TOut`. Mapper `Exception`s become `SchemaTransformError` failures; mapper `Error` values are rethrown with their original stack trace.
 - `TOut parseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Throwing variant of `safeParseAs`.
@@ -121,10 +118,16 @@ For non-`num` boundary types (e.g. numeric strings), use
 
 ### Utility Methods
 
-- `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via
-  the canonical `AckSchemaModel` boundary.
+- `Map<String, Object?> toJsonSchema()`: Returns a JSON Schema map via the
+  canonical `AckSchemaModel` boundary, preserving imported Draft 2020-12
+  resources by default and emitting Draft-7 for native Ack schemas.
+- `Map<String, Object?> toJsonSchemaDraft7()`: Lowers imported schemas into the
+  legacy Draft-7 `definitions` / `$ref` representation when possible.
 - `AckSchemaModel toSchemaModel()`: Returns the canonical, target-independent
-  boundary model for schema adapters, including export warnings.
+  boundary model for schema adapters (preserving imported Draft 2020-12
+  resources by default), including export warnings.
+- `AckSchemaModel toSchemaModelDraft7()`: Returns the canonical boundary model
+  with imported schemas lowered to Draft-7 `definitions` / `$ref` when possible.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.
@@ -486,9 +489,9 @@ Schema for polymorphic validation based on a discriminator field.
 
 Canonical export model for Ack schemas.
 
-- Created by `schema.toSchemaModel()`.
+- Created by `schema.toSchemaModel()` (preserving imported Draft 2020-12 resources by default) or `schema.toSchemaModelDraft7()` (lowering imported schemas to Draft-7 `definitions` / `$ref`).
 - Represents the boundary/export shape, JSON-compatible defaults, discriminator metadata, target-independent constraints, and export warnings.
-- `schema.toSchemaModel().toJsonSchema()` returns the same Draft-7 map as `schema.toJsonSchema()`.
+- `schema.toSchemaModel().toJsonSchema()` returns the same JSON Schema map as `schema.toJsonSchema()` (and `schema.toSchemaModelDraft7().toJsonSchema()` matches `schema.toJsonSchemaDraft7()`).
 - Adapters that need a JSON map should call `schema.toJsonSchema()`; adapters for non-JSON targets should convert from `AckSchemaModel` rather than traversing `AckSchema` subclasses directly.
 
 ### `AnySchema`
@@ -536,7 +539,6 @@ reverse direction. See [Codecs](../core-concepts/codecs.mdx).
   them)
 - `Ack.uri()` → `CodecSchema<String, Uri>` (absolute URI string ↔ `Uri`)
 - `Ack.duration()` → `CodecSchema<int, Duration>` (milliseconds ↔ `Duration`)
-- `Ack.enumCodec(List<T> values)` → `CodecSchema<String, T>` (enum `.name` ↔ enum value)
 
 ### Optional schemas
 

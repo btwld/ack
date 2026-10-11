@@ -228,16 +228,14 @@ final class Profile {
     birthday: value['birthday'] as DateTime,
     lastLogin: value['lastLogin'] as DateTime,
     timeout: value['timeout'] as Duration,
-    links: (value['links'] as List).map((item) => item as Uri).toList(),
+    links: (value['links'] as List).cast<Uri>(),
     favoriteColor: value['favoriteColor'] as Color,
     slug: value['slug'] as String,
     accent: ColorModel.$ack.fromRuntime(value['accent'] as Color),
     colors: (value['colors'] as List)
         .map((item) => ColorModel.$ack.fromRuntime(item as Color))
         .toList(),
-    customColors: (value['customColors'] as List)
-        .map((item) => item as Color)
-        .toList(),
+    customColors: (value['customColors'] as List).cast<Color>(),
     tagList: value['tagList'] as TagList,
   );
 

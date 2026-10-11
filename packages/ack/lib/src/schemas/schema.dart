@@ -9,8 +9,10 @@ import 'package:unorm_dart/unorm_dart.dart' as unorm;
 import '../common_types.dart';
 import '../constraints/comparison_constraint.dart';
 import '../constraints/constraint.dart';
+import '../constraints/list_unique_items_constraint.dart';
 import '../constraints/number_finite_constraint.dart';
 import '../constraints/pattern_constraint.dart';
+import '../constraints/string_ip_constraint.dart';
 import '../constraints/validators.dart';
 import '../context.dart';
 import '../helpers.dart';
@@ -40,7 +42,6 @@ part 'num_schema.dart';
 part 'object_schema.dart';
 part 'schema_type.dart';
 part 'string_schema.dart';
-part 'testing/testing_schemas.dart';
 part 'wrapper_schema.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
@@ -154,10 +155,12 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   @protected
   SchemaResult<Runtime> applyConstraintsAndRefinements(
     Runtime value,
-    SchemaContext context,
-  ) {
+    SchemaContext context, {
+    Iterable<Constraint<Runtime>>? constraints,
+    Iterable<Refinement<Runtime>>? refinements,
+  }) {
     final constraintViolations = <ConstraintError>[];
-    for (final constraint in _constraints) {
+    for (final constraint in constraints ?? _constraints) {
       if (constraint is! Validator<Runtime>) continue;
       try {
         final violation = constraint.validate(value);
@@ -179,11 +182,15 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
         ),
       );
     }
-    return _runRefinements(value, context);
+    return _runRefinements(value, context, refinements: refinements);
   }
 
-  SchemaResult<Runtime> _runRefinements(Runtime value, SchemaContext context) {
-    for (final refinement in _refinements) {
+  SchemaResult<Runtime> _runRefinements(
+    Runtime value,
+    SchemaContext context, {
+    Iterable<Refinement<Runtime>>? refinements,
+  }) {
+    for (final refinement in refinements ?? _refinements) {
       final bool isValid;
       try {
         isValid = refinement.validate(value);
@@ -503,15 +510,6 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// the same output. Subclasses should not override this directly; instead
   /// they are dispatched in `ack_schema_model_builder.dart`.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
-
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': _constraints.map((c) => c.toMap()).toList(),
-    };
-  }
 
   /// Compares base schema fields for equality.
   @protected

@@ -1,3 +1,5 @@
+import '../utils/string_literal.dart';
+
 /// Stable identity for a schema declaration across libraries.
 final class AckSchemaId {
   const AckSchemaId({required this.libraryUri, required this.declarationName});
@@ -40,7 +42,6 @@ final class AckConstructorParameter {
     required this.kind,
     required this.fieldName,
     required this.typeRef,
-    this.isSuper = false,
     this.defaultExpression,
   });
 
@@ -48,7 +49,6 @@ final class AckConstructorParameter {
   final AckConstructorParameterKind kind;
   final String fieldName;
   final AckInferRef typeRef;
-  final bool isSuper;
   final String? defaultExpression;
 }
 
@@ -58,6 +58,29 @@ final class AckConstructorParameter {
 /// analysis layer. Emitters consume this structural representation instead.
 sealed class AckInferRef {
   const AckInferRef();
+
+  /// Renders this structural type reference as a Dart type annotation.
+  String render({String? corePrefix, String? ackPrefix}) {
+    final prefix = ackPrefix ?? corePrefix;
+    return switch (this) {
+      AckNullableTypeRef(:final inner) =>
+        '${inner.render(corePrefix: prefix)}?',
+      AckScalarTypeRef(:final dartType) => dartType,
+      AckExternalTypeRef(:final visibleName, :final typeArguments) =>
+        typeArguments.isEmpty
+            ? visibleName
+            : '$visibleName<${typeArguments.map((item) => item.render(corePrefix: prefix)).join(', ')}>',
+      AckModelTypeRef(:final visibleName) => visibleName,
+      AckListTypeRef(:final elementType) =>
+        'List<${elementType.render(corePrefix: prefix)}>',
+      AckSetTypeRef(:final elementType) =>
+        'Set<${elementType.render(corePrefix: prefix)}>',
+      AckMapTypeRef(:final valueType) =>
+        'Map<String, ${valueType.render(corePrefix: prefix)}>',
+      AckJsonMaybeTypeRef(:final valueType) =>
+        '${qualifySymbol(prefix, 'JsonMaybe')}<${valueType.render(corePrefix: prefix)}>',
+    };
+  }
 }
 
 /// A nullable structural type reference.
@@ -86,10 +109,7 @@ final class AckExternalTypeRef extends AckInferRef {
   final String? importPrefix;
   final List<AckInferRef> typeArguments;
 
-  String get visibleName {
-    final prefix = importPrefix;
-    return prefix == null || prefix.isEmpty ? name : '$prefix.$name';
-  }
+  String get visibleName => qualifySymbol(importPrefix, name);
 }
 
 /// A reference to another generated Ack model.
@@ -106,10 +126,7 @@ final class AckModelTypeRef extends AckInferRef {
   final AckInferRef runtimeRef;
   final String? importPrefix;
 
-  String get visibleName {
-    final prefix = importPrefix;
-    return prefix == null || prefix.isEmpty ? className : '$prefix.$className';
-  }
+  String get visibleName => qualifySymbol(importPrefix, className);
 }
 
 final class AckListTypeRef extends AckInferRef {
@@ -184,15 +201,11 @@ final class AckClassModelMetadata {
   const AckClassModelMetadata({
     required this.facadeName,
     required this.backingName,
-    required this.caseStyle,
-    this.hasExplicitAnnotation = true,
     this.copyWithSupertypes = const [],
   });
 
   final String facadeName;
   final String backingName;
-  final String caseStyle;
-  final bool hasExplicitAnnotation;
   final List<String> copyWithSupertypes;
 }
 
@@ -201,15 +214,11 @@ sealed class AckModelNode {
   const AckModelNode({
     required this.id,
     required this.className,
-    required this.boundaryType,
-    required this.runtimeRef,
     this.description,
   });
 
   final AckSchemaId id;
   final String className;
-  final AckInferRef boundaryType;
-  final AckInferRef runtimeRef;
   final String? description;
 }
 
@@ -218,13 +227,10 @@ final class AckObjectModelNode extends AckModelNode {
   AckObjectModelNode({
     required super.id,
     required super.className,
-    required super.boundaryType,
-    required super.runtimeRef,
     required Iterable<AckFieldNode> fields,
     Iterable<AckConstructorParameter> constructorParameters = const [],
     this.unknownPropertyPolicy = AckUnknownPropertyPolicy.reject,
     this.captureFieldName,
-    this.captureJsonKey,
     this.unionId,
     this.discriminatorKey,
     this.discriminatorValue,
@@ -236,7 +242,6 @@ final class AckObjectModelNode extends AckModelNode {
   final List<AckConstructorParameter> constructorParameters;
   final AckUnknownPropertyPolicy unknownPropertyPolicy;
   final String? captureFieldName;
-  final String? captureJsonKey;
   final AckSchemaId? unionId;
   final String? discriminatorKey;
   final String? discriminatorValue;
@@ -255,10 +260,13 @@ final class AckValueModelNode extends AckModelNode {
   const AckValueModelNode({
     required super.id,
     required super.className,
-    required super.boundaryType,
-    required super.runtimeRef,
+    required this.boundaryType,
+    required this.runtimeRef,
     super.description,
   });
+
+  final AckInferRef boundaryType;
+  final AckInferRef runtimeRef;
 }
 
 /// A sealed class generated from `Ack.discriminated(...)`.
@@ -266,8 +274,6 @@ final class AckUnionModelNode extends AckModelNode {
   AckUnionModelNode({
     required super.id,
     required super.className,
-    required super.boundaryType,
-    required super.runtimeRef,
     required this.discriminatorKey,
     required Map<String, AckSchemaId> branches,
     super.description,

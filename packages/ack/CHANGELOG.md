@@ -21,11 +21,12 @@
   Draft 2020-12 resources by default (`$defs`, `$dynamicRef`,
   `unevaluatedProperties`, `prefixItems`, etc.). Use `toJsonSchemaDraft7()` or
   `toSchemaModelDraft7()` for legacy Draft-07 `definitions` lowering (`#171`).
-* Deprecate legacy top-level constraint annotation classes (`@Min`, `@Max`,
+* Remove the 18 `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`,
   `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`,
   `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`,
-  `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems`) in
-  favor of `@Validate.*` (`#191`).
+  `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems`) and
+  `package:ack/format_annotations.dart` in favor of `@Validate.*` (`#191`).
+* Remove `Ack.enumCodec` in favor of `Ack.enumValues`.
 
 ### Added
 

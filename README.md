@@ -202,7 +202,7 @@ final when = Ack.datetime();
 final dt = when.parse('2026-01-01T00:00:00Z'); // DateTime
 final iso = when.encode(dt);                    // back to an ISO 8601 String
 
-// Other built-ins: Ack.date(), Ack.uri(), Ack.duration(), Ack.enumCodec(...)
+// Other built-ins: Ack.date(), Ack.uri(), Ack.duration()
 
 // Custom bidirectional codec
 final csv = Ack.codec<String, String, List<String>>(

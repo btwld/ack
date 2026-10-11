@@ -186,13 +186,6 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
-  Map<String, Object?> toMap() => {
-    ...super.toMap(),
-    'name': name,
-    'maxDepth': maxDepth,
-  };
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! LazySchema<Boundary, Runtime>) return false;

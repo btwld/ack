@@ -3,14 +3,15 @@
 ### Breaking
 
 * Requires `ack: ^2.0.0-beta.1`.
-* **Single-pass `.g.dart` builder (`#189`)**: `ack_generator:ack` is now a
-  `SharedPartBuilder` that emits `<file>.g.dart` directly with generated
+* **Single-pass `.g.dart` builder (`#189`)**: `ack_generator:ack_generator` is
+  now a `SharedPartBuilder` that emits `<file>.g.dart` directly with generated
   `toJson()` / `fromJson()` helpers. The two-part `.ack.dart` and `.ack.g.dart`
-  builders (`ack_generator`, `ack_json`) and runtime `json_serializable`
-  delegation are removed. Replace `part '<file>.ack.dart';` and
-  `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
-* Remove legacy `@AckType`, `@AckInfer`, `@AckModel`, and `*Type` extension-type
-  model generation (`#188`).
+  builders and runtime `json_serializable` delegation are removed. Replace
+  `part '<file>.ack.dart';` and `part '<file>.ack.g.dart';` with a single
+  `part '<file>.g.dart';`.
+* Remove legacy `@AckType`, `@AckInfer`, `@AckModel`, `*Type` extension-type
+  model generation, and the legacy `@JsonKey(name: ...)` fallback in favor of
+  `@AckField(name: ...)` (`#188`, `#189`).
 
 ### Added
 
@@ -31,9 +32,10 @@
 * Support two-way `StringSchema` normalizers (`.trim()`, `.toLowerCase()`,
   `.toUpperCase()`) in schema-first `@Schemable()` models.
 * Add `ack_generator:ack_json_schema` builder and `generateAckSchemaLibrary()`
-  API to compile `lib/**/*.schema.json` Draft 2020-12 documents into
-  `<name>.schema.g.dart` typed models or validated value-model libraries
-  (`#167`).
+  API: `ack_generator:ack_json_schema` emits `<name>.schema.dart` from
+  `lib/**/*.schema.json` Draft 2020-12 documents, which
+  `ack_generator:ack_generator` compiles into `<name>.schema.g.dart` typed
+  models or validated value-model libraries (`#167`).
 
 ## 1.7.0-beta.7
 

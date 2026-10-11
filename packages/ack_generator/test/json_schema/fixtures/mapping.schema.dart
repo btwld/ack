@@ -42,7 +42,7 @@ final listingSchema = ack.Ack.object({
   'photo': photoSchema.optional(),
   'cover': photoSchema.nullable().optional(),
   'photos': ack.Ack.list(photoSchema).optional(),
-}).describe('A listing.\nWith a second line.');
+}).describe('A listing.\u000aWith a second line.');
 
 @ack.Schemable(name: 'Photo')
 final photoSchema = ack.Ack.object({

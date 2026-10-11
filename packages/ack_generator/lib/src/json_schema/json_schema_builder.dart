@@ -5,11 +5,11 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'json_schema_library.dart';
 
-/// Generates `<name>.schema.dart` `@AckInfer` declarations from each
+/// Generates `<name>.schema.dart` `@Schemable` declarations from each
 /// `<name>.schema.json` draft 2020-12 bundle.
 ///
-/// The generated library declares the model parts that `ack_models` and
-/// `ack_model_json` then fill in the same build.
+/// The generated library declares the `.schema.g.dart` part that
+/// `ack_generator` fills in the same build.
 final class AckJsonSchemaBuilder implements Builder {
   /// Creates the builder with its `build.yaml` [options].
   AckJsonSchemaBuilder(this.options);

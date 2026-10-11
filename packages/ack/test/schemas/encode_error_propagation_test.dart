@@ -1,5 +1,4 @@
 import 'package:ack/ack.dart';
-import 'package:ack/src/schemas/schema.dart' show TestThrowingLeafAckSchema;
 import 'package:test/test.dart';
 
 CodecSchema<String, int> _throwingCodec(Object error) {
@@ -191,17 +190,18 @@ void main() {
       );
     });
 
-    test('a non-codec child Exception is still attributed to #/leaf', () {
-      final schema = Ack.object({'leaf': const TestThrowingLeafAckSchema()});
+    test('a leaf Error thrown during object encoding propagates untouched', () {
+      final thrown = StateError('unexpected leaf encode state');
+      final schema = Ack.object({
+        'leaf': Ack.string().codec<String>(
+          decode: (v) => v,
+          encode: (_) => throw thrown,
+        ),
+      });
 
-      final result = schema.safeEncode({'leaf': 'v'});
+      final captured = _captureThrow(() => schema.safeEncode({'leaf': 'v'}));
 
-      expect(result.isFail, isTrue);
-      expect(
-        _flatten(result.getError()).any((e) => e.path == '#/leaf'),
-        isTrue,
-        reason: _describe(result.getError()),
-      );
+      expect(captured.error, same(thrown));
     });
   });
 

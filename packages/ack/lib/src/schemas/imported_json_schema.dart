@@ -44,14 +44,13 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   ImportedJsonSchema._(
     this._root, {
     required List<_ImportedNode> externalRoots,
-    required bool assertFormats,
+    required this.assertFormats,
     bool? isNullable,
     super.isOptional,
     String? description,
     super.constraints,
     super.refinements,
   }) : _externalRoots = externalRoots,
-       _assertFormats = assertFormats,
        super(
          isNullable: isNullable ?? _checkImportedNode(_root, null) == null,
          description: description ?? _root.keywords['description'] as String?,
@@ -59,7 +58,9 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
   final _ImportedNode _root;
   final List<_ImportedNode> _externalRoots;
-  final bool _assertFormats;
+  final bool assertFormats;
+
+  Object get rawSchema => _root.source;
 
   static final _assertionDialect = Uri.parse(
     'urn:ack:json-schema:2020-12:format-assertion',
@@ -74,7 +75,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
       if (names.containsKey(node)) return;
       final name = '$prefix${names.length}';
       names[node] = name;
-      refs[node] = '#/definitions/${_importPointerToken(name)}';
+      refs[node] = '#/definitions/${escapeJsonPointerToken(name)}';
       for (final child in node.dependencies) {
         visit(child);
       }
@@ -96,7 +97,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
       return {
         if (source is Map<String, Object?>) ...source,
         r'$id': (syntheticId ?? node.baseUri).toString(),
-        if (_assertFormats &&
+        if (assertFormats &&
             node.dialectUri == _JsonSchemaCompiler.standardDialect)
           r'$schema': _assertionDialect.toString(),
         if (source is bool) 'allOf': [source],
@@ -114,7 +115,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
       r'$schema',
       () => _JsonSchemaCompiler.standardDialect.toString(),
     );
-    if (_externalRoots.isNotEmpty || _assertFormats) {
+    if (_externalRoots.isNotEmpty || assertFormats) {
       final definitions = <String, Object?>{
         ...?root[r'$defs'] as Map<String, Object?>?,
       };
@@ -136,7 +137,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
           };
         }
       }
-      if (_assertFormats) {
+      if (assertFormats) {
         var name = '_ack_format_assertion_dialect';
         while (definitions.containsKey(name)) {
           name = '${name}_';
@@ -245,7 +246,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
           keywordLocation: [
             ...violation.evaluationPath,
             if (violation.keyword.isNotEmpty) violation.keyword,
-          ].map((token) => '/${_importPointerToken(token)}').join(),
+          ].map((token) => '/${escapeJsonPointerToken(token)}').join(),
         ),
       );
     }
@@ -262,7 +263,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   }) => ImportedJsonSchema._(
     _root,
     externalRoots: _externalRoots,
-    assertFormats: _assertFormats,
+    assertFormats: assertFormats,
     isNullable: isNullable ?? this.isNullable,
     isOptional: isOptional ?? this.isOptional,
     description: description ?? this.description,
@@ -272,6 +273,20 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
   @override
   SchemaType get schemaType => SchemaType.any;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ImportedJsonSchema) return false;
+
+    return baseFieldsEqual(other) &&
+        assertFormats == other.assertFormats &&
+        deepEquals(rawSchema, other.rawSchema);
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(baseFieldsHashCode, assertFormats, deepHashCode(rawSchema));
 }
 
 final class _ImportViolation {
@@ -608,14 +623,8 @@ _ImportEvaluation _evaluateImportedNode(
           'maxItems',
         );
         if (keyword != null) return fail(keyword);
-        if (node.uniqueItems) {
-          for (var i = 0; i < value.length; i++) {
-            for (var j = 0; j < i; j++) {
-              if (deepEquals(value[i], value[j])) {
-                return fail('uniqueItems');
-              }
-            }
-          }
+        if (node.uniqueItems && !hasUniqueJsonItems(value)) {
+          return fail('uniqueItems');
         }
       }
       final prefixItems = node.prefixItems ?? const <_ImportedNode>[];

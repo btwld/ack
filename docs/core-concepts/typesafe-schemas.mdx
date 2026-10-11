@@ -12,9 +12,7 @@ and generate a Dart model, or start with a Dart model and generate its schema.
 
 `@Schemable()`, the model annotations (`@AckField`, `@Optional`,
 `@Required`, `@NotNull`), and the `@Validate.*` constraint namespace come from
-`package:ack/ack.dart`. Legacy top-level constraint annotations in
-`package:ack/annotations.dart` and `package:ack/format_annotations.dart` are
-deprecated.
+`package:ack/ack.dart` (and `package:ack/annotations.dart`).
 There is no `@AckSchema()` annotation. `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 
@@ -350,11 +348,9 @@ constraints apply to the outer set.
 Use `caseStyle` for model-wide JSON names. Supported values are `none`,
 `snake`, `kebab`, `pascal`, and `screamingSnake`. Use
 `@AckField(name: 'wire_name')` on the field or primary constructor parameter for
-a single override (or `@JsonKey(name: 'wire_name')` from
-`package:json_annotation/json_annotation.dart`).
-Ack resolves each wire key once and uses it for both validation and JSON
-mapping. Other `JsonKey` options and `JsonConverter` annotations are rejected
-so the Ack schema and generated JSON mapping cannot diverge.
+a single wire-name override. Ack resolves each wire key once and uses it for both
+validation and JSON mapping. `JsonConverter` annotations are rejected so the Ack
+schema and generated JSON mapping cannot diverge.
 
 ### Custom schemas and types that own their schema
 

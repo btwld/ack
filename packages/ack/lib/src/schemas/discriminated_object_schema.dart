@@ -474,18 +474,6 @@ final class DiscriminatedObjectSchema<T extends Object>
   }
 
   @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'discriminatorKey': discriminatorKey,
-      'schemas': schemas.length,
-    };
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! DiscriminatedObjectSchema<Object>) return false;

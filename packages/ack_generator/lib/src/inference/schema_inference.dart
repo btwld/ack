@@ -1,7 +1,4 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:ack/annotations.dart' as annotations;
-import 'package:ack/format_annotations.dart' as formats;
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
@@ -24,66 +21,6 @@ final class AckSchemaInference {
 
   static const _validate = TypeChecker.typeNamed(
     annotations.Validate,
-    inPackage: 'ack',
-  );
-  static const _min = TypeChecker.typeNamed(annotations.Min, inPackage: 'ack');
-  static const _max = TypeChecker.typeNamed(annotations.Max, inPackage: 'ack');
-  static const _multipleOf = TypeChecker.typeNamed(
-    annotations.MultipleOf,
-    inPackage: 'ack',
-  );
-  static const _positive = TypeChecker.typeNamed(
-    annotations.Positive,
-    inPackage: 'ack',
-  );
-  static const _negative = TypeChecker.typeNamed(
-    annotations.Negative,
-    inPackage: 'ack',
-  );
-  static const _minLength = TypeChecker.typeNamed(
-    annotations.MinLength,
-    inPackage: 'ack',
-  );
-  static const _maxLength = TypeChecker.typeNamed(
-    annotations.MaxLength,
-    inPackage: 'ack',
-  );
-  static const _matches = TypeChecker.typeNamed(
-    annotations.Matches,
-    inPackage: 'ack',
-  );
-  static const _email = TypeChecker.typeNamed(
-    annotations.Email,
-    inPackage: 'ack',
-  );
-  static const _url = TypeChecker.typeNamed(annotations.Url, inPackage: 'ack');
-  static const _uri = TypeChecker.typeNamed(formats.Uri, inPackage: 'ack');
-  static const _uuid = TypeChecker.typeNamed(
-    annotations.Uuid,
-    inPackage: 'ack',
-  );
-  static const _date = TypeChecker.typeNamed(
-    annotations.Date,
-    inPackage: 'ack',
-  );
-  static const _dateTime = TypeChecker.typeNamed(
-    formats.DateTime,
-    inPackage: 'ack',
-  );
-  static const _notEmpty = TypeChecker.typeNamed(
-    annotations.NotEmpty,
-    inPackage: 'ack',
-  );
-  static const _minItems = TypeChecker.typeNamed(
-    annotations.MinItems,
-    inPackage: 'ack',
-  );
-  static const _maxItems = TypeChecker.typeNamed(
-    annotations.MaxItems,
-    inPackage: 'ack',
-  );
-  static const _uniqueItems = TypeChecker.typeNamed(
-    annotations.UniqueItems,
     inPackage: 'ack',
   );
   static const _ackField = TypeChecker.typeNamed(
@@ -395,84 +332,6 @@ final class AckSchemaInference {
             );
             addCollectionConstraint('.unique()', isUnique: true);
         }
-      } else if (_min.isExactlyType(valueType)) {
-        _require(declaration, type, '@Min', isNumeric, '@MinLength');
-        output = '$output.min(${_number(declaration, '@Min', value)})';
-      } else if (_max.isExactlyType(valueType)) {
-        _require(declaration, type, '@Max', isNumeric, '@MaxLength');
-        output = '$output.max(${_number(declaration, '@Max', value)})';
-      } else if (_multipleOf.isExactlyType(valueType)) {
-        _require(declaration, type, '@MultipleOf', isNumeric, 'numeric field');
-        output =
-            '$output.multipleOf(${_number(declaration, '@MultipleOf', value)})';
-      } else if (_positive.isExactlyType(valueType)) {
-        _require(declaration, type, '@Positive', isNumeric, 'numeric field');
-        output = '$output.positive()';
-      } else if (_negative.isExactlyType(valueType)) {
-        _require(declaration, type, '@Negative', isNumeric, 'numeric field');
-        output = '$output.negative()';
-      } else if (_minLength.isExactlyType(valueType)) {
-        _require(declaration, type, '@MinLength', isString, '@Min');
-        output = '$output.minLength(${value.getField('length')!.toIntValue()})';
-      } else if (_maxLength.isExactlyType(valueType)) {
-        _require(declaration, type, '@MaxLength', isString, '@Max');
-        output = '$output.maxLength(${value.getField('length')!.toIntValue()})';
-      } else if (_matches.isExactlyType(valueType)) {
-        _require(declaration, type, '@Matches', isString, 'String field');
-        output =
-            '$output.matches(${dartStringLiteral(value.getField('pattern')!.toStringValue()!)})';
-      } else if (_email.isExactlyType(valueType)) {
-        _require(declaration, type, '@Email', isString, 'String field');
-        output = '$output.email()';
-      } else if (_url.isExactlyType(valueType)) {
-        _require(declaration, type, '@Url', isString, 'String field');
-        output = '$output.url()';
-      } else if (_uri.isExactlyType(valueType)) {
-        _require(declaration, type, '@Uri', isString, 'String field');
-        output = '$output.uri()';
-      } else if (_uuid.isExactlyType(valueType)) {
-        _require(declaration, type, '@Uuid', isString, 'String field');
-        output = '$output.uuid()';
-      } else if (_date.isExactlyType(valueType)) {
-        _require(declaration, type, '@Date', isString, 'String field');
-        output = '$output.date()';
-      } else if (_dateTime.isExactlyType(valueType)) {
-        _require(declaration, type, '@DateTime', isString, 'String field');
-        output = '$output.datetime()';
-      } else if (_notEmpty.isExactlyType(valueType)) {
-        _require(declaration, type, '@NotEmpty', isString, 'String field');
-        output = '$output.notEmpty()';
-      } else if (_minItems.isExactlyType(valueType)) {
-        _require(
-          declaration,
-          type,
-          '@MinItems',
-          isCollection,
-          'List or Set field',
-        );
-        addCollectionConstraint(
-          '.minItems(${value.getField('count')!.toIntValue()})',
-        );
-      } else if (_maxItems.isExactlyType(valueType)) {
-        _require(
-          declaration,
-          type,
-          '@MaxItems',
-          isCollection,
-          'List or Set field',
-        );
-        addCollectionConstraint(
-          '.maxItems(${value.getField('count')!.toIntValue()})',
-        );
-      } else if (_uniqueItems.isExactlyType(valueType)) {
-        _require(
-          declaration,
-          type,
-          '@UniqueItems',
-          isCollection,
-          'List or Set field',
-        );
-        addCollectionConstraint('.unique()', isUnique: true);
       }
     }
     if (setConstraints.isNotEmpty) {
@@ -566,10 +425,7 @@ final class AckSchemaInference {
   bool _nullable(DartType type) =>
       type.nullabilitySuffix == NullabilitySuffix.question;
 
-  String _ack(String symbol) {
-    final prefix = ackPrefix;
-    return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
+  String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
 
   String _number(Element declaration, String annotation, DartObject value) {
     final field = value.getField('value')!;

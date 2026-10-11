@@ -156,7 +156,7 @@ void main() {
       ),
       'a description with special characters': (
         {'type': 'string', 'description': "It's \$5\n\\ok"},
-        r"ack.Ack.string().describe('It\'s\$5\n\\ok')",
+        r"ack.Ack.string().describe('It\'s\$5\u000a\\ok')",
       ),
     };
     for (final MapEntry(key: name, value: (schema, expected)) in rows.entries) {

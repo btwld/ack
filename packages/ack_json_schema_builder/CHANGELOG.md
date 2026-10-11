@@ -9,6 +9,7 @@
 * `toJsonSchemaBuilder()` now preserves imported Draft 2020-12 resources by
   default; use `toJsonSchemaBuilderDraft7()` when legacy Draft-07 `definitions`
   lowering is required (`#171`).
+* Remove `convertAckSchemaModelToBuilder` in favor of `schema.toJsonSchemaBuilder()`.
 
 ### Added
 

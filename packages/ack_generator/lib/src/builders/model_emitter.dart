@@ -1,9 +1,8 @@
 import 'package:code_builder/code_builder.dart';
 
-import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
-import 'data_class_emitter.dart';
 import '../utils/string_literal.dart';
+import 'data_class_emitter.dart';
 
 /// Emits immutable model declarations solely from a normalized model graph.
 final class AckModelEmitter {
@@ -540,7 +539,7 @@ ${_ack('AckModelAdapter')}(
   Code _copyWithContract(String className, _AckDataClass data) {
     final byField = {for (final field in data.fields) field.dartName: field};
     return Code(
-      AckDataClassEmitter(ackPrefix: ackPrefix).copyWithContract(
+      _dataClasses.copyWithContract(
         className: className,
         parameters: [
           for (final parameter in data.constructorParameters)
@@ -569,76 +568,12 @@ ${_ack('AckModelAdapter')}(
     runtimeRef: node.runtimeRef,
   );
 
-  List<Method> _valueMembers(String className, _AckDataClass data) {
-    final fields = data.fields;
-    final comparisons = [
-      'other is $className',
-      'runtimeType == other.runtimeType',
-      for (final field in fields)
-        '${_ack('deepEquals')}(${field.dartName}, other.${field.dartName})',
-    ];
-    final hashes = [
-      'runtimeType',
-      for (final field in fields) '${_ack('deepHashCode')}(${field.dartName})',
-    ];
-    final toStringPreview = [
-      for (final field in fields) '${field.dartName}: \$${field.dartName}',
-    ].join(', ');
-    final implementation = ackCopyWithImplementationName(className);
-    return [
-      Method(
-        (m) => m
-          ..name = 'copyWith'
-          ..type = MethodType.getter
-          ..returns = refer(
-            '${ackCopyWithInterfaceName(className)}<$className>',
-          )
-          ..docs.add(
-            '/// Creates a copy of this model with selected fields replaced.',
-          )
-          ..lambda = true
-          ..body = Code(
-            data.constructorParameters.isEmpty
-                ? 'const $implementation()'
-                : '$implementation(this)',
-          ),
-      ),
-      Method(
-        (m) => m
-          ..name = 'operator =='
-          ..annotations.add(refer('override'))
-          ..returns = refer('bool')
-          ..requiredParameters.add(
-            Parameter(
-              (p) => p
-                ..name = 'other'
-                ..type = refer('Object'),
-            ),
-          )
-          ..lambda = true
-          ..body = Code(
-            'identical(this, other) || (${comparisons.join(' && ')})',
-          ),
-      ),
-      Method(
-        (m) => m
-          ..name = 'hashCode'
-          ..annotations.add(refer('override'))
-          ..type = MethodType.getter
-          ..returns = refer('int')
-          ..lambda = true
-          ..body = Code('Object.hashAll([${hashes.join(', ')}])'),
-      ),
-      Method(
-        (m) => m
-          ..name = 'toString'
-          ..annotations.add(refer('override'))
-          ..returns = refer('String')
-          ..lambda = true
-          ..body = literalString('$className($toStringPreview)').code,
-      ),
-    ];
-  }
+  List<Method> _valueMembers(String className, _AckDataClass data) =>
+      _dataClasses.valueMethods(
+        className: className,
+        fields: data.fields,
+        hasParameters: data.constructorParameters.isNotEmpty,
+      );
 
   AckFieldNode _syntheticField(AckConstructorParameter parameter) =>
       AckFieldNode(
@@ -813,10 +748,19 @@ return $_runtimeMapLiteral{
         '$expression == null ? null : ${_fromRuntime(inner, '$expression!')}',
       AckModelTypeRef(:final runtimeRef, :final visibleName) =>
         '$visibleName.\$ack.fromRuntime($expression as ${_type(runtimeRef)})',
+      AckListTypeRef(:final elementType)
+          when !_requiresRuntimeConversion(elementType) =>
+        '($expression as List).cast<${_type(elementType)}>()',
       AckListTypeRef(:final elementType) =>
         '($expression as List).map((item) => ${_fromRuntime(elementType, 'item')}).toList()',
+      AckSetTypeRef(:final elementType)
+          when !_requiresRuntimeConversion(elementType) =>
+        '($expression as Set).cast<${_type(elementType)}>()',
       AckSetTypeRef(:final elementType) =>
         '($expression as Set).map((item) => ${_fromRuntime(elementType, 'item')}).toSet()',
+      AckMapTypeRef(:final valueType)
+          when !_requiresRuntimeConversion(valueType) =>
+        '($expression as Map).cast<String, ${_type(valueType)}>()',
       AckMapTypeRef(:final valueType) =>
         '($expression as Map).map((key, item) => MapEntry(key as String, ${_fromRuntime(valueType, 'item')}))',
       _ => '$expression as ${_type(type)}',
@@ -859,6 +803,8 @@ return $_runtimeMapLiteral{
         'List<${_type(elementType)}>.unmodifiable($expression.map((item) => ${_immutableCopy(elementType, 'item')}))',
       AckSetTypeRef(:final elementType) =>
         'Set<${_type(elementType)}>.unmodifiable($expression.map((item) => ${_immutableCopy(elementType, 'item')}))',
+      AckMapTypeRef(:final valueType) when !_requiresImmutableCopy(valueType) =>
+        'Map<String, ${_type(valueType)}>.unmodifiable($expression)',
       AckMapTypeRef(:final valueType) =>
         'Map<String, ${_type(valueType)}>.unmodifiable($expression.map((key, item) => MapEntry(key, ${_immutableCopy(valueType, 'item')})))',
       _ => expression,
@@ -956,22 +902,7 @@ return $_runtimeMapLiteral{
     };
   }
 
-  String _type(AckInferRef type) {
-    return switch (type) {
-      AckNullableTypeRef(:final inner) => '${_type(inner)}?',
-      AckScalarTypeRef(:final dartType) => dartType,
-      AckExternalTypeRef(:final visibleName, :final typeArguments) =>
-        typeArguments.isEmpty
-            ? visibleName
-            : '$visibleName<${typeArguments.map(_type).join(', ')}>',
-      AckModelTypeRef(:final visibleName) => visibleName,
-      AckListTypeRef(:final elementType) => 'List<${_type(elementType)}>',
-      AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
-      AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
-      AckJsonMaybeTypeRef(:final valueType) =>
-        '${_ack('JsonMaybe')}<${_type(valueType)}>',
-    };
-  }
+  String _type(AckInferRef type) => type.render(ackPrefix: ackPrefix);
 
   List<String> _docs(AckModelNode node, String kind) => [
     '/// $kind generated from `${node.id.declarationName}`.',
@@ -986,10 +917,10 @@ return $_runtimeMapLiteral{
         line.trimRight().isEmpty ? '///' : '/// ${line.trimRight()}',
   ];
 
-  String _ack(String symbol) {
-    final prefix = ackPrefix;
-    return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
+  AckDataClassEmitter get _dataClasses =>
+      AckDataClassEmitter(ackPrefix: ackPrefix);
+
+  String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
 
   static const _runtimeMapType = 'Map<String, Object?>';
   static const _runtimeMapLiteral = '<String, Object?>';

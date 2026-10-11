@@ -26,6 +26,11 @@ final class Min {
   final int value;
 }
 
+final class Max {
+  const Max(this.value);
+  final int value;
+}
+
 final class Pattern {
   const Pattern(this.source);
   final String source;

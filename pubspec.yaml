@@ -15,9 +15,6 @@ workspace:
   - packages/ack_mcp_dart
   - example
 
-dependencies:
-  meta: ^1.15.0
-
 dev_dependencies:
   melos: ^8.7.0
   # Release tooling under /scripts reads and rewrites pubspecs.

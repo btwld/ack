@@ -223,10 +223,57 @@ void main() {
         expect(Ack.datetime(), equals(Ack.datetime()));
         expect(Ack.uri(), equals(Ack.uri()));
         expect(Ack.duration(), equals(Ack.duration()));
-        expect(
-          Ack.enumCodec(TestColor.values),
-          equals(Ack.enumCodec(TestColor.values)),
-        );
+      });
+    });
+
+    group('ImportedJsonSchema', () {
+      test('equal raw schemas and options are equal', () {
+        final a = Ack.fromJsonSchema({
+          'type': 'object',
+          'properties': {
+            'name': {'type': 'string'},
+            'age': {'type': 'integer', 'minimum': 0},
+          },
+          'required': ['name'],
+        });
+        final b = Ack.fromJsonSchema({
+          'type': 'object',
+          'properties': {
+            'name': {'type': 'string'},
+            'age': {'type': 'integer', 'minimum': 0},
+          },
+          'required': ['name'],
+        });
+
+        expect(a, equals(b));
+        expect(a.hashCode, equals(b.hashCode));
+      });
+
+      test('different raw schemas are not equal', () {
+        final a = Ack.fromJsonSchema({'type': 'string', 'minLength': 1});
+        final b = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+
+        expect(a, isNot(equals(b)));
+      });
+
+      test('different assertFormats flags are not equal', () {
+        final a = Ack.fromJsonSchema({
+          'type': 'string',
+          'format': 'email',
+        }, assertFormats: false);
+        final b = Ack.fromJsonSchema({
+          'type': 'string',
+          'format': 'email',
+        }, assertFormats: true);
+
+        expect(a, isNot(equals(b)));
+      });
+
+      test('different base schema fields are not equal', () {
+        final a = Ack.fromJsonSchema({'type': 'string'}).nullable();
+        final b = Ack.fromJsonSchema({'type': 'string'});
+
+        expect(a, isNot(equals(b)));
       });
     });
 

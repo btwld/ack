@@ -61,7 +61,7 @@ import 'package:ack/annotations.dart';
 
 void widget({
   /// The item title.
-  @MinLength(2)
+  @Validate.minLength(2)
   required String title,
 }) {}
 ''',
@@ -134,7 +134,7 @@ void widget({required List<Priority> priorities}) {}
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@MinItems(2) required Set<String> tags}) {}
+void widget({@Validate.minItems(2) required Set<String> tags}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},
@@ -158,7 +158,7 @@ void widget({@MinItems(2) required Set<String> tags}) {}
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@MaxItems(3) required Set<Set<String>> cells}) {}
+void widget({@Validate.maxItems(3) required Set<Set<String>> cells}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},

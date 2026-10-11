@@ -8,16 +8,17 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Breaking
 
 * **Single-pass `.g.dart` code generation (`#189`)**: `ack_generator` now emits
-  a single `<file>.g.dart` part via `SharedPartBuilder` (`ack_generator:ack`)
-  with direct JSON serialization (`toJson` / `fromJson`). Consumer packages no
-  longer need `json_serializable` or `json_annotation` dependencies, nor a
-  separate `.ack.dart` / `.ack.g.dart` two-part setup. Replace
-  `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single
-  `part '<file>.g.dart';`.
-* **Removed legacy 1.x generator annotations and shims (`#188`)**: Removed
-  `@AckType`, `@AckInfer`, `@AckModel`, `JsonKeyCaseStyle`, `AckTypeDef`, and
-  generated `*Type` extension-type model generation. Use `@Schemable()` on both
-  top-level schemas and hand-written classes/unions.
+  a single `<file>.g.dart` part via `SharedPartBuilder`
+  (`ack_generator:ack_generator`) with direct JSON serialization (`toJson` /
+  `fromJson`). Consumer packages no longer need `json_serializable` or
+  `json_annotation` dependencies, nor a separate `.ack.dart` / `.ack.g.dart`
+  two-part setup. Replace `part '<file>.ack.dart';` +
+  `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
+* **Removed legacy 1.x generator annotations and shims (`#188`, `#189`)**:
+  Removed `@AckType`, `@AckInfer`, `@AckModel`, `JsonKeyCaseStyle`, `AckTypeDef`,
+  generated `*Type` extension-type model generation, and the legacy
+  `@JsonKey(name: ...)` fallback in `ack_generator` (use `@AckField(name: ...)`).
+  Use `@Schemable()` on both top-level schemas and hand-written classes/unions.
 * **Removed `StandardSchemaV1` (`#129`)**: Removed the unused TypeScript-origin
   `StandardSchemaV1` interface and extensions (`standard_schema.dart`).
   `AckSchema<Boundary, Runtime>` with `SchemaResult<T>` and `AckSchemaModel` is
@@ -31,8 +32,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   `Validate.url()`, `Validate.uuid()`, `Validate.date()`, `Validate.dateTime()`,
   `Validate.uri()`, `Validate.ip()`, `Validate.ipv4()`, `Validate.ipv6()`,
   `Validate.minItems(...)`, `Validate.maxItems(...)`, and
-  `Validate.uniqueItems()` / `Validate.unique()`. Legacy top-level constraint
-  annotation classes (`@Min`, `@MinLength`, `@Email`, etc.) are deprecated.
+  `Validate.uniqueItems()` / `Validate.unique()`. Removed the 18 `@Deprecated`
+  1.x top-level constraint classes (`@Min`, `@Max`, `@Email`, etc.) and
+  `package:ack/format_annotations.dart` in favor of `@Validate.*`.
+* **Removed redundant codec and adapter helpers**: Removed `Ack.enumCodec` in
+  favor of `Ack.enumValues`, `registerAckModelTool` in `ack_mcp_dart` in favor
+  of `registerAckTool` with `Model.schema`, and `convertAckSchemaModelToBuilder`
+  in `ack_json_schema_builder` in favor of `schema.toJsonSchemaBuilder()`.
 * **Sealed `SchemaError` and `AckSchema` hierarchies**: `SchemaError` and
   `AckSchema` are now `sealed class`es so `switch (error)` and `switch (schema)`
   are exhaustively checked by the Dart analyzer without a wildcard branch.
@@ -84,8 +90,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   `dependentRequired`, `dependentSchemas`, `patternProperties`, `minContains`,
   `maxContains`, bundled offline 2020-12 meta-schemas, and the full Draft
   2020-12 format suite when `assertFormats: true`). `ack_generator` adds the
-  `ack_generator:ack_json_schema` builder to compile `lib/**/*.schema.json`
-  into `<name>.schema.g.dart` typed or value-model libraries.
+  `ack_generator:ack_json_schema` builder, which emits `<name>.schema.dart` from
+  `lib/**/*.schema.json` for `ack_generator:ack_generator` to compile into
+  `<name>.schema.g.dart` typed or value-model libraries (and
+  `generateAckSchemaLibrary` is available for programmatic generation).
 
 ## 1.7.0-beta.7
 

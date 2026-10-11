@@ -5,6 +5,7 @@ import 'package:dart_style/dart_style.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../analyzer/schema_first_names.dart';
+import '../utils/string_literal.dart';
 import 'json_schema_generation_exception.dart';
 
 /// How generated models treat properties a JSON Schema object doesn't declare.
@@ -506,7 +507,7 @@ final class _Translator {
     final keys = keywords.toSet();
     final description = node['description'];
     String describe(String code) => description is String
-        ? '$code.describe(${_literal(description)})'
+        ? '$code.describe(${dartStringLiteral(description)})'
         : code;
 
     if (keys.isEmpty) {
@@ -716,7 +717,7 @@ final class _Translator {
         if (type == 'number') 'a number' else 'a $type',
     ];
     return 'ack.Ack.any().refine((value) => $test, '
-        'message: ${_literal('Expected ${names.join(' or ')}.')})';
+        'message: ${dartStringLiteral('Expected ${names.join(' or ')}.')})';
   }
 
   _Expr? _enum(
@@ -759,7 +760,9 @@ final class _Translator {
       return null;
     }
     return _Expr(
-      describe('ack.Ack.enumString([${strings.map(_literal).join(', ')}])'),
+      describe(
+        'ack.Ack.enumString([${strings.map(dartStringLiteral).join(', ')}])',
+      ),
       nullable: allowsNull && values.contains(null),
     );
   }
@@ -785,7 +788,7 @@ final class _Translator {
       );
       return null;
     }
-    return _Expr(describe('ack.Ack.literal(${_literal(value)})'));
+    return _Expr(describe('ack.Ack.literal(${dartStringLiteral(value)})'));
   }
 
   String? _string(Map<String, Object?> node, String pointer) {
@@ -801,7 +804,7 @@ final class _Translator {
         );
         return null;
       }
-      buffer.write('.matches(${_literal(pattern)})');
+      buffer.write('.matches(${dartStringLiteral(pattern)})');
     }
     return buffer.toString();
   }
@@ -975,7 +978,7 @@ final class _Translator {
         );
         if (field == null) continue;
         entries.add(
-          '${_literal(key)}: ${field.code}'
+          '${dartStringLiteral(key)}: ${field.code}'
           '${field.nullable ? '.nullable()' : ''}'
           '${required.contains(key) ? '' : '.optional()'}',
         );
@@ -999,7 +1002,7 @@ final class _Translator {
       _Declaration(
         hoistName,
         description is String
-            ? '$code.describe(${_literal(description)})'
+            ? '$code.describe(${dartStringLiteral(description)})'
             : code,
       ),
     );
@@ -1069,7 +1072,7 @@ String _emit(
   }
   for (final declaration in translator.declarations) {
     buffer
-      ..writeln('@ack.Schemable(name: ${_literal(declaration.name)})')
+      ..writeln('@ack.Schemable(name: ${dartStringLiteral(declaration.name)})')
       ..writeln('final ${_variable(declaration.name)} = ${declaration.code};')
       ..writeln();
   }
@@ -1125,8 +1128,8 @@ String _emitFallback(
     if (rootName != null) (rootName, null),
     ...definitions,
   ];
-  final uri = _literal(documentUri.toString());
-  final lookupUri = _literal(
+  final uri = dartStringLiteral(documentUri.toString());
+  final lookupUri = dartStringLiteral(
     documentUri.resolve('__ack_json_schema_generated__.json').toString(),
   );
   final buffer = StringBuffer()
@@ -1151,13 +1154,15 @@ String _emitFallback(
     ..writeln("import 'package:ack/ack.dart' as ack;")
     ..writeln()
     ..writeln('final Object _jsonSchemaDocument =')
-    ..writeln('    jsonDecode(${_literal(jsonEncode(document))}) as Object;')
+    ..writeln(
+      '    jsonDecode(${dartStringLiteral(jsonEncode(document))}) as Object;',
+    )
     ..writeln('final Map<Uri, Object> _jsonSchemaDocuments = {')
     ..writeln('  Uri.parse($uri): _jsonSchemaDocument,');
   for (final entry in documents.entries) {
     buffer.writeln(
-      '  Uri.parse(${_literal(entry.key.toString())}): '
-      'jsonDecode(${_literal(jsonEncode(entry.value))}) as Object,',
+      '  Uri.parse(${dartStringLiteral(entry.key.toString())}): '
+      'jsonDecode(${dartStringLiteral(jsonEncode(entry.value))}) as Object,',
     );
   }
   buffer
@@ -1173,7 +1178,7 @@ String _emitFallback(
               'if (entry.key != Uri.parse($uri)) entry.key: entry.value}'
               '$formatOption)'
         : 'ack.Ack.fromJsonSchema('
-              "{r'\$ref': ${_literal(documentUri.replace(fragment: '/\$defs/${_token(definition)}').toString())}}, "
+              "{r'\$ref': ${dartStringLiteral(documentUri.replace(fragment: '/\$defs/${_token(definition)}').toString())}}, "
               'baseUri: Uri.parse($lookupUri), '
               'documents: _jsonSchemaDocuments$formatOption)';
     buffer
@@ -1225,26 +1230,6 @@ String _commentText(String value) => value
     .replaceAll('\t', r'\t')
     .replaceAll('\u2028', r'\u2028')
     .replaceAll('\u2029', r'\u2029');
-
-/// A single-quoted Dart string literal with every special character escaped,
-/// so descriptions, patterns, and keys stay one simple literal.
-String _literal(String value) {
-  final buffer = StringBuffer("'");
-  for (final rune in value.runes) {
-    buffer.write(switch (rune) {
-      0x5C => r'\\',
-      0x27 => r"\'",
-      0x24 => r'\$',
-      0x0A => r'\n',
-      0x0D => r'\r',
-      0x09 => r'\t',
-      < 0x20 => '\\u{${rune.toRadixString(16)}}',
-      _ => String.fromCharCode(rune),
-    });
-  }
-  buffer.write("'");
-  return buffer.toString();
-}
 
 String _num(num value) =>
     value is int || value != value.truncate() ? '$value' : '${value.toInt()}';
