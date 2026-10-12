@@ -1,163 +1,53 @@
-## 1.7.0-beta.7
-
-### Added
-
-* `Ack.fromJsonSchema()` now supports `multipleOf` for `number` and `integer`
-  schemas. Non-positive or non-numeric `multipleOf` values fail import with an
-  `invalid_schema` diagnostic.
-* `Ack.fromJsonSchema()` now validates built-in string formats (`date`,
-  `email`, `uuid`, `uri`, `ipv4`, and `ipv6`, in addition to `date-time`),
-  standard numeric formats (`int32`, `int64`, `uint32`, `uint64`, `float`, and
-  `double`), and accepts `x-*` vendor extension annotations (such as
-  `x-transformed`). Unknown format labels and non-`x-*` extension keywords
-  continue to fail import with `unsupported_keyword`.
-* `Ack.fromJsonSchema()` now accepts Draft-07 `$schema` URIs
-  (`http(s)://json-schema.org/draft-07/schema` with or without a trailing `#`),
-  so schemas exported by `.toJsonSchema()` can be re-imported without stripping
-  `$schema`.
-
-### Changed
-
-* Native `.multipleOf()` and imported `multipleOf` now share exact decimal
-  division on the number's decimal digits, avoiding binary floating-point
-  remainder drift (such as `0.3` with `0.1`) and overflow on large finite
-  doubles.
-* Speed up imported JSON Schema compilation and validation by reading typed node
-  fields directly instead of per-node keyword maps. Error output and exported
-  JSON Schema are unchanged.
-* Speed up `toJsonSchema()` on native schemas by skipping redundant subtree
-  walks when constraints do not project nested keywords.
-* Return unmodifiable views directly from `Ack.object()`, `Ack.list()`, and
-  `Ack.map()` parse and encode results instead of copying the validated
-  collection a second time. Results remain detached from the input and
-  unmodifiable.
-
-## 1.7.0-beta.6
-
-### Added
-
-* `JsonSchemaValidationError` now reports `keywordLocation`, the Draft 2020-12
-  evaluation path from the root schema to the failing keyword. It includes each
-  `$ref` on the way, so failures under two applicators that share a definition
-  are distinguishable. `toMap()` includes it.
-
-### Changed
-
-* `safeParse` and `safeEncode` no longer rebuild the root error-context name on
-  every call. Ack computes it once per schema type, and skips it when the
-  caller passes `debugName`. A valid `Ack.string()` parse takes about 50 ns
-  instead of 360 ns on an AOT build.
-* Imported JSON Schema validation reuses the `pattern` regular expressions
-  compiled at import and allocates less per schema node. Error output does not
-  change.
-* Parsing with an imported JSON Schema checks that the input is JSON and copies
-  it in one walk, then validates the copy. A valid value is walked twice
-  instead of three times. The result is still a detached, recursively
-  unmodifiable value.
-
-### Fixed
-
-* An imported JSON Schema `uniqueItems` failure now reports the array as its
-  path, for example `#` instead of the later duplicate at `#/2`. Native
-  `Ack.list(...).unique()` and the JSON Schema output format use the same
-  location. `keyword` and `pointer` do not change.
-
-## 1.7.0-beta.5
+## 1.7.0
 
 ### Breaking
 
-* Strict JSON Schema import compiles `pattern` in ECMA-262 Unicode mode (the
-  `u` flag), as the JSON Schema Test Suite requires. `.` matches one code point
-  and `\p{...}` is a Unicode property escape. Patterns that are invalid in
-  Unicode mode now fail import with an `invalid_schema` diagnostic. For
-  example, write `-` instead of `\-` outside a character class.
-  `Ack.string().matches()` retains native Dart regex behavior; a native pattern
-  can behave differently or fail import after export to JSON Schema. Review
-  imported patterns when upgrading from stable 1.6.2 or earlier 1.7.0 betas,
-  including expressions that count UTF-16 code units or use identity escapes.
+* Remove `ack_annotations`; annotations now ship in `ack`:
+  * `package:ack/ack.dart` exports `@Schemable()` and core model annotations
+    (`AckField`, `Optional`, `Required`, `NotNull`, `AckCaseStyle`,
+    `AckUnknownPropertyPolicy`).
+  * `package:ack/annotations.dart` exports model and constraint annotations
+    (plus deprecated aliases).
+  * `package:ack/format_annotations.dart` exports string format annotations.
+* Rename `@Pattern` to `@Matches` (`Pattern` remains a deprecated alias in
+  `package:ack/annotations.dart`).
+* Remove the `json_annotation` dependency and `JsonKey` re-export from `ack`.
+* Compile imported JSON Schema `pattern` expressions in ECMA-262 Unicode mode
+  (`u`). Invalid Unicode-mode patterns (such as `\-` outside a character class)
+  now fail import with `invalid_schema`. Native `Ack.string().matches()` retains
+  Dart regex semantics.
 
 ### Added
 
-* Strict JSON Schema import now supports `contains` and `if`/`then`/`else`.
-  `minContains` and `maxContains` remain unsupported, because Draft-7 export
-  cannot represent them.
-* Failures from imported JSON Schema keyword evaluation now return a
-  `JsonSchemaValidationError`. Its `keyword`, `documentUri`, and `pointer`
-  identify the failing keyword in the source schema after `$ref` resolution.
-  Existing `SchemaValidationError` catches still work; consumers that require
-  an exact runtime type or serialized map shape should allow the subtype and
-  its three additional fields. Initial null-input and JSON-value checks retain
-  their existing Ack error types.
+* Add `@Schemable()` as the unified annotation for schema-first and class-first
+  code generation, `AckModelAdapter.modelSchema`, and `CodecSchema.canEncode`.
+* Expand `Ack.fromJsonSchema()` with:
+  * `contains`, `if`/`then`/`else`, and `multipleOf` (sharing exact decimal
+    division with native `.multipleOf()`).
+  * Built-in string formats (`date-time`, `date`, `email`, `uuid`, `uri`,
+    `ipv4`, `ipv6`) and numeric formats (`int32`, `int64`, `uint32`, `uint64`,
+    `float`, `double`).
+  * `x-*` vendor extension annotations (including `x-transformed`) and Draft-07
+    `$schema` URIs.
+* Add `JsonSchemaValidationError` (`keyword`, `keywordLocation`, `documentUri`,
+  `pointer`) for imported JSON Schema validation failures.
+
+### Changed
+
+* Speed up `safeParse`, `safeEncode`, `toJsonSchema()`, imported JSON Schema
+  compilation/validation, and `Ack.object()` / `Ack.list()` / `Ack.map()`
+  unmodifiable result views.
 
 ### Fixed
 
-* Imported JSON Schema error locations now percent-encode URI fragments,
-  preserving property names containing percent signs, spaces, `#`, or Unicode.
-
-## 1.7.0-beta.4
-
-### Added
-
-* Strict JSON Schema import now asserts the supported `date-time` format.
-  Other format labels remain unsupported and are reported at their schema
-  location. Parsing preserves the original timestamp string, including
-  announced leap seconds.
-
-### Fixed
-
-* Date-time string validation accepts lowercase `t` and `z` on announced leap
-  seconds, as it already did on ordinary RFC 3339 timestamps.
-
-## 1.7.0-beta.3
-
-### Breaking
-
-* The `ack_annotations` package is removed and its annotations ship in `ack`.
-  Remove `ack_annotations` from `pubspec.yaml`. `package:ack/ack.dart`
-  exports `@Schemable()` and the model annotations (`AckField`, `Optional`,
-  `Required`, `NotNull`, `AckCaseStyle`, `AckUnknownPropertyPolicy`, and the
-  deprecated `AckFieldPresence`). Replace
-  `package:ack_annotations/ack_annotations.dart` with
-  `package:ack/annotations.dart`, which exports the model annotations, the
-  constraints and the deprecated spellings, and
-  `package:ack_annotations/format_annotations.dart` with
-  `package:ack/format_annotations.dart`.
-* `@Pattern` is renamed `@Matches`, matching `Ack.string().matches(...)`.
-  `Pattern` remains a deprecated alias in `package:ack/annotations.dart` only.
-  Until 2.0.0, an unprefixed import of that library hides `dart:core`'s
-  `Pattern` in the file; import it `as ack`, or with `hide Pattern`, where the
-  file needs `dart:core`'s `Pattern`.
-* Names exported from `package:ack/ack.dart` or `package:ack/annotations.dart`
-  can clash with same-named classes from other libraries, such as
-  `package:uuid`'s `Uuid` or `package:meta`'s `Required`. Import
-  `package:ack/annotations.dart` with a prefix (`as ack`, then `@ack.Uuid()`),
-  or `hide` the name from one import.
-* `ack` no longer depends on `json_annotation` and no longer re-exports
-  `JsonKey`. To rename one field with `@JsonKey(name: ...)`, import
-  `package:json_annotation/json_annotation.dart` and add `json_annotation` to
-  the app's `dependencies`; `caseStyle` needs neither.
-  `AckModel.jsonSerializable` and `AckGeneratedJson.config` are removed.
-
-### Added
-
-* `@Schemable()` is the single code-generation annotation: on a top-level
-  schema it generates a model, and on a class it generates a schema.
-  `Schemable.generatedJson` marks generated schema-first models.
+* Accept lowercase `t` and `z` on announced leap seconds in RFC 3339 date-time
+  validation.
+* Percent-encode URI fragments in imported JSON Schema error locations and
+  report the array path on imported `uniqueItems` failures.
 
 ### Deprecated
 
-* `@AckInfer()` and `@AckModel()`; use `@Schemable()` with the same options.
-  They will be removed in 2.0.0.
-
-## 1.7.0-beta.2
-
-### Added
-
-* `AckModelAdapter.modelSchema` decodes a schema-first boundary value to its
-  generated model and encodes the model through the source schema.
-* `CodecSchema.canEncode` reports whether a codec has its own encoder: false
-  for a one-way `transform`, true for a codec built with an encoder. It does
-  not inspect the schemas a codec wraps.
+* Deprecate `@AckInfer()` and `@AckModel()` in favor of `@Schemable()`.
 
 ## 1.6.2
 

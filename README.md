@@ -217,7 +217,7 @@ field resolves to `Slot.schema`, a `List<Slot>` to `Ack.list(Slot.schema)`,
 and a generic `Command<Action>` to `Command.schema<Action>()`. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
-Upgrading from 1.7.0-beta.2: drop `ack_annotations`, import
+Upgrading from 1.6.x: drop `ack_annotations`, import
 `package:ack/ack.dart` for `@Schemable()`, and replace
 `package:ack_annotations/ack_annotations.dart` with
 `package:ack/annotations.dart` (and `.../format_annotations.dart` with
