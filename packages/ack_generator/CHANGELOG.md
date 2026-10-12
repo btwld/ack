@@ -37,6 +37,12 @@
   `ack_generator:ack_generator` compiles into `<name>.schema.g.dart` typed
   models or validated value-model libraries (`#167`).
 
+### Fixed
+
+* Preserve integral decimal length and item bounds in JSON Schema generation.
+  Use validated value models for Unicode regex patterns and named scalar unions
+  that the typed model generator cannot represent faithfully.
+
 ## 1.7.0-beta.7
 
 ### Changed

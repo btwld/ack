@@ -567,7 +567,7 @@ final class _Translator {
         _fail(pointer, 'A multi-type schema cannot also have constraints.');
         return null;
       }
-      final union = _scalarUnion(nonNull, '$pointer/type');
+      final union = _scalarUnion(nonNull, '$pointer/type', root: root);
       return union == null ? null : _Expr(describe(union), nullable: nullable);
     }
     final single = nonNull.single! as String;
@@ -692,11 +692,19 @@ final class _Translator {
       }
       types.add(branch['type']);
     }
-    final union = _scalarUnion(types, pointer);
+    final union = _scalarUnion(types, pointer, root: root);
     return union == null ? null : _Expr(describe(union), nullable: nullable);
   }
 
-  String? _scalarUnion(List<Object?> types, String pointer) {
+  String? _scalarUnion(
+    List<Object?> types,
+    String pointer, {
+    required bool root,
+  }) {
+    if (root) {
+      _fail(pointer, 'Named scalar unions require a validated value model.');
+      return null;
+    }
     const checks = {'string': 'String', 'number': 'num', 'boolean': 'bool'};
     final dartTypes = <String>[];
     for (final type in types) {
@@ -791,20 +799,34 @@ final class _Translator {
     return _Expr(describe('ack.Ack.literal(${dartStringLiteral(value)})'));
   }
 
+  int? _sizeBound(Map<String, Object?> node, String keyword, String pointer) {
+    final value = node[keyword];
+    if (value == null) return null;
+    // The importer gate has already checked that the bound is integral.
+    // Guard conversion as toInt() clamps values outside the integer range.
+    if (value is num && value.isFinite && value.toInt() == value) {
+      return value.toInt();
+    }
+    _fail(
+      '$pointer/$keyword',
+      'Bound cannot be represented as a Dart integer.',
+    );
+    return null;
+  }
+
   String? _string(Map<String, Object?> node, String pointer) {
     final buffer = StringBuffer('ack.Ack.string()');
-    if (node['minLength'] case final int n) buffer.write('.minLength($n)');
-    if (node['maxLength'] case final int n) buffer.write('.maxLength($n)');
-    if (node['pattern'] case final String pattern) {
-      if (RegExp(r'\\[pPu]\{').hasMatch(pattern)) {
-        _fail(
-          '$pointer/pattern',
-          r'Unicode-mode patterns (\p{…}, \P{…}, '
-              r'\u{…}) are not supported.',
-        );
-        return null;
-      }
-      buffer.write('.matches(${dartStringLiteral(pattern)})');
+    if (_sizeBound(node, 'minLength', pointer) case final int n) {
+      buffer.write('.minLength($n)');
+    }
+    if (_sizeBound(node, 'maxLength', pointer) case final int n) {
+      buffer.write('.maxLength($n)');
+    }
+    if (node.containsKey('pattern')) {
+      // matches() uses non-Unicode RegExp semantics, unlike the importer.
+      // Even patterns without Unicode escapes (for example ^.$) can differ.
+      _fail('$pointer/pattern', 'Patterns require Unicode-mode validation.');
+      return null;
     }
     return buffer.toString();
   }
@@ -871,8 +893,12 @@ final class _Translator {
       return null;
     }
     final buffer = StringBuffer('ack.Ack.list(${item.code})');
-    if (node['minItems'] case final int n) buffer.write('.minItems($n)');
-    if (node['maxItems'] case final int n) buffer.write('.maxItems($n)');
+    if (_sizeBound(node, 'minItems', pointer) case final n?) {
+      buffer.write('.minItems($n)');
+    }
+    if (_sizeBound(node, 'maxItems', pointer) case final n?) {
+      buffer.write('.maxItems($n)');
+    }
     if (node['uniqueItems'] == true) buffer.write('.unique()');
     return buffer.toString();
   }

@@ -66,9 +66,9 @@ void main() {
         {'type': 'string', 'minLength': 2, 'maxLength': 8},
         'ack.Ack.string().minLength(2).maxLength(8).optional()',
       ),
-      'an escaped pattern': (
-        {'type': 'string', 'pattern': r'^[A-Z]{2}-\d+$'},
-        r"ack.Ack.string().matches('^[A-Z]{2}-\\d+\$')",
+      'integral decimal string length bounds': (
+        {'type': 'string', 'minLength': 2.0, 'maxLength': 3e0},
+        'ack.Ack.string().minLength(2).maxLength(3).optional()',
       ),
       'integer bounds': (
         {'type': 'integer', 'minimum': 1, 'maximum': 9},
@@ -110,6 +110,15 @@ void main() {
           'uniqueItems': true,
         },
         'ack.Ack.list(ack.Ack.string()).minItems(1).maxItems(3).unique()',
+      ),
+      'integral decimal array bounds': (
+        {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'minItems': 1.0,
+          'maxItems': 2e0,
+        },
+        'ack.Ack.list(ack.Ack.string()).minItems(1).maxItems(2)',
       ),
       'anyOf with null': (
         {
@@ -312,6 +321,12 @@ void main() {
 
   group('Draft 2020-12 validated fallback', () {
     final examples = <String, Object?>{
+      'Unicode-sensitive dot pattern': {'type': 'string', 'pattern': r'^.$'},
+      'Unicode-sensitive character class': {
+        'type': 'string',
+        'pattern': r'^[😀]{2}$',
+      },
+      'unrepresentable size bound': {'type': 'string', 'minLength': 1e30},
       'composition': {
         'allOf': [
           {'type': 'string'},
@@ -355,6 +370,27 @@ void main() {
         expect(library.source, contains('Ack.fromJsonSchema'));
         expect(library.source, isNot(contains('@ack.Schemable')));
         expect(library.source, isNot(contains("part 'model.schema.g.dart'")));
+      });
+    }
+
+    for (final schema in [
+      {
+        'type': ['string', 'number'],
+      },
+      {
+        'anyOf': [
+          {'type': 'string'},
+          {'type': 'number'},
+        ],
+      },
+    ]) {
+      test('named scalar union falls back: $schema', () {
+        final library = _generate({
+          r'$defs': {'Choice': schema},
+        });
+        expect(library.source, contains('final class Choice'));
+        expect(library.source, contains('Ack.fromJsonSchema'));
+        expect(library.source, isNot(contains('@ack.Schemable')));
       });
     }
 

@@ -3,49 +3,86 @@
 // ignore_for_file: type=lint
 // coverage:ignore-file
 //
-// Generated from mapping.schema.json by ack_generator:ack_json_schema.
+// Draft 2020-12 value models retain source-schema validation.
+// Complex shapes use Object? values, not inferred typed fields.
+
+import 'dart:convert';
 
 import 'package:ack/ack.dart' as ack;
 
-@ack.Schemable(name: 'ListingAddress')
-final listingAddressSchema = ack.Ack.object({'city': ack.Ack.string()});
+final Object _jsonSchemaDocument = jsonDecode(
+  '{"\$schema":"https://json-schema.org/draft/2020-12/schema","\$defs":{"Listing":{"type":"object","description":"A listing.\\nWith a second line.","properties":{"key":{"type":"string","minLength":2,"maxLength":8,"description":"The key, with \'quotes\', \$dollars, and \\\\backslashes\\\\."},"code":{"type":"string","pattern":"^[A-Z]{2}-\\\\d+\$","examples":["AB-12"]},"rooms":{"type":"integer","minimum":1,"maximum":9},"floors":{"type":"integer","exclusiveMinimum":0,"exclusiveMaximum":4.5},"price":{"type":"number","minimum":0,"exclusiveMaximum":1000000.5},"active":{"type":"boolean"},"status":{"enum":["Active","Closed","Active",null]},"kind":{"const":"residential"},"tags":{"type":"array","items":{"type":"string"},"minItems":1,"maxItems":3,"uniqueItems":true},"notes":{"anyOf":[{"type":"string"},{"type":"null"}]},"nickname":{"type":["string","null"]},"streetNumber":{"anyOf":[{"anyOf":[{"type":"string"},{"type":"number"}]},{"type":"null"}]},"extra":{},"labels":{"type":"object","propertyNames":{"type":"string"},"additionalProperties":{"type":"integer"}},"meta":{"type":"object","additionalProperties":true},"address":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"],"additionalProperties":false},"photo":{"\$ref":"#/\$defs/Photo"},"cover":{"anyOf":[{"\$ref":"#/\$defs/Photo"},{"type":"null"}]},"photos":{"type":"array","items":{"\$ref":"#/\$defs/Photo"}}},"required":["key","rooms","active"],"additionalProperties":false},"Photo":{"type":"object","properties":{"url":{"type":"string"},"width":{"type":"integer"}},"required":["url"]}}}',
+) as Object;
+final Map<Uri, Object> _jsonSchemaDocuments = {
+  Uri.parse('package:ack_generator_fixtures/mapping.schema.json'):
+      _jsonSchemaDocument,
+};
 
-@ack.Schemable(name: 'Listing')
-final listingSchema = ack.Ack.object({
-  'key': ack.Ack.string()
-      .minLength(2)
-      .maxLength(8)
-      .describe('The key, with \'quotes\', \$dollars, and \\backslashes\\.'),
-  'code': ack.Ack.string().matches('^[A-Z]{2}-\\d+\$').optional(),
-  'rooms': ack.Ack.integer().min(1).max(9),
-  'floors': ack.Ack.integer().greaterThan(0).max(4).optional(),
-  'price': ack.Ack.number().min(0).lessThan(1000000.5).optional(),
-  'active': ack.Ack.boolean(),
-  'status': ack.Ack.enumString(['Active', 'Closed']).nullable().optional(),
-  'kind': ack.Ack.literal('residential').optional(),
-  'tags': ack.Ack.list(
-    ack.Ack.string(),
-  ).minItems(1).maxItems(3).unique().optional(),
-  'notes': ack.Ack.string().nullable().optional(),
-  'nickname': ack.Ack.string().nullable().optional(),
-  'streetNumber': ack.Ack.any()
-      .refine(
-        (value) => value is String || value is num,
-        message: 'Expected a string or a number.',
-      )
-      .nullable()
-      .optional(),
-  'extra': ack.Ack.any().nullable().optional(),
-  'labels': ack.Ack.map(ack.Ack.integer()).optional(),
-  'meta': ack.Ack.map(ack.Ack.any().nullable()).optional(),
-  'address': listingAddressSchema.optional(),
-  'photo': photoSchema.optional(),
-  'cover': photoSchema.nullable().optional(),
-  'photos': ack.Ack.list(photoSchema).optional(),
-}).describe('A listing.\u000aWith a second line.');
+final listingSchema = ack.Ack.fromJsonSchema(
+  {
+    r'$ref':
+        'package:ack_generator_fixtures/mapping.schema.json#/\$defs/Listing',
+  },
+  baseUri: Uri.parse(
+    'package:ack_generator_fixtures/__ack_json_schema_generated__.json',
+  ),
+  documents: _jsonSchemaDocuments,
+);
 
-@ack.Schemable(name: 'Photo')
-final photoSchema = ack.Ack.object({
-  'url': ack.Ack.string(),
-  'width': ack.Ack.integer().optional(),
-}, additionalProperties: true);
+/// A validated Draft 2020-12 value model.
+final class Listing {
+  const Listing._(this.value);
+
+  /// The parsed, immutable JSON value.
+  final Object? value;
+
+  /// The exact source-schema validator for this model.
+  static ack.AckSchema<Object, Object> get schema => listingSchema;
+
+  static Listing parse(Object? value) => safeParse(value).getOrThrow()!;
+
+  static ack.SchemaResult<Listing> safeParse(Object? value) =>
+      schema.safeParse(value).map((parsed) => Listing._(parsed));
+
+  static Object? encode(Listing model) => safeEncode(model).getOrThrow();
+
+  static ack.SchemaResult<Object> safeEncode(Listing model) =>
+      schema.safeEncode(model.value);
+
+  Object? toJson() => encode(this);
+
+  static Map<String, Object?> toJsonSchema() => schema.toJsonSchema();
+}
+
+final photoSchema = ack.Ack.fromJsonSchema(
+  {r'$ref': 'package:ack_generator_fixtures/mapping.schema.json#/\$defs/Photo'},
+  baseUri: Uri.parse(
+    'package:ack_generator_fixtures/__ack_json_schema_generated__.json',
+  ),
+  documents: _jsonSchemaDocuments,
+);
+
+/// A validated Draft 2020-12 value model.
+final class Photo {
+  const Photo._(this.value);
+
+  /// The parsed, immutable JSON value.
+  final Object? value;
+
+  /// The exact source-schema validator for this model.
+  static ack.AckSchema<Object, Object> get schema => photoSchema;
+
+  static Photo parse(Object? value) => safeParse(value).getOrThrow()!;
+
+  static ack.SchemaResult<Photo> safeParse(Object? value) =>
+      schema.safeParse(value).map((parsed) => Photo._(parsed));
+
+  static Object? encode(Photo model) => safeEncode(model).getOrThrow();
+
+  static ack.SchemaResult<Object> safeEncode(Photo model) =>
+      schema.safeEncode(model.value);
+
+  Object? toJson() => encode(this);
+
+  static Map<String, Object?> toJsonSchema() => schema.toJsonSchema();
+}

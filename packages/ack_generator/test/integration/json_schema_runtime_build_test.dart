@@ -1,3 +1,7 @@
+@Tags(['integration'])
+library;
+
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -171,6 +175,83 @@ void main() {
     expect(External.safeParse({'flag': true, 'new': 1}).isOk, isTrue);
     expect(External.safeParse(1).isFail, isTrue);
     expect(Root.encode(Root.parse('a@example.test')), 'a@example.test');
+  });
+}
+''');
+
+        final regressions = <String, Map<String, Object?>>{
+          'bounds': {
+            'Bounded': {
+              'type': 'object',
+              'properties': {
+                'name': {'type': 'string', 'minLength': 2.0, 'maxLength': 3e0},
+                'items': {
+                  'type': 'array',
+                  'items': {'type': 'string'},
+                  'minItems': 1.0,
+                  'maxItems': 2e0,
+                },
+              },
+              'required': ['name', 'items'],
+            },
+          },
+          'patterns': {
+            'Glyph': {'type': 'string', 'pattern': r'^.$'},
+            'Pair': {'type': 'string', 'pattern': r'^[😀]{2}$'},
+          },
+          'types': {
+            'Choice': {
+              'type': ['string', 'number'],
+            },
+          },
+          'anyof': {
+            'Choice': {
+              'anyOf': [
+                {'type': 'string'},
+                {'type': 'number'},
+              ],
+            },
+          },
+        };
+        for (final entry in regressions.entries) {
+          File(
+            p.join(project.path, 'lib', '${entry.key}.schema.json'),
+          ).writeAsStringSync(jsonEncode({r'$defs': entry.value}));
+        }
+        File(
+          p.join(project.path, 'test', 'regressions_test.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack_json_schema_runtime/bounds.schema.dart';
+import 'package:ack_json_schema_runtime/patterns.schema.dart';
+import 'package:ack_json_schema_runtime/types.schema.dart' as types;
+import 'package:ack_json_schema_runtime/anyof.schema.dart' as anyof;
+import 'package:test/test.dart';
+
+void main() {
+  test('integral decimal bounds preserve validation', () {
+    expect(Bounded.safeParse({'name': 'ab', 'items': ['x']}).isOk, isTrue);
+    for (final name in ['a', 'abcd']) {
+      expect(Bounded.safeParse({'name': name, 'items': ['x']}).isFail, isTrue);
+    }
+    for (final items in [<String>[], ['x', 'y', 'z']]) {
+      expect(Bounded.safeParse({'name': 'ab', 'items': items}).isFail, isTrue);
+    }
+  });
+  test('patterns preserve Unicode code point semantics', () {
+    expect(Glyph.safeParse('😀').isOk, isTrue);
+    expect(Glyph.safeParse('ab').isFail, isTrue);
+    expect(Pair.safeParse('😀😀').isOk, isTrue);
+    expect(Pair.safeParse('😀').isFail, isTrue);
+  });
+  test('named scalar unions build and validate', () {
+    for (final value in ['ok', 1, 1.5]) {
+      expect(types.Choice.safeParse(value).isOk, isTrue);
+      expect(anyof.Choice.safeParse(value).isOk, isTrue);
+    }
+    for (final value in [null, true, <String>[]]) {
+      expect(types.Choice.safeParse(value).isFail, isTrue);
+      expect(anyof.Choice.safeParse(value).isFail, isTrue);
+    }
   });
 }
 ''');

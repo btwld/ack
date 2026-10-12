@@ -37,6 +37,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     return ImportedJsonSchema._(
       root,
       externalRoots: externalRoots,
+      indexedNodes: compiler.locations.values.toList(growable: false),
       assertFormats: assertFormats,
     );
   }
@@ -44,6 +45,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   ImportedJsonSchema._(
     this._root, {
     required List<_ImportedNode> externalRoots,
+    required List<_ImportedNode> indexedNodes,
     required this.assertFormats,
     bool? isNullable,
     super.isOptional,
@@ -51,6 +53,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     super.constraints,
     super.refinements,
   }) : _externalRoots = externalRoots,
+       _indexedNodes = indexedNodes,
        super(
          isNullable: isNullable ?? _checkImportedNode(_root, null) == null,
          description: description ?? _root.keywords['description'] as String?,
@@ -58,6 +61,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
   final _ImportedNode _root;
   final List<_ImportedNode> _externalRoots;
+  final List<_ImportedNode> _indexedNodes;
   final bool assertFormats;
 
   Object get rawSchema => _root.source;
@@ -91,9 +95,68 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   /// Exports the original resources with 2020-12 identity and reference
   /// semantics intact. Supplied documents are embedded as distinct resources.
   @internal
-  Map<String, Object?> export2020Document({required int importIndex}) {
+  Map<String, Object?> export2020Document({
+    required int importIndex,
+    bool includeFluentNullability = true,
+    void Function(Map<String, Object?>)? onSchema,
+  }) {
+    Object? copyJson(Object? value) => switch (value) {
+      final Map<String, Object?> map => map.map(
+        (key, value) => MapEntry(key, copyJson(value)),
+      ),
+      final List list => list.map(copyJson).toList(),
+      _ => value,
+    };
+
     Map<String, Object?> resource(_ImportedNode node, {Uri? syntheticId}) {
-      final source = cloneDefault(node.source);
+      final source = copyJson(node.source);
+      // Edit only indexed schema locations, never annotation payloads. This
+      // includes explicitly referenced schemas in nonstandard containers.
+      for (final indexed in _indexedNodes) {
+        if (indexed.documentUri != node.documentUri || source is! Map) continue;
+        Object? exported = source;
+        for (final token in indexed.pointer.substring(1).split('/').skip(1)) {
+          final key = token.replaceAll('~1', '/').replaceAll('~0', '~');
+          exported = switch (exported) {
+            final Map map => map[key],
+            final List list => list[int.parse(key)],
+            _ => null,
+          };
+        }
+        if (exported is! Map<String, Object?>) continue;
+        onSchema?.call(exported);
+        if (assertFormats &&
+            indexed.dialectUri == _JsonSchemaCompiler.standardDialect &&
+            (identical(indexed, node) || exported.containsKey(r'$schema'))) {
+          exported[r'$schema'] = _assertionDialect.toString();
+        }
+        // A retrieval URI is an address for the original document, not a
+        // resource that can be replaced by a $ref-only alias. Resolve it to
+        // its canonical ID while retaining the encoded fragment.
+        for (final keyword in [r'$ref', r'$dynamicRef', r'$schema']) {
+          final value = exported[keyword];
+          if (value is! String) continue;
+          final Uri resolved;
+          try {
+            resolved = indexed.baseUri.resolve(value);
+          } on FormatException {
+            // Unreachable references remain unchanged in the source; the
+            // compiler already rejects malformed references that are evaluated.
+            continue;
+          }
+          for (final external in _externalRoots) {
+            if (external.documentUri != external.baseUri &&
+                resolved.removeFragment() == external.documentUri) {
+              exported[keyword] = external.baseUri
+                  .replace(
+                    fragment: resolved.hasFragment ? resolved.fragment : null,
+                  )
+                  .toString();
+              break;
+            }
+          }
+        }
+      }
       return {
         if (source is Map<String, Object?>) ...source,
         r'$id': (syntheticId ?? node.baseUri).toString(),
@@ -120,22 +183,12 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         ...?root[r'$defs'] as Map<String, Object?>?,
       };
       var index = 0;
-      var aliasIndex = 0;
       for (final external in _externalRoots) {
         while (definitions.containsKey('_ack_document_$index')) {
           index++;
         }
         final name = '_ack_document_${index++}';
         definitions[name] = resource(external);
-        if (external.documentUri != external.baseUri) {
-          while (definitions.containsKey('_ack_retrieval_$aliasIndex')) {
-            aliasIndex++;
-          }
-          definitions['_ack_retrieval_${aliasIndex++}'] = {
-            r'$id': external.documentUri.toString(),
-            r'$ref': external.baseUri.toString(),
-          };
-        }
       }
       if (assertFormats) {
         var name = '_ack_format_assertion_dialect';
@@ -166,7 +219,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
       }
       root[r'$defs'] = definitions;
     }
-    if (!isNullable && sourceAllowsNull) {
+    if (includeFluentNullability && !isNullable && sourceAllowsNull) {
       root['allOf'] = [
         ...?root['allOf'] as List<Object?>?,
         const {
@@ -263,6 +316,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   }) => ImportedJsonSchema._(
     _root,
     externalRoots: _externalRoots,
+    indexedNodes: _indexedNodes,
     assertFormats: assertFormats,
     isNullable: isNullable ?? this.isNullable,
     isOptional: isOptional ?? this.isOptional,

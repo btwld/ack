@@ -103,6 +103,29 @@ final class _ImportedNode {
   /// The 1.x Draft-7 representation of an imported node. Newer 2020-12
   /// assertions that cannot be lowered fail when `toJsonSchemaDraft7()` is used.
   Map<String, Object?> renderLegacy(String Function(_ImportedNode) refOf) {
+    // Draft-7 silently ignores these keywords (and applies `items` to the
+    // entire array instead of only the suffix after `prefixItems`). Until a
+    // semantics-preserving lowering exists, fail instead of changing which
+    // instances the exported schema accepts.
+    const unsupportedKeywords = {
+      'prefixItems',
+      'dependentRequired',
+      'dependentSchemas',
+      'unevaluatedProperties',
+      'unevaluatedItems',
+      'minContains',
+      'maxContains',
+    };
+    if (source case final Map<String, Object?> document) {
+      for (final keyword in unsupportedKeywords) {
+        if (document.containsKey(keyword)) {
+          throw UnsupportedError(
+            'Cannot lower "$keyword" at ${_keywordPointer(this, keyword)} '
+            'with toJsonSchemaDraft7(); use toJsonSchema() for 2020-12 semantics.',
+          );
+        }
+      }
+    }
     if (dynamicReference != null ||
         dynamicAnchorName != null ||
         (source is Map<String, Object?> &&

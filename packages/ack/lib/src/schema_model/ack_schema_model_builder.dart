@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
@@ -7,6 +8,7 @@ import '../constraints/datetime_constraint.dart';
 import '../context.dart';
 import '../json_schema/json_schema_utils.dart';
 import '../schemas/schema.dart';
+import '../utils/json_utils.dart';
 import 'ack_schema_model.dart';
 import 'ack_schema_model_warning.dart';
 
@@ -44,6 +46,9 @@ final class _SchemaModelBuilder {
   // Lazy-target identity is tracked separately from emitted definitions.
   final _lazyTargets = <String, Object>{};
   var _importCount = 0;
+  var _composingImports = false;
+  final _importedResources = <Uri, Map<String, Object?>>{};
+  final _resourceLocations = <Uri, Uri>{};
 
   Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
     final schemaDefinitions = <String, Object?>{};
@@ -172,6 +177,27 @@ final class _SchemaModelBuilder {
   AckSchemaModel _imported(ImportedJsonSchema schema) {
     final importIndex = _importCount++;
     if (preserveImportedDialect) {
+      if (_composingImports) {
+        final indexedSchemas = HashSet<Map<String, Object?>>.identity();
+        final document = schema.export2020Document(
+          importIndex: importIndex,
+          includeFluentNullability: false,
+          onSchema: indexedSchemas.add,
+        );
+        return AckAllOfSchemaModel(
+          schemas: [
+            AckRawSchemaModel(
+              schema: _shareImportedResources(document, indexedSchemas),
+            ),
+          ],
+          description: schema.description,
+          nullable: schema.isNullable,
+          extensions: {
+            if (!schema.isNullable && schema.sourceAllowsNull)
+              'not': const {'type': 'null'},
+          },
+        );
+      }
       return AckRawSchemaModel(
         schema: schema.export2020Document(importIndex: importIndex),
         description: schema.description,
@@ -200,6 +226,106 @@ final class _SchemaModelBuilder {
       },
       nullable: schema.isNullable,
     );
+  }
+
+  // Resource identity belongs to the imported document, not an occurrence's
+  // fluent constraints. Keep one copy and reference it from later occurrences.
+  Map<String, Object?> _shareImportedResources(
+    Map<String, Object?> document,
+    Set<Map<String, Object?>> indexedSchemas,
+  ) {
+    final locations = <Uri, Uri>{};
+    Uri location(Uri base, List<String> path) => path.isEmpty
+        ? base.removeFragment()
+        : base.replace(
+            fragment: '/${path.map(escapeJsonPointerToken).join('/')}',
+          );
+
+    Object? index(Object? value, Uri base, List<(Uri, List<String>)> scopes) {
+      final id = value is Map<String, Object?> ? value[r'$id'] : null;
+      if (id is String) {
+        base = base.resolve(id);
+        final address = scopes.isEmpty
+            ? base
+            : location(scopes.first.$1, scopes.first.$2);
+        _resourceLocations.putIfAbsent(base, () => address);
+        scopes = [...scopes, (base, <String>[])];
+      }
+      for (final (uri, path) in scopes) {
+        final (resource, relativePath) = scopes.last;
+        locations[location(uri, path)] = location(resource, relativePath);
+      }
+      if (value is! Map<String, Object?>) return value;
+      return _mapImportedChildren(
+        value,
+        (child, path) => index(child, base, [
+          for (final (uri, prefix) in scopes) (uri, [...prefix, ...path]),
+        ]),
+        indexedSchemas,
+      );
+    }
+
+    final base = Uri.parse(document[r'$id']! as String);
+    index(document, base, []);
+    Object? normalize(Object? value, Uri base) {
+      if (value is! Map<String, Object?>) return value;
+      final id = value[r'$id'];
+      if (id is String) base = base.resolve(id);
+      final result = _mapImportedChildren(
+        value,
+        (child, _) => normalize(child, base),
+        indexedSchemas,
+      );
+      if (indexedSchemas.contains(value)) indexedSchemas.add(result);
+      if (id is String) result[r'$id'] = base.toString();
+      for (final keyword in [r'$ref', r'$dynamicRef']) {
+        final ref = result[keyword];
+        if (ref is String) {
+          Uri resolved;
+          try {
+            resolved = base.resolve(ref);
+          } on FormatException {
+            // Dormant malformed references are not evaluated by the importer.
+            continue;
+          }
+          final canonical = locations[resolved] ?? resolved;
+          final address = _resourceLocations[canonical.removeFragment()];
+          if (address != null &&
+              (canonical.fragment.isEmpty ||
+                  canonical.fragment.startsWith('/'))) {
+            result[keyword] = address
+                .replace(fragment: '${address.fragment}${canonical.fragment}')
+                .toString();
+          } else {
+            result[keyword] = canonical.toString();
+          }
+        }
+      }
+      return result;
+    }
+
+    Object? share(Object? value) {
+      if (value is! Map<String, Object?>) return value;
+      final id = value[r'$id'];
+      if (id is String) {
+        final uri = Uri.parse(id);
+        final existing = _importedResources[uri];
+        if (existing != null) {
+          if (!_deepEquality.equals(existing, value)) {
+            throw ArgumentError('Conflicting imported schema resource "$uri".');
+          }
+          return <String, Object?>{r'$ref': _resourceLocations[uri].toString()};
+        }
+        _importedResources[uri] = value;
+      }
+      return _mapImportedChildren(
+        value,
+        (child, _) => share(child),
+        indexedSchemas,
+      );
+    }
+
+    return share(normalize(document, base))! as Map<String, Object?>;
   }
 
   AckSchemaModel _string(StringSchema schema) {
@@ -426,12 +552,25 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel build(AckSchema<dynamic, dynamic> schema) {
+    var unwrapped = schema;
+    while (unwrapped is WrapperSchema) {
+      unwrapped = unwrapped.inner;
+    }
+    _composingImports = unwrapped is! ImportedJsonSchema;
     final root = _build(schema);
-    if (_definitions.isEmpty) return root;
+    final needs2020Dialect =
+        preserveImportedDialect &&
+        _importCount > 0 &&
+        root is! AckRawSchemaModel &&
+        !root.extensions.containsKey(r'$schema');
+    if (_definitions.isEmpty && !needs2020Dialect) return root;
 
     return root.withExtensions({
+      if (needs2020Dialect)
+        r'$schema': 'https://json-schema.org/draft/2020-12/schema',
       ...root.extensions,
-      'definitions': _mergeRootDefinitions(root.extensions['definitions']),
+      if (_definitions.isNotEmpty)
+        'definitions': _mergeRootDefinitions(root.extensions['definitions']),
     });
   }
 }
@@ -586,4 +725,67 @@ Object? _jsonRoundTripOrNull(Object? value) {
   } catch (_) {
     return null;
   }
+}
+
+// Only schema-bearing keywords contain resource identities. Values of const,
+// default, examples, and unknown annotations remain ordinary instance data.
+Map<String, Object?> _mapImportedChildren(
+  Map<String, Object?> schema,
+  Object? Function(Object?, List<String>) visit,
+  Set<Map<String, Object?>> indexedSchemas,
+) {
+  Object? visitIndexed(Object? value, List<String> path) {
+    if (value is Map<String, Object?>) {
+      if (indexedSchemas.contains(value)) return visit(value, path);
+      return {
+        for (final entry in value.entries)
+          entry.key: visitIndexed(entry.value, [...path, entry.key]),
+      };
+    }
+    if (value is List) {
+      return [
+        for (final (index, child) in value.indexed)
+          visitIndexed(child, [...path, '$index']),
+      ];
+    }
+    return value;
+  }
+
+  const maps = {
+    r'$defs',
+    'definitions',
+    'properties',
+    'patternProperties',
+    'dependentSchemas',
+  };
+  const children = {
+    'items',
+    'additionalProperties',
+    'not',
+    'contains',
+    'propertyNames',
+    'if',
+    'then',
+    'else',
+    'unevaluatedProperties',
+    'unevaluatedItems',
+  };
+  const lists = {'allOf', 'anyOf', 'oneOf', 'prefixItems'};
+  return {
+    for (final entry in schema.entries)
+      entry.key: maps.contains(entry.key) && entry.value is Map<String, Object?>
+          ? <String, Object?>{
+              for (final child
+                  in (entry.value! as Map<String, Object?>).entries)
+                child.key: visit(child.value, [entry.key, child.key]),
+            }
+          : children.contains(entry.key)
+          ? visit(entry.value, [entry.key])
+          : lists.contains(entry.key) && entry.value is List
+          ? [
+              for (final (index, child) in (entry.value! as List).indexed)
+                visit(child, [entry.key, '$index']),
+            ]
+          : visitIndexed(entry.value, [entry.key]),
+  };
 }

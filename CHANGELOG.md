@@ -95,6 +95,19 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   `<name>.schema.g.dart` typed or value-model libraries (and
   `generateAckSchemaLibrary` is available for programmatic generation).
 
+### Fixed
+
+* Explicit Draft-7 export (`toJsonSchemaDraft7()` / `toSchemaModelDraft7()`)
+  rejects unsupported Draft 2020-12 assertions rather than emitting keywords
+  that Draft-7 validators ignore.
+* Imported schema exports preserve JSON Pointer targets through retrieval URI
+  aliases and opt-in format assertions in nested resources.
+* Composed imports share identical identified resources, retain occurrence-level
+  nullability and constraints, and reject conflicting resource definitions.
+* Preserve integral decimal length and item bounds in JSON Schema generation, and
+  use validated value models for Unicode regex patterns and named scalar unions
+  that the typed model generator cannot represent faithfully.
+
 ## 1.7.0-beta.7
 
 * Strict JSON Schema import (`Ack.fromJsonSchema()`) now supports `multipleOf`
