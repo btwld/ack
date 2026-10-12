@@ -903,8 +903,32 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     return _inference.applyDescription(
       schema,
       target,
-      sourceComment: field.documentationComment,
+      sourceComment: _fieldDocumentationComment(field, parameter),
     );
+  }
+
+  String? _fieldDocumentationComment(
+    FieldElement field,
+    FormalParameterElement? parameter,
+  ) {
+    final direct =
+        field.documentationComment ?? parameter?.documentationComment;
+    if (direct != null) return direct;
+    final resolved = inputResolved;
+    if (resolved == null) return null;
+    for (final element in [field, if (parameter != null) parameter]) {
+      var node = declarationNode(resolved, element);
+      if (node is DefaultFormalParameter) {
+        node = node.parameter;
+      }
+      if (node is NormalFormalParameter) {
+        final comment = node.documentationComment;
+        if (comment != null && comment.tokens.isNotEmpty) {
+          return comment.tokens.map((token) => token.lexeme).join('\n');
+        }
+      }
+    }
+    return null;
   }
 
   DartObject? _firstAnnotation(

@@ -1,5 +1,6 @@
 import 'package:ack_generator/src/builder.dart';
 import 'package:build/build.dart';
+import 'package:build/experiments.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
@@ -168,6 +169,51 @@ final class Documented with _\$DocumentedAck {
       },
     );
   });
+
+  test(
+    'primary constructor declaring parameters support @description and @Validate',
+    () async {
+      await withEnabledExperiments(
+        () => _build(
+          {
+            'primary_doc.dart':
+                '''
+// @dart=3.11
+$_imports
+part 'primary_doc.g.dart';
+
+/// @description A task item.
+@Schemable()
+final class const PrimaryTask({
+  /// @description The item title.
+  @Validate.minLength(1)
+  required final String title,
+
+  /// @description The category id.
+  @Validate.minLength(1)
+  final String category = 'general',
+}) with _\$PrimaryTaskAck {
+  static final schema = _primaryTaskSchema;
+}
+''',
+          },
+          outputs: {
+            'test_pkg|lib/primary_doc.g.dart': decodedMatches(
+              allOf(
+                _containsCode(
+                  "'title': Ack.string().minLength(1).describe('The item title.')",
+                ),
+                _containsCode(
+                  "'category': Ack.string().minLength(1).describe('The category id.').withDefault('general')",
+                ),
+              ),
+            ),
+          },
+        ),
+        const ['primary-constructors'],
+      );
+    },
+  );
 
   test('description tags describe the object and its codec', () async {
     const task = r"'A task the person\'s \$team can complete.'";
