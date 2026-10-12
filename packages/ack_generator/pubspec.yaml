@@ -15,7 +15,7 @@ environment:
 
 dependencies:
   # Core code generation dependencies
-  analyzer: ">=10.0.0 <11.0.0"
+  analyzer: ">=10.0.0 <15.0.0"
   build: ^4.0.0
   source_gen: ^4.2.4
   code_builder: ^4.10.0
