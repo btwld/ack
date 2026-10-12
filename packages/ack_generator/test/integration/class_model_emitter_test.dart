@@ -178,7 +178,7 @@ final class Documented with _\$DocumentedAck {
           {
             'primary_doc.dart':
                 '''
-// @dart=3.11
+// @dart=3.13
 $_imports
 part 'primary_doc.g.dart';
 
