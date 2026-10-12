@@ -778,12 +778,12 @@ final class CustomSchemaResolver {
     AstNode? node = _base.declarationNode(resolved, field);
     while (node != null &&
         node is! FieldDeclaration &&
-        node is! NormalFormalParameter) {
+        node is! FormalParameter) {
       node = node.parent;
     }
     final annotation = switch (node) {
       FieldDeclaration() => node.fields.type,
-      SimpleFormalParameter() => node.type,
+      RegularFormalParameter() => node.type,
       FieldFormalParameter() => node.type,
       SuperFormalParameter() => node.type,
       _ => null,

@@ -917,11 +917,8 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     final resolved = inputResolved;
     if (resolved == null) return null;
     for (final element in [field, if (parameter != null) parameter]) {
-      var node = declarationNode(resolved, element);
-      if (node is DefaultFormalParameter) {
-        node = node.parameter;
-      }
-      if (node is NormalFormalParameter) {
+      final node = declarationNode(resolved, element);
+      if (node is FormalParameter) {
         final comment = node.documentationComment;
         if (comment != null && comment.tokens.isNotEmpty) {
           return comment.tokens.map((token) => token.lexeme).join('\n');

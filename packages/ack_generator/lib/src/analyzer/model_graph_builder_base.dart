@@ -847,15 +847,16 @@ abstract base class ModelGraphBuilderBase {
   }
 
   /// Normalizes Analyzer argument nodes into plain expressions.
-  List<Expression> argumentExpressions(ArgumentList argumentList) =>
-      argumentList.arguments.map(argumentExpression).toList(growable: false);
+  List<Expression> argumentExpressions(ArgumentList argumentList) => [
+    for (final argument in argumentList.arguments) argument.argumentExpression,
+  ];
 
-  Expression argumentExpression(Expression argument) =>
-      argument is NamedExpression ? argument.expression : argument;
+  Expression argumentExpression(Argument argument) =>
+      argument.argumentExpression;
 
-  ({String name, Expression expression})? namedArgument(Expression argument) =>
-      argument is NamedExpression
-      ? (name: argument.name.label.name, expression: argument.expression)
+  ({String name, Expression expression})? namedArgument(Argument argument) =>
+      argument is NamedArgument
+      ? (name: argument.name.lexeme, expression: argument.argumentExpression)
       : null;
 
   bool? constantBool(Expression expression) {
