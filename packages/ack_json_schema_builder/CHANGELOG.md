@@ -16,55 +16,16 @@
 * Add `assertFormats` parameter to `toAckSchema()` and add
   `toJsonSchemaBuilderDraft7()` on `AckSchema` (`#171`).
 
-## 1.7.0-beta.7
+## 1.7.0
 
 ### Changed
 
-* When paired with `ack` 1.7.0-beta.7 or later, imported builder schemas inherit
-  `multipleOf` validation, built-in string and numeric `format` assertions,
-  `x-*` vendor extension support, and Draft-07 `$schema` URI support. The
-  bridge's public API and compatible dependency minimum are unchanged.
-
-## 1.7.0-beta.6
-
-### Changed
-
-* When paired with `ack` 1.7.0-beta.6 or later, imported builder schemas report
-  `keywordLocation` on validation errors and report `uniqueItems` failures at
-  the array. The bridge's public API and compatible dependency minimum are
-  unchanged.
-
-## 1.7.0-beta.5
-
-### Changed
-
-* When paired with `ack` 1.7.0-beta.5 or later, imported builder schemas inherit
-  `contains` and conditional support, structured keyword errors, and Unicode
-  regex semantics. Review patterns when upgrading; see the Ack beta.5 migration
-  notes. The bridge's public API and compatible dependency minimum are unchanged.
-
-## 1.7.0-beta.4
-
-### Changed
-
-* When paired with `ack` 1.7.0-beta.4 or later, builder models with
-  `format: date-time` validate timestamps on import. The bridge's public API
-  and compatible `ack` dependency minimum are unchanged.
-
-## 1.7.0-beta.3
-
-### Changed
-
-* Align with the coordinated Ack 1.7.0-beta.3. This package has no source or
-  public API changes from 1.7.0-beta.2; compatible dependency minimums are
-  preserved.
-
-## 1.7.0-beta.2
-
-### Changed
-
-* Align with the coordinated Ack 1.7.0 beta. This package has no source or
-  public API changes from 1.6.2; compatible dependency minimums are preserved.
+* Align with the coordinated Ack 1.7.0 release (`ack: ^1.6.0` minimum
+  preserved; no source or public API changes from 1.6.2).
+* When paired with `ack` 1.7.0, imported builder schemas inherit `contains`,
+  `if`/`then`/`else`, `multipleOf`, built-in `format` assertions, `x-*`
+  extensions, Draft-07 `$schema` URIs, `JsonSchemaValidationError` diagnostics,
+  and ECMA-262 Unicode `pattern` semantics.
 
 ## 1.6.2
 

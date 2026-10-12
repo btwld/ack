@@ -43,139 +43,47 @@
   Use validated value models for Unicode regex patterns and named scalar unions
   that the typed model generator cannot represent faithfully.
 
-## 1.7.0-beta.7
-
-### Changed
-
-* Align with coordinated Ack 1.7.0-beta.7. This package has no source or
-  public API changes from beta.6; its compatible dependency minimum is unchanged.
-
-## 1.7.0-beta.6
-
-### Changed
-
-* Align with coordinated Ack 1.7.0-beta.6. This package has no source or
-  public API changes from beta.5; its compatible dependency minimum is unchanged.
-
-## 1.7.0-beta.5
-
-### Changed
-
-* Align with coordinated Ack 1.7.0-beta.5. This package has no source or
-  public API changes from beta.4; its compatible dependency minimum is unchanged.
-
-## 1.7.0-beta.4
-
-### Changed
-
-* Align with coordinated Ack 1.7.0-beta.4. This package has no source or
-  public API changes from 1.7.0-beta.3; its minimum `ack` dependency remains
-  at the first beta that supplies the required annotations.
-
-## 1.7.0-beta.3
+## 1.7.0
 
 ### Breaking
 
-* Requires `ack` 1.7.0-beta.3, which owns the annotations.
-* Annotations are read from `package:ack`; the `ack_annotations` package is
-  removed. Import `package:ack/ack.dart` in annotated libraries, and
-  `package:ack/annotations.dart` where they use constraint annotations.
-* Generated schema-first models carry `@Schemable.generatedJson` instead of
-  `@AckInfer.jsonSerializable`. Regenerate after upgrading.
-* The generator supplies the `json_serializable` configuration itself, from
-  `caseStyle`; `ack` carries no `json_annotation` types. `@JsonKey(name: ...)`
-  keeps working with `JsonKey` imported from `package:json_annotation`.
-* A `JsonConverter` annotation on a class-first model or field is rejected,
-  because `json_serializable` would apply it in place of Ack's validated
-  runtime bridge.
+* Require `ack: ^1.7.0` and read annotations from `package:ack` (`ack_annotations`
+  is removed). Regenerate models after upgrading (`@Schemable.generatedJson`
+  replaces `@AckInfer.jsonSerializable`).
+* Reject `JsonConverter` annotations on class-first models and fields so
+  `json_serializable` cannot bypass Ack's runtime validation bridge.
+* Change generated `copyWith` to a getter returning a typed
+  `$ClassCopyWith<Class>` interface, turning mistyped arguments into
+  compile-time errors while preserving `model.copyWith(field: value)` call sites
+  and explicit `null` clearing.
 
 ### Added
 
-* `@Schemable()` drives both schema-first and class-first generation. The
-  deprecated `@AckInfer()` and `@AckModel()` spellings generate identical
-  output, and diagnostics name the annotation that was written.
-* A field whose type declares a static `schema` resolves to it with no
-  annotation, also per `List` / `Set` item and as a `Map` value. Extension
-  types are supported, and a generic type declares a static
-  `schema<A>()` method that is called with the field's type arguments
-  (`Command.schema<CompletionAction>()`). Schema-first objects may reference
-  the same members; `void` type arguments are supported only in class-first
-  fields. A `@Schemable` class may expose its facade as
-  `static final schema = XSchema.schema;`. The schema must produce the field's
-  type.
-* A generic `schema<A>()` that declares one positional `AckSchema<Object, A>`
-  parameter per type parameter `A` receives the schema inferred for each type
-  argument (`Box.schema<Row>(RowSchema.schema)`). Type arguments may be `void`
-  (`Command.schema<void>()`). An enum's static `schema` takes precedence over
-  `Ack.enumValues`.
-
-### Fixed
-
-* Generation fails with a clear message instead of emitting code that does not
-  compile when a field or codec type is not visible in the annotated library,
-  when a numeric constraint is not finite, or when the model phase failed (the
-  JSON part is no longer written).
-* `@Schemable` options set for the other target (`name` on a class, class
-  options on a top-level schema) are rejected instead of ignored.
-* `@AckField(schema:)` functions must produce the field's type; generic
-  functions, whose type arguments the generated call would drop, are rejected.
-* Collection constraints on a `Set<Set<T>>` field apply to the outer set.
-* An unresolved class-first field type is reported by its written name, with
-  a specific message for a model generated in the same build used as a `Map`
-  value.
-
-## 1.7.0-beta.2
-
-### Breaking
-
-* `copyWith` on `@AckInfer()` and `@AckModel()` models is a getter that returns
-  a typed `$ClassCopyWith<Class>` interface. A wrongly typed argument is now a
-  compile-time error instead of a runtime `TypeError`. Omission still keeps the
-  current value, and explicit `null` still clears a nullable field. Calls such
-  as `model.copyWith(name: 'x')` are unchanged. Code that tears off `copyWith`
-  as a function or mocks a model's `copyWith` method must be updated to use the
-  getter. Arguments statically typed `Object` or an incompatible type must be
-  narrowed or cast; `dynamic` arguments still compile.
+* Support `@Schemable()` for both schema-first and class-first generation, and
+  emit a `static final schema` shorthand on schema-first models.
+* Auto-resolve fields whose types declare a static `schema` getter or generic
+  `schema<A>()` factory (including extension types, enums, and per-type-argument
+  schema parameters).
+* Support explicit `description` options on `@Schemable` and `@AckField`,
+  single-line `@description` doc tags, and string format annotations.
+* Export shared type and constraint inference from
+  `package:ack_generator/inference.dart`.
 
 ### Changed
 
-* A model extending or implementing another generated class-first model,
-  including an implicit sealed-union branch, exposes a `copyWith` interface
-  compatible with the parent model's interface.
-* A class-first `Set` field with `@MinItems`, `@MaxItems`, or `@UniqueItems`
-  now requires unique items at the JSON boundary, so the list's item count
-  matches the decoded set. Input with duplicate items, such as `['a', 'a']`,
-  now fails validation instead of collapsing into a smaller set, and the JSON
-  Schema declares `uniqueItems: true`.
-* Modern `.ack.dart` and `.ack.g.dart` parts start with
-  `// ignore_for_file: type=lint` and `// coverage:ignore-file`, so consumer
-  lint rules and coverage reports cover only hand-written source.
-* Generated constructors, parsing and JSON members, `$ack`, and class-first
-  facades now have doc comments.
-* Requires `ack` and `ack_annotations` `^1.7.0-beta.2`.
-* Schema descriptions come only from `description:` or an `@description` doc
-  tag. This replaces the unreleased development behavior that exported every
-  field doc comment. Untagged prose and `//` comments never become schema
-  data. Shared `AckSchemaInference.applyDescription` uses the same rule.
-
-### Added
-
-* `@AckInfer()` models declare `static final schema` as a shorthand for
-  `$ack.modelSchema`. The generator omits this member when `schema` conflicts
-  with a field, discriminator, annotated declaration, or import prefix.
-* Class-first generation supports explicit `@AckModel` and `@AckField`
-  descriptions, plus single-line `@description` doc tags. Explicit annotation
-  values take precedence. Class descriptions apply to the wire object and
-  model codec; field descriptions apply only to that property.
-* Class-first generation supports the new string format annotations.
-* `inference.dart` exports shared type and constraint inference for other
-  generators. The class-first generator uses this library.
+* Require unique JSON boundary items (`uniqueItems: true`) on class-first `Set`
+  fields with `@MinItems`, `@MaxItems`, or `@UniqueItems`.
+* Emit `// ignore_for_file: type=lint` and `// coverage:ignore-file` headers and
+  member doc comments in generated `.ack.dart` and `.ack.g.dart` parts.
 
 ### Fixed
 
-* Escape line terminators and other control characters in every generated
-  string literal. `@Pattern`, discriminator, and key values containing a
-  newline or carriage return now produce valid Dart source.
+* Fail generation with clear diagnostics when field/codec types are not visible
+  in the annotated library, when numeric constraints are non-finite, when
+  `@Schemable` options target the wrong declaration kind, or when
+  `@AckField(schema:)` is generic or returns an incompatible schema type.
+* Apply collection constraints on `Set<Set<T>>` to the outer set and escape
+  control characters in all generated string literals (#164).
 
 ## 1.6.2
 

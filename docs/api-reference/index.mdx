@@ -540,7 +540,7 @@ reverse direction. See [Codecs](../core-concepts/codecs.mdx).
 - `Ack.uri()` → `CodecSchema<String, Uri>` (absolute URI string ↔ `Uri`)
 - `Ack.duration()` → `CodecSchema<int, Duration>` (milliseconds ↔ `Duration`)
 
-### Optional schemas
+### Optional schemas and `JsonMaybe<T>`
 
 Every schema can be marked optional via the `optional({bool value = true})` fluent API.
 
@@ -548,4 +548,16 @@ Every schema can be marked optional via the `optional({bool value = true})` flue
 - `schema.optional(value: false)` clears the optional flag.
 - Optional affects object-field presence only; combine with `.nullable()` to also allow explicit `null`.
 
-*See the [Schema types](../core-concepts/schemas.mdx) guide for detailed usage and examples.*
+In class-first `@Schemable()` models, use `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) when you need to distinguish an omitted JSON property from an explicit `null` on both `parse` and `toJson`:
+
+- `const JsonMaybe<T>.absent()` (`JsonAbsent<T>`) — key omitted from JSON.
+- `const JsonMaybe<T>.value(T? value)` (`JsonValue<T>`) — key present in JSON (with non-null or `null` value).
+- `const JsonMaybe<T>.nullValue()` — shorthand for `JsonValue<T>(null)`.
+- `maybe.isAbsent`, `maybe.isPresent`, `maybe.valueOrNull`.
+
+### `.schema.json` code generation (`ack_generator:ack_json_schema`)
+
+- **Builder (`build.yaml`)**: Enable `ack_generator|ack_json_schema` on `lib/**/*.schema.json` to emit `<name>.schema.dart` (with `part '<name>.schema.g.dart';`), which `ack_generator|ack_generator` compiles into typed `@Schemable()` models or validated value models.
+- **Programmatic API (`package:ack_generator/ack_generator.dart`)**: `generateAckSchemaLibrary(schema, {schemaFileName, rootName, baseUri, documents, assertFormats})` returns a `GeneratedAckSchemaFile`.
+
+*See the [Schema types](../core-concepts/schemas.mdx) and [What's New & Migration Guide](../getting-started/migration-guide.mdx) for detailed usage and migration tables.*

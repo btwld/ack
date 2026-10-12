@@ -166,13 +166,44 @@ semantics).
 
 ### Generating Dart models from `.schema.json` files
 
-With `ack_generator`, enable `ack_generator:ack_json_schema` in `build.yaml` to
-emit `<name>.schema.dart` (with `part '<name>.schema.g.dart';`) from any
-`lib/**/*.schema.json` asset, which `ack_generator:ack_generator` then compiles
-into `<name>.schema.g.dart` (emitting typed `@Schemable()` Dart models when
-representable or a validated value-model wrapper around `Ack.fromJsonSchema(...)`
-for dynamic/open schemas; `generateAckSchemaLibrary()` is also available for
-programmatic generation).
+With `ack_generator`, enable the opt-in `ack_generator:ack_json_schema` builder
+in `build.yaml` to compile any `lib/**/*.schema.json` Draft 2020-12 asset into
+Dart models:
+
+```yaml title="build.yaml"
+targets:
+  $default:
+    builders:
+      ack_generator|ack_json_schema:
+        enabled: true
+        generate_for:
+          - lib/**/*.schema.json
+        options:
+          assert_formats: false
+```
+
+`ack_generator:ack_json_schema` emits `<name>.schema.dart` (declaring
+`part '<name>.schema.g.dart';`), which `ack_generator:ack_generator` compiles
+in the same `dart run build_runner build` pass:
+
+```dart
+import 'person.schema.dart';
+
+final person = Person.parse({'name': 'Ada', 'age': 36});
+print(person.name);     // String
+print(person.toJson()); // {'name': 'Ada', 'age': 36}
+```
+
+- **Typed `@Schemable()` models** are emitted for named non-null objects,
+  `$ref` definitions, inline objects, string-keyed maps, arrays with non-null
+  items, primitives/bounds, string enums, and simple field unions.
+- **Validated value models** (wrapping `Ack.fromJsonSchema(...)`) are emitted
+  automatically for shapes that Dart classes cannot represent faithfully
+  without changing validation semantics (such as regex `pattern` assertions,
+  named scalar unions, recursive/dynamic `$dynamicRef` references, `oneOf`/`allOf`/`not`
+  composition, `multipleOf`, `unevaluatedProperties`, or `assert_formats: true`).
+- For programmatic code generation outside `build_runner`, call
+  `generateAckSchemaLibrary()` from `package:ack_generator/ack_generator.dart`.
 
 ### Validation errors
 

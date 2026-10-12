@@ -5,227 +5,118 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 2.0.0-beta.1
 
-### Breaking
+### Breaking & Substitutions
 
-* **Single-pass `.g.dart` code generation (`#189`)**: `ack_generator` now emits
-  a single `<file>.g.dart` part via `SharedPartBuilder`
-  (`ack_generator:ack_generator`) with direct JSON serialization (`toJson` /
-  `fromJson`). Consumer packages no longer need `json_serializable` or
-  `json_annotation` dependencies, nor a separate `.ack.dart` / `.ack.g.dart`
-  two-part setup. Replace `part '<file>.ack.dart';` +
-  `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
-* **Removed legacy 1.x generator annotations and shims (`#188`, `#189`)**:
+* **Single `.g.dart` part & direct JSON emitter (`#189`)**: `ack_generator:ack_generator`
+  now emits a single `<file>.g.dart` part via `SharedPartBuilder` with direct
+  `toJson()` / `fromJson()` helpers (no `json_serializable` or `json_annotation`
+  dependency).
+  * **Substitute:** Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';`
+    with `part '<file>.g.dart';`.
+  * **Substitute:** Replace `ack_generator|ack_models` and
+    `ack_generator|ack_model_json` in `build.yaml` with
+    `ack_generator|ack_generator`.
+* **Unified `@Validate.*` constraint namespace (`#191`)**: Removed the 18
+  `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`, `@Email`, etc.)
+  and `package:ack/format_annotations.dart`.
+  * **Substitute:** Use `@Validate.<name>(...)` from `package:ack/ack.dart`
+    (`@Validate.min(...)`, `@Validate.max(...)`, `@Validate.multipleOf(...)`,
+    `@Validate.positive()`, `@Validate.negative()`, `@Validate.minLength(...)`,
+    `@Validate.maxLength(...)`, `@Validate.matches(...)`, `@Validate.notEmpty()`,
+    `@Validate.email()`, `@Validate.url()`, `@Validate.uuid()`, `@Validate.date()`,
+    `@Validate.dateTime()`, `@Validate.uri()`, `@Validate.ip()`, `@Validate.ipv4()`,
+    `@Validate.ipv6()`, `@Validate.minItems(...)`, `@Validate.maxItems(...)`,
+    `@Validate.uniqueItems()`).
+* **Removed legacy 1.x generator annotations & shims (`#188`, `#189`)**:
   Removed `@AckType`, `@AckInfer`, `@AckModel`, `JsonKeyCaseStyle`, `AckTypeDef`,
-  generated `*Type` extension-type model generation, and the legacy
-  `@JsonKey(name: ...)` fallback in `ack_generator` (use `@AckField(name: ...)`).
-  Use `@Schemable()` on both top-level schemas and hand-written classes/unions.
-* **Removed `StandardSchemaV1` (`#129`)**: Removed the unused TypeScript-origin
-  `StandardSchemaV1` interface and extensions (`standard_schema.dart`).
-  `AckSchema<Boundary, Runtime>` with `SchemaResult<T>` and `AckSchemaModel` is
-  the single canonical schema and shape contract across Ack and all adapters.
-* **Unified `@Validate.*` constraint annotation namespace (`#191`)**: Added
-  `final class Validate` (exported from both `package:ack/ack.dart` and
-  `package:ack/annotations.dart`) with `const Validate.min(...)`,
-  `Validate.max(...)`, `Validate.multipleOf(...)`, `Validate.positive()`,
-  `Validate.negative()`, `Validate.minLength(...)`, `Validate.maxLength(...)`,
-  `Validate.matches(...)`, `Validate.notEmpty()`, `Validate.email()`,
-  `Validate.url()`, `Validate.uuid()`, `Validate.date()`, `Validate.dateTime()`,
-  `Validate.uri()`, `Validate.ip()`, `Validate.ipv4()`, `Validate.ipv6()`,
-  `Validate.minItems(...)`, `Validate.maxItems(...)`, and
-  `Validate.uniqueItems()` / `Validate.unique()`. Removed the 18 `@Deprecated`
-  1.x top-level constraint classes (`@Min`, `@Max`, `@Email`, etc.) and
-  `package:ack/format_annotations.dart` in favor of `@Validate.*`.
-* **Removed redundant codec and adapter helpers**: Removed `Ack.enumCodec` in
-  favor of `Ack.enumValues`, `registerAckModelTool` in `ack_mcp_dart` in favor
-  of `registerAckTool` with `Model.schema`, and `convertAckSchemaModelToBuilder`
-  in `ack_json_schema_builder` in favor of `schema.toJsonSchemaBuilder()`.
-* **Sealed `SchemaError` and `AckSchema` hierarchies**: `SchemaError` and
-  `AckSchema` are now `sealed class`es so `switch (error)` and `switch (schema)`
-  are exhaustively checked by the Dart analyzer without a wildcard branch.
-* **Decoder `Error` propagation (`#163`)**: `CodecSchema` now rethrows
-  programmer `Error`s (`TypeError`, `StateError`, etc.) with their original
-  stack trace during `parse` / `safeParse` (matching `encode` / `safeEncode`),
-  catching only `Exception`s as `SchemaTransformError`.
-* **JSON Schema Draft 2020-12 default export and `format` annotation mode
-  (`#186`, `#171`)**: `Ack.fromJsonSchema()` now defaults to `assertFormats: false`
-  (matching JSON Schema Draft 2020-12's default Core/Applicator/Validation
-  vocabularies; pass `assertFormats: true` or declare the `format-assertion`
-  vocabulary in `$vocabulary` to enforce format assertions). `schema.toJsonSchema()`
-  and `schema.toSchemaModel()` (and `toJsonSchemaBuilder()` in
-  `ack_json_schema_builder`) now preserve imported Draft 2020-12 resources by
-  default; use `toJsonSchemaDraft7()`, `toSchemaModelDraft7()`, or
-  `toJsonSchemaBuilderDraft7()` when legacy Draft-07 `definitions` lowering is
-  required.
+  `AckFieldPresence`, `*Type` extension-type models, and the `@JsonKey(name: ...)`
+  fallback.
+  * **Substitute:** Use `@Schemable()` on schemas and classes, `@Optional()` /
+    `@Required()` / `@NotNull()` for field presence, and `@AckField(name: '...')`
+    for wire-name overrides.
+* **Removed redundant helpers & `StandardSchemaV1` (`#129`)**:
+  * **Substitute:** `Ack.enumCodec(E.values)` $\rightarrow$ `Ack.enumValues(E.values)`.
+  * **Substitute:** `registerAckModelTool(...)` $\rightarrow$
+    `registerAckTool(..., input: Model.schema)`.
+  * **Substitute:** `convertAckSchemaModelToBuilder(m)` $\rightarrow$
+    `schema.toJsonSchemaBuilder()`.
+  * **Substitute:** `StandardSchemaV1` $\rightarrow$ `AckSchema<Boundary, Runtime>`
+    + `SchemaResult<T>`.
+* **Sealed `SchemaError` & `AckSchema` hierarchies + decoder `Error` propagation (`#163`)**:
+  `SchemaError` and `AckSchema` are now `sealed class`es for exhaustive pattern
+  matching. `CodecSchema` rethrows programmer `Error`s during `parse` /
+  `safeParse` (matching `encode` / `safeEncode`) and catches only `Exception`s
+  as `SchemaTransformError`.
+* **JSON Schema Draft 2020-12 default export & `format` annotation mode (`#171`, `#186`)**:
+  `Ack.fromJsonSchema()` defaults to `assertFormats: false` (pass
+  `assertFormats: true` or declare the `format-assertion` vocabulary to enforce
+  format assertions). `toJsonSchema()`, `toSchemaModel()`, and
+  `toJsonSchemaBuilder()` preserve imported Draft 2020-12 resources by default;
+  use `toJsonSchemaDraft7()`, `toSchemaModelDraft7()`, or
+  `toJsonSchemaBuilderDraft7()` when legacy Draft-07 lowering is needed.
 
 ### Added
 
-* **`JsonMaybe<T>` PATCH tri-state presence (`#148`)**: Added
-  `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) with
-  `const JsonMaybe.absent()`, `const JsonMaybe.value(T? value)`, and
-  `const JsonMaybe.nullValue()`, plus full `@Schemable()` class-first codegen
-  support so omitted keys decode to `JsonAbsent`, explicit `null` decodes to
-  `JsonValue(null)`, and `toJson()` omits keys whose value is `JsonAbsent`.
-* **Custom schema resolution via `@Schemable(schemas: [...])` and automatic
-  same-library detection (`#185`)**: Class-first `@Schemable()` models now
-  resolve third-party or custom value types (`Money`, `LatLng`, `Decimal`, etc.)
-  via:
-  1. `@AckField(schema: ...)` (undeprecated for field-specific overrides)
-  2. `@Schemable(schemas: [...])` on the class, enclosing sealed union, current
-     `library;` directive, or an imported `library;` directive
-  3. Type-owned `T.schema` / `T.schema<...>()`
-  4. Automatic detection of a unique top-level `AckSchema<Boundary, T>`
-     variable, getter, or zero-argument function in the current library.
-* **Native `@AckField(name: ...)` wire key override (`#189`)**: Override a
-  field's JSON wire key directly with `@AckField(name: 'wire_key')` without
-  importing `package:json_annotation`.
+* **`JsonMaybe<T>` tri-state presence (`#148`)**: `sealed class JsonMaybe<T>`
+  (`JsonAbsent<T>`, `JsonValue<T>`) distinguishes omitted keys (`JsonAbsent`),
+  explicit `null` (`JsonValue(null)`), and present values (`JsonValue(v)`) in
+  `@Schemable()` class-first models for `PATCH` payloads.
+* **Layered custom schema resolution (`#185`)**: Class-first `@Schemable()`
+  fields resolve custom types via `@AckField(schema: ...)`,
+  `@Schemable(schemas: [...])` (on classes, unions, or `library;` directives),
+  type-owned `T.schema` / `T.schema<...>()` factories, or automatic detection of
+  a unique top-level `AckSchema<Boundary, T>` in the current library.
 * **Two-way `StringSchema` normalizers**: `.trim()`, `.toLowerCase()`, and
-  `.toUpperCase()` now live directly on `StringSchema`, run in declaration order
-  alongside constraints during both `parse` and `encode`, preserve
-  `StringSchema` chaining, work in `@Schemable()` models, and export cleanly to
-  JSON Schema as `type: 'string'` without `'x-transformed': true`.
-* **Full JSON Schema Draft 2020-12 runtime and `.schema.json` model generator
-  (`#186`, `#171`, `#167`)**: `Ack.fromJsonSchema()` now supports the complete
-  Draft 2020-12 validation runtime (`$dynamicRef`, `$dynamicAnchor`,
-  `unevaluatedProperties`, `unevaluatedItems`, `prefixItems`,
-  `dependentRequired`, `dependentSchemas`, `patternProperties`, `minContains`,
-  `maxContains`, bundled offline 2020-12 meta-schemas, and the full Draft
-  2020-12 format suite when `assertFormats: true`). `ack_generator` adds the
-  `ack_generator:ack_json_schema` builder, which emits `<name>.schema.dart` from
-  `lib/**/*.schema.json` for `ack_generator:ack_generator` to compile into
-  `<name>.schema.g.dart` typed or value-model libraries (and
-  `generateAckSchemaLibrary` is available for programmatic generation).
+  `.toUpperCase()` execute in declaration order during both `parse` and `encode`,
+  preserve `StringSchema` chaining, work in `@Schemable()` models, and export as
+  `type: 'string'` without `'x-transformed': true`.
+* **Full JSON Schema Draft 2020-12 runtime & `.schema.json` generator (`#167`, `#171`, `#186`)**:
+  Supports `$dynamicRef`, `$dynamicAnchor`, `unevaluatedProperties`,
+  `unevaluatedItems`, `prefixItems`, `dependentRequired`, `dependentSchemas`,
+  `patternProperties`, `minContains`, `maxContains`, bundled offline 2020-12
+  meta-schemas, and all 19 Draft 2020-12 formats. Opt-in
+  `ack_generator:ack_json_schema` compiles `lib/**/*.schema.json` into
+  `<name>.schema.dart` + `<name>.schema.g.dart`.
 
 ### Fixed
 
-* Explicit Draft-7 export (`toJsonSchemaDraft7()` / `toSchemaModelDraft7()`)
-  rejects unsupported Draft 2020-12 assertions rather than emitting keywords
-  that Draft-7 validators ignore.
+* Explicit Draft-7 export rejects unsupported Draft 2020-12 assertions rather
+  than emitting keywords that Draft-7 validators ignore.
 * Imported schema exports preserve JSON Pointer targets through retrieval URI
-  aliases and opt-in format assertions in nested resources.
-* Composed imports share identical identified resources, retain occurrence-level
-  nullability and constraints, and reject conflicting resource definitions.
-* Preserve integral decimal length and item bounds in JSON Schema generation, and
-  use validated value models for Unicode regex patterns and named scalar unions
-  that the typed model generator cannot represent faithfully.
+  aliases, share identical identified resources across composed imports, and
+  preserve occurrence-level nullability and constraints (including source
+  `allOf` when layering conflicting constraints).
+* Preserve integral decimal length and item bounds in `.schema.json` generation,
+  and use validated value models for Unicode regex patterns and named scalar
+  unions.
 
-## 1.7.0-beta.7
+## 1.7.0
 
-* Strict JSON Schema import (`Ack.fromJsonSchema()`) now supports `multipleOf`
-  with exact decimal division (shared with native `.multipleOf()`) and reports
-  `keywordLocation` on `multipleOf` validation failures, enabling round-trips
-  from `Ack.integer().multipleOf(...)` and `Ack.double().multipleOf(...)`.
-* Strict JSON Schema import now recognizes Ack's built-in string formats
-  (`date-time`, `date`, `email`, `uuid`, `uri`, `ipv4`, `ipv6`), standard
-  numeric format bounds (`int32`, `int64`, `uint32`, `uint64`, `float`,
-  `double`), and `x-*` vendor extension annotations (including `x-transformed`
-  from `AckSchema.transform(...)`), while continuing to reject unknown formats
-  and non-`x-*` extension keywords.
-* Strict JSON Schema import now accepts Draft-07 `$schema` URIs
-  (`http(s)://json-schema.org/draft-07/schema` with or without a trailing `#`),
-  so schemas exported by `.toJsonSchema()` can be re-imported without stripping
-  `$schema`.
-* Speed up imported JSON Schema compilation and validation, `toJsonSchema()` on
-  native schemas, and collection parse/encode results (`Ack.object()`,
-  `Ack.list()`, `Ack.map()`). Error output, exported JSON Schema, and
-  unmodifiable result detachment are unchanged.
-* Align all five publishable packages at 1.7.0-beta.7. Adapter and generator
-  APIs and compatible dependency minimums are unchanged. The beta.3 annotation
-  and generator migrations and the beta.5 imported-pattern change still apply
-  when upgrading from earlier versions.
-
-## 1.7.0-beta.6
-
-* `JsonSchemaValidationError` reports `keywordLocation`, the evaluation path
-  from the root schema to the failing keyword, including each `$ref` on the
-  way. `toMap()` includes it.
-* An imported `uniqueItems` failure reports the array as its path instead of
-  the later duplicate item, matching native `Ack.list(...).unique()`.
-* `safeParse` and `safeEncode` no longer rebuild the root error-context name on
-  every call, and imported JSON Schema validation reuses compiled patterns and
-  walks valid input twice instead of three times. Error output is unchanged.
-* Align all five publishable packages at 1.7.0-beta.6. Adapter and generator
-  APIs and compatible dependency minimums are unchanged. The beta.3 annotation
-  and generator migrations and the beta.5 imported-pattern change still apply
-  when upgrading from earlier versions.
-
-## 1.7.0-beta.5
-
-* Strict JSON Schema import supports `contains` and `if`/`then`/`else`, and
-  exposes the failing keyword and source location in `JsonSchemaValidationError`.
-  Source-location URI fragments preserve percent signs, spaces, `#`, and Unicode.
-* **Breaking:** imported `pattern` expressions now use ECMA-262 Unicode mode.
-  `.` matches one code point and Unicode property escapes work. When upgrading
-  from stable 1.6.2 or earlier 1.7.0 betas, review imported patterns that count
-  UTF-16 code units or use identity escapes; write `-` instead of
-  `\-` outside character classes. Native `Ack.string().matches()` behavior is
-  unchanged, so native patterns can behave differently after export and import.
-* Align all five publishable packages at 1.7.0-beta.5. Adapter and generator
-  APIs and compatible dependency minimums are unchanged. The beta.3 annotation
-  and generator migrations still apply when upgrading from earlier versions.
-
-## 1.7.0-beta.4
-
-* Strict Ack JSON Schema import now asserts the supported `date-time` format.
-  Unsupported format labels still produce diagnostics; valid timestamps retain
-  their source text, including precision, offset, and announced leap seconds.
-* Native `Ack.string().datetime()` accepts lowercase `t` and `z` on announced
-  leap seconds. The `ack_json_schema_builder` bridge inherits date-time import
-  validation when paired with `ack` 1.7.0-beta.4 or later, without a new API or
-  dependency minimum.
-* Align all five publishable packages at 1.7.0-beta.4. No new generator or
-  annotation migration is introduced in beta.4. The beta.3 breaking migrations
-  still apply when upgrading from beta.2 or an earlier version; see below.
-
-## 1.7.0-beta.3
-
-* Remove the `ack_annotations` package; the annotations ship in `ack`. Models
-  import `package:ack/ack.dart` (`@Schemable`, `@AckField`, `@Optional`,
-  `@Required`, `@NotNull`). Files that use constraint annotations or the
-  deprecated spellings also import `package:ack/annotations.dart`, with a
-  prefix (`as ack`) where a name clashes with another type. Format
-  annotations move to `package:ack/format_annotations.dart`.
-* `@Schemable()` is the single annotation for schema-first and class-first
-  generation. `@AckInfer()` and `@AckModel()` are deprecated and will be
-  removed in 2.0.0.
-* Rename `@Pattern` to `@Matches`. The deprecated `Pattern` alias stays in
-  `package:ack/annotations.dart`; an unprefixed import of that library hides
-  `dart:core`'s `Pattern`.
-* `ack` no longer depends on `json_annotation` or re-exports `JsonKey`. A field
-  renamed with `@JsonKey(name: ...)` imports `JsonKey` from
-  `package:json_annotation` and the app depends on `json_annotation`.
-  `AckModel.jsonSerializable` and `AckGeneratedJson.config` are removed.
-* A class-first field whose type declares a static `schema` resolves to it with
-  no annotation, including extension types, enums, and generic types through a
-  static `schema<A>()` method that can receive each type argument's schema.
-* The generator rejects input that used to produce wrong or non-compiling
-  output: types the annotated library cannot name, mismatched or generic
-  `@AckField(schema:)` functions, non-finite constraint values, `@Schemable`
-  options for the other target, and `JsonConverter` annotations on class-first
-  models.
-* Align all five publishable packages at 1.7.0-beta.3. The generator requires
-  `ack` 1.7.0-beta.3.
-
-## 1.7.0-beta.2
-
-* Add `AckModelAdapter.modelSchema`, function-parameter annotations, string
-  format annotations, and shared schema inference for downstream generators.
-* Generate a static `Model.schema` shorthand for `Model.$ack.modelSchema` on
-  `@AckInfer()` models.
-* Add `CodecSchema.canEncode` for direct codec encoder introspection.
-* Generated `copyWith` is a getter that returns a typed interface, so a wrongly
-  typed argument fails to compile. Calls such as `model.copyWith(name: 'x')`
-  are unchanged; code that tears off or mocks the `copyWith` method must be
-  updated. Generated parts also suppress consumer lints and coverage.
-* Constrained `Set` fields (`@MinItems`, `@MaxItems`, `@UniqueItems`) require
-  unique items at the JSON boundary. Duplicate input such as `['a', 'a']` now
-  fails validation instead of collapsing into a smaller set.
-* Add explicit `description` options to `@AckModel` and `@AckField` (#175).
-  A single-line `@description` doc tag is a fallback. Untagged prose does not
-  become schema data.
-* Escape control characters in generated string literals, including inferred
-  pattern values (#164).
-* Align all six publishable packages at the 1.7.0 beta. The generator now
-  requires the 1.7.0 beta of `ack` and `ack_annotations`.
+* Remove `ack_annotations`; annotations now ship in `ack` (`package:ack/ack.dart`,
+  `package:ack/annotations.dart`, and `package:ack/format_annotations.dart`).
+* Add `@Schemable()` as the unified annotation for schema-first and class-first
+  generation; deprecate `@AckInfer()` and `@AckModel()` for removal in 2.0.0.
+* Rename `@Pattern` to `@Matches` (keeping a deprecated `Pattern` alias in
+  `package:ack/annotations.dart`) and remove the `json_annotation` re-export
+  from `ack`.
+* Auto-resolve class-first fields whose types declare a static `schema` (including
+  extension types, enums, and generic `schema<A>()` factories), and generate a
+  `static final schema` shorthand on schema-first models.
+* Emit a typed `$ClassCopyWith<Class>` getter for `copyWith` on generated models,
+  support explicit `description` options and `@description` doc tags (#175),
+  require unique boundary items on constrained `Set` fields, and escape control
+  characters in generated string literals (#164).
+* Expand `Ack.fromJsonSchema()` with `multipleOf` (exact decimal division),
+  `contains`, `if`/`then`/`else`, built-in string and numeric `format`
+  assertions, `x-*` vendor extensions, Draft-07 `$schema` URIs, and
+  `JsonSchemaValidationError` location diagnostics (`keyword`, `keywordLocation`,
+  `documentUri`, `pointer`).
+* **Breaking:** imported JSON Schema `pattern` expressions now compile in
+  ECMA-262 Unicode mode (`u`); native `Ack.string().matches()` is unchanged.
+* Speed up `safeParse`, `safeEncode`, `toJsonSchema()`, imported JSON Schema
+  validation, and collection parse/encode results.
+* Align all five publishable packages at 1.7.0 (`ack_generator` requires
+  `ack: ^1.7.0`; adapter dependency minimums are unchanged).
 
 ## 1.6.2
 

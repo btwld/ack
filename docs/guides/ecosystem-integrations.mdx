@@ -1,0 +1,179 @@
+---
+title: Ecosystem Integrations
+---
+
+Every `AckSchema` (and every `@Schemable()` model via `Model.schema`) can be reused directly across Ack's official adapter packages:
+
+| Adapter Package | Target Ecosystem | Primary Entry Point |
+| --- | --- | --- |
+| **`ack_mcp_dart`** | [Model Context Protocol (`mcp_dart`)](https://pub.dev/packages/mcp_dart) | `server.registerAckTool(...)`, `result.decodeAckOutput(...)` |
+| **`ack_firebase_ai`** | [Firebase AI Logic (`firebase_ai` / Gemini)](https://pub.dev/packages/firebase_ai) | `schema.toFirebaseAiSchema()` |
+| **`ack_json_schema_builder`** | [`json_schema_builder`](https://pub.dev/packages/json_schema_builder) | `schema.toJsonSchemaBuilder()`, `jsbSchema.toAckSchema()` |
+
+---
+
+## 1. Define a Model or Schema Once
+
+```dart title="lib/weather_models.dart"
+import 'package:ack/ack.dart';
+
+part 'weather_models.g.dart';
+
+@Schemable(description: 'Parameters for querying current weather.')
+final class WeatherQuery with _$WeatherQueryAck {
+  const WeatherQuery({required this.city, this.units = 'celsius'});
+
+  @AckField(description: 'City and country, e.g. "Tokyo, JP".')
+  @Validate.minLength(2)
+  final String city;
+
+  final String units;
+
+  static final schema = _weatherQuerySchema;
+  static final fromJson = WeatherQuerySchema.fromJson;
+}
+
+@Schemable(description: 'Current weather report.')
+final class WeatherReport with _$WeatherReportAck {
+  const WeatherReport({required this.city, required this.temperatureC});
+
+  final String city;
+  final double temperatureC;
+
+  static final schema = _weatherReportSchema;
+  static final fromJson = WeatherReportSchema.fromJson;
+}
+```
+
+---
+
+## 2. MCP Tool Servers (`ack_mcp_dart`)
+
+`ack_mcp_dart` bridges `AckSchema` with `McpServer` from `package:mcp_dart/mcp_dart.dart`. It exports the tool's JSON Schema automatically, validates incoming tool arguments before your callback runs, validates structured tool output, and formats validation failures as MCP `CallToolResult(isError: true)` responses.
+
+### Install
+
+```bash
+dart pub add ack ack_mcp_dart mcp_dart
+```
+
+### Register a typed input + output tool
+
+Pass `WeatherQuery.schema` and `WeatherReport.schema` directly to `server.registerAckTool`:
+
+```dart
+import 'package:ack_mcp_dart/ack_mcp_dart.dart';
+import 'package:mcp_dart/mcp_dart.dart';
+
+import 'weather_models.dart';
+
+void registerWeatherTools(McpServer server) {
+  server.registerAckTool<WeatherQuery, WeatherReport>(
+    'get_weather',
+    description: 'Fetch the current weather for a city.',
+    inputSchema: WeatherQuery.schema,
+    outputSchema: WeatherReport.schema,
+    callback: (query, extra) async {
+      // `query` is already validated and decoded into a `WeatherQuery`
+      return WeatherReport(
+        city: query.city,
+        temperatureC: 21.5,
+      );
+    },
+  );
+}
+```
+
+Other registration and client helpers:
+- `server.registerAckInputTool(name, inputSchema: ..., callback: ...)` — validates input only and returns a `CallToolResult`.
+- `server.registerAckOutputTool(name, outputSchema: ..., callback: ...)` — takes no input arguments and validates structured output.
+- `callToolResult.decodeAckOutput(WeatherReport.schema)` — validates and decodes `structuredContent` on the client side into a `SchemaResult<WeatherReport>`.
+
+---
+
+## 3. Firebase AI / Gemini Structured Outputs (`ack_firebase_ai`)
+
+`ack_firebase_ai` converts any `AckSchema` into a `firebase_ai` `Schema` for Gemini structured JSON output or function calling, then lets you parse the model's response back through the same Ack schema.
+
+### Install
+
+```bash
+flutter pub add ack ack_firebase_ai firebase_ai firebase_core
+```
+
+### Generate and validate structured output
+
+```dart
+import 'dart:convert';
+
+import 'package:ack_firebase_ai/ack_firebase_ai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+
+import 'weather_models.dart';
+
+Future<WeatherReport> askGeminiWeather(String prompt) async {
+  final model = FirebaseAI.googleAI().generativeModel(
+    model: 'gemini-2.5-flash',
+    generationConfig: GenerationConfig(
+      responseMimeType: 'application/json',
+      // Convert the Ack schema to a Firebase AI Schema
+      responseSchema: WeatherReport.schema.toFirebaseAiSchema(),
+    ),
+  );
+
+  final response = await model.generateContent([Content.text(prompt)]);
+  final jsonMap = jsonDecode(response.text!);
+
+  // Validate and decode Gemini's response into WeatherReport
+  return WeatherReport.schema.parse(jsonMap);
+}
+```
+
+> **Note:** Gemini's OpenAPI-based schema subset does not enforce every keyword (such as regex `pattern` or custom `.refine()` callbacks) during generation. `toFirebaseAiSchema()` appends human-readable constraint descriptions so the model has full context, and `WeatherReport.schema.parse(...)` enforces the full Ack contract on the response.
+
+---
+
+## 4. `json_schema_builder` Bridge (`ack_json_schema_builder`)
+
+`ack_json_schema_builder` provides bidirectional conversion between `AckSchema` and `package:json_schema_builder`:
+
+### Install
+
+```bash
+dart pub add ack ack_json_schema_builder json_schema_builder
+```
+
+### Convert in both directions
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_json_schema_builder/ack_json_schema_builder.dart';
+import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
+
+import 'weather_models.dart';
+
+void main() {
+  // 1. AckSchema -> json_schema_builder Schema (preserves Draft 2020-12 by default)
+  final jsb.Schema builderSchema = WeatherQuery.schema.toJsonSchemaBuilder();
+
+  // Need legacy Draft-7 definitions lowering instead?
+  final jsb.Schema draft7Schema = WeatherQuery.schema.toJsonSchemaBuilderDraft7();
+
+  // 2. json_schema_builder Schema -> executable AckSchema<Object, Object>
+  final AckSchema<Object, Object> importedValidator = jsb.Schema.object(
+    properties: {'city': jsb.Schema.string(minLength: 2)},
+    required: ['city'],
+  ).toAckSchema(assertFormats: true);
+
+  final valid = importedValidator.parse({'city': 'Lisbon'});
+  print(valid);
+}
+```
+
+---
+
+## Building Your Own Adapter Package
+
+Want to convert Ack schemas to another target format (OpenAPI, Protobuf, GraphQL, or another LLM SDK)? Traverse `schema.toSchemaModel()` (`AckSchemaModel`). See:
+- [Adapter Package Quickstart](./schema-converter-quickstart.mdx)
+- [Creating Adapter Packages](./creating-schema-converter-packages.mdx)

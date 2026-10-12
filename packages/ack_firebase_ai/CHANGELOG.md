@@ -10,48 +10,11 @@
 * Regenerate Firebase AI response JSON Schema fixtures for two-way `StringSchema`
   normalizer exports (`Ack.string().trim()`, `.toLowerCase()`, `.toUpperCase()`).
 
-## 1.7.0-beta.7
+## 1.7.0
 
 ### Changed
 
-* Align with coordinated Ack 1.7.0-beta.7. This package has no source or
-  public API changes from beta.6; its compatible dependency minimum is unchanged.
-
-## 1.7.0-beta.6
-
-### Changed
-
-* Align with coordinated Ack 1.7.0-beta.6. This package has no source or
-  public API changes from beta.5; its compatible dependency minimum is unchanged.
-
-## 1.7.0-beta.5
-
-### Changed
-
-* Align with coordinated Ack 1.7.0-beta.5. This package has no source or
-  public API changes from beta.4; its compatible dependency minimum is unchanged.
-
-## 1.7.0-beta.4
-
-### Changed
-
-* Align with coordinated Ack 1.7.0-beta.4. This package has no source or
-  public API changes from 1.7.0-beta.3; its compatible dependency minimum
-  is unchanged.
-
-## 1.7.0-beta.3
-
-### Changed
-
-* Align with the coordinated Ack 1.7.0-beta.3. This package has no source or
-  public API changes from 1.7.0-beta.2; compatible dependency minimums are
-  preserved.
-
-## 1.7.0-beta.2
-
-### Changed
-
-* Align with the coordinated Ack 1.7.0 beta. This package has no source or
+* Align with the coordinated Ack 1.7.0 release. This package has no source or
   public API changes from 1.6.2; compatible dependency minimums are preserved.
 
 ## 1.6.2

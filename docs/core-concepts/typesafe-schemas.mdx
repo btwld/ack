@@ -2,19 +2,22 @@
 title: Model Code Generation
 ---
 
-Ack supports code generation in both directions. You can start with a schema
-and generate a Dart model, or start with a Dart model and generate its schema.
+Ack supports code generation in three workflows: start from an Ack schema, start
+from a Dart class, or start from a `.schema.json` document.
 
-| Starting point | Annotation | Generated result |
+| Starting point | Trigger | Generated output |
 | --- | --- | --- |
-| A top-level Ack schema | `@Schemable()` | An immutable Dart model |
-| A Dart class | `@Schemable()` | An Ack codec schema and JSON helpers |
+| A top-level Ack schema (`final userSchema = ...`) | `@Schemable()` | Immutable `User` class, `User.schema`, `parse`/`safeParse`, `fromJson`/`toJson`, `copyWith` in `<file>.g.dart` |
+| A Dart class or sealed union (`final class Account`) | `@Schemable()` | `_accountSchema` codec, `AccountSchema` facade, and `_$AccountAck` mixin in `<file>.g.dart` |
+| A JSON Schema asset (`lib/**/*.schema.json`) | `ack_generator:ack_json_schema` in `build.yaml` | `<name>.schema.dart` + `<name>.schema.g.dart` with typed `@Schemable()` models or validated value models |
 
 `@Schemable()`, the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`), and the `@Validate.*` constraint namespace come from
-`package:ack/ack.dart` (and `package:ack/annotations.dart`).
-There is no `@AckSchema()` annotation. `AckSchema<Boundary, Runtime>` is the
+`@Required`, `@NotNull`), and the `@Validate.*` constraint namespace all come
+from `package:ack/ack.dart` (and `package:ack/annotations.dart`).
+There is no `@AckSchema()` annotation; `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
+
+> **Upgrading from Ack 1.x?** See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for a complete table of changes, removed 1.x annotations, and drop-in 2.0 substitutions.
 
 ## Install the generator
 
@@ -326,6 +329,29 @@ values use the Dart types you already write:
 | `Map<String, T>` | `Ack.map(<schema for T>)` |
 | `Map<String, Object?>` | `Ack.map(Ack.any().nullable())` |
 | `JsonMaybe<T>` | Optional-and-nullable `<schema for T>`; omitted when `JsonAbsent`, `null` when `JsonValue(null)` |
+
+Use `JsonMaybe<T>` when a `PATCH` request needs to distinguish an omitted field
+(`JsonAbsent`) from an explicit `null` (`JsonValue(null)`):
+
+```dart
+@Schemable()
+final class ProfilePatch with _$ProfilePatchAck {
+  const ProfilePatch({
+    this.bio = const JsonMaybe.absent(),
+  });
+
+  final JsonMaybe<String> bio;
+
+  static final schema = _profilePatchSchema;
+  static final fromJson = ProfilePatchSchema.fromJson;
+}
+
+// Omitted key -> JsonAbsent(); toJson() returns {}
+final unchanged = ProfilePatch.fromJson({});
+
+// Explicit null -> JsonValue(null); toJson() returns {'bio': null}
+final cleared = ProfilePatch.fromJson({'bio': null});
+```
 
 `Object` means a JSON-safe value (a finite number, string, boolean, list, or
 string-keyed map of those values), not an arbitrary Dart instance, so a
@@ -649,3 +675,13 @@ targets:
 3. Declare `part '<file>.g.dart';` in each annotated library.
 4. Put `@Schemable()` on a top-level schema or on a class.
 5. Run `dart run build_runner build`.
+
+## Migrating from 1.x
+
+- Remove `ack_annotations`, `json_serializable`, and `json_annotation` from `pubspec.yaml` (unless used by non-Ack classes), and import `package:ack/ack.dart`.
+- Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
+- Replace `@AckType()`, `@AckInfer()`, and `@AckModel()` with `@Schemable()`.
+- Replace top-level constraint annotations (`@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with `@Validate.*` (`@Validate.min`, `@Validate.max`, `@Validate.minLength`, `@Validate.matches`, `@Validate.email`, `@Validate.dateTime`, etc.).
+- Replace `@JsonKey(name: '...')` on `@Schemable` fields with `@AckField(name: '...')`.
+
+See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for the complete substitution tables and side-by-side before/after examples.

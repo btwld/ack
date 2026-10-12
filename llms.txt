@@ -292,3 +292,18 @@ validates through the union's effective branch.
 - Generated data classes use `deepEquals` and `deepHashCode` from `package:ack/ack.dart`.
 - `deepUnmodifiableJsonMap` snapshots nested maps, lists, and sets without
   validation; use it for hand-written constructors that store dynamic JSON.
+
+## 1.x to 2.0 Substitutions (Do Not Use Removed 1.x Symbols)
+
+| Removed 1.x Symbol / Pattern | Ack 2.0 Replacement |
+| --- | --- |
+| `package:ack_annotations/*`, `package:ack/format_annotations.dart` | `import 'package:ack/ack.dart';` |
+| `part 'file.ack.dart';` + `part 'file.ack.g.dart';` | Single `part 'file.g.dart';` |
+| `ack_generator\|ack_models`, `ack_generator\|ack_model_json` | `ack_generator\|ack_generator` (plus optional `ack_generator\|ack_json_schema`) |
+| `@AckType()`, `@AckInfer()`, `@AckModel()` | `@Schemable()` |
+| `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`, `@Pattern`, `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`, `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems` | `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`, `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.notEmpty`, `@Validate.email`, `@Validate.url`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.uri`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems` |
+| `@JsonKey(name: 'wire')` on `@Schemable` fields | `@AckField(name: 'wire')` |
+| `@AckField(presence: ...)` | `@Optional()`, `@Required()`, `@NotNull()`, or `JsonMaybe<T>` |
+| `Ack.enumCodec(MyEnum.values)` | `Ack.enumValues(MyEnum.values)` |
+| `registerAckModelTool(...)` (`ack_mcp_dart`) | `server.registerAckTool(name, inputSchema: Model.schema, ...)` |
+| `convertAckSchemaModelToBuilder(model)` (`ack_json_schema_builder`) | `schema.toJsonSchemaBuilder()` |
