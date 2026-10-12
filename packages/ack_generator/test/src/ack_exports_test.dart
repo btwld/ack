@@ -40,8 +40,7 @@ void main() {
       readerWriter: readerWriter,
       outputs: {
         'test_pkg|lib/probe.exports': decodedMatches(
-          'AckCaseStyle,AckField,AckUnknownPropertyPolicy,'
-          'NotNull,Optional,Required,Schemable,Validate',
+          'AckCaseStyle,AckField,AckUnknownPropertyPolicy,Schemable,Validate',
         ),
       },
     );

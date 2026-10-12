@@ -30,9 +30,9 @@ void main() {
     const values = <Object>[
       Schemable(caseStyle: AckCaseStyle.snake),
       AckField(description: 'id'),
-      Required(),
-      Optional(),
-      NotNull(),
+      Validate.required(),
+      Validate.optional(),
+      Validate.notNull(),
       Validate.email(),
       Validate.minLength(2),
       Validate.matches(r'^\d+$'),

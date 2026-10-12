@@ -253,7 +253,7 @@ final class Loose with _$LooseAck {
 final class Normalized with _$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
-  @Optional()
+  @Validate.optional()
   final String value;
 }
 
@@ -299,12 +299,12 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
 final class Example with _$ExampleAck {
   const Example({this.label, this.title});
 
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   final String? label;
 
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   @Validate.notEmpty()
   final String? title;
 
@@ -322,7 +322,7 @@ final class ExampleHolder with _$ExampleHolderAck {
 final class OptionalNullable with _$OptionalNullableAck {
   const OptionalNullable({this.note});
 
-  @Optional()
+  @Validate.optional()
   final String? note;
 }
 
@@ -330,7 +330,7 @@ final class OptionalNullable with _$OptionalNullableAck {
 final class InferredNotNull with _$InferredNotNullAck {
   const InferredNotNull({this.label});
 
-  @NotNull()
+  @Validate.notNull()
   final String? label;
 }
 
@@ -340,7 +340,7 @@ AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
 final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
-  @NotNull()
+  @Validate.notNull()
   @AckField(schema: nullableNameSchema)
   final String? name;
 }
@@ -349,8 +349,8 @@ final class OverrideNotNull with _$OverrideNotNullAck {
 final class RequiredNotNull with _$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
-  @Required()
-  @NotNull()
+  @Validate.required()
+  @Validate.notNull()
   final String? value;
 }
 
@@ -380,7 +380,7 @@ final class CapabilityBinding with _$CapabilityBindingAck {
 
   final String name;
 
-  @Optional()
+  @Validate.optional()
   @AckField(schema: parameterMapSchema)
   final Map<String, ParameterEntry> parameters;
 
@@ -404,11 +404,12 @@ final class Envelope with _$EnvelopeAck {
   });
 
   final Object kind;
-  @Optional()
+  @Validate.optional()
   final Object? payload;
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   final Object? strict;
+
   final List<Object> items;
   final Map<String, Object> values;
   final Map<String, Object?> metadata;
@@ -559,9 +560,10 @@ final class UserPatch with _$UserPatchAck {
 
   final JsonMaybe<String> nickname;
 
-  @NotNull()
+  @Validate.notNull()
   @Validate.notEmpty()
   final JsonMaybe<String> title;
+
 
   final JsonMaybe<List<String>> tags;
 }

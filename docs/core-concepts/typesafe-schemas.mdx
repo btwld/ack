@@ -11,9 +11,8 @@ from a Dart class, or start from a `.schema.json` document.
 | A Dart class or sealed union (`final class Account`) | `@Schemable()` | `_accountSchema` codec, `AccountSchema` facade, and `_$AccountAck` mixin in `<file>.g.dart` |
 | A JSON Schema asset (`lib/**/*.schema.json`) | `ack_generator:ack_json_schema` in `build.yaml` | `<name>.schema.dart` + `<name>.schema.g.dart` with typed `@Schemable()` models or validated value models |
 
-`@Schemable()`, the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`), and the `@Validate.*` constraint namespace all come
-from `package:ack/ack.dart` (and `package:ack/annotations.dart`).
+`@Schemable()`, `@AckField`, and the `@Validate.*` constraint and presence
+namespace all come from `package:ack/ack.dart` (and `package:ack/annotations.dart`).
 There is no `@AckSchema()` annotation; `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 
@@ -292,24 +291,25 @@ Nullable defaults keep their source-level behavior. With
 null. With `this.label = null`, missing input and JSON `null` parse as null and
 the encoded object keeps the key with a null value.
 
-Use `@Optional()` or `@Required()` to override inferred key presence. These
-control whether the JSON key must exist; they do not change Dart nullability.
-Unannotated fields keep constructor inference.
+Use `@Validate.optional()` or `@Validate.required()` to override inferred key
+presence. These control whether the JSON key must exist; they do not change Dart
+nullability. Unannotated fields keep constructor inference.
 
-Use `@NotNull()` when the Dart type is nullable (`String?`) but a present JSON
-value must not be `null`. Do not add it on non-nullable fields such as
-`Map<String, V>` — those already reject JSON `null`. `@Optional()` alone on
-`String?` still accepts JSON `null`, matching legacy `presence: optional`
-behavior. `@Optional()` is redundant when the constructor already treats the
-field as optional; `@NotNull()` is the annotation that changes null acceptance:
+Use `@Validate.notNull()` when the Dart type is nullable (`String?`) or
+`JsonMaybe<T>` but a present JSON value must not be `null`. Do not add it on
+non-nullable fields such as `Map<String, V>` — those already reject JSON `null`.
+`@Validate.optional()` alone on `String?` still accepts JSON `null`, matching
+legacy `presence: optional` behavior. `@Validate.optional()` is redundant when
+the constructor already treats the field as optional; `@Validate.notNull()` is
+the annotation that changes null acceptance:
 
 ```dart
 @Schemable()
 final class Example with _$ExampleAck {
   const Example({this.label});
 
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   final String? label;
 }
 ```
@@ -360,12 +360,14 @@ Map values may be `null` only when the value type is nullable. `List<Object?>`
 stays rejected because `Ack.list` has no nullable-item contract. Parsed
 `Object` values are recursively unmodifiable, like other stored collections.
 
-Constraint annotations use `@Validate.*` and follow the field type:
+Validation annotations use `@Validate.*` and follow the field type:
 
+- presence & nullability: `@Validate.required`, `@Validate.optional`, `@Validate.notNull`;
 - numeric: `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`;
 - strings: `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.email`, `@Validate.notEmpty`;
-- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime` (`@Validate.datetime`), `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`;
-- lists and sets: `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems` (`@Validate.unique`).
+- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`;
+- lists and sets: `@Validate.notEmpty`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems`.
+
 
 `@Validate.matches` is the annotation form of `Ack.string().matches(...)`. Numeric
 constraint values must be finite. On a `Set<Set<T>>` field the collection
@@ -681,7 +683,7 @@ targets:
 - Remove `ack_annotations`, `json_serializable`, and `json_annotation` from `pubspec.yaml` (unless used by non-Ack classes), and import `package:ack/ack.dart`.
 - Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
 - Replace `@AckType()`, `@AckInfer()`, and `@AckModel()` with `@Schemable()`.
-- Replace top-level constraint annotations (`@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with `@Validate.*` (`@Validate.min`, `@Validate.max`, `@Validate.minLength`, `@Validate.matches`, `@Validate.email`, `@Validate.dateTime`, etc.).
+- Replace top-level presence and constraint annotations (`@Optional`, `@Required`, `@NotNull`, `@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with `@Validate.*` (`@Validate.optional`, `@Validate.required`, `@Validate.notNull`, `@Validate.min`, `@Validate.max`, `@Validate.minLength`, `@Validate.matches`, `@Validate.email`, `@Validate.dateTime`, etc.).
 - Replace `@JsonKey(name: '...')` on `@Schemable` fields with `@AckField(name: '...')`.
 
 See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for the complete substitution tables and side-by-side before/after examples.

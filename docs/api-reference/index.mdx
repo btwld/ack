@@ -316,8 +316,8 @@ Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
 either direction with one annotation, `@Schemable()`: on a top-level schema it
 generates a model, on a class it generates a schema, and on a `library;`
 directive it registers shared custom schemas via `@Schemable(schemas: [...])`.
-`package:ack/ack.dart` exports `@Schemable`, the model annotations (`@AckField`,
-`@Optional`, `@Required`, `@NotNull`), and the `@Validate.*` constraint namespace.
+`package:ack/ack.dart` exports `@Schemable`, `@AckField`, and the `@Validate.*`
+validation namespace.
 `AckSchema` is the runtime schema type; there is no `@AckSchema()` annotation.
 After adding a `part '<file>.g.dart';` directive, run:
 
@@ -400,12 +400,14 @@ compile-time error.
 **Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, `JsonMaybe<T>`, nested lists, sets, and string-keyed maps
 
-**Constraint annotations (`@Validate.*` from `package:ack/ack.dart`):**
+**Validation annotations (`@Validate.*` from `package:ack/ack.dart`):**
 
+- presence & nullability: `@Validate.required`, `@Validate.optional`, `@Validate.notNull`
 - numeric: `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`
 - strings: `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.email`, `@Validate.notEmpty`
-- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime` (`@Validate.datetime`), `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`
-- collections: `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems` (`@Validate.unique`)
+- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`
+- collections: `@Validate.notEmpty`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems`
+
 
 **Custom schemas:** a field of custom type `T` resolves through:
 1. `@AckField(schema: ...)` on the field or constructor parameter;

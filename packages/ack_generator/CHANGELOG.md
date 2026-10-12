@@ -10,14 +10,17 @@
   `part '<file>.ack.dart';` and `part '<file>.ack.g.dart';` with a single
   `part '<file>.g.dart';`.
 * Remove legacy `@AckType`, `@AckInfer`, `@AckModel`, `*Type` extension-type
-  model generation, and the legacy `@JsonKey(name: ...)` fallback in favor of
-  `@AckField(name: ...)` (`#188`, `#189`).
+  model generation, top-level `@Optional` / `@Required` / `@NotNull` / constraint
+  classes, and the legacy `@JsonKey(name: ...)` fallback in favor of
+  `@Schemable()`, `@Validate.*`, and `@AckField(name: ...)` (`#188`, `#189`, `#191`).
 
 ### Added
 
-* Support `@Validate.*` constraint annotations from `package:ack/ack.dart`
-  across field declarations and primary/generative constructor parameters, as
-  well as `static final schema = _<name>Schema;` on class-first models (`#191`).
+* Support `@Validate.*` presence and constraint annotations (`@Validate.optional()`,
+  `@Validate.required()`, `@Validate.notNull()`, `@Validate.notEmpty()` on
+  `String`/`List`/`Set`, etc.) from `package:ack/ack.dart` across field
+  declarations and primary/generative constructor parameters, as well as
+  `static final schema = _<name>Schema;` on class-first models (`#191`).
 * Support `JsonMaybe<T>` fields in `@Schemable()` class-first models for PATCH
   tri-state presence (`#148`).
 * Support `@AckField(name: '...')` directly without `package:json_annotation`

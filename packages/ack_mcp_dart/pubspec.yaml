@@ -10,7 +10,8 @@ topics:
   - validation
 
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.11.0 <4.0.0'
+
 
 dependencies:
   ack: ^2.0.0-beta.1

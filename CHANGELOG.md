@@ -16,11 +16,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   * **Substitute:** Replace `ack_generator|ack_models` and
     `ack_generator|ack_model_json` in `build.yaml` with
     `ack_generator|ack_generator`.
-* **Unified `@Validate.*` constraint namespace (`#191`)**: Removed the 18
-  `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`, `@Email`, etc.)
+* **Unified `@Validate.*` presence & constraint namespace (`#191`)**: Removed the
+  top-level presence classes (`@Optional`, `@Required`, `@NotNull`), the 18
+  `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`, `@Email`, etc.),
   and `package:ack/format_annotations.dart`.
   * **Substitute:** Use `@Validate.<name>(...)` from `package:ack/ack.dart`
-    (`@Validate.min(...)`, `@Validate.max(...)`, `@Validate.multipleOf(...)`,
+    (`@Validate.optional()`, `@Validate.required()`, `@Validate.notNull()`,
+    `@Validate.min(...)`, `@Validate.max(...)`, `@Validate.multipleOf(...)`,
     `@Validate.positive()`, `@Validate.negative()`, `@Validate.minLength(...)`,
     `@Validate.maxLength(...)`, `@Validate.matches(...)`, `@Validate.notEmpty()`,
     `@Validate.email()`, `@Validate.url()`, `@Validate.uuid()`, `@Validate.date()`,
@@ -31,9 +33,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   Removed `@AckType`, `@AckInfer`, `@AckModel`, `JsonKeyCaseStyle`, `AckTypeDef`,
   `AckFieldPresence`, `*Type` extension-type models, and the `@JsonKey(name: ...)`
   fallback.
-  * **Substitute:** Use `@Schemable()` on schemas and classes, `@Optional()` /
-    `@Required()` / `@NotNull()` for field presence, and `@AckField(name: '...')`
-    for wire-name overrides.
+  * **Substitute:** Use `@Schemable()` on schemas and classes,
+    `@Validate.optional()` / `@Validate.required()` / `@Validate.notNull()` for
+    field presence, and `@AckField(name: '...')` for wire-name overrides.
 * **Removed redundant helpers & `StandardSchemaV1` (`#129`)**:
   * **Substitute:** `Ack.enumCodec(E.values)` $\rightarrow$ `Ack.enumValues(E.values)`.
   * **Substitute:** `registerAckModelTool(...)` $\rightarrow$

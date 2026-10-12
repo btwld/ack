@@ -120,6 +120,8 @@ final class AckSchemaInference {
       if (_validate.isExactlyType(valueType)) {
         final kind = value.getField('kind')!.toStringValue()!;
         switch (kind) {
+          case 'optional' || 'required' || 'notNull':
+            break;
           case 'min':
             _require(
               declaration,
@@ -203,10 +205,14 @@ final class AckSchemaInference {
               declaration,
               type,
               '@Validate.notEmpty',
-              isString,
-              'String field',
+              isString || isCollection,
+              'String, List, or Set field',
             );
-            output = '$output.notEmpty()';
+            if (isCollection) {
+              addCollectionConstraint('.notEmpty()');
+            } else {
+              output = '$output.notEmpty()';
+            }
           case 'email':
             _require(
               declaration,
@@ -252,11 +258,11 @@ final class AckSchemaInference {
               'String field',
             );
             output = '$output.date()';
-          case 'dateTime' || 'datetime':
+          case 'dateTime':
             _require(
               declaration,
               type,
-              '@Validate.$kind',
+              '@Validate.dateTime',
               isString,
               'String field',
             );
@@ -322,11 +328,11 @@ final class AckSchemaInference {
             addCollectionConstraint(
               '.maxItems(${value.getField('value')!.toIntValue()})',
             );
-          case 'uniqueItems' || 'unique':
+          case 'uniqueItems':
             _require(
               declaration,
               type,
-              '@Validate.$kind',
+              '@Validate.uniqueItems',
               isCollection,
               'List or Set field',
             );

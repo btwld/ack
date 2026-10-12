@@ -25,8 +25,9 @@ env:
   # against the change severity, so a breaking change requires a major bump.
   API_BASELINE_VERSION: '1.6.2'
   # The lowest SDK versions that packages/*/pubspec.yaml accept.
-  MINIMUM_DART_VERSION: '3.9.0'
-  MINIMUM_FLUTTER_VERSION: '3.35.0'
+  MINIMUM_DART_VERSION: '3.11.0'
+  MINIMUM_FLUTTER_VERSION: '3.41.2'
+
 
 jobs:
   minimum-dart-sdk:

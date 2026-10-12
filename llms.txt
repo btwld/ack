@@ -5,10 +5,9 @@
 Ack validates untrusted boundary data with schemas built through the `Ack`
 factory. Annotate a top-level schema with `@Schemable()` to generate a model, or
 annotate a hand-written class with `@Schemable()` to generate its schema and
-JSON helpers. `package:ack/ack.dart` exports `@Schemable`, the model
-annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the
-`@Validate.*` constraint namespace. There is no `@AckSchema()` annotation;
-`AckSchema` is the runtime schema type.
+JSON helpers. `package:ack/ack.dart` exports `@Schemable`, `@AckField`, and the
+`@Validate.*` presence and constraint namespace. There is no `@AckSchema()`
+annotation; `AckSchema` is the runtime schema type.
 
 ## Packages
 
@@ -123,11 +122,11 @@ equality. The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`,
 lower-camel alias is emitted. Constructor parameters determine presence and
 defaults. Field types and `@Validate.*` constraint annotations determine the schema. Sealed
 classes use `@Schemable(discriminatorKey: ...)`; same-library concrete branches
-are included automatically. Use `@Optional()` or `@Required()` to override
-inferred key presence, `@NotNull()` to reject an explicit JSON `null` without
-requiring the key, `JsonMaybe<T>` to distinguish omitted keys from explicit
-`null` on both parse and encode, and `@AckField(name: 'wire_name')` for a single
-field's JSON key override.
+are included automatically. Use `@Validate.optional()` or `@Validate.required()`
+to override inferred key presence, `@Validate.notNull()` to reject an explicit
+JSON `null` without requiring the key, `JsonMaybe<T>` to distinguish omitted
+keys from explicit `null` on both parse and encode, and `@AckField(name: 'wire_name')`
+for a single field's JSON key override.
 Use `@Schemable(description: ...)` and `@AckField(description: ...)` to export
 schema descriptions. A single-line `@description` doc tag is a fallback.
 Untagged prose does not export. A field description applies at its property
@@ -226,7 +225,8 @@ Class-first generation supports object models, inferred scalar and enum
 fields, JSON-safe `Object` fields, nested lists, sets through list codecs,
 string-keyed maps, `JsonMaybe<T>`, custom schemas (`@AckField(schema: ...)`,
 `@Schemable(schemas: [...])`, `T.schema`, or auto-detected top-level library
-schemas), `@Optional()`, `@Required()`, `@NotNull()`, `@Validate.*` constraints,
+schemas), `@Validate.*` presence and constraint annotations (`@Validate.optional()`,
+`@Validate.required()`, `@Validate.notNull()`, `@Validate.min(...)`, etc.),
 constructor defaults, case styles, `AckUnknownPropertyPolicy`, and same-library
 sealed discriminated unions. It rejects `dynamic`, nullable list or set
 elements, non-String map keys, recursive class-first graphs, class-first value
@@ -301,9 +301,9 @@ validates through the union's effective branch.
 | `part 'file.ack.dart';` + `part 'file.ack.g.dart';` | Single `part 'file.g.dart';` |
 | `ack_generator\|ack_models`, `ack_generator\|ack_model_json` | `ack_generator\|ack_generator` (plus optional `ack_generator\|ack_json_schema`) |
 | `@AckType()`, `@AckInfer()`, `@AckModel()` | `@Schemable()` |
-| `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`, `@Pattern`, `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`, `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems` | `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`, `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.notEmpty`, `@Validate.email`, `@Validate.url`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.uri`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems` |
+| `@Optional()`, `@Required()`, `@NotNull()`, `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`, `@Pattern`, `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`, `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems` | `@Validate.optional()`, `@Validate.required()`, `@Validate.notNull()`, `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`, `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.notEmpty`, `@Validate.email`, `@Validate.url`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.uri`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems` |
 | `@JsonKey(name: 'wire')` on `@Schemable` fields | `@AckField(name: 'wire')` |
-| `@AckField(presence: ...)` | `@Optional()`, `@Required()`, `@NotNull()`, or `JsonMaybe<T>` |
+| `@AckField(presence: ...)` | `@Validate.optional()`, `@Validate.required()`, `@Validate.notNull()`, or `JsonMaybe<T>` |
 | `Ack.enumCodec(MyEnum.values)` | `Ack.enumValues(MyEnum.values)` |
 | `registerAckModelTool(...)` (`ack_mcp_dart`) | `server.registerAckTool(name, inputSchema: Model.schema, ...)` |
 | `convertAckSchemaModelToBuilder(model)` (`ack_json_schema_builder`) | `schema.toJsonSchemaBuilder()` |

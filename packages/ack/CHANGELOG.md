@@ -5,10 +5,11 @@
 * Remove legacy 1.x generator annotations (`@AckType`, `@AckInfer`, `@AckModel`,
   `JsonKeyCaseStyle`, `AckFieldPresence`, and `@Schemable.generatedJson`). Use
   `@Schemable()` on both top-level schemas and hand-written classes/unions (`#188`, `#189`).
-* Remove the 18 `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`,
+* Remove top-level presence annotations (`@Optional`, `@Required`, `@NotNull`),
+  the 18 `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`,
   `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`,
   `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`,
-  `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems`) and
+  `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems`), and
   `package:ack/format_annotations.dart` in favor of `@Validate.*` (`#191`).
 * Remove `Ack.enumCodec` in favor of `Ack.enumValues` and remove unused
   `StandardSchemaV1` (`#129`).
@@ -28,9 +29,10 @@
 
 ### Added
 
-* Add unified `@Validate.*` constraint annotation namespace
-  (`final class Validate`) exported from both `package:ack/ack.dart` and
-  `package:ack/annotations.dart` (`#191`).
+* Add unified `@Validate.*` presence and constraint annotation namespace
+  (`final class Validate`, including `@Validate.optional()`,
+  `@Validate.required()`, and `@Validate.notNull()`) exported from both
+  `package:ack/ack.dart` and `package:ack/annotations.dart` (`#191`).
 * Add `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) with
   `JsonMaybe.absent()`, `JsonMaybe.value(T? value)`, and `JsonMaybe.nullValue()`
   for PATCH tri-state presence (`#148`).

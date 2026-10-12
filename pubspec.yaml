@@ -4,8 +4,9 @@ publish_to: none
 repository: https://github.com/btwld/ack
 
 environment:
-  sdk: '>=3.9.0 <4.0.0'
-  flutter: '>=3.35.0'
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.41.2'
+
 
 workspace:
   - packages/ack

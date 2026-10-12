@@ -14,7 +14,8 @@ topics:
   - serialization
 
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.11.0 <4.0.0'
+
 dependencies:
   meta: ^1.15.0
   collection: ^1.18.0

@@ -22,6 +22,29 @@ final class Validate {
   /// Optional constraint argument (`num`, `int`, or `String`).
   final Object? value;
 
+  /// Marks a class-first field as optional on the JSON wire.
+  ///
+  /// The JSON key may be omitted. This does not change whether a present JSON
+  /// value may be `null`: a nullable Dart type still accepts JSON `null`, and
+  /// [Validate.notNull] rejects it. Valid only when the constructor can accept
+  /// a missing value, with a discriminator-specific exception for union
+  /// branches.
+  const Validate.optional() : kind = 'optional', value = null;
+
+  /// Marks a class-first field as required on the JSON wire.
+  ///
+  /// The JSON key must be present. This does not change Dart nullability.
+  const Validate.required() : kind = 'required', value = null;
+
+  /// Rejects an explicit JSON `null` without requiring the key to exist.
+  ///
+  /// Needed only when the Dart type is nullable (`T?`) or `JsonMaybe<T>` but a
+  /// present JSON value must not be `null`. Non-nullable Dart fields already
+  /// reject JSON `null`. Dart nullability is unchanged: an omitted optional key
+  /// still becomes `null` on a nullable field, and encoding omits a null Dart
+  /// value.
+  const Validate.notNull() : kind = 'notNull', value = null;
+
   /// Adds `.min(value)` to an inferred numeric schema.
   const Validate.min(num this.value) : kind = 'min';
 
@@ -46,7 +69,7 @@ final class Validate {
   /// Adds `.matches(pattern)` to an inferred string schema.
   const Validate.matches(String pattern) : kind = 'matches', value = pattern;
 
-  /// Adds `.notEmpty()` to an inferred string schema.
+  /// Adds `.notEmpty()` to an inferred string or collection (`List` / `Set`) schema.
   const Validate.notEmpty() : kind = 'notEmpty', value = null;
 
   /// Adds `.email()` to an inferred string schema.
@@ -67,9 +90,6 @@ final class Validate {
   /// Adds `.datetime()` to an inferred string schema.
   const Validate.dateTime() : kind = 'dateTime', value = null;
 
-  /// Adds `.datetime()` to an inferred string schema.
-  const Validate.datetime() : kind = 'datetime', value = null;
-
   /// Adds `.ip()` to an inferred string schema.
   const Validate.ip({int? version}) : kind = 'ip', value = version;
 
@@ -87,7 +107,4 @@ final class Validate {
 
   /// Adds `.unique()` to an inferred collection schema.
   const Validate.uniqueItems() : kind = 'uniqueItems', value = null;
-
-  /// Adds `.unique()` to an inferred collection schema.
-  const Validate.unique() : kind = 'unique', value = null;
 }

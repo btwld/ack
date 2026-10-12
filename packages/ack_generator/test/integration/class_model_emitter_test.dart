@@ -487,8 +487,9 @@ final class Envelope with _\$EnvelopeAck {
   });
 
   final Object kind;
-  @Optional()
+  @Validate.optional()
   final Object? payload;
+
   final List<Object> items;
   final Set<Object> tags;
   final Map<String, Object> values;
@@ -898,15 +899,15 @@ part 'fields.g.dart';
 final class Example with _\$ExampleAck {
   const Example({this.label, this.nickname, this.title});
 
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   final String? label;
 
-  @Optional()
+  @Validate.optional()
   final String? nickname;
 
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   @Validate.notEmpty()
   final String? title;
 }
@@ -915,7 +916,7 @@ final class Example with _\$ExampleAck {
 final class InferredNotNull with _\$InferredNotNullAck {
   const InferredNotNull({this.label});
 
-  @NotNull()
+  @Validate.notNull()
   final String? label;
 }
 
@@ -925,7 +926,7 @@ AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
 final class OverrideNotNull with _\$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
-  @NotNull()
+  @Validate.notNull()
   @AckField(schema: nullableNameSchema)
   final String? name;
 }
@@ -934,8 +935,8 @@ final class OverrideNotNull with _\$OverrideNotNullAck {
 final class RequiredNotNull with _\$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
-  @Required()
-  @NotNull()
+  @Validate.required()
+  @Validate.notNull()
   final String? value;
 }
 
@@ -943,7 +944,7 @@ final class RequiredNotNull with _\$RequiredNotNullAck {
 final class Forced with _\$ForcedAck {
   const Forced({this.summary});
 
-  @Required()
+  @Validate.required()
   final String? summary;
 }
 
@@ -974,10 +975,11 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
 
   final String name;
 
-  @Optional()
+  @Validate.optional()
   @AckField(schema: parameterMapSchema)
   final Map<String, ParameterEntry> parameters;
 }
+
 ''',
         },
         outputs: {
@@ -1126,6 +1128,7 @@ final class CheckedRecord with _\$CheckedRecordAck {
   @Validate.negative()
   final double debt;
 
+  @Validate.notEmpty()
   @Validate.minItems(1)
   @Validate.maxItems(5)
   @Validate.uniqueItems()
@@ -1155,7 +1158,7 @@ final class CheckedRecord with _\$CheckedRecordAck {
               ),
               _containsCode("'debt': Ack.double().negative()"),
               _containsCode(
-                "'tags': Ack.list(Ack.string()).minItems(1).maxItems(5).unique()",
+                "'tags': Ack.list(Ack.string()).notEmpty().minItems(1).maxItems(5).unique()",
               ),
               _containsCode(
                 "'handle': Ack.string().minLength(2).maxLength(20)",
@@ -1187,9 +1190,10 @@ final class UserPatch with _$UserPatchAck {
 
   final JsonMaybe<String> nickname;
 
-  @NotNull()
+  @Validate.notNull()
   @Validate.notEmpty()
   final JsonMaybe<String> title;
+
 
   final JsonMaybe<List<String>> tags;
 }

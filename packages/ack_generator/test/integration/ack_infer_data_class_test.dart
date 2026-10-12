@@ -152,7 +152,7 @@ $_imports
 @Schemable()
 final class User with _\$UserAck {
   const User({this.nickname});
-  @Required()
+  @Validate.required()
   final String? nickname;
 }
 
@@ -192,9 +192,10 @@ $_imports
 final class Normalized with _\$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
-  @Optional()
+  @Validate.optional()
   final String value;
 }
+
 ''',
         outputs: {
           'test_pkg|lib/model.g.dart': decodedMatches(

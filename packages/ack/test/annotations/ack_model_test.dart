@@ -63,19 +63,13 @@ void main() {
     expect(defaults.description, isNull);
   });
 
-  test('presence and null annotations are const', () {
-    const optional = Optional();
-    const required = Required();
-    const notNull = NotNull();
-    expect(optional, isA<Optional>());
-    expect(required, isA<Required>());
-    expect(notNull, isA<NotNull>());
-  });
-
   test(
     'Validate.* constraint annotations are const and expose kind + value',
     () {
       const checks = <Validate>[
+        Validate.optional(),
+        Validate.required(),
+        Validate.notNull(),
         Validate.min(1),
         Validate.max(9.5),
         Validate.multipleOf(2),
@@ -91,7 +85,6 @@ void main() {
         Validate.uuid(),
         Validate.date(),
         Validate.dateTime(),
-        Validate.datetime(),
         Validate.ip(),
         Validate.ip(version: 4),
         Validate.ipv4(),
@@ -99,12 +92,14 @@ void main() {
         Validate.minItems(1),
         Validate.maxItems(10),
         Validate.uniqueItems(),
-        Validate.unique(),
       ];
 
       expect(
         checks.map((c) => (c.kind, c.value)).toList(),
         const <(String, Object?)>[
+          ('optional', null),
+          ('required', null),
+          ('notNull', null),
           ('min', 1),
           ('max', 9.5),
           ('multipleOf', 2),
@@ -120,7 +115,6 @@ void main() {
           ('uuid', null),
           ('date', null),
           ('dateTime', null),
-          ('datetime', null),
           ('ip', null),
           ('ip', 4),
           ('ipv4', null),
@@ -128,7 +122,6 @@ void main() {
           ('minItems', 1),
           ('maxItems', 10),
           ('uniqueItems', null),
-          ('unique', null),
         ],
       );
     },

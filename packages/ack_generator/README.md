@@ -2,9 +2,9 @@
 
 `ack_generator` supports two directions through `@Schemable()`:
 it turns a top-level Ack schema into an immutable model and derives an Ack
-codec schema from a hand-written class. `@Schemable()`, the model annotations
-(`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the `@Validate.*`
-constraint namespace are all exported from `package:ack/ack.dart`.
+codec schema from a hand-written class. `@Schemable()`, `@AckField()`, and the
+`@Validate.*` validation namespace are all exported from `package:ack/ack.dart`.
+
 
 ## Generate models from JSON Schema
 
@@ -277,15 +277,17 @@ shared by all `@Schemable` classes in that library and any library that imports 
 
 On a class, `@Schemable()` annotates public, constructable `final class` declarations whose
 stored fields are final. Annotated sealed union bases remain supported, and
-their concrete branches must also be final. Use `@Optional()` or `@Required()`
-to override inferred key presence, `@NotNull()` to reject JSON `null` without
-requiring the key, `JsonMaybe<T>` to distinguish omitted keys from explicit
-`null` on both parse and encode, and `@AckField(name: 'wire_name')` to override
-a single field's JSON key. Constraint annotations use `@Validate.*` (such as
-`@Validate.matches(pattern)` for `Ack.string().matches(pattern)`). See the
+their concrete branches must also be final. Use `@Validate.optional()` or
+`@Validate.required()` to override inferred key presence, `@Validate.notNull()`
+to reject JSON `null` without requiring the key, `JsonMaybe<T>` to distinguish
+omitted keys from explicit `null` on both parse and encode, and
+`@AckField(name: 'wire_name')` to override a single field's JSON key. Validation
+annotations use `@Validate.*` (such as `@Validate.matches(pattern)` for
+`Ack.string().matches(pattern)`). See the
 [Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas)
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.
+
 
 Open JSON and presence-aware fields are inferred from their Dart types. `Object`
 means a JSON-safe value, not an arbitrary Dart instance:

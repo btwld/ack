@@ -1286,36 +1286,42 @@ final class User with _\$UserAck {
     },
   );
 
-  test('rejects @Optional() on a required constructor parameter', () async {
-    await _expectFailure(
-      '''
+  test(
+    'rejects @Validate.optional() on a required constructor parameter',
+    () async {
+      await _expectFailure(
+        '''
 @Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Optional()
+  @Validate.optional()
   final String name;
 }
 ''',
-      ['User.name', 'optional', 'constructor'],
-    );
-  });
+        ['User.name', 'optional', 'constructor'],
+      );
+    },
+  );
 
-  test('rejects combining @Optional() and @Required()', () async {
-    await _expectFailure(
-      '''
+  test(
+    'rejects combining @Validate.optional() and @Validate.required()',
+    () async {
+      await _expectFailure(
+        '''
 @Schemable()
 final class User with _\$UserAck {
   const User({this.name});
 
-  @Optional()
-  @Required()
+  @Validate.optional()
+  @Validate.required()
   final String? name;
 }
 ''',
-      ['User.name', '@Optional()', '@Required()'],
-    );
-  });
+        ['User.name', '@Validate.optional()', '@Validate.required()'],
+      );
+    },
+  );
 
   test('rejects an unmapped constructor parameter', () async {
     await _expectFailure(
