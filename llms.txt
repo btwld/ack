@@ -290,7 +290,7 @@ validates through the union's effective branch.
   `unknownProperties: AckUnknownPropertyPolicy.<policy>`.
 - Regenerate all checked-in outputs with `dart run build_runner build`.
 
-## Migration from 1.7.0-beta.2
+## Migration from 1.6.x
 
 - Remove `ack_annotations`. Import `package:ack/ack.dart` for the model
   annotations, and replace `package:ack_annotations/ack_annotations.dart` with
