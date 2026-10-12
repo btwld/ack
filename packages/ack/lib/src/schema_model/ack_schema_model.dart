@@ -238,7 +238,11 @@ sealed class AckSchemaModel {
     String keyword,
     List<AckSchemaModel> schemas,
   ) {
-    final branches = schemas.map((schema) => schema.toJsonSchema()).toList();
+    final branches = [
+      ...schemas.map((schema) => schema.toJsonSchema()),
+      if (keyword == 'allOf')
+        if (extensions['allOf'] case final List<Object?> extra) ...extra,
+    ];
     if (nullable && !schemas.any((schema) => schema is AckNullSchemaModel)) {
       // Match Zod v4's Draft-7 nullable-union shape: keep the composition as
       // one branch, then add null as the other branch. Flattening would validate
@@ -311,7 +315,13 @@ final class AckRawSchemaModel extends AckSchemaModel {
 
   @override
   Map<String, Object?> toJsonSchema() {
-    final body = {...schema, ..._common.toJson()};
+    final body = {
+      ...schema,
+      ..._common.toJson(),
+      if (schema['allOf'] case final List<Object?> sourceAllOf)
+        if (extensions['allOf'] case final List<Object?> extraAllOf)
+          'allOf': [...sourceAllOf, ...extraAllOf],
+    };
     if (!nullable) return body;
     const resourceKeywords = {r'$schema', r'$id', r'$defs', 'definitions'};
     final relocated = _relocateRootPointers(
@@ -441,7 +451,10 @@ final class AckRefSchemaModel extends AckSchemaModel {
 
     return {
       ...commonJson,
-      'allOf': [refJson],
+      'allOf': [
+        refJson,
+        if (commonJson['allOf'] case final List<Object?> extra) ...extra,
+      ],
     };
   }
 

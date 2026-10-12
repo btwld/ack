@@ -158,6 +158,39 @@ void main() {
     final restored = Ack.fromJsonSchema(composed.toJsonSchema());
     expect(restored.safeParse({'first': value, 'second': value}).isOk, isTrue);
   });
+
+  test(
+    'conflicting constraints preserve source allOf and non-null branches',
+    () {
+      final schema = Ack.fromJsonSchema({
+        'minLength': 2,
+        'allOf': [
+          {'maxLength': 10},
+        ],
+      }).nullable(value: false).constrain(const _MinLength(3));
+      final restored = Ack.fromJsonSchema(schema.toJsonSchema());
+      for (final value in <Object?>[null, 'ab', 'abc', 'abcdefghijk']) {
+        expect(
+          restored.safeParse(value).isOk,
+          schema.safeParse(value).isOk,
+          reason: '$value',
+        );
+      }
+
+      final composed = Ack.object({
+        'value': schema.constrain(const _MinLength(4)),
+      });
+      final restoredComposed = Ack.fromJsonSchema(composed.toJsonSchema());
+      for (final value in <Object?>[null, 'abc', 'abcd', 'abcdefghijk']) {
+        final input = {'value': value};
+        expect(
+          restoredComposed.safeParse(input).isOk,
+          composed.safeParse(input).isOk,
+          reason: '$input',
+        );
+      }
+    },
+  );
 }
 
 final class _OnlyStrings extends Constraint<Object>
@@ -173,4 +206,21 @@ final class _OnlyStrings extends Constraint<Object>
 
   @override
   Map<String, Object?> toJsonSchema() => {'type': 'string'};
+}
+
+final class _MinLength extends Constraint<Object>
+    with Validator<Object>, JsonSchemaSpec<Object> {
+  const _MinLength(this.min)
+    : super(constraintKey: 'min_length', description: 'Too short.');
+
+  final int min;
+
+  @override
+  bool isValid(Object value) => value is! String || value.length >= min;
+
+  @override
+  String buildMessage(Object value) => description;
+
+  @override
+  Map<String, Object?> toJsonSchema() => {'minLength': min};
 }

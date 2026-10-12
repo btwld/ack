@@ -620,6 +620,7 @@ AckSchemaModel _applyConstraints(
         next = next.withJsonSchemaKeywords(newKeywords);
       }
       if (conflicts.isNotEmpty) {
+        appliedKeywordValues.putIfAbsent('allOf', () => <Object?>[]);
         final existingAllOf = switch (next.extensions['allOf']) {
           final List<Object?> value => value,
           _ => const <Object?>[],
