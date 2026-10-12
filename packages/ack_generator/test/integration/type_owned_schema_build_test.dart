@@ -19,22 +19,18 @@ void _expectSuccess(ProcessResult result, String command) {
 }
 
 void main() {
-  test(
-    'type-owned schemas build, analyze, and round-trip',
-    () async {
-      var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
-        projectRoot = projectRoot.parent;
-      }
-      final temporary = await Directory.systemTemp.createTemp(
-        'ack_type_owned_',
-      );
-      try {
-        Directory(p.join(temporary.path, 'lib')).createSync();
-        Directory(p.join(temporary.path, 'test')).createSync();
-        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+  test('type-owned schemas build, analyze, and round-trip', () async {
+    var projectRoot = Directory.current;
+    while (!Directory(
+      p.join(projectRoot.path, 'packages', 'ack_generator'),
+    ).existsSync()) {
+      projectRoot = projectRoot.parent;
+    }
+    final temporary = await Directory.systemTemp.createTemp('ack_type_owned_');
+    try {
+      Directory(p.join(temporary.path, 'lib')).createSync();
+      Directory(p.join(temporary.path, 'test')).createSync();
+      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_type_owned
 publish_to: none
 environment:
@@ -51,7 +47,7 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(p.join(temporary.path, 'lib', 'types.dart')).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'lib', 'types.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 final class Slot {
@@ -143,8 +139,7 @@ AckSchema<int, Money> importedMoneySchema() => Ack.integer().codec<Money>(
   encode: (money) => money.cents,
 );
 ''');
-        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
-          r'''
+      File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 import 'types.dart';
@@ -236,11 +231,10 @@ final panelSchema = Ack.object({
   'openAll': Trigger.schema<void>(),
   'habit': Habit.schema.optional(),
 });
-''',
-        );
-        File(
-          p.join(temporary.path, 'test', 'type_owned_test.dart'),
-        ).writeAsStringSync(r'''
+''');
+      File(
+        p.join(temporary.path, 'test', 'type_owned_test.dart'),
+      ).writeAsStringSync(r'''
 import 'package:ack_type_owned/models.dart';
 import 'package:ack_type_owned/types.dart';
 import 'package:test/test.dart';
@@ -348,30 +342,28 @@ void main() {
 }
 ''');
 
-        _expectSuccess(
-          await _run(temporary, ['pub', 'get', '--offline']),
-          'dart pub get --offline',
-        );
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'build_runner build',
-        );
-        final generated = File(
-          p.join(temporary.path, 'lib', 'models.g.dart'),
-        ).readAsStringSync();
-        expect(generated, contains('Command.schema<CompletionAction>()'));
-        expect(generated, contains('Trigger.schema<void>()'));
-        expect(generated, contains('Box.schema<Habit>(HabitSchema.schema)'));
-        expect(generated, contains('Ack.map(Slot.schema)'));
-        _expectSuccess(
-          await _run(temporary, ['analyze', '--fatal-infos']),
-          'dart analyze --fatal-infos',
-        );
-        _expectSuccess(await _run(temporary, ['test']), 'dart test');
-      } finally {
-        temporary.deleteSync(recursive: true);
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+      _expectSuccess(
+        await _run(temporary, ['pub', 'get', '--offline']),
+        'dart pub get --offline',
+      );
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'build_runner build',
+      );
+      final generated = File(
+        p.join(temporary.path, 'lib', 'models.g.dart'),
+      ).readAsStringSync();
+      expect(generated, contains('Command.schema<CompletionAction>()'));
+      expect(generated, contains('Trigger.schema<void>()'));
+      expect(generated, contains('Box.schema<Habit>(HabitSchema.schema)'));
+      expect(generated, contains('Ack.map(Slot.schema)'));
+      _expectSuccess(
+        await _run(temporary, ['analyze', '--fatal-infos']),
+        'dart analyze --fatal-infos',
+      );
+      _expectSuccess(await _run(temporary, ['test']), 'dart test');
+    } finally {
+      temporary.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }
