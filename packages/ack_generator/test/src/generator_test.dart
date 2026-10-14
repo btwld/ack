@@ -30,14 +30,13 @@ void main() {
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         outputs: {
-          'test_pkg|lib/schema.ack.dart': decodedMatches(
+          'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
               contains('// GENERATED CODE - DO NOT MODIFY BY HAND'),
               contains("part of 'schema.dart';"),
@@ -53,7 +52,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     await _build('final value = 1;', outputs: const {});
   });
 
-  test('reports the exact required part directives', () async {
+  test('reports the exact required part directive', () async {
     var sawError = false;
     await _build(
       '''
@@ -66,8 +65,7 @@ final userSchema = Ack.string();
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
-            log.message.contains("part 'schema.ack.dart';") &&
-            log.message.contains("part 'schema.ack.g.dart';")) {
+            log.message.contains("part 'schema.g.dart';")) {
           sawError = true;
         }
       },
@@ -75,7 +73,7 @@ final userSchema = Ack.string();
     expect(sawError, isTrue);
   });
 
-  test('reports the required part directives for Schemable', () async {
+  test('reports the required part directive for Schemable classes', () async {
     var sawError = false;
     await _build(
       '''
@@ -91,8 +89,7 @@ final class User with _\$UserAck {
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
-            log.message.contains("part 'schema.ack.dart';") &&
-            log.message.contains("part 'schema.ack.g.dart';")) {
+            log.message.contains("part 'schema.g.dart';")) {
           sawError = true;
         }
       },
@@ -100,12 +97,10 @@ final class User with _\$UserAck {
     expect(sawError, isTrue);
   });
 
-  test(
-    'rejects a missing JSON part even when the Ack part is present',
-    () async {
-      var sawError = false;
-      await _build(
-        '''
+  test('rejects legacy .ack.dart part directive without .g.dart', () async {
+    var sawError = false;
+    await _build(
+      '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
@@ -114,17 +109,16 @@ part 'schema.ack.dart';
 @Schemable()
 final userSchema = Ack.string();
 ''',
-        outputs: const {},
-        onLog: (log) {
-          if (log.level.name == 'SEVERE' &&
-              log.message.contains("part 'schema.ack.g.dart';")) {
-            sawError = true;
-          }
-        },
-      );
-      expect(sawError, isTrue);
-    },
-  );
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains("part 'schema.g.dart';")) {
+          sawError = true;
+        }
+      },
+    );
+    expect(sawError, isTrue);
+  });
 
   test('does not reject part directives with a leading ./', () async {
     var sawOurPartError = false;
@@ -133,8 +127,7 @@ final userSchema = Ack.string();
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part './schema.ack.dart';
-part './schema.ack.g.dart';
+part './schema.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -159,8 +152,7 @@ final userSchema = Ack.object({'name': Ack.string()});
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'sub/schema.ack.dart';
-part 'sub/schema.ack.g.dart';
+part 'sub/schema.g.dart';
 
 @Schemable()
 final userSchema = Ack.string();
@@ -168,8 +160,7 @@ final userSchema = Ack.string();
         outputs: const {},
         onLog: (log) {
           if (log.level.name == 'SEVERE' &&
-              log.message.contains("part 'schema.ack.dart';") &&
-              log.message.contains("part 'schema.ack.g.dart';")) {
+              log.message.contains("part 'schema.g.dart';")) {
             sawError = true;
           }
         },
@@ -178,15 +169,14 @@ final userSchema = Ack.string();
     },
   );
 
-  test('rejects a JSON part that does not match the basename', () async {
+  test('rejects a part that does not match the basename', () async {
     var sawError = false;
     await _build(
       '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'schema.ack.dart';
-part 'other.ack.g.dart';
+part 'other.g.dart';
 
 @Schemable()
 final userSchema = Ack.string();
@@ -194,7 +184,7 @@ final userSchema = Ack.string();
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
-            log.message.contains("part 'schema.ack.g.dart';")) {
+            log.message.contains("part 'schema.g.dart';")) {
           sawError = true;
         }
       },
@@ -202,19 +192,21 @@ final userSchema = Ack.string();
     expect(sawError, isTrue);
   });
 
-  test('rejects AckInfer on classes', () async {
+  test('rejects Schemable on enums', () async {
     var sawError = false;
     await _build(
       '''
 import 'package:ack/annotations.dart';
 
-@AckInfer()
-class InvalidSchema {}
+@Schemable()
+enum InvalidTarget { a, b }
 ''',
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
-            log.message.contains('top-level schema variables or getters')) {
+            log.message.contains(
+              '@Schemable can only be applied to classes or top-level schema',
+            )) {
           sawError = true;
         }
       },

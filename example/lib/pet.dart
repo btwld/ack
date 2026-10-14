@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 
-part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 /// Pet schemas: discriminated by 'type'
 @Schemable()

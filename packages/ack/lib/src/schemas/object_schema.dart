@@ -378,18 +378,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
   }
 
   @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'properties': properties.length,
-      'additionalProperties': additionalProperties,
-    };
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ObjectSchema) return false;

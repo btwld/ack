@@ -65,9 +65,6 @@ void main() {
       encode: (_) => {'name': 'cat', 'createdAt': DateTime.utc(2026)},
     );
 
-    expect(codec.toJsonSchema(), {
-      ...input.toJsonSchema(),
-      'x-transformed': true,
-    });
+    expect(codec.toJsonSchema(), input.toJsonSchema());
   });
 }

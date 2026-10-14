@@ -162,26 +162,31 @@ Ack.string().ip(version: 4) // IPv4 only
 Ack.string().ip(version: 6) // IPv6 only
 ```
 
-## String transformations
+## String normalizers
 
-These methods modify the output value during parsing rather than adding a validation constraint.
+These methods live directly on `StringSchema` and normalize the string in
+declaration order alongside constraints during both `parse` and `encode`.
+Because they return `StringSchema`, you can continue chaining string
+constraints (`Ack.string().trim().minLength(2)`), use them inside `@Schemable()`
+models, and export them to JSON Schema as `type: 'string'` without
+`'x-transformed': true`.
 
 ### `trim()`
-Removes leading and trailing whitespace.
+Removes leading and trailing whitespace on parse and encode.
 ```dart
-Ack.string().trim()
+Ack.string().trim().minLength(2)
 // "  hello  " → "hello"
 ```
 
 ### `toLowerCase()`
-Converts the string to lowercase.
+Converts the string to lowercase on parse and encode.
 ```dart
 Ack.string().toLowerCase()
 // "HELLO" → "hello"
 ```
 
 ### `toUpperCase()`
-Converts the string to uppercase.
+Converts the string to uppercase on parse and encode.
 ```dart
 Ack.string().toUpperCase()
 // "hello" → "HELLO"

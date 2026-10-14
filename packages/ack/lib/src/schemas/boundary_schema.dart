@@ -1,6 +1,7 @@
 part of 'schema.dart';
 
-/// Validates with another schema while preserving the original boundary value.
+/// Schema wrapper that validates with [inner] while preserving the original
+/// boundary value.
 ///
 /// This is useful when callers need a composable schema for validating wire
 /// data without retaining any runtime values produced by nested codecs.

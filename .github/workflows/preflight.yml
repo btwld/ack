@@ -5,7 +5,7 @@ name: Release preflight
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/**']
   # No `branches:` filter. A stacked pull request targets its parent
   # branch, not main, and would otherwise run no checks at all.
   pull_request:
@@ -25,8 +25,9 @@ env:
   # against the change severity, so a breaking change requires a major bump.
   API_BASELINE_VERSION: '1.6.2'
   # The lowest SDK versions that packages/*/pubspec.yaml accept.
-  MINIMUM_DART_VERSION: '3.9.0'
-  MINIMUM_FLUTTER_VERSION: '3.35.0'
+  MINIMUM_DART_VERSION: '3.11.0'
+  MINIMUM_FLUTTER_VERSION: '3.41.2'
+
 
 jobs:
   minimum-dart-sdk:
@@ -192,13 +193,12 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
-      # `.ack.dart` holds the generated models and `.ack.g.dart` holds the JSON
-      # mapping. Both are generated, so a clean rebuild must reproduce them.
-      # The `*.g.dart` glob below also matches `*.ack.g.dart`.
+      # `.g.dart` holds the generated Ack models, schemas, and JSON mapping.
+      # A clean rebuild must reproduce them identically.
       - name: Delete the committed generator output
         run: |
           set -euo pipefail
-          git ls-files -z -- '*.ack.dart' '*.g.dart' \
+          git ls-files -z -- '*.g.dart' \
             | xargs -0 --no-run-if-empty rm --
 
       - name: Regenerate from a clean tree

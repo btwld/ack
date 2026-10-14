@@ -1,8 +1,10 @@
 part of 'schema.dart';
 
-/// Wraps another schema and supplies a runtime default when the input is
-/// null on parse. Object encode injects encoded defaults for missing
-/// default-wrapped fields.
+/// Schema wrapper that supplies [defaultValue] when the parse input is
+/// `null`.
+///
+/// Object encoding also injects encoded defaults for missing default-wrapped
+/// fields.
 @immutable
 final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>

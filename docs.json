@@ -28,6 +28,10 @@
         {
           "title": "Quickstart Tutorial",
           "href": "/getting-started/quickstart-tutorial"
+        },
+        {
+          "title": "What's New & Migration Guide",
+          "href": "/getting-started/migration-guide"
         }
       ]
     },
@@ -51,7 +55,11 @@
           "href": "/guides/flutter-form-validation"
         },
         { "title": "Common Recipes", "href": "/guides/common-recipes" },
-        { "title": "Custom Validation", "href": "/guides/custom-validation" }
+        { "title": "Custom Validation", "href": "/guides/custom-validation" },
+        {
+          "title": "Ecosystem Integrations",
+          "href": "/guides/ecosystem-integrations"
+        }
       ]
     },
     {
@@ -89,8 +97,8 @@
   ],
   "variables": {
     "versions": {
-      "default": "1.2.0",
-      "isPrerelease": false
+      "default": "2.0.0-alpha.1",
+      "isPrerelease": true
     }
   },
   "search": {},

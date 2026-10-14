@@ -41,8 +41,7 @@ Future<void> _expectConsumerSafeParts(
   const lintSuppression = '// ignore_for_file: type=lint\n';
   final modern = {
     for (final MapEntry(key: path, value: source) in generated.entries)
-      if (path.endsWith('.ack.dart') || path.endsWith('.ack.g.dart'))
-        path: source,
+      if (path.endsWith('.g.dart')) path: source,
   };
   expect(modern, isNotEmpty);
   for (final MapEntry(key: path, value: source) in modern.entries) {
@@ -50,7 +49,7 @@ Future<void> _expectConsumerSafeParts(
     expect(source, contains('// coverage:ignore-file\n'), reason: path);
     File(
       p.join(project.path, path),
-    ).writeAsStringSync(source.replaceFirst(lintSuppression, ''));
+    ).writeAsStringSync(source.replaceAll(lintSuppression, ''));
   }
   try {
     _expectSuccess(
@@ -123,17 +122,6 @@ linter:
     - prefer_null_aware_operators
 ''',
         );
-        File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
-targets:
-  \$default:
-    builders:
-      ack_generator:ack_generator:
-        generate_for:
-          - lib/coexist.dart
-      source_gen:combining_builder:
-        generate_for:
-          - lib/models.dart
-''');
         File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final String value; }\n',
         );
@@ -143,15 +131,8 @@ targets:
         File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 part 'coexist.g.dart';
-part 'coexist.ack.dart';
-part 'coexist.ack.g.dart';
-
-// ignore: deprecated_member_use
-@AckType()
-final frozenSchema = Ack.object({'id': Ack.string()});
 
 @Schemable()
 final modernSchema = Ack.object({'name': Ack.string()});
@@ -167,15 +148,11 @@ final class Handwritten with _$HandwrittenAck {
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
-import 'package:json_annotation/json_annotation.dart'
-    show JsonKey, JsonSerializable;
+import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
 
 import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
 part 'models.g.dart';
 
 final class Color {
@@ -200,16 +177,7 @@ AckSchema<String, alpha.Item> alphaItemSchema() => Ack.string()
 AckSchema<int, beta.Item> betaItemSchema() => Ack.integer()
     .codec<beta.Item>(decode: beta.Item.new, encode: (item) => item.value);
 
-AckSchema<Map<String, Object?>, Map<String, List<String>>> groupsSchema() =>
-    Ack.object({}, additionalProperties: true)
-        .codec<Map<String, List<String>>>(
-          decode: (value) => value.map(
-            (key, item) => MapEntry(key, (item! as List).cast<String>()),
-          ),
-          encode: (value) => value,
-        );
-
-@Schemable()
+@Schemable(schemas: [colorSchema])
 final class Profile with _$ProfileAck {
   const Profile({
     required this.name,
@@ -224,9 +192,8 @@ final class Profile with _$ProfileAck {
   final Uri? website;
   final String? nickname;
   final String role;
-  @UniqueItems()
+  @Validate.uniqueItems()
   final Set<String> tags;
-  @AckField(schema: colorSchema)
   final Color color;
 
   static final fromJson = ProfileSchema.fromJson;
@@ -236,7 +203,7 @@ final class Profile with _$ProfileAck {
 final class Account with _$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
   final String firstName;
-  @JsonKey(name: 'avatar')
+  @AckKey('avatar')
   final Uri imageUrl;
 
   static final fromJson = AccountSchema.fromJson;
@@ -276,7 +243,7 @@ final class Loose with _$LooseAck {
 final class Normalized with _$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
-  @Optional()
+  @Validate.optional()
   final String value;
 }
 
@@ -294,12 +261,10 @@ final class NullDefault with _$NullDefaultAck {
   final String? label;
 }
 
-@Schemable()
+@Schemable(schemas: [alphaItemSchema, betaItemSchema])
 final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
-  @AckField(schema: alphaItemSchema)
   final alpha.Item left;
-  @AckField(schema: betaItemSchema)
   final beta.Item right;
 }
 
@@ -312,9 +277,8 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
   });
 
   final List<List<String>> matrix;
-  @UniqueItems()
+  @Validate.uniqueItems()
   final Set<String> labels;
-  @AckField(schema: groupsSchema)
   final Map<String, List<String>> groups;
 }
 
@@ -322,13 +286,13 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
 final class Example with _$ExampleAck {
   const Example({this.label, this.title});
 
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   final String? label;
 
-  @Optional()
-  @NotNull()
-  @NotEmpty()
+  @Validate.optional()
+  @Validate.notNull()
+  @Validate.notEmpty()
   final String? title;
 
   static final fromJson = ExampleSchema.fromJson;
@@ -345,7 +309,7 @@ final class ExampleHolder with _$ExampleHolderAck {
 final class OptionalNullable with _$OptionalNullableAck {
   const OptionalNullable({this.note});
 
-  @Optional()
+  @Validate.optional()
   final String? note;
 }
 
@@ -353,27 +317,41 @@ final class OptionalNullable with _$OptionalNullableAck {
 final class InferredNotNull with _$InferredNotNullAck {
   const InferredNotNull({this.label});
 
-  @NotNull()
+  @Validate.notNull()
   final String? label;
 }
 
-AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
+final class NameTag {
+  const NameTag(this.value);
+  final String value;
 
-@Schemable()
+  @override
+  bool operator ==(Object other) => other is NameTag && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+}
+
+AckSchema<String, NameTag> nullableNameSchema() =>
+    Ack.string().nullable().codec<NameTag>(
+      decode: NameTag.new,
+      encode: (value) => value.value,
+    );
+
+@Schemable(schemas: [nullableNameSchema])
 final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
-  @NotNull()
-  @AckField(schema: nullableNameSchema)
-  final String? name;
+  @Validate.notNull()
+  final NameTag? name;
 }
 
 @Schemable()
 final class RequiredNotNull with _$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
-  @Required()
-  @NotNull()
+  @Validate.required()
+  @Validate.notNull()
   final String? value;
 }
 
@@ -382,19 +360,13 @@ final class ParameterEntry {
   final String value;
 }
 
-AckSchema<Map<String, Object?>, Map<String, ParameterEntry>>
-parameterMapSchema() =>
-    Ack.object({}, additionalProperties: true).codec<Map<String, ParameterEntry>>(
-      decode: (value) => {
-        for (final entry in value.entries)
-          entry.key: ParameterEntry(entry.value! as String),
-      },
-      encode: (value) => {
-        for (final entry in value.entries) entry.key: entry.value.value,
-      },
+AckSchema<String, ParameterEntry> parameterEntrySchema() =>
+    Ack.string().codec<ParameterEntry>(
+      decode: ParameterEntry.new,
+      encode: (value) => value.value,
     );
 
-@Schemable()
+@Schemable(schemas: [parameterEntrySchema])
 final class CapabilityBinding with _$CapabilityBindingAck {
   CapabilityBinding({
     required this.name,
@@ -403,15 +375,11 @@ final class CapabilityBinding with _$CapabilityBindingAck {
 
   final String name;
 
-  @Optional()
-  @AckField(schema: parameterMapSchema)
+  @Validate.optional()
   final Map<String, ParameterEntry> parameters;
 
   static final fromJson = CapabilityBindingSchema.fromJson;
 }
-
-AckSchema<Map<String, int?>, Map<String, int?>> scoresSchema() =>
-    Ack.map(Ack.integer().min(0));
 
 @Schemable()
 final class Envelope with _$EnvelopeAck {
@@ -427,16 +395,16 @@ final class Envelope with _$EnvelopeAck {
   });
 
   final Object kind;
-  @Optional()
+  @Validate.optional()
   final Object? payload;
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   final Object? strict;
+
   final List<Object> items;
   final Map<String, Object> values;
   final Map<String, Object?> metadata;
   final Map<String, String> labels;
-  @AckField(schema: scoresSchema)
   final Map<String, int> scores;
 }
 
@@ -530,8 +498,7 @@ final class Board with _$BoardAck {
   const Board({required this.focus, required this.backlog, this.pinned});
 
   /// The task to do next.
-  /// @description This tag has lower priority.
-  @AckField(description: 'The task to do next.')
+  /// @description The task to do next.
   final Task focus;
   final List<Task> backlog;
   final Task? pinned;
@@ -571,6 +538,24 @@ final class Square extends Shape with _$SquareAck {
 
 @Schemable()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
+
+@Schemable()
+final class UserPatch with _$UserPatchAck {
+  const UserPatch({
+    this.nickname = const JsonMaybe.absent(),
+    this.title = const JsonMaybe.absent(),
+    this.tags = const JsonMaybe.absent(),
+  });
+
+  final JsonMaybe<String> nickname;
+
+  @Validate.notNull()
+  @Validate.notEmpty()
+  final JsonMaybe<String> title;
+
+
+  final JsonMaybe<List<String>> tags;
+}
 
 @JsonSerializable()
 final class PlainJson {
@@ -643,7 +628,7 @@ void main() {
       throwsA(isA<AckException>()),
     );
     expect(ProfileSchema.safeParse({'name': 'Ada'}).isFail, isTrue);
-    expect(ProfileSchema.toJsonSchema()['x-transformed'], isTrue);
+    expect(ProfileSchema.toJsonSchema().containsKey('x-transformed'), isFalse);
     expect(
       ProfileSchema.toSchemaModel().toJsonSchema(),
       ProfileSchema.toJsonSchema(),
@@ -880,9 +865,12 @@ void main() {
     expect(InferredNotNull().toJson(), {});
   });
 
-  test('NotNull wins over a nullable AckField schema override', () {
+  test('NotNull wins over a nullable custom schema', () {
     expect(OverrideNotNullSchema.parse({}).name, isNull);
-    expect(OverrideNotNullSchema.parse({'name': 'ada'}).name, 'ada');
+    expect(
+      OverrideNotNullSchema.parse({'name': 'ada'}).name,
+      const NameTag('ada'),
+    );
     expect(OverrideNotNullSchema.safeParse({'name': null}).isFail, isTrue);
     expect(OverrideNotNull().toJson(), {});
   });
@@ -998,7 +986,7 @@ void main() {
       'labels': {'env': 1},
     },
     {
-      'scores': {'a': -1},
+      'scores': {'a': 'not-an-int'},
     },
   ]) {
     test('Envelope rejects invalid field values: $invalid', () {
@@ -1154,15 +1142,63 @@ void main() {
     expect(plain.toJson(), {'value': 'plain'});
   });
 
-  test('all three Ack model generators coexist in one build-runner library', () {
-    expect(FrozenType.parse({'id': 'frozen'}).id, 'frozen');
+  test('schema-first and class-first Ack models coexist in one build-runner library', () {
     expect(Modern.parse({'name': 'modern'}).name, 'modern');
     expect(HandwrittenSchema.parse({'enabled': true}).enabled, isTrue);
+  });
+
+  test('JsonMaybe<T> fields distinguish omitted vs explicit null on decode and encode', () {
+    final empty = UserPatchSchema.parse({});
+    expect(empty.nickname, const JsonMaybe<String>.absent());
+    expect(empty.title, const JsonMaybe<String>.absent());
+    expect(empty.tags, const JsonMaybe<List<String>>.absent());
+    expect(empty.toJson(), <String, Object?>{});
+
+    final cleared = UserPatchSchema.parse({'nickname': null, 'tags': null});
+    expect(cleared.nickname, const JsonMaybe<String>.nullValue());
+    expect(cleared.nickname.isNull, isTrue);
+    expect(cleared.tags, const JsonMaybe<List<String>>.nullValue());
+    expect(cleared.toJson(), <String, Object?>{'nickname': null, 'tags': null});
+
+    final populated = UserPatchSchema.parse({
+      'nickname': 'Ada',
+      'title': 'Countess',
+      'tags': ['math', 'code'],
+    });
+    expect(populated.nickname, const JsonMaybe.value('Ada'));
+    expect(populated.title, const JsonMaybe.value('Countess'));
+    expect(populated.tags, const JsonMaybe.value(['math', 'code']));
+    expect(populated.toJson(), {
+      'nickname': 'Ada',
+      'title': 'Countess',
+      'tags': ['math', 'code'],
+    });
+
+    expect(
+      UserPatchSchema.safeParse({'title': null}).isFail,
+      isTrue,
+    );
+    expect(
+      UserPatchSchema.safeParse({'title': ''}).isFail,
+      isTrue,
+    );
+
+    final copied = populated.copyWith(
+      nickname: const JsonMaybe.absent(),
+      tags: const JsonMaybe.nullValue(),
+    );
+    expect(copied.toJson(), {
+      'title': 'Countess',
+      'tags': null,
+    });
   });
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',
@@ -1170,63 +1206,49 @@ void main() {
         final generated = _generatedFiles(temporary);
         expect(
           generated.keys,
-          containsAll([
-            'lib/coexist.g.dart',
-            'lib/coexist.ack.dart',
-            'lib/coexist.ack.g.dart',
-            'lib/models.ack.dart',
-            'lib/models.ack.g.dart',
-            'lib/models.g.dart',
-          ]),
+          containsAll(['lib/coexist.g.dart', 'lib/models.g.dart']),
         );
         expect(
-          generated['lib/models.ack.g.dart'],
-          contains('_ackProfileFromRuntimeName'),
+          generated['lib/models.g.dart'],
+          contains(r'decode: _$ProfileFromRuntime'),
         );
         expect(
           generated['lib/models.g.dart'],
           contains(r'_$PlainJsonFromJson'),
         );
-        expect(generated['lib/models.ack.dart'], contains('class Legacy'));
+        expect(generated['lib/models.g.dart'], contains('class Legacy'));
+        expect(generated['lib/models.g.dart'], contains(r'mixin _$ProfileAck'));
         expect(
-          generated['lib/models.ack.dart'],
-          contains(r'mixin _$ProfileAck'),
-        );
-        expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains(r'implements $ParentCopyWith<$Result>'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains(r'implements $RabbitCopyWith<$Result>'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains('abstract final class ProfileSchema'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains('final _profileSchema'),
         );
+        expect(generated['lib/coexist.g.dart'], contains('class Modern'));
         expect(
           generated['lib/coexist.g.dart'],
-          contains('extension type FrozenType'),
-        );
-        expect(generated['lib/coexist.ack.dart'], contains('class Modern'));
-        expect(
-          generated['lib/coexist.ack.dart'],
           contains(r'mixin _$HandwrittenAck'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           isNot(contains('final profileSchema =')),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           contains('parameters: parameters ?? _source.parameters'),
         );
         expect(
-          generated['lib/models.ack.dart'],
+          generated['lib/models.g.dart'],
           isNot(contains('parameters as Map<String, ParameterEntry>?')),
         );
 
