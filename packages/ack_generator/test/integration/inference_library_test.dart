@@ -148,4 +148,35 @@ void widget({@Validate.maxItems(3) required Set<Set<String>> cells}) {}
       },
     );
   });
+
+  test(
+    'a second generator applies scalar item constraints and collection constraints on List<int>',
+    () async {
+      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+      await readerWriter.testing.loadIsolateSources();
+      await testBuilder(
+        const _InferenceProbe(parameterName: 'weekdays'),
+        {
+          'test_pkg|lib/widget.dart': '''
+import 'package:ack/annotations.dart';
+
+void widget({
+  @Validate.min(1)
+  @Validate.max(7)
+  @Validate.minItems(1)
+  @Validate.uniqueItems()
+  required List<int> weekdays,
+}) {}
+''',
+        },
+        generateFor: const {'test_pkg|lib/widget.dart'},
+        readerWriter: readerWriter,
+        outputs: {
+          'test_pkg|lib/widget.probe': decodedMatches(
+            'Ack.list(Ack.integer().min(1).max(7)).minItems(1).unique()',
+          ),
+        },
+      );
+    },
+  );
 }

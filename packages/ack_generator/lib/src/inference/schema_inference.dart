@@ -92,15 +92,29 @@ final class AckSchemaInference {
   /// Applies constraint annotations declared on a field or parameter.
   String applyConstraints(String schema, Element declaration, DartType type) {
     var output = schema;
-    final isNumeric =
-        type is InterfaceType &&
-        (_core(type, 'int') || _core(type, 'double') || _core(type, 'num'));
-    final isString = type is InterfaceType && _core(type, 'String');
     final isCollection =
         type is InterfaceType && (type.isDartCoreList || type.isDartCoreSet);
     final isSet = type is InterfaceType && type.isDartCoreSet;
+    final scalarType = isCollection && type.typeArguments.length == 1
+        ? type.typeArguments.single
+        : type;
+    final isNumeric =
+        scalarType is InterfaceType &&
+        (_core(scalarType, 'int') ||
+            _core(scalarType, 'double') ||
+            _core(scalarType, 'num'));
+    final isString = scalarType is InterfaceType && _core(scalarType, 'String');
+    final itemConstraints = <String>[];
     final setConstraints = <String>[];
     var hasUniqueConstraint = false;
+
+    void addScalarConstraint(String constraint) {
+      if (isCollection) {
+        itemConstraints.add(constraint);
+      } else {
+        output = '$output$constraint';
+      }
+    }
 
     void addCollectionConstraint(String constraint, {bool isUnique = false}) {
       if (isSet) {
@@ -128,8 +142,9 @@ final class AckSchemaInference {
               isNumeric,
               '@Validate.minLength',
             );
-            output =
-                '$output.min(${_number(declaration, '@Validate.min', value)})';
+            addScalarConstraint(
+              '.min(${_number(declaration, '@Validate.min', value)})',
+            );
           case 'max':
             _require(
               declaration,
@@ -138,8 +153,9 @@ final class AckSchemaInference {
               isNumeric,
               '@Validate.maxLength',
             );
-            output =
-                '$output.max(${_number(declaration, '@Validate.max', value)})';
+            addScalarConstraint(
+              '.max(${_number(declaration, '@Validate.max', value)})',
+            );
           case 'multipleOf':
             _require(
               declaration,
@@ -148,8 +164,9 @@ final class AckSchemaInference {
               isNumeric,
               'numeric field',
             );
-            output =
-                '$output.multipleOf(${_number(declaration, '@Validate.multipleOf', value)})';
+            addScalarConstraint(
+              '.multipleOf(${_number(declaration, '@Validate.multipleOf', value)})',
+            );
           case 'positive':
             _require(
               declaration,
@@ -158,7 +175,7 @@ final class AckSchemaInference {
               isNumeric,
               'numeric field',
             );
-            output = '$output.positive()';
+            addScalarConstraint('.positive()');
           case 'negative':
             _require(
               declaration,
@@ -167,7 +184,7 @@ final class AckSchemaInference {
               isNumeric,
               'numeric field',
             );
-            output = '$output.negative()';
+            addScalarConstraint('.negative()');
           case 'minLength':
             _require(
               declaration,
@@ -176,8 +193,9 @@ final class AckSchemaInference {
               isString,
               '@Validate.min',
             );
-            output =
-                '$output.minLength(${value.getField('value')!.toIntValue()})';
+            addScalarConstraint(
+              '.minLength(${value.getField('value')!.toIntValue()})',
+            );
           case 'maxLength':
             _require(
               declaration,
@@ -186,8 +204,9 @@ final class AckSchemaInference {
               isString,
               '@Validate.max',
             );
-            output =
-                '$output.maxLength(${value.getField('value')!.toIntValue()})';
+            addScalarConstraint(
+              '.maxLength(${value.getField('value')!.toIntValue()})',
+            );
           case 'matches':
             _require(
               declaration,
@@ -196,8 +215,9 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output =
-                '$output.matches(${dartStringLiteral(value.getField('value')!.toStringValue()!)})';
+            addScalarConstraint(
+              '.matches(${dartStringLiteral(value.getField('value')!.toStringValue()!)})',
+            );
           case 'notEmpty':
             _require(
               declaration,
@@ -219,7 +239,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.email()';
+            addScalarConstraint('.email()');
           case 'url':
             _require(
               declaration,
@@ -228,7 +248,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.url()';
+            addScalarConstraint('.url()');
           case 'uri':
             _require(
               declaration,
@@ -237,7 +257,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.uri()';
+            addScalarConstraint('.uri()');
           case 'uuid':
             _require(
               declaration,
@@ -246,7 +266,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.uuid()';
+            addScalarConstraint('.uuid()');
           case 'date':
             _require(
               declaration,
@@ -255,7 +275,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.date()';
+            addScalarConstraint('.date()');
           case 'dateTime':
             _require(
               declaration,
@@ -264,7 +284,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.datetime()';
+            addScalarConstraint('.datetime()');
           case 'ip':
             _require(
               declaration,
@@ -282,9 +302,9 @@ final class AckSchemaInference {
                   element: declaration,
                 );
               }
-              output = '$output.ip(version: $version)';
+              addScalarConstraint('.ip(version: $version)');
             } else {
-              output = '$output.ip()';
+              addScalarConstraint('.ip()');
             }
           case 'ipv4':
             _require(
@@ -294,7 +314,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.ipv4()';
+            addScalarConstraint('.ipv4()');
           case 'ipv6':
             _require(
               declaration,
@@ -303,7 +323,7 @@ final class AckSchemaInference {
               isString,
               'String field',
             );
-            output = '$output.ipv6()';
+            addScalarConstraint('.ipv6()');
           case 'minItems':
             _require(
               declaration,
@@ -338,6 +358,9 @@ final class AckSchemaInference {
         }
       }
     }
+    if (itemConstraints.isNotEmpty) {
+      output = _appendListItemConstraints(output, itemConstraints.join());
+    }
     if (setConstraints.isNotEmpty) {
       if (isSet && !hasUniqueConstraint) {
         // A Set cannot retain duplicate values after decoding. Validate the
@@ -347,6 +370,26 @@ final class AckSchemaInference {
       output = _beforeOuterCodec(output, setConstraints.join());
     }
     return output;
+  }
+
+  String _appendListItemConstraints(String schema, String modifiers) {
+    const prefix = 'final schema = ';
+    final unit = parseString(
+      content: '$prefix$schema;',
+      throwIfDiagnostics: false,
+    ).unit;
+    final declaration = unit.declarations.single as TopLevelVariableDeclaration;
+    Expression? current = declaration.variables.variables.single.initializer;
+    while (current is MethodInvocation) {
+      if (current.methodName.name == 'list' &&
+          current.argumentList.arguments.length == 1) {
+        final itemArg = current.argumentList.arguments.single;
+        final end = itemArg.end - prefix.length;
+        return '${schema.substring(0, end)}$modifiers${schema.substring(end)}';
+      }
+      current = current.target;
+    }
+    return '$schema$modifiers';
   }
 
   /// Inserts [modifiers] before the codec that ends [schema], or appends them
