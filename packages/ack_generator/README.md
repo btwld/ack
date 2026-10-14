@@ -2,7 +2,7 @@
 
 `ack_generator` supports two directions through `@Schemable()`:
 it turns a top-level Ack schema into an immutable model and derives an Ack
-codec schema from a hand-written class. `@Schemable()`, `@AckField()`, and the
+codec schema from a hand-written class. `@Schemable()`, `@AckKey()`, and the
 `@Validate.*` validation namespace are all exported from `package:ack/ack.dart`.
 
 
@@ -178,11 +178,10 @@ void main() {
 A field of custom type `T` (including inside `List<T>`, `Set<T>`, `Map<String, T>`,
 `JsonMaybe<T>`, or generic type-owned schemas `Box<T>`) resolves in priority order:
 
-1. **`@AckField(schema: ...)`** on the field or constructor parameter;
-2. **`@Schemable(schemas: [...])`** on the class, enclosing union base, current
+1. **`@Schemable(schemas: [...])`** on the class, enclosing union base, current
    `library;` directive, or an imported `library;` directive;
-3. **Type-owned schema**: a static `T.schema` or `T.schema<A>(...)` on the type;
-4. **Automatic current-library detection**: a unique top-level
+2. **Type-owned schema**: a static `T.schema` or `T.schema<A>(...)` on the type;
+3. **Automatic current-library detection**: a unique top-level
    `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the
    current library.
 
@@ -195,13 +194,14 @@ with a static `schema` or a `@Schemable(schemas: [...])` entry resolves to it
 instead of `Ack.enumValues`. A class may also expose its own generated codec
 with `static final schema = _accountSchema;` (or `AccountSchema.schema`).
 
-Use `@Schemable(description: ...)` and `@AckField(description: ...)` for schema
-descriptions. A single-line `@description` tag in a `///` or `/** */` doc
-comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
-prose never becomes schema data. Duplicate or blank tags fail generation.
-Annotation text takes precedence over a tag. A class description applies to
-both the object schema and model codec, including union bases and branches.
-A field description applies at its property without changing a nested model.
+Use `@Schemable(description: ...)` for class descriptions and a single-line
+`@description` tag in a `///` or `/** */` doc comment on a class, field, or
+constructor parameter for schema descriptions. Only the text after the tag, on
+the same line, is exported. Untagged prose never becomes schema data. Duplicate
+or blank tags fail generation. Annotation text on `@Schemable(description: ...)`
+takes precedence over a class doc tag. A class description applies to both the
+object schema and model codec, including union bases and branches. A field
+description applies at its property without changing a nested model.
 The generator shares its type and constraint inference through
 `package:ack_generator/inference.dart`. A second generator can use
 `AckSchemaInference.inferType`, `applyConstraints`, and `applyDescription`.
@@ -230,8 +230,7 @@ Generation rejects shapes without a useful static, encodable model contract:
 - one-way `.transform()` calls; use `.codec()` with an encoder;
 - nullable roots;
 - nullable `Ack.list` item schemas and automatically inferred `List<T?>` or
-  `Set<T?>` fields; make the collection nullable instead, or use an explicit
-  `@AckField(schema: ...)` codec for a different collection contract;
+  `Set<T?>` fields; make the collection or element type non-nullable;
 - `Ack.any()` and `Ack.map()` roots (both are supported as fields),
   `Ack.anyOf()`, and bare `Ack.instance<T>()`;
 - anonymous inline object fields and unresolved dynamic schema factories;
@@ -281,7 +280,7 @@ their concrete branches must also be final. Use `@Validate.optional()` or
 `@Validate.required()` to override inferred key presence, `@Validate.notNull()`
 to reject JSON `null` without requiring the key, `JsonMaybe<T>` to distinguish
 omitted keys from explicit `null` on both parse and encode, and
-`@AckField(name: 'wire_name')` to override a single field's JSON key. Validation
+`@AckKey('wire_name')` to override a single field's JSON key. Validation
 annotations use `@Validate.*` (such as `@Validate.matches(pattern)` for
 `Ack.string().matches(pattern)`). See the
 [Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas)

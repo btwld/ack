@@ -1,25 +1,22 @@
 import 'package:meta/meta_meta.dart';
 
-/// Overrides the JSON key, inferred schema, and/or description for a
-/// class-first field.
+/// Annotation that overrides the wire JSON key for a class-first field or
+/// constructor parameter.
 ///
-/// [name] overrides the wire JSON key for this field.
-/// [schema] must be a const tear-off of a top-level function returning an Ack
-/// schema. The generator validates the declaration and follows its expression.
-/// [description] describes this property, not a nested model's schema.
-/// It takes precedence over an `@description` doc tag. A no-op `@AckField()`
-/// is rejected.
+/// ```dart
+/// @Schemable()
+/// final class Account with _$AccountAck {
+///   const Account({required this.imageUrl});
+///
+///   @AckKey('avatar')
+///   final Uri imageUrl;
+/// }
+/// ```
 @Target({TargetKind.field, TargetKind.parameter})
-final class AckField {
-  /// Creates a field annotation.
-  const AckField({this.name, this.schema, this.description});
+final class AckKey {
+  /// Creates a JSON key override annotation for a field or parameter.
+  const AckKey(this.name);
 
-  /// Explicit JSON key for this property.
-  final String? name;
-
-  /// Top-level schema-function tear-off followed by `ack_generator`.
-  final Object Function()? schema;
-
-  /// Schema description for this property.
-  final String? description;
+  /// Explicit wire JSON key for this property.
+  final String name;
 }

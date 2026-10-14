@@ -52,14 +52,14 @@ for the complete support matrix and reference/diagnostic behavior.
 
 ```yaml
 dependencies:
-  ack: ^2.0.0-beta.1
-  ack_json_schema_builder: ^2.0.0-beta.1
+  ack: ^2.0.0-alpha.1
+  ack_json_schema_builder: ^2.0.0-alpha.1
   json_schema_builder: ^0.1.3
 ```
 
 ### Compatibility
 
-Requires `ack: ^2.0.0-beta.1` and
+Requires `ack: ^2.0.0-alpha.1` and
 `json_schema_builder: >=0.1.3 <1.0.0` as peer dependencies. Report
 [compatibility issues](https://github.com/btwld/ack/issues).
 

@@ -1,8 +1,6 @@
 import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
 
-Object _customSchema() => Object();
-
 void main() {
   test(
     'Schemable options are const and default to class-first conventions',
@@ -47,20 +45,9 @@ void main() {
     },
   );
 
-  test('AckField accepts name, schema tear-off, and description', () {
-    const inferred = AckField(
-      name: 'wire_key',
-      schema: _customSchema,
-      description: 'Field description',
-    );
-    expect(inferred.name, 'wire_key');
-    expect(inferred.schema, same(_customSchema));
-    expect(inferred.description, 'Field description');
-
-    const defaults = AckField();
-    expect(defaults.name, isNull);
-    expect(defaults.schema, isNull);
-    expect(defaults.description, isNull);
+  test('AckKey accepts a positional wire key name', () {
+    const key = AckKey('wire_key');
+    expect(key.name, 'wire_key');
   });
 
   test(

@@ -26,23 +26,23 @@ final class Ack {
     assertFormats: assertFormats,
   );
 
-  /// Creates a string schema. Boundary and runtime are both `String`.
+  /// Creates a string schema where both boundary and runtime types are `String`.
   static StringSchema string() => const StringSchema();
 
   /// Creates a literal string schema that only accepts the exact [value].
   static StringSchema literal(String value) =>
       string().withConstraint(StringLiteralConstraint(value));
 
-  /// Creates an integer schema. Boundary and runtime are both `int`.
+  /// Creates an integer schema where both boundary and runtime types are `int`.
   static IntegerSchema integer() => const IntegerSchema();
 
-  /// Creates a double schema. Boundary and runtime are both `double`.
+  /// Creates a double schema where both boundary and runtime types are `double`.
   static DoubleSchema double() => const DoubleSchema();
 
-  /// Creates a number schema. Boundary and runtime are both `num`.
+  /// Creates a number schema where both boundary and runtime types are `num`.
   static NumberSchema number() => const NumberSchema();
 
-  /// Creates a boolean schema. Boundary and runtime are both `bool`.
+  /// Creates a boolean schema where both boundary and runtime types are `bool`.
   static BooleanSchema boolean() => const BooleanSchema();
 
   /// Creates an object schema with the given properties.
@@ -149,8 +149,9 @@ final class Ack {
   static InstanceSchema<T> instance<T extends Object>() => InstanceSchema<T>();
 
   /// Creates a universal codec from an [input] schema, with a [decode]
-  /// function and an [encode] function. The optional [output] schema
-  /// applies runtime-side invariants.
+  /// function and an [encode] function.
+  ///
+  /// The optional [output] schema applies runtime-side invariants.
   static CodecSchema<Boundary, Runtime> codec<
     Boundary extends Object,
     InputRuntime extends Object,
@@ -170,8 +171,8 @@ final class Ack {
     );
   }
 
-  /// Bidirectional date codec: ISO 8601 `YYYY-MM-DD` strings ↔ local
-  /// midnight `DateTime` runtime values.
+  /// Creates a bidirectional date codec between ISO 8601 `YYYY-MM-DD` strings
+  /// and local midnight `DateTime` runtime values.
   ///
   /// Runtime invariant: the encoded `DateTime` must be local midnight
   /// (year/month/day only). Values with non-zero time-of-day fail
@@ -188,8 +189,8 @@ final class Ack {
     );
   }
 
-  /// Bidirectional datetime codec: ISO 8601 datetime strings ↔ UTC
-  /// `DateTime` runtime values.
+  /// Creates a bidirectional datetime codec between ISO 8601 datetime strings
+  /// and UTC `DateTime` runtime values.
   ///
   /// Announced RFC 3339 leap seconds are valid for `Ack.string().datetime()`,
   /// but this codec rejects them because Dart normalizes `:60` to the following
@@ -212,7 +213,7 @@ final class Ack {
     );
   }
 
-  /// Bidirectional URI codec.
+  /// Creates a bidirectional URI codec between strings and `Uri` values.
   ///
   /// Runtime invariant: the `Uri` must have both a scheme and a host
   /// (matching the parse-side predicate).
@@ -228,7 +229,8 @@ final class Ack {
     );
   }
 
-  /// Bidirectional duration codec: milliseconds ↔ `Duration`.
+  /// Creates a bidirectional duration codec between integer milliseconds and
+  /// `Duration` values.
   ///
   /// Runtime invariant: the `Duration` must be a whole number of
   /// milliseconds (sub-millisecond precision is rejected to avoid silent

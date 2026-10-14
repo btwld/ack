@@ -63,8 +63,8 @@ abstract base class ModelGraphBuilderBase {
     annotations.Schemable,
     inPackage: 'ack',
   );
-  static const ackFieldChecker = TypeChecker.typeNamed(
-    annotations.AckField,
+  static const ackKeyChecker = TypeChecker.typeNamed(
+    annotations.AckKey,
     inPackage: 'ack',
   );
   static const ackSchemaChecker = TypeChecker.typeNamed(

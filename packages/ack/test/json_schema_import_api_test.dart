@@ -126,7 +126,7 @@ void main() {
       {'minLength': -1},
       {r'$ref': 'missing.json'},
       {r'$ref': '#'},
-      {r'$schema': 'http://json-schema.org/draft-07/schema#'},
+      {r'$schema': 'http://json-schema.org/draft-04/schema#'},
     ]) {
       expect(
         () => Ack.fromJsonSchema(document),
@@ -136,6 +136,23 @@ void main() {
     final AckSchema<Object, Object> never = Ack.fromJsonSchema(false);
     expect(never.safeParse(null).isFail, isTrue);
     expect(never.safeParse('anything').isFail, isTrue);
+  });
+
+  test('Draft-07 dialect URIs are accepted by Ack.fromJsonSchema', () {
+    for (final dialectUri in [
+      'http://json-schema.org/draft-07/schema#',
+      'http://json-schema.org/draft-07/schema',
+      'https://json-schema.org/draft-07/schema#',
+      'https://json-schema.org/draft-07/schema',
+    ]) {
+      final schema = Ack.fromJsonSchema({
+        r'$schema': dialectUri,
+        'type': 'string',
+        'format': 'email',
+      }, assertFormats: true);
+      expect(schema.safeParse('alice@example.com').isOk, isTrue);
+      expect(schema.safeParse('not-an-email').isFail, isTrue);
+    }
   });
 
   test('dynamic references export by default and reject Draft-7 lowering', () {

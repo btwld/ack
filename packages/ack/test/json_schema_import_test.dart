@@ -333,7 +333,7 @@ void main() {
         {r'$ref': '#/%FF'},
         {r'$schema': null},
         {r'$anchor': null},
-        {r'$schema': 'http://json-schema.org/draft-07/schema#'},
+        {r'$schema': 'http://json-schema.org/draft-04/schema#'},
       ]) {
         expect(
           () => Ack.fromJsonSchema(document),
@@ -1104,6 +1104,234 @@ void main() {
         }).getError();
         expect(nested.path, '#/tags');
         expect(nested.value, ['a', 'b', 'a']);
+      },
+    );
+
+    test(
+      'supports Draft-07 dialect URIs under the supported subset and round-trips format assertions',
+      () {
+        final schema = Ack.fromJsonSchema({
+          r'$schema': 'http://json-schema.org/draft-07/schema#',
+          'type': 'object',
+          'properties': {
+            'email': {'type': 'string', 'format': 'email'},
+          },
+          'unevaluatedProperties': false,
+        }, assertFormats: true);
+
+        expect(schema.safeParse({'email': 'alice@example.com'}).isOk, isTrue);
+        expect(
+          schema.safeParse({'email': 'alice@example.com', 'extra': 123}).isFail,
+          isTrue,
+        );
+        expect(schema.safeParse({'email': 'invalid'}).isFail, isTrue);
+
+        final roundTripped = Ack.fromJsonSchema(schema.toJsonSchema());
+        expect(
+          roundTripped.safeParse({'email': 'alice@example.com'}).isOk,
+          isTrue,
+        );
+        expect(
+          roundTripped.safeParse({
+            'email': 'alice@example.com',
+            'extra': 123,
+          }).isFail,
+          isTrue,
+        );
+        expect(roundTripped.safeParse({'email': 'invalid'}).isFail, isTrue);
+      },
+    );
+
+    test(
+      'ImportedJsonSchema equality and hashCode include baseUri and external documents',
+      () {
+        final docA = Ack.fromJsonSchema(
+          {r'$ref': 'other.json'},
+          baseUri: Uri.parse('https://example.test/a/root.json'),
+          documents: {
+            Uri.parse('https://example.test/a/other.json'): {'type': 'string'},
+          },
+        );
+        final docB = Ack.fromJsonSchema(
+          {r'$ref': 'other.json'},
+          baseUri: Uri.parse('https://example.test/a/root.json'),
+          documents: {
+            Uri.parse('https://example.test/a/other.json'): {'type': 'integer'},
+          },
+        );
+        final docSameAsA = Ack.fromJsonSchema(
+          {r'$ref': 'other.json'},
+          baseUri: Uri.parse('https://example.test/a/root.json'),
+          documents: {
+            Uri.parse('https://example.test/a/other.json'): {'type': 'string'},
+          },
+        );
+        final docDifferentBase = Ack.fromJsonSchema(
+          {r'$ref': 'other.json'},
+          baseUri: Uri.parse('https://example.test/b/root.json'),
+          documents: {
+            Uri.parse('https://example.test/b/other.json'): {'type': 'string'},
+          },
+        );
+
+        expect(docA, equals(docSameAsA));
+        expect(docA.hashCode, equals(docSameAsA.hashCode));
+        expect(docA, isNot(equals(docB)));
+        expect(docA, isNot(equals(docDifferentBase)));
+      },
+    );
+
+    test(
+      'custom vocabularies can disable applicator and unevaluated keywords',
+      () {
+        final withoutUnevaluated = Ack.fromJsonSchema(
+          {
+            r'$schema': 'https://example.test/meta/no-unevaluated',
+            'type': 'object',
+            'properties': {
+              'a': {'type': 'string'},
+            },
+            'unevaluatedProperties': false,
+            'items': {'type': 'integer'},
+            'unevaluatedItems': false,
+          },
+          documents: {
+            Uri.parse('https://example.test/meta/no-unevaluated'): {
+              r'$id': 'https://example.test/meta/no-unevaluated',
+              r'$schema': 'https://json-schema.org/draft/2020-12/schema',
+              r'$vocabulary': {
+                'https://json-schema.org/draft/2020-12/vocab/core': true,
+                'https://json-schema.org/draft/2020-12/vocab/applicator': true,
+                'https://json-schema.org/draft/2020-12/vocab/validation': true,
+              },
+            },
+          },
+        );
+        expect(
+          withoutUnevaluated.safeParse({'a': 'ok', 'extra': 1}).isOk,
+          isTrue,
+        );
+        expect(withoutUnevaluated.safeParse({'a': 1}).isFail, isTrue);
+
+        final withoutApplicator = Ack.fromJsonSchema(
+          {
+            r'$schema': 'https://example.test/meta/no-applicator',
+            'type': 'object',
+            'allOf': [
+              {r'$ref': '#'},
+              false,
+            ],
+            'not': true,
+            'properties': {'a': false},
+          },
+          documents: {
+            Uri.parse('https://example.test/meta/no-applicator'): {
+              r'$id': 'https://example.test/meta/no-applicator',
+              r'$schema': 'https://json-schema.org/draft/2020-12/schema',
+              r'$vocabulary': {
+                'https://json-schema.org/draft/2020-12/vocab/core': true,
+                'https://json-schema.org/draft/2020-12/vocab/validation': true,
+              },
+            },
+          },
+        );
+        expect(withoutApplicator.safeParse({'a': 123}).isOk, isTrue);
+        expect(withoutApplicator.safeParse('not-an-object').isFail, isTrue);
+      },
+    );
+
+    test(
+      'export rewrites references targeting the root retrieval URI when root declares a different \$id',
+      () {
+        final schema = Ack.fromJsonSchema({
+          r'$id': 'https://example.test/canonical/schema.json',
+          r'$defs': {
+            'Value': {'type': 'string'},
+          },
+          r'$ref': 'https://example.test/retrieval/root.json#/\$defs/Value',
+        }, baseUri: Uri.parse('https://example.test/retrieval/root.json'));
+
+        final exported = schema.toJsonSchema();
+        expect(
+          exported[r'$ref'],
+          'https://example.test/canonical/schema.json#/\$defs/Value',
+        );
+        final reimported = Ack.fromJsonSchema(exported);
+        expect(reimported.safeParse('hello').isOk, isTrue);
+        expect(reimported.safeParse(42).isFail, isTrue);
+      },
+    );
+
+    test(
+      'assertFormats validates numeric formats on numbers and ignores them on strings',
+      () {
+        final int32Schema = Ack.fromJsonSchema({
+          'format': 'int32',
+        }, assertFormats: true);
+        expect(int32Schema.safeParse(2147483647).isOk, isTrue);
+        expect(int32Schema.safeParse(-2147483648).isOk, isTrue);
+        expect(int32Schema.safeParse(2147483648).isFail, isTrue);
+        expect(int32Schema.safeParse(1.5).isFail, isTrue);
+        expect(int32Schema.safeParse('not-a-number').isOk, isTrue);
+
+        final uint64Schema = Ack.fromJsonSchema({
+          'format': 'uint64',
+        }, assertFormats: true);
+        expect(uint64Schema.safeParse(0).isOk, isTrue);
+        expect(uint64Schema.safeParse(-1).isFail, isTrue);
+        expect(uint64Schema.safeParse(18446744073709551616.0).isFail, isTrue);
+
+        final floatSchema = Ack.fromJsonSchema({
+          'format': 'float',
+        }, assertFormats: true);
+        expect(floatSchema.safeParse(1.5).isOk, isTrue);
+        expect(floatSchema.safeParse(1e40).isFail, isTrue);
+      },
+    );
+
+    test(
+      'date-time format assertion enforces RFC 3339 leap-second calendar dates',
+      () {
+        final schema = Ack.fromJsonSchema({
+          'type': 'string',
+          'format': 'date-time',
+        }, assertFormats: true);
+
+        expect(schema.safeParse('1990-12-31T23:59:60Z').isOk, isTrue);
+        expect(schema.safeParse('1990-12-31T15:59:60-08:00').isOk, isTrue);
+        expect(schema.safeParse('2030-06-30T23:59:60Z').isFail, isTrue);
+        expect(schema.safeParse('2024-03-15T23:59:60Z').isFail, isTrue);
+      },
+    );
+
+    test(
+      'nullable imported root relocates root pointers inside referenced extension containers and ignores dormant malformed refs',
+      () {
+        final schema = Ack.fromJsonSchema({
+          'type': 'object',
+          'properties': {
+            'value': {'type': 'string'},
+            'viaExtension': {r'$ref': '#/x-ext/target'},
+          },
+          'x-ext': {
+            'target': {r'$ref': '#/properties/value'},
+          },
+          r'$defs': {
+            'Dormant': {r'$ref': '#/%FF'},
+          },
+        }).nullable();
+
+        final exported = schema.toJsonSchema();
+        final reimported = Ack.fromJsonSchema(exported);
+        expect(reimported.safeParse(null).isOk, isTrue);
+        expect(
+          reimported.safeParse({'value': 'a', 'viaExtension': 'b'}).isOk,
+          isTrue,
+        );
+        expect(
+          reimported.safeParse({'value': 'a', 'viaExtension': 123}).isFail,
+          isTrue,
+        );
       },
     );
   });

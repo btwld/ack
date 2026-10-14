@@ -58,6 +58,10 @@ final class StringSchema extends AckSchema<String, String>
     List<_StringNormalizerStep> normalizers = const [],
   }) : _normalizers = normalizers;
 
+  @internal
+  int? get firstPostNormalizerConstraintIndex =>
+      _normalizers.isEmpty ? null : _normalizers.first.constraintIndex;
+
   StringSchema _withNormalizer(_StringNormalizer normalizer) {
     return StringSchema._(
       isNullable: isNullable,
@@ -165,13 +169,32 @@ final class StringSchema extends AckSchema<String, String>
     List<Constraint<String>>? constraints,
     List<Refinement<String>>? refinements,
   }) {
+    final nextConstraints = constraints ?? this.constraints;
+    final nextRefinements = refinements ?? this.refinements;
+    final nextNormalizers =
+        _normalizers.isEmpty || (constraints == null && refinements == null)
+        ? _normalizers
+        : List<_StringNormalizerStep>.unmodifiable([
+            for (final step in _normalizers)
+              _StringNormalizerStep(
+                normalizer: step.normalizer,
+                constraintIndex: step.constraintIndex.clamp(
+                  0,
+                  nextConstraints.length,
+                ),
+                refinementIndex: step.refinementIndex.clamp(
+                  0,
+                  nextRefinements.length,
+                ),
+              ),
+          ]);
     return StringSchema._(
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-      normalizers: _normalizers,
+      constraints: nextConstraints,
+      refinements: nextRefinements,
+      normalizers: nextNormalizers,
     );
   }
 

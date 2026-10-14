@@ -76,33 +76,6 @@ void widget({
     );
   });
 
-  test('an explicit parameter description overrides its source tag', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
-    await testBuilder(
-      const _InferenceProbe(
-        sourceComment: '/// @description Tag text.\n/// Following prose.',
-      ),
-      {
-        'test_pkg|lib/widget.dart': '''
-import 'package:ack/annotations.dart';
-
-void widget({
-  @AckField(description: 'Explicit text.')
-  required String title,
-}) {}
-''',
-      },
-      generateFor: const {'test_pkg|lib/widget.dart'},
-      readerWriter: readerWriter,
-      outputs: {
-        'test_pkg|lib/widget.probe': decodedMatches(
-          "Ack.string().describe('Explicit text.')",
-        ),
-      },
-    );
-  });
-
   test('a second generator infers a list of Dart enums', () async {
     final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
     await readerWriter.testing.loadIsolateSources();

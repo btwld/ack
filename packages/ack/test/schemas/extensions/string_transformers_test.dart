@@ -372,13 +372,48 @@ void main() {
       });
 
       test('exports clean JSON Schema without x-transformed', () {
-        final schema = Ack.string().trim().toLowerCase().minLength(2).email();
+        final schema = Ack.string().minLength(2).email().trim().toLowerCase();
         final jsonSchema = schema.toJsonSchema();
 
         expect(jsonSchema['type'], 'string');
         expect(jsonSchema['minLength'], 2);
         expect(jsonSchema['format'], 'email');
         expect(jsonSchema.containsKey('x-transformed'), isFalse);
+      });
+
+      test('omits post-normalization constraints from JSON Schema export', () {
+        final schema = Ack.string().minLength(1).trim().minLength(3).email();
+        final model = schema.toSchemaModel();
+        final jsonSchema = model.toJsonSchema();
+
+        expect(jsonSchema, {'type': 'string', 'minLength': 1});
+        expect(
+          model.warnings,
+          contains(
+            isA<AckSchemaModelWarning>()
+                .having(
+                  (w) => w.code,
+                  'code',
+                  'codec_runtime_constraint_not_exported',
+                )
+                .having((w) => w.context['constraints'], 'constraints', [
+                  'string_min_length',
+                  'string_format_email',
+                ]),
+          ),
+        );
+      });
+
+      test('copyWith clamps normalizer indices when constraints shrink', () {
+        final schema = Ack.string()
+            .minLength(2)
+            .refine((s) => s.isNotEmpty)
+            .trim()
+            .minLength(3)
+            .copyWith(constraints: const [], refinements: const []);
+
+        expect(schema.parse('  a  '), 'a');
+        expect(schema.encode('  a  '), 'a');
       });
     });
   });

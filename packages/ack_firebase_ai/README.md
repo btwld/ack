@@ -23,8 +23,8 @@ Always validate model output with the same ACK schema after generation. Firebase
 
 ```yaml
 dependencies:
-  ack: ^2.0.0-beta.1
-  ack_firebase_ai: ^2.0.0-beta.1
+  ack: ^2.0.0-alpha.1
+  ack_firebase_ai: ^2.0.0-alpha.1
   firebase_ai: ^3.12.2
 ```
 

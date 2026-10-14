@@ -23,6 +23,8 @@ final class _ImportedNode {
   final String pointer;
   final Uri baseUri;
   final Uri dialectUri;
+  bool applicatorVocabulary = true;
+  bool unevaluatedVocabulary = true;
   bool validationVocabulary = true;
   bool formatAssertion = false;
   final keywords = <String, Object?>{};
@@ -90,14 +92,16 @@ final class _ImportedNode {
   List<_ImportedNode> get inPlaceDependencies => [
     ?reference,
     ?dynamicReference,
-    ?not,
-    ?ifNode,
-    ?thenNode,
-    ?elseNode,
-    ...?anyOf,
-    ...?allOf,
-    ...?oneOf,
-    ...?dependentSchemas?.values,
+    if (applicatorVocabulary) ...[
+      ?not,
+      ?ifNode,
+      ?thenNode,
+      ?elseNode,
+      ...?anyOf,
+      ...?allOf,
+      ...?oneOf,
+      ...?dependentSchemas?.values,
+    ],
   ];
 
   /// The 1.x Draft-7 representation of an imported node. Newer 2020-12
@@ -161,7 +165,15 @@ final class _JsonSchemaCompiler {
   static final standardDialect = Uri.parse(
     'https://json-schema.org/draft/2020-12/schema',
   );
+  static final draft7Dialects = {
+    Uri.parse('http://json-schema.org/draft-07/schema'),
+    Uri.parse('https://json-schema.org/draft-07/schema'),
+  };
   static final _anchorPattern = RegExp(r'^[A-Za-z_][-A-Za-z0-9._]*$');
+  static const applicatorVocabularyUri =
+      'https://json-schema.org/draft/2020-12/vocab/applicator';
+  static const unevaluatedVocabularyUri =
+      'https://json-schema.org/draft/2020-12/vocab/unevaluated';
   static const validationVocabularyUri =
       'https://json-schema.org/draft/2020-12/vocab/validation';
   static const formatAssertionVocabularyUri =
@@ -443,6 +455,13 @@ final class _JsonSchemaCompiler {
   void _configureDialect(_ImportedNode node) {
     final dialect = resources[node.dialectUri];
     if (dialect == null) {
+      if (draft7Dialects.contains(node.dialectUri)) {
+        node.applicatorVocabulary = true;
+        node.unevaluatedVocabulary = true;
+        node.validationVocabulary = true;
+        node.formatAssertion = assertFormats;
+        return;
+      }
       _fail(
         node,
         r'$schema',
@@ -463,6 +482,10 @@ final class _JsonSchemaCompiler {
       );
     }
     _checkRequiredVocabularies(node, r'$schema', vocabulary);
+    node.applicatorVocabulary = vocabulary.containsKey(applicatorVocabularyUri);
+    node.unevaluatedVocabulary = vocabulary.containsKey(
+      unevaluatedVocabularyUri,
+    );
     node.validationVocabulary = vocabulary.containsKey(validationVocabularyUri);
     node.formatAssertion =
         assertFormats || vocabulary.containsKey(formatAssertionVocabularyUri);

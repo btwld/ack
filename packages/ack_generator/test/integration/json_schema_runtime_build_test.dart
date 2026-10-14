@@ -165,7 +165,7 @@ void main() {
     expect(Node.encode(node), tree);
     expect(node.toJson(), tree);
     expect(Node.safeParse({'value': 1, 'next': null}).isFail, isTrue);
-    expect(Node.safeParse({'value': 1, 'extra': true}).isFail, isTrue);
+    expect(Node.safeParse({'value': 1, 'extra': true}).isOk, isTrue);
     expect(Choice.safeParse('a@example.test').isOk, isTrue);
     expect(Choice.safeParse('not-an-email').isFail, isTrue);
     expect(Choice.safeParse(1.5).isOk, isTrue);

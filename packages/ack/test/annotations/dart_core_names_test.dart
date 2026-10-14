@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 final class _Endpoint {
   const _Endpoint({required this.uri, required this.createdAt});
 
-  @AckField(name: 'endpoint_uri')
+  @AckKey('endpoint_uri')
   @Validate.uri()
   final Uri uri;
 

@@ -5,7 +5,7 @@ name: Release preflight
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/**']
   # No `branches:` filter. A stacked pull request targets its parent
   # branch, not main, and would otherwise run no checks at all.
   pull_request:

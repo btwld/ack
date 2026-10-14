@@ -5,7 +5,7 @@
 Ack validates untrusted boundary data with schemas built through the `Ack`
 factory. Annotate a top-level schema with `@Schemable()` to generate a model, or
 annotate a hand-written class with `@Schemable()` to generate its schema and
-JSON helpers. `package:ack/ack.dart` exports `@Schemable`, `@AckField`, and the
+JSON helpers. `package:ack/ack.dart` exports `@Schemable`, `@AckKey`, and the
 `@Validate.*` presence and constraint namespace. There is no `@AckSchema()`
 annotation; `AckSchema` is the runtime schema type.
 
@@ -125,10 +125,10 @@ classes use `@Schemable(discriminatorKey: ...)`; same-library concrete branches
 are included automatically. Use `@Validate.optional()` or `@Validate.required()`
 to override inferred key presence, `@Validate.notNull()` to reject an explicit
 JSON `null` without requiring the key, `JsonMaybe<T>` to distinguish omitted
-keys from explicit `null` on both parse and encode, and `@AckField(name: 'wire_name')`
+keys from explicit `null` on both parse and encode, and `@AckKey('wire_name')`
 for a single field's JSON key override.
-Use `@Schemable(description: ...)` and `@AckField(description: ...)` to export
-schema descriptions. A single-line `@description` doc tag is a fallback.
+Use `@Schemable(description: ...)` and a single-line `@description` doc tag on
+classes, fields, or constructor parameters to export schema descriptions.
 Untagged prose does not export. A field description applies at its property
 without changing a nested model's own description.
 Unknown properties use `unknownProperties: AckUnknownPropertyPolicy.<policy>`
@@ -142,11 +142,10 @@ validation preserves extras; the class-first policy is a later projection.
 A field of custom type `T` (including inside `List<T>`, `Set<T>`, `Map<String, T>`,
 `JsonMaybe<T>`, or generic type-owned schemas `Box<T>`) resolves in priority order:
 
-1. **`@AckField(schema: ...)`** on the field or constructor parameter;
-2. **`@Schemable(schemas: [...])`** on the class, enclosing union base, current
+1. **`@Schemable(schemas: [...])`** on the class, enclosing union base, current
    `library;` directive, or an imported `library;` directive;
-3. **Type-owned schema**: a static `T.schema` or `T.schema<A>(...)` on the type;
-4. **Automatic current-library detection**: a unique top-level
+2. **Type-owned schema**: a static `T.schema` or `T.schema<A>(...)` on the type;
+3. **Automatic current-library detection**: a unique top-level
    `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the
    current library.
 
@@ -223,15 +222,14 @@ collisions, and cross-library discriminated branches.
 
 Class-first generation supports object models, inferred scalar and enum
 fields, JSON-safe `Object` fields, nested lists, sets through list codecs,
-string-keyed maps, `JsonMaybe<T>`, custom schemas (`@AckField(schema: ...)`,
-`@Schemable(schemas: [...])`, `T.schema`, or auto-detected top-level library
-schemas), `@Validate.*` presence and constraint annotations (`@Validate.optional()`,
-`@Validate.required()`, `@Validate.notNull()`, `@Validate.min(...)`, etc.),
+string-keyed maps, `JsonMaybe<T>`, custom schemas (`@Schemable(schemas: [...])`,
+`T.schema`, or auto-detected top-level library schemas), `@Validate.*` presence
+and constraint annotations (`@Validate.optional()`, `@Validate.required()`,
+`@Validate.notNull()`, `@Validate.min(...)`, etc.), `@AckKey('wire_name')`,
 constructor defaults, case styles, `AckUnknownPropertyPolicy`, and same-library
 sealed discriminated unions. It rejects `dynamic`, nullable list or set
 elements, non-String map keys, recursive class-first graphs, class-first value
-roots, undiscriminated `anyOf` models, missing `_$ClassAck` mixins, and no-op
-`@AckField()`.
+roots, undiscriminated `anyOf` models, and missing `_$ClassAck` mixins.
 
 Open JSON and presence-aware fields are inferred from their Dart types. `Object`
 means a JSON-safe value (finite numbers, strings, booleans, lists, and
@@ -302,7 +300,9 @@ validates through the union's effective branch.
 | `ack_generator\|ack_models`, `ack_generator\|ack_model_json` | `ack_generator\|ack_generator` (plus optional `ack_generator\|ack_json_schema`) |
 | `@AckType()`, `@AckInfer()`, `@AckModel()` | `@Schemable()` |
 | `@Optional()`, `@Required()`, `@NotNull()`, `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`, `@Pattern`, `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`, `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems` | `@Validate.optional()`, `@Validate.required()`, `@Validate.notNull()`, `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`, `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.notEmpty`, `@Validate.email`, `@Validate.url`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.uri`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems` |
-| `@JsonKey(name: 'wire')` on `@Schemable` fields | `@AckField(name: 'wire')` |
+| `@JsonKey(name: 'wire')` / `@AckField(name: 'wire')` on `@Schemable` fields | `@AckKey('wire')` |
+| `@AckField(schema: ...)` | `@Schemable(schemas: [...])`, `T.schema`, or top-level library schema |
+| `@AckField(description: ...)` | `/// @description ...` doc tag |
 | `@AckField(presence: ...)` | `@Validate.optional()`, `@Validate.required()`, `@Validate.notNull()`, or `JsonMaybe<T>` |
 | `Ack.enumCodec(MyEnum.values)` | `Ack.enumValues(MyEnum.values)` |
 | `registerAckModelTool(...)` (`ack_mcp_dart`) | `server.registerAckTool(name, inputSchema: Model.schema, ...)` |

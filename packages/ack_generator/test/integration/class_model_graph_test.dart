@@ -74,7 +74,7 @@ final class Link with _\$LinkAck {
       [
         'Link.target uses the JsonConverter UriText, which would bypass Ack '
             'validation in the JSON part. Give the type a static schema or '
-            'use @AckField(schema: ...) instead.',
+            'register one in @Schemable(schemas: [...]) instead.',
       ],
     );
     await _expectFailure(
@@ -91,7 +91,7 @@ final class Link with _\$LinkAck {
       [
         'Link uses the JsonConverter UriText, which would bypass Ack '
             'validation in the JSON part. Give the type a static schema or '
-            'use @AckField(schema: ...) instead.',
+            'register one in @Schemable(schemas: [...]) instead.',
       ],
     );
   });
@@ -235,17 +235,6 @@ final class Item with _\$ItemAck {
 ''',
       ['Item @Schemable.description must not be blank.'],
     );
-    await _expectFailure(
-      '''
-@Schemable()
-final class Item with _\$ItemAck {
-  const Item({required this.value});
-  @AckField(description: '')
-  final String value;
-}
-''',
-      ['value @AckField.description must not be blank.'],
-    );
   });
 
   test('rejects duplicate class description tags at the class', () async {
@@ -355,130 +344,6 @@ final class User with _\$UserAck {
       );
     },
   );
-
-  test('rejects a static-method AckField escape hatch', () async {
-    await _expectFailure(
-      '''
-final class Schemas {
-  static AckSchema<String, String> name() => Ack.string();
-}
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: Schemas.name)
-  final String name;
-}
-''',
-      ['@AckField', 'top-level', 'name'],
-    );
-  });
-
-  test(
-    'rejects an AckField schema whose runtime type is not the field type',
-    () async {
-      await _expectFailure(
-        '''
-AckSchema<int, int> countSchema() => Ack.integer();
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: countSchema)
-  final String name;
-}
-''',
-        [
-          'User.name @AckField schema function countSchema produces int, but '
-              'the field type is String.',
-        ],
-      );
-    },
-  );
-
-  test('rejects a generic AckField schema function', () async {
-    await _expectFailure(
-      '''
-final class Box<T> {
-  const Box(this.value);
-  final T value;
-}
-
-AckSchema<Object, Box<T>> boxSchema<T extends Object>() =>
-    Ack.any().codec<Box<T>>(
-      decode: (value) => Box(value as T),
-      encode: (box) => box.value,
-    );
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.box});
-
-  @AckField(schema: boxSchema<String>)
-  final Box<String> box;
-}
-''',
-      [
-        'User.box @AckField schema function boxSchema is generic, and the '
-            'generated call cannot keep its type arguments.',
-      ],
-    );
-  });
-
-  test('rejects an AckField function that does not return AckSchema', () async {
-    await _expectFailure(
-      '''
-String nameSchema() => 'not a schema';
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: nameSchema)
-  final String name;
-}
-''',
-      ['@AckField', 'AckSchema', 'name'],
-    );
-  });
-
-  test('rejects a one-way transform returned by AckField', () async {
-    await _expectFailure(
-      '''
-AckSchema<String, String> normalizedSchema() =>
-    Ack.string().transform((v) => v.trim());
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: normalizedSchema)
-  final String name;
-}
-''',
-      ['User.name', 'normalizedSchema', '.transform()'],
-    );
-  });
-
-  test('rejects a referenced one-way transform returned by AckField', () async {
-    await _expectFailure(
-      '''
-final normalized = Ack.string().transform((v) => v.trim());
-AckSchema<String, String> normalizedSchema() => normalized;
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: normalizedSchema)
-  final String name;
-}
-''',
-      ['User.name', 'normalizedSchema', 'normalized', '.transform()'],
-    );
-  });
 
   test('rejects dynamic map values and points to Object?', () async {
     await _expectFailure(
@@ -822,7 +687,7 @@ final class User with _\$UserAck {
 ''',
       [
         'User.name',
-        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckField(name: ...) instead.',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckKey(...) instead.',
       ],
     );
   });
@@ -839,7 +704,7 @@ final class User with _\$UserAck {
 ''',
       [
         'User.name',
-        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckField(name: ...) instead.',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckKey(...) instead.',
       ],
     );
   });
@@ -1234,57 +1099,39 @@ final class User {
     );
   });
 
-  test('rejects a no-op AckField', () async {
+  test('rejects blank @AckKey(...)', () async {
     await _expectFailure(
       '''
 @Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @AckField()
+  @AckKey('   ')
   final String name;
 }
 ''',
-      ['User.name', '@AckField()', 'no-op'],
+      ['User.name', '@AckKey.name must not be blank.'],
     );
   });
 
-  test('rejects blank @AckField(name: ...)', () async {
+  test('rejects combining @AckKey(...) and @JsonKey(name: ...)', () async {
     await _expectFailure(
       '''
 @Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @AckField(name: '   ')
-  final String name;
-}
-''',
-      ['User.name', '@AckField.name must not be blank.'],
-    );
-  });
-
-  test(
-    'rejects combining @AckField(name: ...) and @JsonKey(name: ...)',
-    () async {
-      await _expectFailure(
-        '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(name: 'a')
+  @AckKey('a')
   @JsonKey(name: 'b')
   final String name;
 }
 ''',
-        [
-          'User.name',
-          'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckField(name: ...) instead.',
-        ],
-      );
-    },
-  );
+      [
+        'User.name',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckKey(...) instead.',
+      ],
+    );
+  });
 
   test(
     'rejects @Validate.optional() on a required constructor parameter',
@@ -1449,7 +1296,7 @@ final addressSchema = Ack.object({'city': Ack.string()});
 @Schemable()
 final class Order with _\$OrderAck {
   const Order({
-    @AckField(name: 'shipping_address') required this.shipping,
+    @AckKey('shipping_address') required this.shipping,
     @Validate.minItems(1) this.history = const [],
   });
 

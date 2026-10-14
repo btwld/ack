@@ -259,7 +259,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
         throw InvalidGenerationSource(
           '$path uses the JsonConverter ${type.getDisplayString()}, which '
           'would bypass Ack validation in the JSON part. Give the type a '
-          'static schema or use @AckField(schema: ...) instead.',
+          'static schema or register one in @Schemable(schemas: [...]) instead.',
           element: owner,
         );
       }
@@ -726,18 +726,6 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     FormalParameterElement? parameter,
     FutureGeneratedType? futureType,
   }) async {
-    final override = _firstAnnotation(
-      ModelGraphBuilderBase.ackFieldChecker,
-      field,
-      parameter,
-    );
-    if (override != null) {
-      final reader = ConstantReader(override);
-      if (!reader.read('schema').isNull) {
-        final base = await _customSchemas.escapeHatchExpression(field, reader);
-        return _applySugar(base, field, parameter);
-      }
-    }
     if (futureType != null) {
       _rejectNullableFutureCollectionElement(field, futureType.runtimeRef);
       final setListSchema = futureType.setListSchema;
@@ -854,8 +842,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     throw InvalidGenerationSource(
       '${field.enclosingElement.name}.${field.name} uses nullable collection '
       'elements ($itemType). Ack.list does not support '
-      'nullable item schemas; make the element non-nullable or provide an '
-      'explicit @AckField(schema: ...) codec.',
+      'nullable item schemas; make the element non-nullable.',
       element: field,
     );
   }
@@ -884,18 +871,9 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     FieldElement field,
     FormalParameterElement? parameter,
   ) {
-    final target =
-        ModelGraphBuilderBase.ackFieldChecker.hasAnnotationOfExact(field)
-        ? field
-        : (parameter != null &&
-                  ModelGraphBuilderBase.ackFieldChecker.hasAnnotationOfExact(
-                    parameter,
-                  )
-              ? parameter
-              : field);
     return _inference.applyDescription(
       schema,
-      target,
+      field,
       sourceComment: _fieldDocumentationComment(field, parameter),
     );
   }
@@ -962,7 +940,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     if (type is InterfaceType) {
       throw InvalidGenerationSource(
         '$path uses unsupported $display. Declare a static schema on '
-        '${type.element.name}, or set @AckField(schema: ...) on the field.',
+        '${type.element.name}, or register one in @Schemable(schemas: [...]).',
         element: field,
       );
     }
@@ -1103,24 +1081,6 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
         '@Validate.optional() and @Validate.required().',
         element: field,
       );
-    }
-
-    final annotation = _firstAnnotation(
-      ModelGraphBuilderBase.ackFieldChecker,
-      field,
-      parameter,
-    );
-    if (annotation != null) {
-      final reader = ConstantReader(annotation);
-      if (reader.read('name').isNull &&
-          reader.read('schema').isNull &&
-          reader.read('description').isNull) {
-        throw InvalidGenerationSource(
-          '${field.enclosingElement.name}.${field.name} @AckField() is a '
-          'no-op; set name, schema, or description.',
-          element: field,
-        );
-      }
     }
 
     if (isJsonMaybe) {
@@ -1372,30 +1332,30 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     if (parameter != null) {
       _rejectJsonKey(field.enclosingElement as ClassElement, parameter);
     }
-    final ackField = _firstAnnotation(
-      ModelGraphBuilderBase.ackFieldChecker,
+    final ackKey = _firstAnnotation(
+      ModelGraphBuilderBase.ackKeyChecker,
       field,
       parameter,
     );
-    if (ackField == null) return null;
-    final nameReader = ConstantReader(ackField).read('name');
+    if (ackKey == null) return null;
+    final nameReader = ConstantReader(ackKey).read('name');
     if (nameReader.isNull) return null;
-    final ackFieldName = nameReader.stringValue;
-    if (ackFieldName.trim().isEmpty) {
+    final ackKeyName = nameReader.stringValue;
+    if (ackKeyName.trim().isEmpty) {
       throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} @AckField.name must '
+        '${field.enclosingElement.name}.${field.name} @AckKey.name must '
         'not be blank.',
         element: field,
       );
     }
-    return ackFieldName;
+    return ackKeyName;
   }
 
   void _rejectJsonKey(ClassElement owner, Element element) {
     if (!_jsonKeyChecker.hasAnnotationOfExact(element)) return;
     throw InvalidGenerationSource(
       '${owner.name}.${element.name} uses @JsonKey, which is not supported on '
-      '${annotationName(owner)} classes in Ack 2.0. Use @AckField(name: ...) '
+      '${annotationName(owner)} classes in Ack 2.0. Use @AckKey(...) '
       'instead.',
       element: element,
     );

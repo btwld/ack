@@ -20,7 +20,17 @@ const _jsonSchemaFormats = {
   'relative-json-pointer',
   'regex',
   'uuid',
+  'int32',
+  'int64',
+  'uint32',
+  'uint64',
+  'float',
+  'double',
 };
+
+final _jsonSchemaBigIntInt64Min = BigInt.parse('-9223372036854775808');
+final _jsonSchemaBigIntInt64Max = BigInt.parse('9223372036854775807');
+final _jsonSchemaBigIntUint64Max = BigInt.parse('18446744073709551615');
 
 bool _isSupportedJsonSchemaFormat(String format) =>
     _jsonSchemaFormats.contains(format);
@@ -28,7 +38,7 @@ bool _isSupportedJsonSchemaFormat(String format) =>
 bool _isValidJsonSchemaFormat(String format, String value) => switch (format) {
   'date' => _isFullDate(value),
   'time' => _isFullTime(value),
-  'date-time' => _isDateTime(value),
+  'date-time' => isValidRfc3339DateTime(value),
   'duration' => _isDuration(value),
   'email' => _isEmail(value, international: false),
   'idn-email' => _isEmail(value, international: true),
@@ -47,8 +57,48 @@ bool _isValidJsonSchemaFormat(String format, String value) => switch (format) {
   'uuid' => RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   ).hasMatch(value),
+  'int32' || 'int64' || 'uint32' || 'uint64' || 'float' || 'double' => true,
   _ => false,
 };
+
+bool _isValidJsonSchemaNumericFormat(String format, num value) {
+  switch (format) {
+    case 'int32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= -2147483648 && value <= 2147483647;
+    case 'uint32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= 0 && value <= 4294967295;
+    case 'int64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= _jsonSchemaBigIntInt64Min &&
+          intVal <= _jsonSchemaBigIntInt64Max;
+    case 'uint64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= BigInt.zero && intVal <= _jsonSchemaBigIntUint64Max;
+    case 'float':
+      if (!value.isFinite) return false;
+      final d = value.toDouble();
+      return d.abs() <= 3.4028234663852886e+38;
+    case 'double':
+      return value.isFinite;
+    default:
+      // String formats do not constrain numeric instances.
+      return true;
+  }
+}
+
+BigInt? _integralBigInt(num value) {
+  if (!value.isFinite || value % 1 != 0) return null;
+  if (value is int) return BigInt.from(value);
+  final (:coefficient, :scale) = decimalParts(value);
+  if (scale == 0) return coefficient;
+  final divisor = BigInt.from(10).pow(scale);
+  if (coefficient % divisor != BigInt.zero) return null;
+  return coefficient ~/ divisor;
+}
 
 bool _isFullDate(String value) {
   final match = RegExp(r'^([0-9]{4})-([0-9]{2})-([0-9]{2})$').firstMatch(value);
@@ -88,14 +138,6 @@ bool _isFullTime(String value) {
     if (utcMinute != 23 * 60 + 59) return false;
   }
   return true;
-}
-
-bool _isDateTime(String value) {
-  if (value.length < 12 || (value[10] != 'T' && value[10] != 't')) {
-    return false;
-  }
-  return _isFullDate(value.substring(0, 10)) &&
-      _isFullTime(value.substring(11));
 }
 
 bool _isDuration(String value) {

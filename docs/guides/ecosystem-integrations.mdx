@@ -23,7 +23,7 @@ part 'weather_models.g.dart';
 final class WeatherQuery with _$WeatherQueryAck {
   const WeatherQuery({required this.city, this.units = 'celsius'});
 
-  @AckField(description: 'City and country, e.g. "Tokyo, JP".')
+  /// @description City and country, e.g. "Tokyo, JP".
   @Validate.minLength(2)
   final String city;
 

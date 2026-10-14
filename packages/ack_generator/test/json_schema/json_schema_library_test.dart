@@ -86,6 +86,10 @@ void main() {
         {'type': 'number', 'minimum': 0, 'exclusiveMaximum': 1.5},
         'ack.Ack.number().min(0).lessThan(1.5)',
       ),
+      'a number with a bound beyond 2^53': (
+        {'type': 'number', 'maximum': 1e20},
+        'ack.Ack.number().max(100000000000000000000.0)',
+      ),
       'a boolean': ({'type': 'boolean'}, 'ack.Ack.boolean()'),
       'a deduped enum with null': (
         {
@@ -205,6 +209,17 @@ void main() {
               'type': 'object',
               'properties': {
                 'photo': {r'$ref': r'#/$defs/Photo'},
+                'describedPhoto': {
+                  r'$ref': r'#/$defs/Photo',
+                  'description': 'Primary photo',
+                },
+                'nullableDescribedPhoto': {
+                  'description': 'Optional backup photo',
+                  'anyOf': [
+                    {r'$ref': r'#/$defs/Photo'},
+                    {'type': 'null'},
+                  ],
+                },
               },
             },
             'Photo': {'type': 'object', 'properties': <String, Object?>{}},
@@ -212,6 +227,18 @@ void main() {
         }).source,
       );
       expect(source, contains("'photo':photoSchema.optional()"));
+      expect(
+        source,
+        contains(
+          "'describedPhoto':photoSchema.describe('Primaryphoto').optional()",
+        ),
+      );
+      expect(
+        source,
+        contains(
+          "'nullableDescribedPhoto':photoSchema.describe('Optionalbackupphoto').nullable().optional()",
+        ),
+      );
     });
 
     test('models in document order with explicit names', () {
@@ -253,6 +280,7 @@ void main() {
         r'#/$defs/Model',
         r'#/$defs/Model/properties/address',
       ]);
+      expect(library.source, contains('@ack.Schemable'));
       expect(
         library.source,
         contains(r'// - #/$defs/Model/properties/address'),
@@ -260,6 +288,41 @@ void main() {
       final model =
           (library.effectiveDocument[r'$defs']! as Map)['Model']! as Map;
       expect(model['additionalProperties'], isTrue);
+    });
+
+    test('widens unevaluatedProperties: false in fallback models', () {
+      final library = _generate({
+        r'$defs': {
+          'Model': {
+            'type': 'object',
+            'properties': {
+              'profile': {
+                'type': 'object',
+                'properties': {
+                  'bio': {'type': 'string'},
+                },
+                'unevaluatedProperties': false,
+              },
+            },
+            'unevaluatedProperties': false,
+          },
+        },
+      }, unknownProperties: AckUnknownPropertiesMode.preserve);
+
+      expect(library.widenedPointers, [
+        r'#/$defs/Model',
+        r'#/$defs/Model/properties/profile',
+      ]);
+      expect(
+        library.source,
+        contains(r'// - #/$defs/Model/properties/profile'),
+      );
+      final model =
+          (library.effectiveDocument[r'$defs']! as Map)['Model']! as Map;
+      expect(model['unevaluatedProperties'], isTrue);
+      final profile =
+          (model['properties']! as Map)['profile']! as Map<String, Object?>;
+      expect(profile['unevaluatedProperties'], isTrue);
     });
 
     test('leaves the input document unchanged', () {
@@ -327,6 +390,15 @@ void main() {
         'pattern': r'^[😀]{2}$',
       },
       'unrepresentable size bound': {'type': 'string', 'minLength': 1e30},
+      'clamped 2^63 size bound': {
+        'type': 'string',
+        'minLength': 9223372036854775808.0,
+      },
+      'unrepresentable integer bound': {'type': 'integer', 'maximum': 1e30},
+      'clamped 2^63 integer bound': {
+        'type': 'integer',
+        'maximum': 9223372036854775808.0,
+      },
       'composition': {
         'allOf': [
           {'type': 'string'},

@@ -81,33 +81,6 @@ final class Contact with _\$ContactAck {
     },
   );
 
-  test('an Ack.map schema function backs a Map field', () async {
-    await _build(
-      {
-        'scores.dart':
-            '''
-$_imports
-part 'scores.g.dart';
-
-MapSchema<int, int> scoresSchema() => Ack.map(Ack.integer().min(0));
-
-@Schemable()
-final class Board with _\$BoardAck {
-  const Board({required this.scores});
-
-  @AckField(schema: scoresSchema)
-  final Map<String, int> scores;
-}
-''',
-      },
-      outputs: {
-        'test_pkg|lib/scores.g.dart': decodedMatches(
-          _containsCode("Ack.object({'scores': scoresSchema()})"),
-        ),
-      },
-    );
-  });
-
   test(
     'collection constraints on a nested Set land on the outer set',
     () async {
@@ -316,7 +289,7 @@ part 'escaped.g.dart';
 final class Escaped with _\$EscapedAck {
   const Escaped({required this.value});
 
-  @AckField(description: 'A\\tB')
+  /// @description A\tB
   final String value;
 }
 ''',
@@ -615,13 +588,11 @@ final class Profile with _\$ProfileAck {
     },
   );
 
-  test(
-    'emits escape-hatch schemas and built-in recursive type coverage',
-    () async {
-      await _build(
-        {
-          'types.dart':
-              '''
+  test('emits custom schemas and built-in recursive type coverage', () async {
+    await _build(
+      {
+        'types.dart':
+            '''
 $_imports
 part 'types.g.dart';
 
@@ -635,15 +606,9 @@ AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
   encode: (color) => color.value,
 ).describe('Authored color.');
 
-AckSchema<Map<String, Object?>, Map<String, int>> scoresSchema() =>
-    Ack.object({}, additionalProperties: true).codec<Map<String, int>>(
-      decode: (value) => value.map((key, item) => MapEntry(key, item as int)),
-      encode: (value) => value,
-    );
-
 enum Role { admin, member }
 
-@Schemable()
+@Schemable(schemas: [colorSchema])
 final class Record with _\$RecordAck {
   const Record({
     required this.color,
@@ -656,9 +621,7 @@ final class Record with _\$RecordAck {
   });
 
   /// Untagged field prose does not replace the authored description.
-  @AckField(schema: colorSchema)
   final Color color;
-  @AckField(schema: scoresSchema)
   final Map<String, int> scores;
   final Role role;
   final DateTime createdAt;
@@ -667,29 +630,28 @@ final class Record with _\$RecordAck {
   final List<List<String>> names;
 }
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/types.g.dart': decodedMatches(
-            allOf([
-              contains("'color': colorSchema()"),
-              isNot(contains("'color': colorSchema().describe(")),
-              contains("'scores': scoresSchema()"),
-              contains("'role': Ack.enumValues(Role.values)"),
-              contains("'createdAt': Ack.datetime()"),
-              contains("'website': Ack.uri()"),
-              contains("'timeout': Ack.duration()"),
-              contains("'names': Ack.list(Ack.list(Ack.string()))"),
-              contains('Map<String, int>.unmodifiable('),
-              contains('List<List<String>>.unmodifiable('),
-              contains('List<String>.unmodifiable('),
-            ]),
-          ),
-        },
-      );
-    },
-  );
+      },
+      outputs: {
+        'test_pkg|lib/types.g.dart': decodedMatches(
+          allOf([
+            contains("'color': colorSchema()"),
+            isNot(contains("'color': colorSchema().describe(")),
+            contains("'scores': Ack.map(Ack.integer())"),
+            contains("'role': Ack.enumValues(Role.values)"),
+            contains("'createdAt': Ack.datetime()"),
+            contains("'website': Ack.uri()"),
+            contains("'timeout': Ack.duration()"),
+            contains("'names': Ack.list(Ack.list(Ack.string()))"),
+            contains('Map<String, int>.unmodifiable('),
+            contains('List<List<String>>.unmodifiable('),
+            contains('List<String>.unmodifiable('),
+          ]),
+        ),
+      },
+    );
+  });
 
-  test('computes case-style and AckField(name:) schema keys once', () async {
+  test('computes case-style and AckKey schema keys once', () async {
     await _build(
       {
         'account.dart':
@@ -701,13 +663,13 @@ part 'account.g.dart';
 final class Account with _\$AccountAck {
   const Account({
     required this.firstName,
-    @AckField(name: 'avatar') required this.imageUrl,
+    @AckKey('avatar') required this.imageUrl,
     required this.handleName,
   });
 
   final String firstName;
   final String imageUrl;
-  @AckField(name: 'handle')
+  @AckKey('handle')
   final String handleName;
 }
 ''',
@@ -920,15 +882,22 @@ final class InferredNotNull with _\$InferredNotNullAck {
   final String? label;
 }
 
-AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
+final class NameTag {
+  const NameTag(this.value);
+  final String value;
+}
 
-@Schemable()
+AckSchema<String, NameTag> nullableNameSchema() => Ack.string().nullable().codec<NameTag>(
+  decode: NameTag.new,
+  encode: (value) => value.value,
+);
+
+@Schemable(schemas: [nullableNameSchema])
 final class OverrideNotNull with _\$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
   @Validate.notNull()
-  @AckField(schema: nullableNameSchema)
-  final String? name;
+  final NameTag? name;
 }
 
 @Schemable()
@@ -953,20 +922,13 @@ final class ParameterEntry {
   final String value;
 }
 
-AckSchema<Map<String, Object?>, Map<String, ParameterEntry>>
-parameterMapSchema() =>
-    Ack.object({}, additionalProperties: true)
-        .codec<Map<String, ParameterEntry>>(
-          decode: (value) => {
-            for (final entry in value.entries)
-              entry.key: ParameterEntry(entry.value! as String),
-          },
-          encode: (value) => {
-            for (final entry in value.entries) entry.key: entry.value.value,
-          },
-        );
+AckSchema<String, ParameterEntry> parameterEntrySchema() =>
+    Ack.string().codec<ParameterEntry>(
+      decode: ParameterEntry.new,
+      encode: (value) => value.value,
+    );
 
-@Schemable()
+@Schemable(schemas: [parameterEntrySchema])
 final class CapabilityBinding with _\$CapabilityBindingAck {
   CapabilityBinding({
     required this.name,
@@ -976,7 +938,6 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
   final String name;
 
   @Validate.optional()
-  @AckField(schema: parameterMapSchema)
   final Map<String, ParameterEntry> parameters;
 }
 
@@ -1003,8 +964,14 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
               contains("'value': Ack.string().nullable(value: false)"),
               isNot(contains("'value': Ack.string().optional()")),
               contains("'summary': Ack.string().nullable()"),
-              contains("'parameters': parameterMapSchema().optional()"),
-              isNot(contains('parameterMapSchema().optional().nullable(')),
+              contains(
+                "'parameters': Ack.map(parameterEntrySchema()).optional()",
+              ),
+              isNot(
+                contains(
+                  'Ack.map(parameterEntrySchema()).optional().nullable(',
+                ),
+              ),
               contains('Map<String, ParameterEntry>? parameters'),
               contains('parameters: parameters ?? _source.parameters'),
               isNot(contains('parameters as Map<String, ParameterEntry>?')),

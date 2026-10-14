@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## 2.0.0-beta.1
+## 2.0.0-alpha.1
 
 ### Breaking & Substitutions
 
@@ -30,12 +30,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     `@Validate.ipv6()`, `@Validate.minItems(...)`, `@Validate.maxItems(...)`,
     `@Validate.uniqueItems()`).
 * **Removed legacy 1.x generator annotations & shims (`#188`, `#189`)**:
-  Removed `@AckType`, `@AckInfer`, `@AckModel`, `JsonKeyCaseStyle`, `AckTypeDef`,
-  `AckFieldPresence`, `*Type` extension-type models, and the `@JsonKey(name: ...)`
-  fallback.
+  Removed `@AckType`, `@AckInfer`, `@AckModel`, `@AckField`, `JsonKeyCaseStyle`,
+  `AckTypeDef`, `AckFieldPresence`, `*Type` extension-type models, and the
+  `@JsonKey(name: ...)` fallback.
   * **Substitute:** Use `@Schemable()` on schemas and classes,
     `@Validate.optional()` / `@Validate.required()` / `@Validate.notNull()` for
-    field presence, and `@AckField(name: '...')` for wire-name overrides.
+    field presence, `/// @description ...` for field descriptions, and
+    `@AckKey('...')` for wire-name overrides.
 * **Removed redundant helpers & `StandardSchemaV1` (`#129`)**:
   * **Substitute:** `Ack.enumCodec(E.values)` $\rightarrow$ `Ack.enumValues(E.values)`.
   * **Substitute:** `registerAckModelTool(...)` $\rightarrow$
@@ -64,10 +65,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   explicit `null` (`JsonValue(null)`), and present values (`JsonValue(v)`) in
   `@Schemable()` class-first models for `PATCH` payloads.
 * **Layered custom schema resolution (`#185`)**: Class-first `@Schemable()`
-  fields resolve custom types via `@AckField(schema: ...)`,
-  `@Schemable(schemas: [...])` (on classes, unions, or `library;` directives),
-  type-owned `T.schema` / `T.schema<...>()` factories, or automatic detection of
-  a unique top-level `AckSchema<Boundary, T>` in the current library.
+  fields resolve custom types via `@Schemable(schemas: [...])` (on classes,
+  unions, or `library;` directives), type-owned `T.schema` / `T.schema<...>()`
+  factories, or automatic detection of a unique top-level
+  `AckSchema<Boundary, T>` in the current library.
 * **Two-way `StringSchema` normalizers**: `.trim()`, `.toLowerCase()`, and
   `.toUpperCase()` execute in declaration order during both `parse` and `encode`,
   preserve `StringSchema` chaining, work in `@Schemable()` models, and export as

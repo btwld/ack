@@ -15,8 +15,8 @@ final class Account with _$AccountAck {
   });
 
   /// The name shown to other users.
+  /// @description The name shown to other users.
   @Validate.minLength(2)
-  @AckField(description: 'The name shown to other users.')
   final String displayName;
   final Uri? website;
   final String role;

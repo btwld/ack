@@ -97,7 +97,7 @@
   ],
   "variables": {
     "versions": {
-      "default": "2.0.0-beta.1",
+      "default": "2.0.0-alpha.1",
       "isPrerelease": true
     }
   },

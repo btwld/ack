@@ -1,8 +1,8 @@
-## 2.0.0-beta.1
+## 2.0.0-alpha.1
 
 ### Breaking
 
-* Requires `ack: ^2.0.0-beta.1` and aligns with the coordinated Ack 2.0.0-beta.1
+* Requires `ack: ^2.0.0-alpha.1` and aligns with the coordinated Ack 2.0.0-alpha.1
   release.
 * Remove `registerAckModelTool` from `AckMcpServer`; pass `Model.schema` (or
   `model.modelSchema`) directly to `registerAckTool(name, input: Model.schema, ...)`.

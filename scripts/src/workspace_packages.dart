@@ -9,6 +9,4 @@ const publishableAckPackages = <String>[
 
 /// First releases for packages added after the original workspace baseline.
 /// Earlier versions have no published API to compare against.
-const ackPackageFirstReleases = <String, String>{
-  'ack_mcp_dart': '2.0.0-beta.1',
-};
+const ackPackageFirstReleases = <String, String>{'ack_mcp_dart': '1.3.0'};

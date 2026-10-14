@@ -44,7 +44,7 @@ exit 23
     );
   }, skip: Platform.isWindows ? 'Uses POSIX test executables.' : false);
 
-  for (final baseline in ['1.1.0', '1.2.0', '2.0.0-beta.1']) {
+  for (final baseline in ['1.1.0', '1.2.0', '1.3.0']) {
     test(
       'new adapter API baseline $baseline respects its first release',
       () async {
@@ -61,11 +61,11 @@ exit 23
             'PATH': '${fakeBin.path}:/usr/bin:/bin',
           },
         );
-        if (baseline != '2.0.0-beta.1') {
+        if (baseline != '1.3.0') {
           expect(result.exitCode, 0);
           expect(
             result.stdout,
-            contains('ack_mcp_dart first releases in 2.0.0-beta.1'),
+            contains('ack_mcp_dart first releases in 1.3.0'),
           );
           expect(result.stderr, isEmpty);
         } else {

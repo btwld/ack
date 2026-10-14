@@ -21,9 +21,13 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     final root = compiler.addDocument(document, base);
     final externalRoots = <_ImportedNode>[];
     for (final entry in documents.entries) {
-      externalRoots.add(
-        compiler.addDocument(entry.value, base.resolveUri(entry.key)),
+      final node = compiler.addDocument(
+        entry.value,
+        base.resolveUri(entry.key),
       );
+      if (!identical(node, root) && !externalRoots.contains(node)) {
+        externalRoots.add(node);
+      }
     }
     for (final entry in _standardMetaSchemaDocuments.entries) {
       if (!compiler.resources.containsKey(entry.key)) {
@@ -126,7 +130,10 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         if (exported is! Map<String, Object?>) continue;
         onSchema?.call(exported);
         if (assertFormats &&
-            indexed.dialectUri == _JsonSchemaCompiler.standardDialect &&
+            (indexed.dialectUri == _JsonSchemaCompiler.standardDialect ||
+                _JsonSchemaCompiler.draft7Dialects.contains(
+                  indexed.dialectUri,
+                )) &&
             (identical(indexed, node) || exported.containsKey(r'$schema'))) {
           exported[r'$schema'] = _assertionDialect.toString();
         }
@@ -144,10 +151,10 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
             // compiler already rejects malformed references that are evaluated.
             continue;
           }
-          for (final external in _externalRoots) {
-            if (external.documentUri != external.baseUri &&
-                resolved.removeFragment() == external.documentUri) {
-              exported[keyword] = external.baseUri
+          for (final resourceNode in [_root, ..._externalRoots]) {
+            if (resourceNode.documentUri != resourceNode.baseUri &&
+                resolved.removeFragment() == resourceNode.documentUri) {
+              exported[keyword] = resourceNode.baseUri
                   .replace(
                     fragment: resolved.hasFragment ? resolved.fragment : null,
                   )
@@ -161,7 +168,8 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         if (source is Map<String, Object?>) ...source,
         r'$id': (syntheticId ?? node.baseUri).toString(),
         if (assertFormats &&
-            node.dialectUri == _JsonSchemaCompiler.standardDialect)
+            (node.dialectUri == _JsonSchemaCompiler.standardDialect ||
+                _JsonSchemaCompiler.draft7Dialects.contains(node.dialectUri)))
           r'$schema': _assertionDialect.toString(),
         if (source is bool) 'allOf': [source],
       };
@@ -328,6 +336,10 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   @override
   SchemaType get schemaType => SchemaType.any;
 
+  Map<Uri, Object> get _externalDocuments => {
+    for (final node in _externalRoots) node.documentUri: node.source,
+  };
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -335,12 +347,19 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
     return baseFieldsEqual(other) &&
         assertFormats == other.assertFormats &&
-        deepEquals(rawSchema, other.rawSchema);
+        _root.documentUri == other._root.documentUri &&
+        deepEquals(rawSchema, other.rawSchema) &&
+        deepEquals(_externalDocuments, other._externalDocuments);
   }
 
   @override
-  int get hashCode =>
-      Object.hash(baseFieldsHashCode, assertFormats, deepHashCode(rawSchema));
+  int get hashCode => Object.hash(
+    baseFieldsHashCode,
+    assertFormats,
+    _root.documentUri,
+    deepHashCode(rawSchema),
+    deepHashCode(_externalDocuments),
+  );
 }
 
 final class _ImportViolation {
@@ -455,59 +474,61 @@ _ImportEvaluation _evaluateImportedNode(
     }
     evaluated.include(result);
   }
-  if (node.allOf case final branches?) {
-    for (var i = 0; i < branches.length; i++) {
-      final result = _evaluateImportedNode(branches[i], value, currentScope);
-      if (result.error case final error?) {
-        return _ImportEvaluation(error.via(['allOf', '$i']));
-      }
-      evaluated.include(result);
-    }
-  }
-  if (node.anyOf case final branches?) {
-    var success = false;
-    for (final branch in branches) {
-      final result = _evaluateImportedNode(branch, value, currentScope);
-      if (result.error == null) {
-        success = true;
+  if (node.applicatorVocabulary) {
+    if (node.allOf case final branches?) {
+      for (var i = 0; i < branches.length; i++) {
+        final result = _evaluateImportedNode(branches[i], value, currentScope);
+        if (result.error case final error?) {
+          return _ImportEvaluation(error.via(['allOf', '$i']));
+        }
         evaluated.include(result);
       }
     }
-    if (!success) return fail('anyOf');
-  }
-  if (node.oneOf case final branches?) {
-    var successes = 0;
-    _ImportEvaluation? matched;
-    for (final branch in branches) {
-      final result = _evaluateImportedNode(branch, value, currentScope);
-      if (result.error == null) {
-        successes++;
-        matched = result;
+    if (node.anyOf case final branches?) {
+      var success = false;
+      for (final branch in branches) {
+        final result = _evaluateImportedNode(branch, value, currentScope);
+        if (result.error == null) {
+          success = true;
+          evaluated.include(result);
+        }
+      }
+      if (!success) return fail('anyOf');
+    }
+    if (node.oneOf case final branches?) {
+      var successes = 0;
+      _ImportEvaluation? matched;
+      for (final branch in branches) {
+        final result = _evaluateImportedNode(branch, value, currentScope);
+        if (result.error == null) {
+          successes++;
+          matched = result;
+        }
+      }
+      if (successes != 1) return fail('oneOf');
+      evaluated.include(matched!);
+    }
+    if (node.not case final target?) {
+      if (_evaluateImportedNode(target, value, currentScope).error == null) {
+        return fail('not');
       }
     }
-    if (successes != 1) return fail('oneOf');
-    evaluated.include(matched!);
-  }
-  if (node.not case final target?) {
-    if (_evaluateImportedNode(target, value, currentScope).error == null) {
-      return fail('not');
-    }
-  }
-  if (node.ifNode case final condition?) {
-    final conditionResult = _evaluateImportedNode(
-      condition,
-      value,
-      currentScope,
-    );
-    final passed = conditionResult.error == null;
-    if (passed) evaluated.include(conditionResult);
-    final branch = passed ? node.thenNode : node.elseNode;
-    if (branch != null) {
-      final result = _evaluateImportedNode(branch, value, currentScope);
-      if (result.error case final error?) {
-        return _ImportEvaluation(error.via([passed ? 'then' : 'else']));
+    if (node.ifNode case final condition?) {
+      final conditionResult = _evaluateImportedNode(
+        condition,
+        value,
+        currentScope,
+      );
+      final passed = conditionResult.error == null;
+      if (passed) evaluated.include(conditionResult);
+      final branch = passed ? node.thenNode : node.elseNode;
+      if (branch != null) {
+        final result = _evaluateImportedNode(branch, value, currentScope);
+        if (result.error case final error?) {
+          return _ImportEvaluation(error.via([passed ? 'then' : 'else']));
+        }
+        evaluated.include(result);
       }
-      evaluated.include(result);
     }
   }
   switch (value) {
@@ -528,6 +549,12 @@ _ImportEvaluation _evaluateImportedNode(
         }
         if (node.exclusiveMaximum case final limit? when value >= limit) {
           return fail('exclusiveMaximum');
+        }
+      }
+      if (node.formatAssertion) {
+        if (node.format case final format?
+            when !_isValidJsonSchemaNumericFormat(format, value)) {
+          return fail('format');
         }
       }
     case String():
@@ -579,92 +606,100 @@ _ImportEvaluation _evaluateImportedNode(
           }
         }
       }
-      final properties = node.properties;
-      final patterns = node.patternProperties;
-      final additional = node.additionalProperties;
-      if (properties != null || patterns != null || additional != null) {
-        for (final MapEntry(:key, value: item) in value.entries) {
-          final propKey = key as String;
-          var matched = false;
-          if (properties?[propKey] case final target?) {
-            matched = true;
-            final result = _evaluateImportedNode(target, item, currentScope);
-            if (result.error case final error?) {
-              return _ImportEvaluation(
-                error.at(propKey, ['properties', propKey]),
-              );
-            }
-            evaluated.properties.add(propKey);
-          }
-          if (patterns != null) {
-            for (final (rawPattern, regex, target) in patterns) {
-              if (!regex.hasMatch(propKey)) continue;
+      if (node.applicatorVocabulary) {
+        final properties = node.properties;
+        final patterns = node.patternProperties;
+        final additional = node.additionalProperties;
+        if (properties != null || patterns != null || additional != null) {
+          for (final MapEntry(:key, value: item) in value.entries) {
+            final propKey = key as String;
+            var matched = false;
+            if (properties?[propKey] case final target?) {
               matched = true;
               final result = _evaluateImportedNode(target, item, currentScope);
               if (result.error case final error?) {
                 return _ImportEvaluation(
-                  error.at(propKey, ['patternProperties', rawPattern]),
+                  error.at(propKey, ['properties', propKey]),
+                );
+              }
+              evaluated.properties.add(propKey);
+            }
+            if (patterns != null) {
+              for (final (rawPattern, regex, target) in patterns) {
+                if (!regex.hasMatch(propKey)) continue;
+                matched = true;
+                final result = _evaluateImportedNode(
+                  target,
+                  item,
+                  currentScope,
+                );
+                if (result.error case final error?) {
+                  return _ImportEvaluation(
+                    error.at(propKey, ['patternProperties', rawPattern]),
+                  );
+                }
+                evaluated.properties.add(propKey);
+              }
+            }
+            if (!matched && additional != null) {
+              final result = _evaluateImportedNode(
+                additional,
+                item,
+                currentScope,
+              );
+              if (result.error case final error?) {
+                return _ImportEvaluation(
+                  error.at(propKey, const ['additionalProperties']),
                 );
               }
               evaluated.properties.add(propKey);
             }
           }
-          if (!matched && additional != null) {
+        }
+        if (node.dependentSchemas case final dependencies?) {
+          for (final dependency in dependencies.entries) {
+            if (!value.containsKey(dependency.key)) continue;
             final result = _evaluateImportedNode(
-              additional,
-              item,
+              dependency.value,
+              value,
               currentScope,
             );
             if (result.error case final error?) {
               return _ImportEvaluation(
-                error.at(propKey, const ['additionalProperties']),
+                error.via(['dependentSchemas', dependency.key]),
               );
             }
-            evaluated.properties.add(propKey);
+            evaluated.include(result);
+          }
+        }
+        if (node.propertyNames case final target?) {
+          for (final key in value.keys) {
+            final result = _evaluateImportedNode(target, key, currentScope);
+            if (result.error case final error?) {
+              return _ImportEvaluation(
+                error.atPropertyName(key as String, const ['propertyNames']),
+              );
+            }
           }
         }
       }
-      if (node.dependentSchemas case final dependencies?) {
-        for (final dependency in dependencies.entries) {
-          if (!value.containsKey(dependency.key)) continue;
-          final result = _evaluateImportedNode(
-            dependency.value,
-            value,
-            currentScope,
-          );
-          if (result.error case final error?) {
-            return _ImportEvaluation(
-              error.via(['dependentSchemas', dependency.key]),
+      if (node.unevaluatedVocabulary) {
+        if (node.unevaluatedProperties case final target?) {
+          for (final entry in value.entries) {
+            final key = entry.key as String;
+            if (evaluated.properties.contains(key)) continue;
+            final result = _evaluateImportedNode(
+              target,
+              entry.value,
+              currentScope,
             );
+            if (result.error case final error?) {
+              return _ImportEvaluation(
+                error.at(key, const ['unevaluatedProperties']),
+              );
+            }
+            evaluated.properties.add(key);
           }
-          evaluated.include(result);
-        }
-      }
-      if (node.propertyNames case final target?) {
-        for (final key in value.keys) {
-          final result = _evaluateImportedNode(target, key, currentScope);
-          if (result.error case final error?) {
-            return _ImportEvaluation(
-              error.atPropertyName(key as String, const ['propertyNames']),
-            );
-          }
-        }
-      }
-      if (node.unevaluatedProperties case final target?) {
-        for (final entry in value.entries) {
-          final key = entry.key as String;
-          if (evaluated.properties.contains(key)) continue;
-          final result = _evaluateImportedNode(
-            target,
-            entry.value,
-            currentScope,
-          );
-          if (result.error case final error?) {
-            return _ImportEvaluation(
-              error.at(key, const ['unevaluatedProperties']),
-            );
-          }
-          evaluated.properties.add(key);
         }
       }
     case List():
@@ -681,57 +716,71 @@ _ImportEvaluation _evaluateImportedNode(
           return fail('uniqueItems');
         }
       }
-      final prefixItems = node.prefixItems ?? const <_ImportedNode>[];
-      for (var i = 0; i < prefixItems.length && i < value.length; i++) {
-        final result = _evaluateImportedNode(
-          prefixItems[i],
-          value[i],
-          currentScope,
-        );
-        if (result.error case final error?) {
-          return _ImportEvaluation(error.at('$i', ['prefixItems', '$i']));
-        }
-        evaluated.items.add(i);
-      }
-      if (node.items case final target?) {
-        for (var i = prefixItems.length; i < value.length; i++) {
-          final result = _evaluateImportedNode(target, value[i], currentScope);
+      if (node.applicatorVocabulary) {
+        final prefixItems = node.prefixItems ?? const <_ImportedNode>[];
+        for (var i = 0; i < prefixItems.length && i < value.length; i++) {
+          final result = _evaluateImportedNode(
+            prefixItems[i],
+            value[i],
+            currentScope,
+          );
           if (result.error case final error?) {
-            return _ImportEvaluation(error.at('$i', const ['items']));
+            return _ImportEvaluation(error.at('$i', ['prefixItems', '$i']));
           }
           evaluated.items.add(i);
         }
-      }
-      if (node.contains case final target?) {
-        var matches = 0;
-        for (var i = 0; i < value.length; i++) {
-          if (_evaluateImportedNode(target, value[i], currentScope).error ==
-              null) {
-            matches++;
+        if (node.items case final target?) {
+          for (var i = prefixItems.length; i < value.length; i++) {
+            final result = _evaluateImportedNode(
+              target,
+              value[i],
+              currentScope,
+            );
+            if (result.error case final error?) {
+              return _ImportEvaluation(error.at('$i', const ['items']));
+            }
             evaluated.items.add(i);
           }
         }
-        final minimum = node.validationVocabulary ? (node.minContains ?? 1) : 1;
-        final maximum = node.validationVocabulary ? node.maxContains : null;
-        if (matches < minimum) {
-          return fail(
-            node.validationVocabulary && node.minContains != null
-                ? 'minContains'
-                : 'contains',
-          );
-        }
-        if (maximum != null && matches > maximum) return fail('maxContains');
-      }
-      if (node.unevaluatedItems case final target?) {
-        for (var i = 0; i < value.length; i++) {
-          if (evaluated.items.contains(i)) continue;
-          final result = _evaluateImportedNode(target, value[i], currentScope);
-          if (result.error case final error?) {
-            return _ImportEvaluation(
-              error.at('$i', const ['unevaluatedItems']),
+        if (node.contains case final target?) {
+          var matches = 0;
+          for (var i = 0; i < value.length; i++) {
+            if (_evaluateImportedNode(target, value[i], currentScope).error ==
+                null) {
+              matches++;
+              evaluated.items.add(i);
+            }
+          }
+          final minimum = node.validationVocabulary
+              ? (node.minContains ?? 1)
+              : 1;
+          final maximum = node.validationVocabulary ? node.maxContains : null;
+          if (matches < minimum) {
+            return fail(
+              node.validationVocabulary && node.minContains != null
+                  ? 'minContains'
+                  : 'contains',
             );
           }
-          evaluated.items.add(i);
+          if (maximum != null && matches > maximum) return fail('maxContains');
+        }
+      }
+      if (node.unevaluatedVocabulary) {
+        if (node.unevaluatedItems case final target?) {
+          for (var i = 0; i < value.length; i++) {
+            if (evaluated.items.contains(i)) continue;
+            final result = _evaluateImportedNode(
+              target,
+              value[i],
+              currentScope,
+            );
+            if (result.error case final error?) {
+              return _ImportEvaluation(
+                error.at('$i', const ['unevaluatedItems']),
+              );
+            }
+            evaluated.items.add(i);
+          }
         }
       }
   }

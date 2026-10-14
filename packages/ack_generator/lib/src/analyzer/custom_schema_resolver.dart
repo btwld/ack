@@ -21,9 +21,9 @@ typedef FutureGeneratedType = ({
   String? setListSchema,
 });
 
-/// Resolves custom `@Schemable(schemas: ...)`, `@AckField(schema: ...)`,
-/// auto-detected top-level schemas, type-owned static `.schema` declarations,
-/// and future-generated schema-first types for [ClassModelGraphBuilder].
+/// Resolves custom `@Schemable(schemas: ...)`, auto-detected top-level schemas,
+/// type-owned static `.schema` declarations, and future-generated schema-first
+/// types for [ClassModelGraphBuilder].
 final class CustomSchemaResolver {
   CustomSchemaResolver(this._base);
 
@@ -210,8 +210,7 @@ final class CustomSchemaResolver {
       if (runtime is InterfaceType && isNonOverridableCoreType(runtime)) {
         throw InvalidGenerationSource(
           '$ownerLabel @Schemable(schemas: ...) cannot override core type '
-          '${runtime.getDisplayString()}; use @AckField(schema: '
-          '${function.name}) on the specific field instead.',
+          '${runtime.getDisplayString()}.',
           element: owner,
         );
       }
@@ -294,8 +293,7 @@ final class CustomSchemaResolver {
           .join(', ');
       throw InvalidGenerationSource(
         '$path has multiple imported library schemas for $display ($names). '
-        'Disambiguate with @Schemable(schemas: [...]) or '
-        '@AckField(schema: ...).',
+        'Disambiguate with @Schemable(schemas: [...]).',
         element: field,
       );
     }
@@ -340,8 +338,7 @@ final class CustomSchemaResolver {
       final names = matches.map((m) => m.declaration.name).join(', ');
       throw InvalidGenerationSource(
         '$path has multiple top-level schemas for $display in this library '
-        '($names). Disambiguate with @Schemable(schemas: [...]) or '
-        '@AckField(schema: ...).',
+        '($names). Disambiguate with @Schemable(schemas: [...]).',
         element: field,
       );
     }
@@ -399,71 +396,6 @@ final class CustomSchemaResolver {
       type.isDartCoreSet ||
       type.isDartCoreMap ||
       _base.isJsonMaybeType(type);
-
-  Future<String> escapeHatchExpression(
-    FieldElement field,
-    ConstantReader annotation,
-  ) async {
-    final function = annotation.read('schema').objectValue.toFunctionValue();
-    final path = _fieldPath(field);
-    if (function is! TopLevelFunctionElement) {
-      throw InvalidGenerationSource(
-        '$path @AckField schema must be a const tear-off of a top-level '
-        'function.',
-        element: field,
-      );
-    }
-    if (function.typeParameters.isNotEmpty) {
-      throw InvalidGenerationSource(
-        '$path @AckField schema function ${function.name} is generic, and the '
-        'generated call cannot keep its type arguments. Use a non-generic '
-        'function, or declare a static schema method on the field type.',
-        element: field,
-      );
-    }
-    if (function.formalParameters.isNotEmpty ||
-        !ModelGraphBuilderBase.ackSchemaChecker.isAssignableFromType(
-          function.returnType,
-        )) {
-      throw InvalidGenerationSource(
-        '$path @AckField top-level function must have type AckSchema '
-        'Function().',
-        element: field,
-      );
-    }
-    final runtime = _base.ackSchemaRuntimeType(function.returnType);
-    final expectedFieldType = _base.unwrapJsonMaybeType(field.type);
-    if (runtime == null ||
-        !_base.sameTypeIgnoringNullability(runtime, expectedFieldType)) {
-      throw InvalidGenerationSource(
-        '$path @AckField schema function ${function.name} produces '
-        '${runtime?.getDisplayString() ?? 'an untyped value'}, but the field '
-        'type is ${expectedFieldType.getDisplayString()}.',
-        element: field,
-        todo: 'Return AckSchema<..., ${expectedFieldType.getDisplayString()}>.',
-      );
-    }
-    final resolved = await _base.resolvedLibraryFor(function.library);
-    final bodyExpression = _base.declarationExpression(resolved, function);
-    if (bodyExpression == null) {
-      throw InvalidGenerationSource(
-        '$path @AckField function must have a statically resolvable '
-        'expression or single return.',
-        element: field,
-      );
-    }
-    final oneWaySource = await _base.oneWayTransformSource(bodyExpression);
-    if (oneWaySource != null) {
-      throw InvalidGenerationSource(
-        '$path @AckField schema function ${function.name} reaches one-way '
-        'schema $oneWaySource. Migrate this .transform() path to .codec() '
-        'with an encoder.',
-        element: field,
-      );
-    }
-    final prefix = _base.visiblePrefixFor(function, path: path, context: field);
-    return '${prefix == null ? '' : '$prefix.'}${function.name}()';
-  }
 
   DartType? inferredBoundaryType(
     DartType type,

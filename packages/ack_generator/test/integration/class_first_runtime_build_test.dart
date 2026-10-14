@@ -177,16 +177,7 @@ AckSchema<String, alpha.Item> alphaItemSchema() => Ack.string()
 AckSchema<int, beta.Item> betaItemSchema() => Ack.integer()
     .codec<beta.Item>(decode: beta.Item.new, encode: (item) => item.value);
 
-AckSchema<Map<String, Object?>, Map<String, List<String>>> groupsSchema() =>
-    Ack.object({}, additionalProperties: true)
-        .codec<Map<String, List<String>>>(
-          decode: (value) => value.map(
-            (key, item) => MapEntry(key, (item! as List).cast<String>()),
-          ),
-          encode: (value) => value,
-        );
-
-@Schemable()
+@Schemable(schemas: [colorSchema])
 final class Profile with _$ProfileAck {
   const Profile({
     required this.name,
@@ -203,7 +194,6 @@ final class Profile with _$ProfileAck {
   final String role;
   @Validate.uniqueItems()
   final Set<String> tags;
-  @AckField(schema: colorSchema)
   final Color color;
 
   static final fromJson = ProfileSchema.fromJson;
@@ -213,7 +203,7 @@ final class Profile with _$ProfileAck {
 final class Account with _$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
   final String firstName;
-  @AckField(name: 'avatar')
+  @AckKey('avatar')
   final Uri imageUrl;
 
   static final fromJson = AccountSchema.fromJson;
@@ -271,12 +261,10 @@ final class NullDefault with _$NullDefaultAck {
   final String? label;
 }
 
-@Schemable()
+@Schemable(schemas: [alphaItemSchema, betaItemSchema])
 final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
-  @AckField(schema: alphaItemSchema)
   final alpha.Item left;
-  @AckField(schema: betaItemSchema)
   final beta.Item right;
 }
 
@@ -291,7 +279,6 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
   final List<List<String>> matrix;
   @Validate.uniqueItems()
   final Set<String> labels;
-  @AckField(schema: groupsSchema)
   final Map<String, List<String>> groups;
 }
 
@@ -334,15 +321,29 @@ final class InferredNotNull with _$InferredNotNullAck {
   final String? label;
 }
 
-AckSchema<String, String> nullableNameSchema() => Ack.string().nullable();
+final class NameTag {
+  const NameTag(this.value);
+  final String value;
 
-@Schemable()
+  @override
+  bool operator ==(Object other) => other is NameTag && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+}
+
+AckSchema<String, NameTag> nullableNameSchema() =>
+    Ack.string().nullable().codec<NameTag>(
+      decode: NameTag.new,
+      encode: (value) => value.value,
+    );
+
+@Schemable(schemas: [nullableNameSchema])
 final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
   @Validate.notNull()
-  @AckField(schema: nullableNameSchema)
-  final String? name;
+  final NameTag? name;
 }
 
 @Schemable()
@@ -359,19 +360,13 @@ final class ParameterEntry {
   final String value;
 }
 
-AckSchema<Map<String, Object?>, Map<String, ParameterEntry>>
-parameterMapSchema() =>
-    Ack.object({}, additionalProperties: true).codec<Map<String, ParameterEntry>>(
-      decode: (value) => {
-        for (final entry in value.entries)
-          entry.key: ParameterEntry(entry.value! as String),
-      },
-      encode: (value) => {
-        for (final entry in value.entries) entry.key: entry.value.value,
-      },
+AckSchema<String, ParameterEntry> parameterEntrySchema() =>
+    Ack.string().codec<ParameterEntry>(
+      decode: ParameterEntry.new,
+      encode: (value) => value.value,
     );
 
-@Schemable()
+@Schemable(schemas: [parameterEntrySchema])
 final class CapabilityBinding with _$CapabilityBindingAck {
   CapabilityBinding({
     required this.name,
@@ -381,14 +376,10 @@ final class CapabilityBinding with _$CapabilityBindingAck {
   final String name;
 
   @Validate.optional()
-  @AckField(schema: parameterMapSchema)
   final Map<String, ParameterEntry> parameters;
 
   static final fromJson = CapabilityBindingSchema.fromJson;
 }
-
-AckSchema<Map<String, int?>, Map<String, int?>> scoresSchema() =>
-    Ack.map(Ack.integer().min(0));
 
 @Schemable()
 final class Envelope with _$EnvelopeAck {
@@ -414,7 +405,6 @@ final class Envelope with _$EnvelopeAck {
   final Map<String, Object> values;
   final Map<String, Object?> metadata;
   final Map<String, String> labels;
-  @AckField(schema: scoresSchema)
   final Map<String, int> scores;
 }
 
@@ -508,8 +498,7 @@ final class Board with _$BoardAck {
   const Board({required this.focus, required this.backlog, this.pinned});
 
   /// The task to do next.
-  /// @description This tag has lower priority.
-  @AckField(description: 'The task to do next.')
+  /// @description The task to do next.
   final Task focus;
   final List<Task> backlog;
   final Task? pinned;
@@ -876,9 +865,12 @@ void main() {
     expect(InferredNotNull().toJson(), {});
   });
 
-  test('NotNull wins over a nullable AckField schema override', () {
+  test('NotNull wins over a nullable custom schema', () {
     expect(OverrideNotNullSchema.parse({}).name, isNull);
-    expect(OverrideNotNullSchema.parse({'name': 'ada'}).name, 'ada');
+    expect(
+      OverrideNotNullSchema.parse({'name': 'ada'}).name,
+      const NameTag('ada'),
+    );
     expect(OverrideNotNullSchema.safeParse({'name': null}).isFail, isTrue);
     expect(OverrideNotNull().toJson(), {});
   });
@@ -994,7 +986,7 @@ void main() {
       'labels': {'env': 1},
     },
     {
-      'scores': {'a': -1},
+      'scores': {'a': 'not-an-int'},
     },
   ]) {
     test('Envelope rejects invalid field values: $invalid', () {

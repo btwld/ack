@@ -8,7 +8,8 @@ import 'own_types.dart';
 final class Contact {
   const Contact(this.email);
 
-  @ack.AckField(name: 'email_address', description: 'Primary email')
+  /// @description Primary email
+  @ack.AckKey('email_address')
   @ack.Validate.email()
   final Email email;
 }
@@ -17,7 +18,8 @@ final class Contact {
 final class SingleImportContact {
   const SingleImportContact(this.email, this.id);
 
-  @AckField(description: 'Contact email')
+  /// @description Contact email
+  @AckKey('email')
   @Validate.email()
   final Email email;
 
@@ -29,7 +31,7 @@ void main() {
   test('package:ack/ack.dart exports the model and Validate annotations', () {
     const values = <Object>[
       Schemable(caseStyle: AckCaseStyle.snake),
-      AckField(description: 'id'),
+      AckKey('id'),
       Validate.required(),
       Validate.optional(),
       Validate.notNull(),
@@ -83,17 +85,16 @@ void main() {
   );
 
   test(
-    'a prefixed annotations import exposes Schemable, AckField, and Validate',
+    'a prefixed annotations import exposes Schemable, AckKey, and Validate',
     () {
       const contact = Contact(Email('ada@example.com'));
       const schemable = ack.Schemable(name: 'Contact');
-      const field = ack.AckField(name: 'email_address', description: 'Primary');
+      const key = ack.AckKey('email_address');
       const validate = ack.Validate.matches('^a');
 
       expect(contact.email.address, 'ada@example.com');
       expect(schemable.name, 'Contact');
-      expect(field.name, 'email_address');
-      expect(field.description, 'Primary');
+      expect(key.name, 'email_address');
       expect(validate, isA<Validate>());
       expect(validate.kind, 'matches');
       expect(validate.value, '^a');

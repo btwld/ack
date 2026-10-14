@@ -11,7 +11,7 @@ from a Dart class, or start from a `.schema.json` document.
 | A Dart class or sealed union (`final class Account`) | `@Schemable()` | `_accountSchema` codec, `AccountSchema` facade, and `_$AccountAck` mixin in `<file>.g.dart` |
 | A JSON Schema asset (`lib/**/*.schema.json`) | `ack_generator:ack_json_schema` in `build.yaml` | `<name>.schema.dart` + `<name>.schema.g.dart` with typed `@Schemable()` models or validated value models |
 
-`@Schemable()`, `@AckField`, and the `@Validate.*` constraint and presence
+`@Schemable()`, `@AckKey`, and the `@Validate.*` constraint and presence
 namespace all come from `package:ack/ack.dart` (and `package:ack/annotations.dart`).
 There is no `@AckSchema()` annotation; `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
@@ -245,12 +245,13 @@ static final Profile Function(Map<String, dynamic>) fromJson =
     ProfileSchema.fromJson;
 ```
 
-Use `@Schemable(description: ...)` and `@AckField(description: ...)` to export
-schema descriptions. A single-line `@description` tag in a `///` or `/** */`
-doc comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
-prose does not become schema data. Explicit annotation text takes precedence.
-Blank or duplicate tags fail generation. `@description` is an Ack convention,
-not a Dart annotation.
+Use `@Schemable(description: ...)` and a single-line `@description` tag in a
+`///` or `/** */` doc comment on classes, fields, or constructor parameters to
+export schema descriptions. Only the text after the tag, on the same line, is
+exported. Untagged prose does not become schema data. Explicit annotation text
+on `@Schemable(description: ...)` takes precedence over a class doc tag. Blank
+or duplicate tags fail generation. `@description` is an Ack convention, not a
+Dart annotation.
 
 A class description applies to its object schema and model codec. This includes
 sealed union bases and branches. A field description applies at its property.
@@ -375,7 +376,7 @@ constraints apply to the outer set.
 
 Use `caseStyle` for model-wide JSON names. Supported values are `none`,
 `snake`, `kebab`, `pascal`, and `screamingSnake`. Use
-`@AckField(name: 'wire_name')` on the field or primary constructor parameter for
+`@AckKey('wire_name')` on the field or primary constructor parameter for
 a single wire-name override. Ack resolves each wire key once and uses it for both
 validation and JSON mapping. `JsonConverter` annotations are rejected so the Ack
 schema and generated JSON mapping cannot diverge.
@@ -386,11 +387,10 @@ When a class-first field has a custom type `T` (including inside `List<T>`,
 `Set<T>`, `Map<String, T>`, `JsonMaybe<T>`, or generic `Box<T>`), Ack resolves
 its schema in the following priority order:
 
-1. **`@AckField(schema: ...)`** on the field or constructor parameter;
-2. **`@Schemable(schemas: [...])`** on the class, enclosing union base, current
+1. **`@Schemable(schemas: [...])`** on the class, enclosing union base, current
    `library;` directive, or an imported `library;` directive;
-3. **Type-owned schema (`T.schema` / `T.schema<A>(...)`)** on the type itself;
-4. **Automatic current-library detection**: a unique top-level
+2. **Type-owned schema (`T.schema` / `T.schema<A>(...)`)** on the type itself;
+3. **Automatic current-library detection**: a unique top-level
    `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the
    current library.
 
@@ -487,7 +487,7 @@ offers a static field instead of a `schema<A>()` method. Schema-first objects
 can reference the same members, such as `'header': Slot.schema` or
 `'open': Command.schema<void>()`.
 
-### External types, library registries, and field overrides
+### External types and library registries
 
 For a third-party type you cannot edit:
 
@@ -496,8 +496,6 @@ For a third-party type you cannot edit:
 - **Across a class, union, or library**: pass top-level schema function tear-offs
   in `@Schemable(schemas: [colorSchema])` on the class, union base, or `library;`
   directive (including an imported shared `library;` directive).
-- **On a single field**: use `@AckField(schema: colorSchema)` when two fields of
-  the same type need different schemas.
 
 ```dart
 @Schemable(schemas: [colorSchema])
@@ -521,15 +519,10 @@ final class Theme with _$ThemeAck {
 }
 ```
 
-`@AckField(schema: ...)` also replaces an inferred `Object` or `Map<String, V>`
-schema when a single field needs a tighter contract, such as a function
-returning `Ack.map(Ack.integer().min(0))` for a `Map<String, int>` field.
 Non-String map keys and `dynamic` are rejected because they do not provide a
 static schema; use `Object?` for an open JSON value.
 Automatic `List<T>` and `Set<T>` inference also requires non-nullable element
-types because `Ack.list` has no nullable-item contract. An explicit
-`@AckField(schema: ...)` codec remains the escape hatch when a field deliberately
-uses a different collection representation.
+types because `Ack.list` has no nullable-item contract.
 
 ### Class-first unions
 
@@ -684,6 +677,6 @@ targets:
 - Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
 - Replace `@AckType()`, `@AckInfer()`, and `@AckModel()` with `@Schemable()`.
 - Replace top-level presence and constraint annotations (`@Optional`, `@Required`, `@NotNull`, `@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with `@Validate.*` (`@Validate.optional`, `@Validate.required`, `@Validate.notNull`, `@Validate.min`, `@Validate.max`, `@Validate.minLength`, `@Validate.matches`, `@Validate.email`, `@Validate.dateTime`, etc.).
-- Replace `@JsonKey(name: '...')` on `@Schemable` fields with `@AckField(name: '...')`.
+- Replace `@JsonKey(name: '...')` and `@AckField(name: '...')` on `@Schemable` fields with `@AckKey('...')`.
 
 See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for the complete substitution tables and side-by-side before/after examples.

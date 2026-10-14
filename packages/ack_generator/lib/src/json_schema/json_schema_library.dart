@@ -10,10 +10,11 @@ import 'json_schema_generation_exception.dart';
 
 /// How generated models treat properties a JSON Schema object doesn't declare.
 enum AckUnknownPropertiesMode {
-  /// Follow the schema: `additionalProperties: false` rejects unknown keys.
+  /// Follows the schema, where `additionalProperties: false` rejects unknown
+  /// keys.
   schema,
 
-  /// Accept and keep unknown keys on every object, for clients that must
+  /// Accepts and keeps unknown keys on every object, for clients that must
   /// tolerate additive server changes to strict schemas.
   preserve,
 }
@@ -100,11 +101,11 @@ final class AckJsonSchemaLibraryOptions {
   /// URI and stored at package-local asset paths.
   final Map<Uri, String> documentPaths;
 
-  /// Assert known formats even under the standard 2020-12 dialect.
+  /// Whether to assert known formats even under the standard 2020-12 dialect.
   final bool assertFormats;
 
-  /// `auto` retains typed v1 models where possible; `validated` uses exact
-  /// source-schema value wrappers for every model.
+  /// Mode for generated models (`auto` retains typed models where possible;
+  /// `validated` uses exact source-schema value wrappers for every model).
   final AckJsonSchemaModelMode modelMode;
 }
 
@@ -387,14 +388,20 @@ final class _Translator {
     return diagnostics.isEmpty ? effective : null;
   }
 
-  /// Sets `additionalProperties: false` to `true` on every schema, walking
-  /// only keywords whose values are schemas.
+  /// Sets `additionalProperties: false` and `unevaluatedProperties: false` to
+  /// `true` on every schema, walking only keywords whose values are schemas.
   void _widen(Object? node, String pointer) {
     if (node is! Map<String, Object?>) return;
+    var didWiden = false;
     if (node['additionalProperties'] == false) {
       node['additionalProperties'] = true;
-      widened.add(pointer);
+      didWiden = true;
     }
+    if (node['unevaluatedProperties'] == false) {
+      node['unevaluatedProperties'] = true;
+      didWiden = true;
+    }
+    if (didWiden) widened.add(pointer);
     for (final keyword in const [
       r'$defs',
       'definitions',
@@ -518,7 +525,7 @@ final class _Translator {
         _fail(pointer, 'Keywords next to "\$ref" are not supported.');
         return null;
       }
-      return _ref(node[r'$ref'], '$pointer/\$ref', owner);
+      return _ref(node[r'$ref'], '$pointer/\$ref', owner, describe);
     }
     for (final keyword in ['allOf', 'oneOf', 'not', 'if', 'then', 'else']) {
       if (keys.contains(keyword)) {
@@ -593,7 +600,7 @@ final class _Translator {
     }
     final code = switch (single) {
       'string' => _string(node, pointer),
-      'integer' => _integer(node),
+      'integer' => _integer(node, pointer),
       'number' => _number(node),
       'boolean' => 'ack.Ack.boolean()',
       _ => _array(node, pointer, owner, hoistName),
@@ -602,7 +609,12 @@ final class _Translator {
     return _Expr(describe(code), nullable: nullable);
   }
 
-  _Expr? _ref(Object? ref, String pointer, String owner) {
+  _Expr? _ref(
+    Object? ref,
+    String pointer,
+    String owner,
+    String Function(String) describe,
+  ) {
     final match = ref is String
         ? RegExp(r'^#/\$defs/([A-Za-z0-9]+)$').firstMatch(ref)
         : null;
@@ -616,7 +628,7 @@ final class _Translator {
       return null;
     }
     _edge(owner, name, pointer);
-    return _Expr(_variable(name), reference: name);
+    return _Expr(describe(_variable(name)), reference: name);
   }
 
   _Expr? _anyOf(
@@ -671,7 +683,7 @@ final class _Translator {
       );
       if (inner == null) return null;
       return _Expr(
-        inner.reference == null ? describe(inner.code) : inner.code,
+        describe(inner.code),
         nullable: nullable || inner.nullable,
         reference: inner.reference,
       );
@@ -799,12 +811,18 @@ final class _Translator {
     return _Expr(describe('ack.Ack.literal(${dartStringLiteral(value)})'));
   }
 
+  static bool _fitsInInt64(num value) =>
+      value is int ||
+      (value.isFinite &&
+          value >= -9223372036854775808.0 &&
+          value < 9223372036854775808.0);
+
   int? _sizeBound(Map<String, Object?> node, String keyword, String pointer) {
     final value = node[keyword];
     if (value == null) return null;
     // The importer gate has already checked that the bound is integral.
     // Guard conversion as toInt() clamps values outside the integer range.
-    if (value is num && value.isFinite && value.toInt() == value) {
+    if (value is num && _fitsInInt64(value) && value.toInt() == value) {
       return value.toInt();
     }
     _fail(
@@ -831,23 +849,53 @@ final class _Translator {
     return buffer.toString();
   }
 
-  String _integer(Map<String, Object?> node) {
+  String? _integer(Map<String, Object?> node, String pointer) {
     final buffer = StringBuffer('ack.Ack.integer()');
     int? integral(Object? value) =>
-        value is num && value == value.truncate() ? value.toInt() : null;
+        value is num && _fitsInInt64(value) && value == value.truncate()
+        ? value.toInt()
+        : null;
     if (node['minimum'] case final num n) {
+      if (!_fitsInInt64(n)) {
+        _fail(
+          '$pointer/minimum',
+          'Bound cannot be represented as a Dart integer.',
+        );
+        return null;
+      }
       buffer.write('.min(${integral(n) ?? n.ceil()})');
     }
     if (node['exclusiveMinimum'] case final num n) {
+      if (!_fitsInInt64(n)) {
+        _fail(
+          '$pointer/exclusiveMinimum',
+          'Bound cannot be represented as a Dart integer.',
+        );
+        return null;
+      }
       final exact = integral(n);
       buffer.write(
         exact == null ? '.min(${n.ceil()})' : '.greaterThan($exact)',
       );
     }
     if (node['maximum'] case final num n) {
+      if (!_fitsInInt64(n)) {
+        _fail(
+          '$pointer/maximum',
+          'Bound cannot be represented as a Dart integer.',
+        );
+        return null;
+      }
       buffer.write('.max(${integral(n) ?? n.floor()})');
     }
     if (node['exclusiveMaximum'] case final num n) {
+      if (!_fitsInInt64(n)) {
+        _fail(
+          '$pointer/exclusiveMaximum',
+          'Bound cannot be represented as a Dart integer.',
+        );
+        return null;
+      }
       final exact = integral(n);
       buffer.write(exact == null ? '.max(${n.floor()})' : '.lessThan($exact)');
     }
@@ -1179,6 +1227,7 @@ String _emitFallback(
     ..writeln("import 'dart:convert';")
     ..writeln("import 'package:ack/ack.dart' as ack;")
     ..writeln()
+    ..writeln('// dart format off')
     ..writeln('final Object _jsonSchemaDocument =')
     ..writeln(
       '    jsonDecode(${dartStringLiteral(jsonEncode(document))}) as Object;',
@@ -1193,6 +1242,7 @@ String _emitFallback(
   }
   buffer
     ..writeln('};')
+    ..writeln('// dart format on')
     ..writeln();
   for (final (name, definition) in models) {
     final variable = _variable(name);
@@ -1257,8 +1307,17 @@ String _commentText(String value) => value
     .replaceAll('\u2028', r'\u2028')
     .replaceAll('\u2029', r'\u2029');
 
-String _num(num value) =>
-    value is int || value != value.truncate() ? '$value' : '${value.toInt()}';
+String _num(num value) {
+  if (value is int) {
+    return value.abs() <= 9007199254740992 ? '$value' : '${value.toDouble()}';
+  }
+  if (value.isFinite &&
+      value.abs() <= 9007199254740992.0 &&
+      value == value.truncate()) {
+    return '${value.toInt()}';
+  }
+  return '$value';
+}
 
 String _token(String key) => key.replaceAll('~', '~0').replaceAll('/', '~1');
 

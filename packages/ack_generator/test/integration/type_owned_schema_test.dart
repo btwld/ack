@@ -481,7 +481,7 @@ final class Color {
       contains(
         contains(
           'Section.color uses unsupported Color. Declare a static schema on '
-          'Color, or set @AckField(schema: ...) on the field.',
+          'Color, or register one in @Schemable(schemas: [...]).',
         ),
       ),
     );
@@ -834,7 +834,7 @@ final class Color {
           contains(
             'Theme.primary has multiple top-level schemas for Color in this '
             'library (hexColorSchema, namedColorSchema). Disambiguate with '
-            '@Schemable(schemas: [...]) or @AckField(schema: ...).',
+            '@Schemable(schemas: [...]).',
           ),
         ),
       );
@@ -1012,9 +1012,7 @@ final class Post with _$PostAck {
         coreErrors,
         contains(
           contains(
-            'Post @Schemable(schemas: ...) cannot override core type String; '
-            'use @AckField(schema: customStringSchema) on the specific field '
-            'instead.',
+            'Post @Schemable(schemas: ...) cannot override core type String.',
           ),
         ),
       );

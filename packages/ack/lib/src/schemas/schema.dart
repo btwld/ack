@@ -83,10 +83,10 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   final List<Constraint<Runtime>> _constraints;
   final List<Refinement<Runtime>> _refinements;
 
-  /// Returns an unmodifiable view of the constraints for this schema.
+  /// An unmodifiable view of the constraints for this schema.
   List<Constraint<Runtime>> get constraints => List.unmodifiable(_constraints);
 
-  /// Returns an unmodifiable view of the refinements for this schema.
+  /// An unmodifiable view of the refinements for this schema.
   List<Refinement<Runtime>> get refinements => List.unmodifiable(_refinements);
 
   Iterable<Object?> get _constraintsForEquality => _constraints;
@@ -135,8 +135,10 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
     SchemaContext context,
   );
 
-  /// Encodes a runtime value into a boundary value. The base class strips
-  /// `null` before calling this; subclasses receive a non-null [value].
+  /// Encodes a runtime value into a boundary value.
+  ///
+  /// The base class strips `null` before calling this; subclasses receive a
+  /// non-null [value].
   ///
   /// The default delegates to [encodeAsBoundary], which is correct for schemas
   /// where `Boundary == Runtime`. Schemas where the two types differ (codecs,
@@ -234,9 +236,9 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Helper for schemas whose boundary == runtime: validates the runtime
-  /// value and, if it passes, returns it as the boundary value unchanged.
-  /// Only safe to call when `Boundary` and `Runtime` are the same type.
+  /// Validates [value] and returns it as the boundary value unchanged.
+  ///
+  /// Only safe to call when [Boundary] and [Runtime] are the same type.
   @protected
   SchemaResult<Boundary> encodeAsBoundary(
     Runtime value,
@@ -247,7 +249,7 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
     return SchemaResult.ok(value as Boundary);
   }
 
-  /// Runtime-side non-nullable failure.
+  /// Returns a runtime-side non-nullable failure.
   @protected
   SchemaResult<Runtime> failNonNullable(SchemaContext context) {
     final constraintError = NonNullableConstraint().validate(null);
@@ -259,15 +261,17 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Encode-side non-nullable failure.
+  /// Returns an encode-side non-nullable failure.
   @protected
   SchemaResult<Boundary> failNonNullableEncode(SchemaContext context) {
     return SchemaResult.fail(SchemaEncodeError.nonNullable(context: context));
   }
 
-  /// Centralized null gate for the parse/validate paths. Returns null when
-  /// [inputValue] is non-null; otherwise returns Ok(null) if [acceptsNull]
-  /// is true or a non-nullable failure.
+  /// Handles `null` input for the parse and runtime-validation paths.
+  ///
+  /// Returns `null` when [inputValue] is non-null; otherwise returns
+  /// `SchemaResult.ok(null)` when [acceptsNull] is `true`, or a non-nullable
+  /// failure.
   @protected
   SchemaResult<Runtime>? handleNullInput(
     Object? inputValue,
@@ -282,9 +286,11 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
     return failNonNullable(context);
   }
 
-  /// Whether `parse(null)` and `encode(null)` should accept null without
-  /// raising a non-nullable failure. Defaults to [isNullable]; subclasses with
-  /// branch-level null policies (e.g. [AnyOfSchema]) override this hook.
+  /// Whether `parse(null)` and `encode(null)` should accept `null` without
+  /// raising a non-nullable failure.
+  ///
+  /// Defaults to [isNullable]; subclasses with branch-level null policies (such
+  /// as [AnyOfSchema]) override this hook.
   @protected
   bool get acceptsNull => isNullable;
 
@@ -322,8 +328,10 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   }
 
   /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue] when
-  /// the parse input is null. Object encode also injects encoded defaults for
-  /// missing default-wrapped fields.
+  /// the parse input is `null`.
+  ///
+  /// Object encoding also injects encoded defaults for missing default-wrapped
+  /// fields.
   DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
     return DefaultSchema<Boundary, Runtime>(
       inner: this,
@@ -528,7 +536,7 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
         );
   }
 
-  /// Computes hash code for base schema fields.
+  /// The hash code for the base schema fields.
   @protected
   int get baseFieldsHashCode {
     const iterableEq = IterableEquality<Object?>();

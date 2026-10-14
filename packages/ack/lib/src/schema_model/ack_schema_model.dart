@@ -300,18 +300,24 @@ sealed class AckSchemaModel {
 final class AckRawSchemaModel extends AckSchemaModel {
   const AckRawSchemaModel({
     required this.schema,
+    Set<Map<String, Object?>> indexedSchemas = const {},
     super.title,
     super.description,
     super.nullable,
     super.defaultValue,
     super.warnings,
     super.extensions,
-  });
+  }) : _indexedSchemas = indexedSchemas;
 
-  AckRawSchemaModel._(_AckSchemaModelCommon common, {required this.schema})
-    : super._(common);
+  AckRawSchemaModel._(
+    _AckSchemaModelCommon common, {
+    required this.schema,
+    required Set<Map<String, Object?>> indexedSchemas,
+  }) : _indexedSchemas = indexedSchemas,
+       super._(common);
 
   final Map<String, Object?> schema;
+  final Set<Map<String, Object?>> _indexedSchemas;
 
   @override
   Map<String, Object?> toJsonSchema() {
@@ -328,6 +334,7 @@ final class AckRawSchemaModel extends AckSchemaModel {
       body,
       Uri.parse(body[r'$id'] as String),
       resourceKeywords,
+      _indexedSchemas,
     );
     final resource = <String, Object?>{
       for (final entry in relocated.entries)
@@ -345,13 +352,18 @@ final class AckRawSchemaModel extends AckSchemaModel {
 
   @override
   AckRawSchemaModel _rebuildWithCommon(_AckSchemaModelCommon common) =>
-      AckRawSchemaModel._(common, schema: schema);
+      AckRawSchemaModel._(
+        common,
+        schema: schema,
+        indexedSchemas: _indexedSchemas,
+      );
 }
 
 Map<String, Object?> _relocateRootPointers(
   Map<String, Object?> source,
   Uri rootUri,
   Set<String> retainedKeywords,
+  Set<Map<String, Object?>> indexedSchemas,
 ) {
   const mapKeywords = {
     r'$defs',
@@ -374,17 +386,44 @@ Map<String, Object?> _relocateRootPointers(
   };
   const listKeywords = {'anyOf', 'allOf', 'oneOf', 'prefixItems'};
 
-  Object? visit(Object? value, Uri base) {
+  late Object? Function(Object?, Uri) visit;
+
+  Object? visitExtension(Object? value, Uri base) {
+    if (value is Map<String, Object?>) {
+      if (indexedSchemas.contains(value)) return visit(value, base);
+      return {
+        for (final entry in value.entries)
+          entry.key: visitExtension(entry.value, base),
+      };
+    }
+    if (value is List) {
+      return [for (final item in value) visitExtension(item, base)];
+    }
+    return value;
+  }
+
+  visit = (Object? value, Uri base) {
     if (value is! Map<String, Object?>) return value;
     final declaredId = value[r'$id'];
-    final currentBase = declaredId is String
-        ? base.resolve(declaredId).removeFragment()
-        : base;
+    var currentBase = base;
+    if (declaredId is String) {
+      try {
+        currentBase = base.resolve(declaredId).removeFragment();
+      } on FormatException {
+        // Dormant malformed $id values in unreachable definitions remain as-is.
+      }
+    }
     final rewritten = Map<String, Object?>.from(value);
     for (final key in [r'$ref', r'$dynamicRef']) {
       final reference = rewritten[key];
       if (reference is! String) continue;
-      final resolved = currentBase.resolve(reference);
+      final Uri resolved;
+      try {
+        resolved = currentBase.resolve(reference);
+      } on FormatException {
+        // Dormant malformed references are not evaluated by the importer.
+        continue;
+      }
       final fragment = resolved.fragment;
       if (resolved.removeFragment() != rootUri) continue;
       if (fragment.isEmpty) {
@@ -417,8 +456,16 @@ Map<String, Object?> _relocateRootPointers(
         ];
       }
     }
+    for (final key in rewritten.keys.toList(growable: false)) {
+      if (mapKeywords.contains(key) ||
+          childKeywords.contains(key) ||
+          listKeywords.contains(key)) {
+        continue;
+      }
+      rewritten[key] = visitExtension(rewritten[key], currentBase);
+    }
     return rewritten;
-  }
+  };
 
   return visit(source, rootUri)! as Map<String, Object?>;
 }

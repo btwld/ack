@@ -10,7 +10,8 @@ import 'package:source_gen/source_gen.dart';
 import '../utils/doc_comment_utils.dart';
 import '../utils/string_literal.dart';
 
-/// Infers Ack schema expressions from resolved Dart types and annotations.
+/// Inference helper that builds Ack schema expressions from resolved Dart
+/// types and annotations.
 ///
 /// The caller resolves application model types and import prefixes. Ack owns
 /// scalar, collection, and constraint inference for each generator.
@@ -23,16 +24,12 @@ final class AckSchemaInference {
     annotations.Validate,
     inPackage: 'ack',
   );
-  static const _ackField = TypeChecker.typeNamed(
-    annotations.AckField,
-    inPackage: 'ack',
-  );
 
   /// Infers a schema expression for [type].
   ///
   /// [resolveNamed] returns a schema expression for an application type,
-  /// including an enum that declares its own schema. Return null when the type
-  /// has no supported model contract; an enum then uses `Ack.enumValues`.
+  /// including an enum that declares its own schema. Return `null` when the
+  /// type has no supported model contract; an enum then uses `Ack.enumValues`.
   Future<String> inferType(
     DartType type, {
     required String Function(InterfaceType) visibleTypeName,
@@ -370,7 +367,7 @@ final class AckSchemaInference {
     return '$schema$modifiers';
   }
 
-  /// Adds an explicit Ack description or a tagged documentation description.
+  /// Adds a tagged documentation description (`/// @description ...`) to [schema].
   ///
   /// Analyzer does not attach parameter doc comments to parameter elements.
   /// A function generator passes the comment from its source AST.
@@ -379,9 +376,9 @@ final class AckSchemaInference {
     Element declaration, {
     String? sourceComment,
   }) {
-    final String? tag;
+    final String? description;
     try {
-      tag = parseDescriptionTag(
+      description = parseDescriptionTag(
         sourceComment ?? declaration.documentationComment,
       );
     } on FormatException catch (error) {
@@ -390,18 +387,6 @@ final class AckSchemaInference {
         element: declaration,
       );
     }
-    final annotation = _ackField.firstAnnotationOfExact(declaration);
-    final value = annotation == null
-        ? null
-        : ConstantReader(annotation).read('description');
-    final explicit = value == null || value.isNull ? null : value.stringValue;
-    if (explicit != null && explicit.trim().isEmpty) {
-      throw InvalidGenerationSource(
-        '${declaration.name} @AckField.description must not be blank.',
-        element: declaration,
-      );
-    }
-    final description = explicit ?? tag;
     return description == null
         ? schema
         : '$schema.describe(${dartStringLiteral(description)})';

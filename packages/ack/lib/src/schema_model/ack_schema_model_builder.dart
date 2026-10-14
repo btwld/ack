@@ -19,7 +19,9 @@ extension AckSchemaModelExtension<
   Runtime extends Object
 >
     on AckSchema<Boundary, Runtime> {
-  /// Preserves imported Draft 2020-12 resources, including dynamic references.
+  /// Converts this schema into an [AckSchemaModel], preserving imported Draft
+  /// 2020-12 resources including dynamic references.
+  ///
   /// Native Ack schemas continue to use their Draft-7 representation.
   AckSchemaModel toSchemaModel() =>
       _SchemaModelBuilder(preserveImportedDialect: true).build(this);
@@ -177,8 +179,8 @@ final class _SchemaModelBuilder {
   AckSchemaModel _imported(ImportedJsonSchema schema) {
     final importIndex = _importCount++;
     if (preserveImportedDialect) {
+      final indexedSchemas = HashSet<Map<String, Object?>>.identity();
       if (_composingImports) {
-        final indexedSchemas = HashSet<Map<String, Object?>>.identity();
         final document = schema.export2020Document(
           importIndex: importIndex,
           includeFluentNullability: false,
@@ -188,6 +190,7 @@ final class _SchemaModelBuilder {
           schemas: [
             AckRawSchemaModel(
               schema: _shareImportedResources(document, indexedSchemas),
+              indexedSchemas: indexedSchemas,
             ),
           ],
           description: schema.description,
@@ -199,7 +202,11 @@ final class _SchemaModelBuilder {
         );
       }
       return AckRawSchemaModel(
-        schema: schema.export2020Document(importIndex: importIndex),
+        schema: schema.export2020Document(
+          importIndex: importIndex,
+          onSchema: indexedSchemas.add,
+        ),
+        indexedSchemas: indexedSchemas,
         description: schema.description,
         nullable:
             schema.isNullable &&
@@ -244,12 +251,16 @@ final class _SchemaModelBuilder {
     Object? index(Object? value, Uri base, List<(Uri, List<String>)> scopes) {
       final id = value is Map<String, Object?> ? value[r'$id'] : null;
       if (id is String) {
-        base = base.resolve(id);
-        final address = scopes.isEmpty
-            ? base
-            : location(scopes.first.$1, scopes.first.$2);
-        _resourceLocations.putIfAbsent(base, () => address);
-        scopes = [...scopes, (base, <String>[])];
+        try {
+          base = base.resolve(id);
+          final address = scopes.isEmpty
+              ? base
+              : location(scopes.first.$1, scopes.first.$2);
+          _resourceLocations.putIfAbsent(base, () => address);
+          scopes = [...scopes, (base, <String>[])];
+        } on FormatException {
+          // Dormant malformed $id values in unreachable definitions remain as-is.
+        }
       }
       for (final (uri, path) in scopes) {
         final (resource, relativePath) = scopes.last;
@@ -270,14 +281,22 @@ final class _SchemaModelBuilder {
     Object? normalize(Object? value, Uri base) {
       if (value is! Map<String, Object?>) return value;
       final id = value[r'$id'];
-      if (id is String) base = base.resolve(id);
+      var resolvedValidId = false;
+      if (id is String) {
+        try {
+          base = base.resolve(id);
+          resolvedValidId = true;
+        } on FormatException {
+          // Dormant malformed $id values in unreachable definitions remain as-is.
+        }
+      }
       final result = _mapImportedChildren(
         value,
         (child, _) => normalize(child, base),
         indexedSchemas,
       );
       if (indexedSchemas.contains(value)) indexedSchemas.add(result);
-      if (id is String) result[r'$id'] = base.toString();
+      if (resolvedValidId) result[r'$id'] = base.toString();
       for (final keyword in [r'$ref', r'$dynamicRef']) {
         final ref = result[keyword];
         if (ref is String) {
@@ -308,21 +327,29 @@ final class _SchemaModelBuilder {
       if (value is! Map<String, Object?>) return value;
       final id = value[r'$id'];
       if (id is String) {
-        final uri = Uri.parse(id);
-        final existing = _importedResources[uri];
-        if (existing != null) {
-          if (!_deepEquality.equals(existing, value)) {
-            throw ArgumentError('Conflicting imported schema resource "$uri".');
+        final uri = Uri.tryParse(id);
+        if (uri != null) {
+          final existing = _importedResources[uri];
+          if (existing != null) {
+            if (!_deepEquality.equals(existing, value)) {
+              throw ArgumentError(
+                'Conflicting imported schema resource "$uri".',
+              );
+            }
+            return <String, Object?>{
+              r'$ref': _resourceLocations[uri].toString(),
+            };
           }
-          return <String, Object?>{r'$ref': _resourceLocations[uri].toString()};
+          _importedResources[uri] = value;
         }
-        _importedResources[uri] = value;
       }
-      return _mapImportedChildren(
+      final rebuilt = _mapImportedChildren(
         value,
         (child, _) => share(child),
         indexedSchemas,
       );
+      if (indexedSchemas.contains(value)) indexedSchemas.add(rebuilt);
+      return rebuilt;
     }
 
     return share(normalize(document, base))! as Map<String, Object?>;
@@ -587,8 +614,14 @@ AckSchemaModel _applyConstraints(
     for (final entry in _renderedKeywords(model).entries)
       entry.key: <Object?>[entry.value],
   };
+  final postNormalizerStart = schema is StringSchema
+      ? schema.firstPostNormalizerConstraintIndex
+      : null;
   final omittedConstraintKeys = <String>[];
-  for (final constraint in schema.constraints) {
+  for (final (index, constraint) in schema.constraints.indexed) {
+    final projectConstraint =
+        projectKeywords &&
+        (postNormalizerStart == null || index < postNormalizerStart);
     if (constraint is DateTimeConstraint) {
       next = _applyDateTimeConstraint(next, constraint);
       continue;
@@ -596,7 +629,7 @@ AckSchemaModel _applyConstraints(
 
     if (constraint is JsonSchemaSpec) {
       final keywords = constraint.toJsonSchema();
-      if (!projectKeywords) {
+      if (!projectConstraint) {
         if (keywords.isNotEmpty) {
           omittedConstraintKeys.add(constraint.constraintKey);
         }

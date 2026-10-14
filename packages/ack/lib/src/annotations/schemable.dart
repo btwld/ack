@@ -17,7 +17,7 @@ enum AckCaseStyle { none, snake, kebab, pascal, screamingSnake }
 /// round-trip unknown properties use [capture].
 enum AckUnknownPropertyPolicy { reject, discard, capture }
 
-/// Marks an Ack schema declaration.
+/// Annotation that marks an Ack schema declaration.
 ///
 /// Use this annotation on a top-level schema variable or getter to generate a
 /// schema-first model. Use it on a class to generate a class-first schema.
@@ -52,8 +52,10 @@ final class Schemable {
   /// Exact generated schema facade name for a class declaration.
   final String? schemaName;
 
-  /// Description for a class schema. This takes precedence over an
-  /// `@description` doc tag. A top-level schema uses `.describe(...)` instead.
+  /// Description for a class schema.
+  ///
+  /// This takes precedence over an `@description` doc tag. A top-level schema
+  /// uses `.describe(...)` instead.
   final String? description;
 
   /// JSON field-name style for a class declaration.

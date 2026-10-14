@@ -123,9 +123,9 @@ if (result.isOk) {
 
 Generate immutable models for hand-written schemas with `@Schemable()`. Add
 `ack` to `dependencies` and `ack_generator` + `build_runner` to
-`dev_dependencies`, then annotate a top-level schema. `@Schemable()`, the model
-annotations (`@AckField`, `@Optional`, `@Required`, `@NotNull`), and the
-`@Validate.*` constraint namespace are all exported from `package:ack/ack.dart`:
+`dev_dependencies`, then annotate a top-level schema. `@Schemable()`, `@AckKey()`,
+and the `@Validate.*` constraint and presence namespace are all exported from
+`package:ack/ack.dart`:
 
 ```dart
 import 'package:ack/ack.dart';
@@ -187,9 +187,8 @@ and constructs the model, while `account.toJson()` validates and encodes it.
 
 Custom field types resolve automatically through a static `schema` on the type
 (`Slot.schema`, `Ack.list(Slot.schema)`, `Command.schema<Action>()`), a unique
-top-level `AckSchema<Boundary, T>` in the same library, `@Schemable(schemas: [...])`
-on the class, union, or `library;` directive, or `@AckField(schema: ...)` on a
-specific field. See the
+top-level `AckSchema<Boundary, T>` in the same library, or `@Schemable(schemas: [...])`
+on the class, union, or `library;` directive. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 ## Codecs

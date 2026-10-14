@@ -1,10 +1,11 @@
-## 2.0.0-beta.1
+## 2.0.0-alpha.1
 
 ### Breaking
 
 * Remove legacy 1.x generator annotations (`@AckType`, `@AckInfer`, `@AckModel`,
-  `JsonKeyCaseStyle`, `AckFieldPresence`, and `@Schemable.generatedJson`). Use
-  `@Schemable()` on both top-level schemas and hand-written classes/unions (`#188`, `#189`).
+  `@AckField`, `JsonKeyCaseStyle`, `AckFieldPresence`, and
+  `@Schemable.generatedJson`). Use `@Schemable()` on both top-level schemas and
+  hand-written classes/unions (`#188`, `#189`).
 * Remove top-level presence annotations (`@Optional`, `@Required`, `@NotNull`),
   the 18 `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`,
   `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`,
@@ -37,8 +38,8 @@
   `JsonMaybe.absent()`, `JsonMaybe.value(T? value)`, and `JsonMaybe.nullValue()`
   for PATCH tri-state presence (`#148`).
 * Add `@Schemable(schemas: [...])` (supported on classes, sealed unions, and
-  `library;` directives) and `@AckField(name: ..., schema: ...)` for custom
-  schema registration and field wire-name overrides (`#185`, `#189`).
+  `library;` directives) and `@AckKey('...')` for custom schema registration and
+  field wire-name overrides (`#185`, `#189`).
 * Make `.trim()`, `.toLowerCase()`, and `.toUpperCase()` two-way normalizers
   directly on `StringSchema` that execute in declaration order alongside
   constraints during both `parse` and `encode`, preserve `StringSchema`

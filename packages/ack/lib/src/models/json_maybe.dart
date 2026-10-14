@@ -2,8 +2,7 @@ import 'package:meta/meta.dart';
 
 import '../utils/collection_utils.dart';
 
-/// Represents an optional, nullable JSON object property with three distinct
-/// states:
+/// An optional, nullable JSON object property with three distinct states.
 ///
 /// * [JsonAbsent] (`const JsonMaybe.absent()`): the key is omitted from the
 ///   JSON map.
@@ -19,13 +18,13 @@ import '../utils/collection_utils.dart';
 sealed class JsonMaybe<T> {
   const JsonMaybe();
 
-  /// An omitted JSON property.
+  /// Creates an omitted JSON property marker.
   const factory JsonMaybe.absent() = JsonAbsent<T>;
 
-  /// A present JSON property with [value] (which may be `null`).
+  /// Creates a present JSON property with [value] (which may be `null`).
   const factory JsonMaybe.value(T? value) = JsonValue<T>;
 
-  /// A present JSON property with an explicit `null` value.
+  /// Creates a present JSON property with an explicit `null` value.
   const factory JsonMaybe.nullValue() = JsonValue<T>.nullValue;
 
   /// Whether the key was present in the JSON map.

@@ -1,8 +1,8 @@
-## 2.0.0-beta.1
+## 2.0.0-alpha.1
 
 ### Breaking
 
-* Requires `ack: ^2.0.0-beta.1`.
+* Requires `ack: ^2.0.0-alpha.1`.
 * `toAckSchema()` now defaults to `assertFormats: false` (matching
   `Ack.fromJsonSchema()` and JSON Schema Draft 2020-12 default annotation
   semantics); pass `assertFormats: true` to enforce format assertions (`#171`).

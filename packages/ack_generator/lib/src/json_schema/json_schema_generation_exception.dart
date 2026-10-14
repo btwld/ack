@@ -13,7 +13,7 @@ final class AckJsonSchemaDiagnostic {
   String toString() => '$pointer: $message';
 }
 
-/// Thrown when a JSON Schema document cannot generate Ack models.
+/// Exception thrown when a JSON Schema document cannot generate Ack models.
 final class AckJsonSchemaGenerationException implements Exception {
   /// Creates an exception for [documentUri] with every [diagnostics] entry.
   AckJsonSchemaGenerationException(this.documentUri, this.diagnostics)
