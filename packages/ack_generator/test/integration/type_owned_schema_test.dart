@@ -890,26 +890,42 @@ AckSchema<String, Color> altColorSchema() => Ack.string().codec<Color>(
   encode: (color) => color.hex,
 );
 
-@Schemable(schemas: [hexColorSchema, importedMoneySchema, epochDateTimeSchema])
+AckSchema<Object, Object> cellValueSchema() =>
+    Ack.anyOf([Ack.string().maxLength(2048), Ack.number(), Ack.boolean()]);
+
+@Schemable(
+  schemas: [
+    hexColorSchema,
+    importedMoneySchema,
+    epochDateTimeSchema,
+    cellValueSchema,
+  ],
+)
 final class Order with _$OrderAck {
   const Order({
     required this.color,
     required this.total,
     required this.createdAt,
     required this.timestamps,
+    required this.cellValue,
+    this.anyJson,
   });
 
   final Color color;
   final Money total;
   final DateTime createdAt;
   final List<DateTime> timestamps;
+  final Object cellValue;
+  final Object? anyJson;
 }
 ''',
         allOf(
           _containsCode("'color': hexColorSchema(),"),
           _containsCode("'total': importedMoneySchema(),"),
           _containsCode("'createdAt': epochDateTimeSchema(),"),
-          _containsCode("'timestamps': Ack.list(epochDateTimeSchema())"),
+          _containsCode("'timestamps': Ack.list(epochDateTimeSchema()),"),
+          _containsCode("'cellValue': cellValueSchema(),"),
+          _containsCode("'anyJson': Ack.any().optional().nullable()"),
         ),
         types: '''
 import 'package:ack/ack.dart';

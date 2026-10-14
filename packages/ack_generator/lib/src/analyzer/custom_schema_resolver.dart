@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 
@@ -199,7 +200,10 @@ final class CustomSchemaResolver {
       if (boundary == null ||
           runtime == null ||
           runtime is DynamicType ||
-          (runtime is InterfaceType && _base.isCoreType(runtime, 'Object'))) {
+          (runtime is InterfaceType &&
+              _base.isCoreType(runtime, 'Object') &&
+              (owner is LibraryElement ||
+                  runtime.nullabilitySuffix != NullabilitySuffix.none))) {
         throw InvalidGenerationSource(
           '$ownerLabel @Schemable(schemas: ...) function ${function.name} must '
           'return a typed AckSchema<Boundary, Runtime> for a specific runtime '
@@ -383,7 +387,9 @@ final class CustomSchemaResolver {
   bool isOverridableBuiltInScalar(InterfaceType type) =>
       _base.isCoreType(type, 'DateTime') ||
       _base.isCoreType(type, 'Uri') ||
-      _base.isCoreType(type, 'Duration');
+      _base.isCoreType(type, 'Duration') ||
+      (_base.isCoreType(type, 'Object') &&
+          type.nullabilitySuffix == NullabilitySuffix.none);
 
   bool isNonOverridableCoreType(InterfaceType type) =>
       _base.isCoreType(type, 'String') ||
@@ -391,7 +397,8 @@ final class CustomSchemaResolver {
       _base.isCoreType(type, 'double') ||
       _base.isCoreType(type, 'num') ||
       _base.isCoreType(type, 'bool') ||
-      _base.isCoreType(type, 'Object') ||
+      (_base.isCoreType(type, 'Object') &&
+          type.nullabilitySuffix != NullabilitySuffix.none) ||
       type.isDartCoreList ||
       type.isDartCoreSet ||
       type.isDartCoreMap ||

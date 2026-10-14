@@ -42,7 +42,8 @@ final class AckSchemaInference {
     if (type is! InterfaceType) return unsupported(type);
     if (_core(type, 'DateTime') ||
         _core(type, 'Uri') ||
-        _core(type, 'Duration')) {
+        _core(type, 'Duration') ||
+        (_core(type, 'Object') && !_nullable(type))) {
       final override = await resolveNamed(type);
       if (override != null) return override;
     }
