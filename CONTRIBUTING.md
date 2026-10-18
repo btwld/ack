@@ -6,6 +6,16 @@ review. By participating, you agree to follow the
 
 ## Development setup
 
+The workspace uses Flutter `3.50.0-0.1.pre` / Dart `3.14.0-315.1.beta`.
+Install/select the SDK pinned by `.fvmrc` before running commands (for example,
+`fvm use` and `fvm dart ...`). Do not use a global older Dart SDK.
+The analyzer configuration and Melos commands enable experimental augmentations.
+
+Use `dart run melos run format` to format authored sources. The beta SDK's
+formatter does not preserve `augment` declarations, so this command excludes
+generated `.g.dart` files. The generator formats those files itself; CI checks
+them by regenerating from a clean tree.
+
 ```bash
 dart pub get
 dart run melos bootstrap

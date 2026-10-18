@@ -100,8 +100,10 @@ Matcher _containsCode(String code) => predicate<String>(
   'contains code `$code`',
 );
 
-String _compact(String code) =>
-    code.replaceAll(RegExp(r'\s+'), '').replaceAll(',)', ')');
+String _compact(String code) => code
+    .replaceAll(RegExp(r'\s+'), '')
+    .replaceAllMapped(RegExp(r',([)}])'), (match) => match[1]!)
+    .replaceAll(RegExp(r',$'), '');
 
 Future<void> _expectOutput(
   String body,
@@ -152,7 +154,7 @@ void main() {
     await _expectOutput(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({
     required this.header,
     this.footer,
@@ -179,7 +181,7 @@ final class Section with _$SectionAck {
     await _expectOutput(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({
     required this.children,
     required this.unique,
@@ -207,7 +209,7 @@ final class Section with _$SectionAck {
       await _expectOutput(
         r'''
 @Schemable()
-final class Menu with _$MenuAck {
+final class Menu {
   const Menu({required this.open, required this.history});
 
   final Command<CompletionAction> open;
@@ -228,7 +230,7 @@ final class Menu with _$MenuAck {
     await _expectOutput(
       r'''
 @Schemable()
-final class Panel with _$PanelAck {
+final class Panel {
   const Panel({
     required this.openAll,
     required this.anything,
@@ -256,7 +258,7 @@ final class Panel with _$PanelAck {
     await _expectOutput(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.header});
 
   final types.Slot header;
@@ -276,7 +278,7 @@ part 'model.g.dart';
     final errors = await _errors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.header});
 
   final Label header;
@@ -309,7 +311,7 @@ final class Label {
     final errors = await _errors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.box});
 
   final Box<String> box;
@@ -346,14 +348,14 @@ final class Box<T extends Object> {
     await _expectOutput(
       r'''
 @Schemable()
-final class Row with _$RowAck {
+final class Row {
   const Row({required this.name});
 
   final String name;
 }
 
 @Schemable()
-final class Screen with _$ScreenAck {
+final class Screen {
   const Screen({
     required this.row,
     required this.title,
@@ -370,12 +372,10 @@ final class Screen with _$ScreenAck {
 }
 ''',
       allOf(
-        _containsCode("'row': Box.schema<Row>(RowSchema.schema),"),
+        _containsCode("'row': Box.schema<Row>(Row.schema),"),
         _containsCode("'title': Box.schema<String>(Ack.string()),"),
-        _containsCode(
-          "'rows': Box.schema<List<Row>>(Ack.list(RowSchema.schema)),",
-        ),
-        _containsCode("'boxes': Ack.list(Box.schema<Row>(RowSchema.schema)),"),
+        _containsCode("'rows': Box.schema<List<Row>>(Ack.list(Row.schema)),"),
+        _containsCode("'boxes': Ack.list(Box.schema<Row>(Row.schema)),"),
         _containsCode(
           "'nested': Box.schema<Box<String>>(Box.schema<String>(Ack.string()))",
         ),
@@ -386,7 +386,7 @@ final class Screen with _$ScreenAck {
   test('a schema method with too few schema parameters is rejected', () async {
     final errors = await _errors(r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.pair});
 
   final Pair<String, int> pair;
@@ -408,7 +408,7 @@ final class Section with _$SectionAck {
   test('a wrongly typed schema parameter is rejected', () async {
     final errors = await _errors(r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.run});
 
   final Invoke<CompletionAction> run;
@@ -430,7 +430,7 @@ final class Section with _$SectionAck {
     final errors = await _errors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.color});
 
   final Box<Color> color;
@@ -462,7 +462,7 @@ final class Box<A extends Object> {
     final errors = await _errors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.color});
 
   final Color color;
@@ -487,39 +487,29 @@ final class Color {
     );
   });
 
-  test(
-    'a Schemable class may expose its backing schema or facade as a static schema',
-    () async {
-      await _expectOutput(
-        r'''
+  test('a Schemable class generates its composable static schema', () async {
+    await _expectOutput(r'''
 @Schemable()
-final class Habit with _$HabitAck {
+final class Habit {
   const Habit({required this.name});
 
   final String name;
 
-  static final schema = _habitSchema;
 }
 
 @Schemable()
-final class Routine with _$RoutineAck {
+final class Routine {
   const Routine({required this.habits});
 
   final List<Habit> habits;
 }
-''',
-        allOf(
-          _containsCode("Ack.object({'habits': Ack.list(HabitSchema.schema)})"),
-          isNot(contains('Habit.schema')),
-        ),
-      );
-    },
-  );
+''', allOf(_containsCode("Ack.object({'habits': Ack.list(Habit.schema)})")));
+  });
 
   test('a Schemable class rejects a static schema of another type', () async {
     final errors = await _errors(r'''
 @Schemable()
-final class Habit with _$HabitAck {
+final class Habit {
   const Habit({required this.name});
 
   final String name;
@@ -530,12 +520,7 @@ final class Habit with _$HabitAck {
 
     expect(
       errors,
-      contains(
-        contains(
-          'Habit.schema must be an AckSchema<Map<String, Object?>, Habit>; '
-          'it produces String.',
-        ),
-      ),
+      contains(contains('Habit.schema conflicts with a generated member.')),
     );
   });
 
@@ -543,12 +528,11 @@ final class Habit with _$HabitAck {
     await _expectOutput(
       '''
 @Schemable()
-final class Habit with _\$HabitAck {
+final class Habit {
   const Habit({required this.name});
 
   final String name;
 
-  static final schema = _habitSchema;
 }
 
 @Schemable()
@@ -576,7 +560,7 @@ final sectionSchema = Ack.object({
     final errors = await _errors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.metric});
 
   final Metric<Object?> metric;
@@ -606,19 +590,17 @@ final class Metric<A> {
     );
   });
 
-  test(
-    'a generic type-owned schema enforces parameter boundary types',
-    () async {
-      final errors = await _errors(
-        r'''
+  test('a generic type-owned schema enforces parameter boundary types', () async {
+    final errors = await _errors(
+      r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.record});
 
   final RecordBox<int> record;
 }
 ''',
-        types: '''
+      types: '''
 import 'package:ack/ack.dart';
 
 final class RecordBox<A extends Object> {
@@ -630,26 +612,25 @@ final class RecordBox<A extends Object> {
   ) => throw UnimplementedError();
 }
 ''',
-      );
+    );
 
-      expect(
-        errors,
+    expect(
+      errors,
+      contains(
         contains(
-          contains(
-            'Section.record resolves to RecordBox.schema, whose parameter value '
-            'expects boundary type Map<String, Object?>, but the schema '
-            'inferred for int has boundary type num.',
-          ),
+          'Section.record resolves to RecordBox.schema, whose parameter value '
+          'expects boundary type Map<String, Object?>, but the schema '
+          'inferred for int has boundary type num.',
         ),
-      );
-    },
-  );
+      ),
+    );
+  });
 
   test('an enum with a static schema resolves to it', () async {
     await _expectOutput(
       r'''
 @Schemable()
-final class Task with _$TaskAck {
+final class Task {
   const Task({required this.status, required this.plain});
 
   final Status status;
@@ -685,7 +666,7 @@ enum Plain { one, two }
     final errors = await _errors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.routine});
 
   final Routine routine;
@@ -711,11 +692,9 @@ final class Routine {
     );
   });
 
-  test(
-    'automatically detects a unique top-level schema variable, getter, or function in the library',
-    () async {
-      await _expectOutput(
-        r'''
+  test('automatically detects a unique top-level schema variable, getter, or function in the library', () async {
+    await _expectOutput(
+      r'''
 final colorSchema = Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
@@ -732,7 +711,7 @@ AckSchema<String, Slug> slugSchema() => Ack.string().codec<Slug>(
 );
 
 @Schemable()
-final class Theme with _$ThemeAck {
+final class Theme {
   const Theme({
     required this.primary,
     this.secondary,
@@ -756,18 +735,18 @@ final class Theme with _$ThemeAck {
   final Slug slug;
 }
 ''',
-        allOf([
-          _containsCode("'primary': colorSchema,"),
-          _containsCode("'secondary': colorSchema.optional().nullable(),"),
-          _containsCode("'palette': Ack.list(colorSchema),"),
-          _containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
-          _containsCode("'namedColors': Ack.map(colorSchema),"),
-          _containsCode("'maybeColor': colorSchema.optional().nullable(),"),
-          _containsCode("'boxedColor': Box.schema<Color>(colorSchema),"),
-          _containsCode("'price': centsSchema,"),
-          _containsCode("'slug': slugSchema()"),
-        ]),
-        types: '''
+      allOf([
+        _containsCode("'primary': colorSchema,"),
+        _containsCode("'secondary': colorSchema.optional().nullable(),"),
+        _containsCode("'palette': Ack.list(colorSchema),"),
+        _containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
+        _containsCode("'namedColors': Ack.map(colorSchema),"),
+        _containsCode("'maybeColor': colorSchema.optional().nullable(),"),
+        _containsCode("'boxedColor': Box.schema<Color>(colorSchema),"),
+        _containsCode("'price': centsSchema,"),
+        _containsCode("'slug': slugSchema()"),
+      ]),
+      types: '''
 import 'package:ack/ack.dart';
 
 final class Color {
@@ -794,9 +773,8 @@ final class Box<A extends Object> {
   ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
 }
 ''',
-      );
-    },
-  );
+    );
+  });
 
   test(
     'rejects ambiguous auto-detected top-level schemas for the same type',
@@ -814,7 +792,7 @@ final namedColorSchema = Ack.string().codec<Color>(
 );
 
 @Schemable()
-final class Theme with _$ThemeAck {
+final class Theme {
   const Theme({required this.primary});
 
   final Color primary;
@@ -849,7 +827,7 @@ final class Color {
 final colorSchema = Ack.string().transform<Color>(Color.new);
 
 @Schemable()
-final class Theme with _$ThemeAck {
+final class Theme {
   const Theme({required this.primary});
 
   final Color primary;
@@ -875,11 +853,9 @@ final class Color {
     },
   );
 
-  test(
-    '@Schemable(schemas: [...]) on a class resolves imported schemas, disambiguates local schemas, and overrides DateTime',
-    () async {
-      await _expectOutput(
-        r'''
+  test('@Schemable(schemas: [...]) on a class resolves imported schemas, disambiguates local schemas, and overrides DateTime', () async {
+    await _expectOutput(
+      r'''
 AckSchema<String, Color> hexColorSchema() => Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
@@ -901,7 +877,7 @@ AckSchema<Object, Object> cellValueSchema() =>
     cellValueSchema,
   ],
 )
-final class Order with _$OrderAck {
+final class Order {
   const Order({
     required this.color,
     required this.total,
@@ -919,15 +895,15 @@ final class Order with _$OrderAck {
   final Object? anyJson;
 }
 ''',
-        allOf(
-          _containsCode("'color': hexColorSchema(),"),
-          _containsCode("'total': importedMoneySchema(),"),
-          _containsCode("'createdAt': epochDateTimeSchema(),"),
-          _containsCode("'timestamps': Ack.list(epochDateTimeSchema()),"),
-          _containsCode("'cellValue': cellValueSchema(),"),
-          _containsCode("'anyJson': Ack.any().optional().nullable()"),
-        ),
-        types: '''
+      allOf(
+        _containsCode("'color': hexColorSchema(),"),
+        _containsCode("'total': importedMoneySchema(),"),
+        _containsCode("'createdAt': epochDateTimeSchema(),"),
+        _containsCode("'timestamps': Ack.list(epochDateTimeSchema()),"),
+        _containsCode("'cellValue': cellValueSchema(),"),
+        _containsCode("'anyJson': Ack.any().optional().nullable()"),
+      ),
+      types: '''
 import 'package:ack/ack.dart';
 
 final class Color {
@@ -950,28 +926,25 @@ AckSchema<int, DateTime> epochDateTimeSchema() => Ack.integer().codec<DateTime>(
   encode: (dt) => dt.millisecondsSinceEpoch,
 );
 ''',
-      );
-    },
-  );
+    );
+  });
 
-  test(
-    '@Schemable(schemas: [...]) on a library directive applies across models and imported schema libraries',
-    () async {
-      await _expectOutput(
-        r'''
+  test('@Schemable(schemas: [...]) on a library directive applies across models and imported schema libraries', () async {
+    await _expectOutput(
+      r'''
 @Schemable()
-final class Palette with _$PaletteAck {
+final class Palette {
   const Palette({required this.primary, required this.budget});
 
   final Color primary;
   final Money budget;
 }
 ''',
-        allOf(
-          _containsCode("'primary': libraryColorSchema(),"),
-          _containsCode("'budget': sharedMoneySchema()"),
-        ),
-        head: '''
+      allOf(
+        _containsCode("'primary': libraryColorSchema(),"),
+        _containsCode("'budget': sharedMoneySchema()"),
+      ),
+      head: '''
 @Schemable(schemas: [libraryColorSchema])
 library;
 
@@ -985,7 +958,7 @@ AckSchema<String, Color> libraryColorSchema() => Ack.string().codec<Color>(
   encode: (color) => color.hex,
 );
 ''',
-        types: '''
+      types: '''
 @Schemable(schemas: [sharedMoneySchema])
 library;
 
@@ -1006,35 +979,32 @@ AckSchema<int, Money> sharedMoneySchema() => Ack.integer().codec<Money>(
   encode: (money) => money.cents,
 );
 ''',
-      );
-    },
-  );
+    );
+  });
 
-  test(
-    'rejects core primitive types and duplicate runtime types in @Schemable(schemas: [...])',
-    () async {
-      final coreErrors = await _errors(r'''
+  test('rejects core primitive types and duplicate runtime types in @Schemable(schemas: [...])', () async {
+    final coreErrors = await _errors(r'''
 AckSchema<String, String> customStringSchema() => Ack.string();
 
 @Schemable(schemas: [customStringSchema])
-final class Post with _$PostAck {
+final class Post {
   const Post({required this.title});
 
   final String title;
 }
 ''');
 
-      expect(
-        coreErrors,
+    expect(
+      coreErrors,
+      contains(
         contains(
-          contains(
-            'Post @Schemable(schemas: ...) cannot override core type String.',
-          ),
+          'Post @Schemable(schemas: ...) cannot override core type String.',
         ),
-      );
+      ),
+    );
 
-      final duplicateErrors = await _errors(
-        r'''
+    final duplicateErrors = await _errors(
+      r'''
 AckSchema<String, Color> firstColorSchema() => Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
@@ -1046,29 +1016,28 @@ AckSchema<String, Color> secondColorSchema() => Ack.string().codec<Color>(
 );
 
 @Schemable(schemas: [firstColorSchema, secondColorSchema])
-final class Theme with _$ThemeAck {
+final class Theme {
   const Theme({required this.primary});
 
   final Color primary;
 }
 ''',
-        types: '''
+      types: '''
 final class Color {
   const Color(this.hex);
   final String hex;
 }
 ''',
-      );
+    );
 
-      expect(
-        duplicateErrors,
+    expect(
+      duplicateErrors,
+      contains(
         contains(
-          contains(
-            'Theme @Schemable(schemas: ...) registers multiple schemas for '
-            'Color: firstColorSchema and secondColorSchema.',
-          ),
+          'Theme @Schemable(schemas: ...) registers multiple schemas for '
+          'Color: firstColorSchema and secondColorSchema.',
         ),
-      );
-    },
-  );
+      ),
+    );
+  });
 }

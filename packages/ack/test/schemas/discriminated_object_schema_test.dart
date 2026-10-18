@@ -417,9 +417,8 @@ void main() {
           final defaultOnlySchema = Ack.discriminated<Map<String, Object?>>(
             discriminatorKey: 'type',
             schemas: {
-              'cat': Ack.object({
-                'name': Ack.string(),
-              }).withDefault(const {'name': 'Default'}),
+              'cat': Ack.object({'name': Ack.string()})
+                  .withDefault(const {'name': 'Default'}),
             },
           );
 

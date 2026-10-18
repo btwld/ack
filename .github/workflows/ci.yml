@@ -36,7 +36,7 @@ jobs:
         run: dart pub get
 
       - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart run scripts/format.dart --output=none --set-exit-if-changed
 
       - name: Analyze and test every package
         run: dart run melos run ci --no-select
@@ -44,7 +44,7 @@ jobs:
       - name: Test numeric parity and JSON Schema imports in Chrome
         working-directory: packages/ack
         run: |
-          dart test --platform chrome \
+          dart --enable-experiment=augmentations test --platform chrome \
             test/schemas/numeric_platform_parity_test.dart \
             test/schemas/extensions/numeric_extensions_test.dart \
             test/schemas/extensions/list_schema_extensions_test.dart \
@@ -54,4 +54,8 @@ jobs:
 
       - name: Test JSON Schema import bridge in Chrome
         working-directory: packages/ack_json_schema_builder
-        run: dart test --platform chrome test/from_json_schema_builder_test.dart
+        run: dart --enable-experiment=augmentations test --platform chrome test/from_json_schema_builder_test.dart
+
+      - name: Test augmented models in Chrome
+        working-directory: example
+        run: dart --enable-experiment=augmentations test --platform chrome test/class_first_models_test.dart

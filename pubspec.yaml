@@ -4,8 +4,8 @@ publish_to: none
 repository: https://github.com/btwld/ack
 
 environment:
-  sdk: '>=3.11.0 <4.0.0'
-  flutter: '>=3.41.2'
+  sdk: '>=3.14.0-315.1.beta <4.0.0'
+  flutter: '>=3.50.0-0.1.pre'
 
 
 workspace:
@@ -22,11 +22,10 @@ dev_dependencies:
   path: ^1.9.0
   pub_semver: ^2.2.0
   test: ^1.25.15
-  very_good_analysis: ^9.0.0
   yaml: ^3.1.2
   yaml_edit: ^2.2.1
   # Shared lint config consumed by /analysis_options.yaml (workspace-wide).
-  lints: ^5.0.0
+  lints: ^6.1.0
   dart_code_metrics_presets: ^2.22.0
 
 melos:
@@ -70,22 +69,22 @@ melos:
       description: Run strict analysis and all root, Dart, and Flutter tests
 
     test:dart:
-      run: dart run melos exec -c 1 --fail-fast -- "dart test"
+      run: dart run melos exec -c 1 --fail-fast -- "dart --enable-experiment=augmentations test"
       description: Run Dart tests for pure Dart packages
       packageFilters:
         flutter: false
         dirExists: test
 
     test:flutter:
-      run: dart run melos exec -c 1 --fail-fast -- "flutter test"
+      run: dart run melos exec -c 1 --fail-fast -- "flutter test --enable-experiment=augmentations"
       description: Run Flutter tests for Flutter packages
       packageFilters:
         flutter: true
         dirExists: test
 
     format:
-      run: dart run melos exec -- "dart format ."
-      description: Format code for all packages
+      run: dart run scripts/format.dart
+      description: Format authored Dart sources across the workspace
 
     deps-outdated:
       run: dart run melos exec -- "dart pub outdated"
@@ -97,7 +96,7 @@ melos:
 
     # Build scripts for code generation
     build:
-      run: dart run melos exec -- "dart run build_runner build"
+      run: dart run melos exec -- "dart run build_runner build --enable-experiment=augmentations"
       description: Run build_runner for all packages
       packageFilters:
         dependsOn: build_runner
@@ -109,13 +108,13 @@ melos:
 
     # ACK Generator specific test commands
     test:gen:
-      run: dart run melos exec -c 1 -- dart test
+      run: dart run melos exec -c 1 -- dart --enable-experiment=augmentations test
       description: Run generator tests
       packageFilters:
         scope: ack_generator
 
     test:gen:unit:
-      run: dart run melos exec -c 1 -- dart test -x integration
+      run: dart run melos exec -c 1 -- dart --enable-experiment=augmentations test -x integration
       description: Run generator tests except the build_runner integration tests
       packageFilters:
         scope: ack_generator

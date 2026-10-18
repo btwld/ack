@@ -7,46 +7,26 @@ part 'class_first_models.g.dart';
   caseStyle: AckCaseStyle.snake,
   description: "A signed-in user's account.",
 )
-final class Account with _$AccountAck {
-  const Account({
-    required this.displayName,
-    this.website,
-    this.role = 'member',
-  });
-
+final class const Account({
   /// The name shown to other users.
   /// @description The name shown to other users.
-  @Validate.minLength(2)
-  final String displayName;
-  final Uri? website;
-  final String role;
-
-  static final schema = _accountSchema;
-  static final fromJson = AccountSchema.fromJson;
-}
+  @Validate.minLength(2) required final String displayName,
+  final Uri? website,
+  final String role = 'member',
+});
 
 /// A pet, identified by its `type`.
 /// @description A pet, identified by its `type`.
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _$PetAck {
-  const Pet({required this.id});
-
-  final String id;
-}
+sealed class const Pet({required final String id});
 
 /// A cat with a limited number of lives.
 /// @description A cat with a limited number of lives.
 @Schemable(discriminatorValue: 'cat')
-final class Cat extends Pet with _$CatAck {
-  const Cat({required super.id, required this.lives});
+final class const Cat({
+  required super.id,
+  @Validate.min(1) @Validate.max(9) required final int lives,
+}) extends Pet;
 
-  @Validate.min(1)
-  @Validate.max(9)
-  final int lives;
-}
-
-final class Dog extends Pet with _$DogAck {
-  const Dog({required super.id, required this.breed});
-
-  final String breed;
-}
+final class const Dog({required super.id, required final String breed})
+    extends Pet;

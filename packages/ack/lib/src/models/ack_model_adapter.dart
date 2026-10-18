@@ -14,15 +14,13 @@ final class AckModelAdapter<
 > {
   /// Creates an adapter for a generated model.
   ///
-  /// [schema] is a callback rather than a stored schema value so generated
+  /// `schema` is a callback rather than a stored schema value so generated
   /// models can safely participate in recursive and mutually-recursive graphs.
   const AckModelAdapter({
-    required AckSchema<Boundary, Runtime> Function() schema,
-    required Model Function(Runtime value) fromRuntime,
-    required Runtime Function(Model value) toRuntime,
-  }) : _schema = schema,
-       _fromRuntime = fromRuntime,
-       _toRuntime = toRuntime;
+    required this._schema,
+    required this._fromRuntime,
+    required this._toRuntime,
+  });
 
   final AckSchema<Boundary, Runtime> Function() _schema;
   final Model Function(Runtime value) _fromRuntime;

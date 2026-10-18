@@ -116,7 +116,7 @@ final userSchema = Ack.object({
             contains('const _UserCopyWithUnset()'),
             contains('static const _UserCopyWithUnset _ackCopyWithUnset ='),
             contains('Object? nickname = _ackCopyWithUnset'),
-            contains('nickname: identical(nickname, _ackCopyWithUnset)'),
+            contains('nickname: _ackIsCopyWithUnset(nickname)'),
             contains(': nickname as String?'),
             isNot(contains('_ackCopyWithOmitted')),
           ]),
@@ -276,7 +276,7 @@ $_imports
 part 'address.g.dart';
 
 @Schemable()
-final class Address with _\$AddressAck {
+final class Address {
   const Address({required this.city});
 
   final String city;
@@ -315,7 +315,7 @@ $_imports
 part 'address.g.dart';
 
 @Schemable()
-final class Address with _\$AddressAck {
+final class Address {
   const Address({required this.city});
 
   final String city;

@@ -66,8 +66,8 @@ final class Password {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Password &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -154,8 +154,8 @@ final class Age {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Age &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -242,8 +242,8 @@ final class Price {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Price &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -330,8 +330,8 @@ final class Active {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Active &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -419,8 +419,8 @@ final class Tags {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Tags &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -509,8 +509,8 @@ final class Scores {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Scores &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -600,8 +600,8 @@ final class StatusLiteral {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is StatusLiteral &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -689,8 +689,8 @@ final class Role {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Role &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -779,8 +779,8 @@ final class UserRoleModel {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserRoleModel &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -870,8 +870,8 @@ final class StatusEnum {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is StatusEnum &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -960,8 +960,8 @@ final class OptionalStatus {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is OptionalStatus &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -1052,8 +1052,8 @@ final class DefaultedEnum {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DefaultedEnum &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -1144,8 +1144,8 @@ final class ChainedEnumString {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ChainedEnumString &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -1236,8 +1236,8 @@ final class RefinedAge {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is RefinedAge &&
-          runtimeType == other.runtimeType &&
-          deepEquals(value, other.value));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);

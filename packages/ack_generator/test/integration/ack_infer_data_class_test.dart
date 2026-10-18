@@ -48,13 +48,13 @@ part 'model.g.dart';
 
 void main() {
   test(
-    'class-first mixin reconstructs positional and named parameters',
+    'class-first augmentation reconstructs positional and named parameters',
     () async {
       await _build(
         '''
 $_imports
 @Schemable()
-final class Point with _\$PointAck {
+final class Point {
   const Point(this.x, {required this.y, this.label = 'origin'});
   final int x;
   final int y;
@@ -64,8 +64,8 @@ final class Point with _\$PointAck {
         outputs: {
           'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
-              contains(r'mixin _$PointAck'),
-              contains(r'$PointCopyWith<Point> get copyWith'),
+              contains(r'augment final class Point'),
+              contains(r'_$PointCopyWithApi<Point> get copyWith'),
               contains('x ?? _source.x'),
               contains('y: y ?? _source.y'),
               contains('label: label ?? _source.label'),
@@ -78,18 +78,20 @@ final class Point with _\$PointAck {
     },
   );
 
-  test('unknown-property modes emit reject, discard, and args capture', () async {
-    await _build(
-      '''
+  test(
+    'unknown-property modes emit reject, discard, and args capture',
+    () async {
+      await _build(
+        '''
 $_imports
 @Schemable()
-final class Strict with _\$StrictAck {
+final class Strict {
   const Strict({required this.name});
   final String name;
 }
 
 @Schemable(unknownProperties: AckUnknownPropertyPolicy.discard)
-final class Loose with _\$LooseAck {
+final class Loose {
   const Loose({required this.name});
   final String name;
 }
@@ -98,47 +100,48 @@ final class Loose with _\$LooseAck {
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: 'args',
 )
-final class Bag with _\$BagAck {
+final class Bag {
   const Bag({required this.name, this.args = const {}});
   final String name;
   final Map<String, Object?> args;
 }
 ''',
-      outputs: {
-        'test_pkg|lib/model.g.dart': decodedMatches(
-          allOf([
-            contains('final _strictObject = Ack.object({'),
-            isNot(
-              contains(
-                "final _strictObject = Ack.object({'name': Ack.string()}, additionalProperties: true)",
+        outputs: {
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            allOf([
+              contains('final _strictObject = Ack.object({'),
+              isNot(
+                contains(
+                  "final _strictObject = Ack.object({'name': Ack.string()}, additionalProperties: true)",
+                ),
               ),
-            ),
-            contains('additionalProperties: true'),
-            contains('args: deepUnmodifiableJsonMap('),
-            contains('Map<String, Object?>.fromEntries('),
-            contains('model.args.entries'),
-            contains('self.args'),
-            isNot(contains('_ackClassImmutableCopyValue')),
-            isNot(contains('_ackClassImmutableCopyMap')),
-          ]),
-        ),
-      },
-    );
-  });
+              contains('additionalProperties: true'),
+              contains('args: deepUnmodifiableJsonMap('),
+              contains('Map<String, Object?>.fromEntries('),
+              contains('model.args.entries'),
+              contains('self.args'),
+              isNot(contains('_ackClassImmutableCopyValue')),
+              isNot(contains('_ackClassImmutableCopyMap')),
+            ]),
+          ),
+        },
+      );
+    },
+  );
 
   test(
-    'presence overrides and required mixin collisions are diagnosed',
+    'presence overrides and generated member collisions are diagnosed',
     () async {
       await _expectFailure(
         '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
   User copyWith({String? name}) => User(name: name ?? this.name);
   final String name;
 }
 ''',
-        ['User.copyWith', 'override'],
+        ['User.copyWith', 'conflicts with a generated member'],
       );
     },
   );
@@ -150,19 +153,19 @@ final class User with _\$UserAck {
         '''
 $_imports
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({this.nickname});
   @Validate.required()
   final String? nickname;
 }
 
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet({required this.id});
   final String id;
 }
 
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat({required super.id, required this.lives});
   final int lives;
 }
@@ -189,7 +192,7 @@ final class Cat extends Pet with _\$CatAck {
         '''
 $_imports
 @Schemable()
-final class Normalized with _\$NormalizedAck {
+final class Normalized {
   const Normalized(String? value) : value = value ?? '';
 
   @Validate.optional()
@@ -203,7 +206,7 @@ final class Normalized with _\$NormalizedAck {
               contains("'value': Ack.string().optional()"),
               contains('Normalized call({Object? value = _ackCopyWithUnset})'),
               contains(
-                'identical(value, _ackCopyWithUnset) '
+                '_ackIsCopyWithUnset(value) '
                 '? _source.value '
                 ': value as String?',
               ),
@@ -241,7 +244,7 @@ final userSchema = Ack.object({
               '/// Creates a copy of this model with selected fields replaced.',
             ),
             contains('User call({'),
-            contains('deepEquals(name, other.name)'),
+            contains('deepEquals(this.name, other.name)'),
             contains('deepHashCode(tags)'),
             contains("toString() => 'User("),
             isNot(contains('class UserType')),

@@ -45,6 +45,7 @@ runs:
         {
           printf 'flutter-version=%s\n' "$version"
           printf 'dart-version=%s\n' "$(printf '%s' "$release" | jq -r '.dart')"
+          printf 'channel=%s\n' "$(printf '%s' "$release" | jq -r '.channel // "stable"')"
           printf 'sha256=%s\n' "$(printf '%s' "$release" | jq -r '.sha256')"
         } >> "$GITHUB_OUTPUT"
 
@@ -61,11 +62,12 @@ runs:
       shell: bash
       env:
         FLUTTER_VERSION: ${{ steps.release.outputs.flutter-version }}
+        FLUTTER_CHANNEL: ${{ steps.release.outputs.channel }}
         FLUTTER_ARCHIVE_SHA256: ${{ steps.release.outputs.sha256 }}
         FLUTTER_ARCHIVE: ${{ runner.temp }}/flutter-archive/${{ steps.release.outputs.flutter-version }}/flutter.tar.xz
       run: |
         set -euo pipefail
-        archive_url="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+        archive_url="https://storage.googleapis.com/flutter_infra_release/releases/${FLUTTER_CHANNEL}/linux/flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz"
         mkdir -p "$(dirname "$FLUTTER_ARCHIVE")"
         if [ ! -f "$FLUTTER_ARCHIVE" ]; then
           curl --fail --location --silent --show-error \

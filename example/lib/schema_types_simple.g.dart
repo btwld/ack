@@ -68,10 +68,10 @@ final class User {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is User &&
-          runtimeType == other.runtimeType &&
-          deepEquals(name, other.name) &&
-          deepEquals(age, other.age) &&
-          deepEquals(active, other.active));
+          this.runtimeType == other.runtimeType &&
+          deepEquals(this.name, other.name) &&
+          deepEquals(this.age, other.age) &&
+          deepEquals(this.active, other.active));
 
   @override
   int get hashCode => Object.hashAll([

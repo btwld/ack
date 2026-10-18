@@ -4,9 +4,8 @@ import 'package:test/test.dart';
 void main() {
   group('CodecSchema.canEncode', () {
     test('is false for a transform, which has no encoder', () {
-      final schema = Ack.object({
-        'id': Ack.string(),
-      }).transform<String>((value) => value['id']! as String);
+      final schema = Ack.object({'id': Ack.string()})
+          .transform<String>((value) => value['id']! as String);
 
       expect(schema.canEncode, isFalse);
       expect(schema.safeEncode('a').isFail, isTrue);

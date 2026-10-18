@@ -64,7 +64,7 @@ final class UriText implements JsonConverter<Uri, String> {
       '''
 $converter
 @Schemable()
-final class Link with _\$LinkAck {
+final class Link {
   const Link({required this.target});
 
   @UriText()
@@ -82,7 +82,7 @@ final class Link with _\$LinkAck {
 $converter
 @Schemable()
 @UriText()
-final class Link with _\$LinkAck {
+final class Link {
   const Link({required this.target});
 
   final Uri target;
@@ -100,7 +100,7 @@ final class Link with _\$LinkAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Range with _\$RangeAck {
+final class Range {
   const Range({required this.limit});
 
   @Validate.max(double.infinity)
@@ -114,7 +114,7 @@ final class Range with _\$RangeAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Range with _\$RangeAck {
+final class Range {
   const Range({required this.step});
 
   @Validate.multipleOf(double.nan)
@@ -131,7 +131,7 @@ final class Range with _\$RangeAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Person with _\$PersonAck {
+final class Person {
   const Person({required this.home, required this.shade});
   final Addr home;
   final Shade shade;
@@ -157,7 +157,7 @@ import 'package:ack/ack.dart';
 part 'address.g.dart';
 
 @Schemable()
-final class Address with _\$AddressAck {
+final class Address {
   const Address({required this.city});
   final String city;
 }
@@ -168,7 +168,7 @@ final class Address with _\$AddressAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Swatch with _\$SwatchAck {
+final class Swatch {
   const Swatch({required this.shade});
   final Shade shade;
 }
@@ -193,7 +193,7 @@ typedef Shade = Color;
     await _expectFailure(
       '''
 @Schemable(name: 'IgnoredName')
-final class Account with _\$AccountAck {
+final class Account {
   const Account({required this.id});
   final String id;
 }
@@ -211,7 +211,7 @@ final class Account with _\$AccountAck {
       await _expectFailure(
         '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   final String name;
@@ -228,7 +228,7 @@ final class _\$UserCopyWith {}
     await _expectFailure(
       '''
 @Schemable(description: ' ')
-final class Item with _\$ItemAck {
+final class Item {
   const Item({required this.value});
   final String value;
 }
@@ -243,7 +243,7 @@ final class Item with _\$ItemAck {
 /// @description First.
 /// @description Second.
 @Schemable()
-final class Item with _\$ItemAck {
+final class Item {
   const Item({required this.value});
   final String value;
 }
@@ -256,7 +256,7 @@ final class Item with _\$ItemAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Item with _\$ItemAck {
+final class Item {
   const Item({required this.value});
   /// @description
   final String value;
@@ -270,7 +270,7 @@ final class Item with _\$ItemAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   @Validate.min(1)
@@ -285,7 +285,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.age});
 
   @Validate.minLength(1)
@@ -300,7 +300,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   @Validate.uniqueItems()
@@ -317,7 +317,7 @@ final class User with _\$UserAck {
       await _expectFailure(
         '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.tags});
 
   final List<String?> tags;
@@ -334,7 +334,7 @@ final class User with _\$UserAck {
       await _expectFailure(
         '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.tags});
 
   final Set<String?> tags;
@@ -349,7 +349,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Stats with _\$StatsAck {
+final class Stats {
   const Stats({required this.values});
 
   final Map<String, dynamic> values;
@@ -363,7 +363,7 @@ final class Stats with _\$StatsAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Envelope with _\$EnvelopeAck {
+final class Envelope {
   const Envelope({required this.items});
 
   final List<Object?> items;
@@ -377,7 +377,7 @@ final class Envelope with _\$EnvelopeAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Stats with _\$StatsAck {
+final class Stats {
   const Stats({required this.scores});
 
   final List<Map<int, String>> scores;
@@ -391,7 +391,7 @@ final class Stats with _\$StatsAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Stats with _\$StatsAck {
+final class Stats {
   const Stats({required this.scores});
 
   final Map<int, String> scores;
@@ -405,7 +405,7 @@ final class Stats with _\$StatsAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Payload with _\$PayloadAck {
+final class Payload {
   const Payload({required this.value});
 
   final dynamic value;
@@ -433,7 +433,7 @@ final class _User {
     await _expectFailure(
       '''
 @Schemable()
-class User with _\$UserAck {
+class User {
   const User({required this.name});
 
   final String name;
@@ -447,7 +447,7 @@ class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-abstract class HabitDto with _\$HabitDtoAck {
+abstract class HabitDto {
   const HabitDto._();
   const factory HabitDto({required String name}) = _HabitDto;
 }
@@ -465,11 +465,11 @@ abstract class HabitDto with _\$HabitDtoAck {
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
-class Cat extends Pet with _\$CatAck {
+class Cat extends Pet {
   const Cat();
 }
 ''',
@@ -481,7 +481,7 @@ class Cat extends Pet with _\$CatAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   User({required this.name});
 
   String name;
@@ -495,7 +495,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this._secret});
 
   final String _secret;
@@ -509,7 +509,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
-final class Config with _\$ConfigAck {
+final class Config {
   const Config({required this.name});
 
   final String name;
@@ -523,7 +523,7 @@ final class Config with _\$ConfigAck {
     await _expectFailure(
       '''
 @Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
-final class Config with _\$ConfigAck {
+final class Config {
   const Config({required this.additionalProperties});
 
   final Map<String, Object> additionalProperties;
@@ -540,7 +540,7 @@ final class Config with _\$ConfigAck {
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: '_extras',
 )
-final class Config with _\$ConfigAck {
+final class Config {
   const Config({required this.name});
 
   final String name;
@@ -554,7 +554,7 @@ final class Config with _\$ConfigAck {
     await _expectFailure(
       '''
 @Schemable(captureField: 'args')
-final class Config with _\$ConfigAck {
+final class Config {
   const Config({required this.name});
 
   final String name;
@@ -568,11 +568,11 @@ final class Config with _\$ConfigAck {
     await _expectFailure(
       '''
 @Schemable()
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat();
 }
 ''',
@@ -584,17 +584,17 @@ final class Cat extends Pet with _\$CatAck {
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
 @Schemable(discriminatorValue: 'pet')
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat();
 }
 
 @Schemable(discriminatorValue: 'pet')
-final class Dog extends Pet with _\$DogAck {
+final class Dog extends Pet {
   const Dog();
 }
 ''',
@@ -606,7 +606,7 @@ final class Dog extends Pet with _\$DogAck {
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
@@ -626,11 +626,11 @@ final class Cat extends Mammal {
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat();
 
   int get type => 1;
@@ -644,12 +644,12 @@ final class Cat extends Pet with _\$CatAck {
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
 @Schemable(discriminatorValue: 'cat')
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat();
 
   String get type => 'dog';
@@ -664,7 +664,7 @@ final class Cat extends Pet with _\$CatAck {
       '''
 @Schemable()
 @JsonSerializable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   final String name;
@@ -678,7 +678,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   @JsonKey(name: 'wire_name')
@@ -696,7 +696,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({@JsonKey(name: 'wire_name') required this.name});
 
   final String name;
@@ -713,7 +713,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User();
 }
 ''',
@@ -732,12 +732,12 @@ part 'model.g.dart';
     await _expectFailure(
       '''
 @Schemable(schemaName: 'PersonSchema')
-final class User with _\$UserAck {
+final class User {
   const User();
 }
 
 @Schemable(schemaName: 'PersonSchema')
-final class Admin with _\$AdminAck {
+final class Admin {
   const Admin();
 }
 ''',
@@ -749,7 +749,7 @@ final class Admin with _\$AdminAck {
     await _expectFailure(
       '''
 @Schemable(schemaName: 'personSchema')
-final class User with _\$UserAck {
+final class User {
   const User();
 }
 ''',
@@ -761,7 +761,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User();
 }
 
@@ -775,7 +775,7 @@ abstract final class UserSchema {}
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User();
 }
 
@@ -789,11 +789,11 @@ final _userSchema = Ack.string();
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat();
 }
 
@@ -804,7 +804,6 @@ abstract final class CatSchema {}
   });
 
   for (final collision in <({String name, String declaration})>[
-    (name: r'_$UserAck', declaration: r'mixin _$UserAck {}'),
     (name: r'_userObject', declaration: r'final _userObject = Ack.object({});'),
     (
       name: r'_userWireSchema',
@@ -817,7 +816,7 @@ abstract final class CatSchema {}
       await _expectFailure(
         '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   final String name;
@@ -834,11 +833,11 @@ ${collision.declaration}
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat();
 }
 
@@ -852,17 +851,17 @@ final _catObject = Ack.object({});
     await _expectFailure(
       '''
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _\$PetAck {
+sealed class Pet {
   const Pet();
 }
 
 @Schemable(schemaName: 'UpperCatSchema')
-final class Cat extends Pet with _\$CatAck {
+final class Cat extends Pet {
   const Cat();
 }
 
 @Schemable(schemaName: 'LowerCatSchema')
-final class cat extends Pet with _\$catAck {
+final class cat extends Pet {
   const cat();
 }
 ''',
@@ -874,7 +873,7 @@ final class cat extends Pet with _\$catAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Node with _\$NodeAck {
+final class Node {
   const Node({this.child});
 
   final Node? child;
@@ -888,14 +887,14 @@ final class Node with _\$NodeAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Parent with _\$ParentAck {
+final class Parent {
   const Parent({required this.child});
 
   final Child child;
 }
 
 @Schemable()
-final class Child with _\$ChildAck {
+final class Child {
   const Child({required this.parent});
 
   final Parent parent;
@@ -909,7 +908,7 @@ final class Child with _\$ChildAck {
     await _expectFailure(
       '''
 @Schemable()
-final class Parent with _\$ParentAck {
+final class Parent {
   const Parent({required this.child});
 
   final Child child;
@@ -931,7 +930,7 @@ import 'model.dart';
 part 'child.g.dart';
 
 @Schemable()
-final class Child with _\$ChildAck {
+final class Child {
   const Child({required this.parent});
 
   final Parent parent;
@@ -941,47 +940,39 @@ final class Child with _\$ChildAck {
     );
   });
 
-  test(
-    'rejects an imported class-first model whose facade is hidden',
-    () async {
-      await _expectFailure(
-        '''
-@Schemable()
-final class Order with _\$OrderAck {
-  const Order({required this.address});
-
-  final Address address;
-}
-''',
-        ['AddressSchema', 'hidden', 'show Address, AddressSchema'],
-        head: '''
+  test('imports only the model when its generated facade is hidden', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    final errors = <String>[];
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
-
 part 'model.g.dart';
-''',
-        extraSources: {
-          'address.dart': '''
-import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
-
-part 'address.g.dart';
-
 @Schemable()
-final class Address with _\$AddressAck {
-  const Address({required this.city});
-
-  final String city;
-}
+final class const Order({required final Address address});
 ''',
-        },
-        allowedOutputs: {
-          'test_pkg|lib/address.g.dart': decodedMatches(anything),
-        },
-      );
-    },
-  );
+        'test_pkg|lib/address.dart': '''
+import 'package:ack/ack.dart';
+part 'address.g.dart';
+@Schemable()
+final class const Address({required final String city});
+''',
+      },
+      generateFor: const {'test_pkg|lib/model.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/model.g.dart': decodedMatches(contains('Address.schema')),
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
+      },
+      onLog: (log) {
+        if (log.level == Level.SEVERE) errors.add(log.message);
+      },
+    );
+    expect(errors, isEmpty);
+  });
 
   test('allows split imports for a class-first model and its facade', () async {
     final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
@@ -998,7 +989,7 @@ import 'address.dart' show AddressSchema;
 part 'model.g.dart';
 
 @Schemable()
-final class Order with _\$OrderAck {
+final class Order {
   const Order({required this.address});
 
   final Address address;
@@ -1011,7 +1002,7 @@ import 'package:ack/annotations.dart';
 part 'address.g.dart';
 
 @Schemable()
-final class Address with _\$AddressAck {
+final class Address {
   const Address({required this.city});
 
   final String city;
@@ -1025,56 +1016,51 @@ final class Address with _\$AddressAck {
       readerWriter: readerWriter,
       outputs: {
         'test_pkg|lib/address.g.dart': decodedMatches(anything),
-        'test_pkg|lib/model.g.dart': decodedMatches(
-          contains('AddressSchema.schema'),
-        ),
+        'test_pkg|lib/model.g.dart': decodedMatches(contains('Address.schema')),
       },
     );
   });
 
-  test('rejects a class-first facade hidden by a barrel export', () async {
-    await _expectFailure(
-      '''
-@Schemable()
-final class Order with _\$OrderAck {
-  const Order({required this.address});
-
-  final Address address;
-}
-''',
-      ['AddressSchema', 'export combinator'],
-      head: '''
+  test('composes a model exported by a model-only barrel', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    final errors = <String>[];
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 import 'exports.dart';
-
 part 'model.g.dart';
-''',
-      extraSources: {
-        'exports.dart': "export 'address.dart' show Address;",
-        'address.dart': '''
-import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
-
-part 'address.g.dart';
-
 @Schemable()
-final class Address with _\$AddressAck {
-  const Address({required this.city});
-
-  final String city;
-}
+final class const Order({required final Address address});
+''',
+        'test_pkg|lib/exports.dart': "export 'address.dart' show Address;",
+        'test_pkg|lib/address.dart': '''
+import 'package:ack/ack.dart';
+part 'address.g.dart';
+@Schemable()
+final class const Address({required final String city});
 ''',
       },
-      allowedOutputs: {'test_pkg|lib/address.g.dart': decodedMatches(anything)},
+      generateFor: const {'test_pkg|lib/model.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/model.g.dart': decodedMatches(contains('Address.schema')),
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
+      },
+      onLog: (log) {
+        if (log.level == Level.SEVERE) errors.add(log.message);
+      },
     );
+    expect(errors, isEmpty);
   });
 
   test('rejects case-style key collisions', () async {
     await _expectFailure(
       '''
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Collision with _\$CollisionAck {
+final class Collision {
   const Collision({required this.fooBar, required this.foo_bar});
 
   final String fooBar;
@@ -1085,25 +1071,11 @@ final class Collision with _\$CollisionAck {
     );
   });
 
-  test('rejects a missing generated mixin', () async {
-    await _expectFailure(
-      '''
-@Schemable()
-final class User {
-  const User({required this.name});
-
-  final String name;
-}
-''',
-      ['User', r'_$UserAck'],
-    );
-  });
-
   test('rejects blank @AckKey(...)', () async {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   @AckKey('   ')
@@ -1118,7 +1090,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   @AckKey('a')
@@ -1139,7 +1111,7 @@ final class User with _\$UserAck {
       await _expectFailure(
         '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   @Validate.optional()
@@ -1157,7 +1129,7 @@ final class User with _\$UserAck {
       await _expectFailure(
         '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({this.name});
 
   @Validate.optional()
@@ -1174,7 +1146,7 @@ final class User with _\$UserAck {
     await _expectFailure(
       '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User(this.name, String extra) : label = extra;
 
   final String name;
@@ -1185,107 +1157,96 @@ final class User with _\$UserAck {
     );
   });
 
-  test(
-    'allows an imported class-first model with hidden facade when it exposes static schema',
-    () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
-      await testBuilder(
-        ackModelBuilder(BuilderOptions.empty),
-        {
-          'test_pkg|lib/model.dart': '''
+  test('an imported class-first model owns its generated schema', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
 import 'address.dart' show Address;
 
 part 'model.g.dart';
 
 @Schemable()
-final class Order with _\$OrderAck {
+final class Order {
   const Order({required this.address});
 
   final Address address;
 }
 ''',
-          'test_pkg|lib/address.dart': '''
+        'test_pkg|lib/address.dart': '''
 import 'package:ack/ack.dart';
 
 part 'address.g.dart';
 
 @Schemable()
-final class Address with _\$AddressAck {
+final class Address {
   const Address({required this.city});
 
   final String city;
 
-  static final schema = _addressSchema;
 }
 ''',
-        },
-        generateFor: const {
-          'test_pkg|lib/model.dart',
-          'test_pkg|lib/address.dart',
-        },
-        readerWriter: readerWriter,
-        outputs: {
-          'test_pkg|lib/address.g.dart': decodedMatches(anything),
-          'test_pkg|lib/model.g.dart': decodedMatches(
-            contains('Address.schema'),
-          ),
-        },
-      );
-    },
-  );
+      },
+      generateFor: const {
+        'test_pkg|lib/model.dart',
+        'test_pkg|lib/address.dart',
+      },
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
+        'test_pkg|lib/model.g.dart': decodedMatches(contains('Address.schema')),
+      },
+    );
+  });
 
-  test(
-    'rejects invalid @Validate.* constraints on mismatched field types or values',
-    () async {
-      await _expectFailure(
-        '''
+  test('rejects invalid @Validate.* constraints on mismatched field types or values', () async {
+    await _expectFailure(
+      '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.name});
 
   @Validate.min(1)
   final String name;
 }
 ''',
-        ['User.name', '@Validate.min', 'String', '@Validate.minLength'],
-      );
-      await _expectFailure(
-        '''
+      ['User.name', '@Validate.min', 'String', '@Validate.minLength'],
+    );
+    await _expectFailure(
+      '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({required this.ip});
 
   @Validate.ip(version: 5)
   final String ip;
 }
 ''',
-        ['User.ip', '@Validate.ip(version: 5)', 'version must be 4 or 6.'],
-      );
-      await _expectFailure(
-        '''
+      ['User.ip', '@Validate.ip(version: 5)', 'version must be 4 or 6.'],
+    );
+    await _expectFailure(
+      '''
 @Schemable()
-final class User with _\$UserAck {
+final class User {
   const User({@Validate.minLength(1) required this.age});
 
   final int age;
 }
 ''',
-        ['User.age', '@Validate.minLength', 'int', '@Validate.min'],
-      );
-    },
-  );
+      ['User.age', '@Validate.minLength', 'int', '@Validate.min'],
+    );
+  });
 
-  test(
-    'resolves constructor parameter annotations alongside same-build schema-first generated model',
-    () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
-      await testBuilder(
-        ackModelBuilder(BuilderOptions.empty),
-        {
-          'test_pkg|lib/model.dart': '''
+  test('resolves constructor parameter annotations alongside same-build schema-first generated model', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
 
 part 'model.g.dart';
@@ -1294,7 +1255,7 @@ part 'model.g.dart';
 final addressSchema = Ack.object({'city': Ack.string()});
 
 @Schemable()
-final class Order with _\$OrderAck {
+final class Order {
   const Order({
     @AckKey('shipping_address') required this.shipping,
     @Validate.minItems(1) this.history = const [],
@@ -1303,22 +1264,20 @@ final class Order with _\$OrderAck {
   final Address shipping;
   final List<Address> history;
 
-  static final schema = _orderSchema;
 }
 ''',
-        },
-        generateFor: const {'test_pkg|lib/model.dart'},
-        readerWriter: readerWriter,
-        outputs: {
-          'test_pkg|lib/model.g.dart': decodedMatches(
-            allOf([
-              contains("'shipping_address': Address.\$ack.schema"),
-              contains('Ack.list(Address.\$ack.schema)'),
-              contains('.minItems(1)'),
-            ]),
-          ),
-        },
-      );
-    },
-  );
+      },
+      generateFor: const {'test_pkg|lib/model.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/model.g.dart': decodedMatches(
+          allOf([
+            contains("'shipping_address': Address.\$ack.schema"),
+            contains('Ack.list(Address.\$ack.schema)'),
+            contains('.minItems(1)'),
+          ]),
+        ),
+      },
+    );
+  });
 }

@@ -25,8 +25,8 @@ env:
   # against the change severity, so a breaking change requires a major bump.
   API_BASELINE_VERSION: '1.6.2'
   # The lowest SDK versions that packages/*/pubspec.yaml accept.
-  MINIMUM_DART_VERSION: '3.11.0'
-  MINIMUM_FLUTTER_VERSION: '3.41.2'
+  MINIMUM_DART_VERSION: '3.14.0-315.1.beta'
+  MINIMUM_FLUTTER_VERSION: '3.50.0-0.1.pre'
 
 
 jobs:
@@ -46,10 +46,8 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
-      # The complete workspace cannot resolve on the minimum SDK, because
-      # flutter_test pins an older test_api than ack_generator's analyzer floor
-      # allows. The pure-Dart members still must resolve, so they get their own
-      # staged workspace.
+      # Stage pure-Dart members without Flutter's SDK packages to verify that
+      # consumers using the standalone minimum Dart SDK can resolve them.
       - name: Stage the pure-Dart workspace
         run: dart scripts/stage_min_sdk_workspace.dart "${{ runner.temp }}/min-dart"
 
@@ -86,7 +84,7 @@ jobs:
             echo "::group::$package"
             (cd "$package" && dart analyze . --fatal-infos)
             if [ -d "$package/test" ]; then
-              (cd "$package" && dart test)
+              (cd "$package" && dart --enable-experiment=augmentations test)
             fi
             echo "::endgroup::"
           done
@@ -123,7 +121,7 @@ jobs:
           set -euo pipefail
           flutter pub get
           flutter analyze --fatal-infos
-          flutter test
+          flutter test --enable-experiment=augmentations
 
   json-schema-draft7:
     name: JSON Schema Draft-7 batch validation

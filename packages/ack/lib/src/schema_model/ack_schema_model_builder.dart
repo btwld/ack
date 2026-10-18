@@ -136,8 +136,7 @@ final class _SchemaModelBuilder {
             ...wrapped.warnings,
             AckSchemaModelWarning(
               code: 'default_not_export_safe',
-              message:
-                  'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
+              message: 'Schema default was omitted because it cannot be represented safely in exported JSON-compatible schema models.',
             ),
           ]);
         }
@@ -460,8 +459,7 @@ final class _SchemaModelBuilder {
       warnings: const [
         AckSchemaModelWarning(
           code: 'ack_instance_json_boundary',
-          message:
-              'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
+          message: 'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
         ),
       ],
     );
@@ -485,8 +483,7 @@ final class _SchemaModelBuilder {
       warnings: const [
         AckSchemaModelWarning(
           code: 'ack_any_json_boundary',
-          message:
-              'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
+          message: 'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
         ),
       ],
     );
@@ -568,8 +565,7 @@ final class _SchemaModelBuilder {
       ...model.warnings,
       AckSchemaModelWarning(
         code: 'lazy_runtime_checks_not_export_safe',
-        message:
-            'Ack.lazy constraints and refinements were omitted because JSON Schema refs cannot safely carry runtime-only validation checks.',
+        message: 'Ack.lazy constraints and refinements were omitted because JSON Schema refs cannot safely carry runtime-only validation checks.',
         context: {
           'constraintCount': constraintCount,
           'refinementCount': refinementCount,
@@ -672,8 +668,7 @@ AckSchemaModel _applyConstraints(
     ...next.warnings,
     AckSchemaModelWarning(
       code: 'codec_runtime_constraint_not_exported',
-      message:
-          'Codec constraints were omitted because they validate runtime values, not the encoded boundary values the exported schema describes.',
+      message: 'Codec constraints were omitted because they validate runtime values, not the encoded boundary values the exported schema describes.',
       context: {'constraints': omittedConstraintKeys},
     ),
   ]);
@@ -699,8 +694,7 @@ AckSchemaModel _applyDateTimeConstraint(
     ...model.warnings,
     AckSchemaModelWarning(
       code: 'datetime_constraint_not_draft7',
-      message:
-          'DateTime range constraints are not emitted because JSON Schema Draft-7 has no standard format range keywords.',
+      message: 'DateTime range constraints are not emitted because JSON Schema Draft-7 has no standard format range keywords.',
       context: {
         'constraint': constraint.comparisonType,
         'reference': constraint.formattedReference,

@@ -142,7 +142,7 @@ final userSchema = Ack.object({
 Run the generator:
 
 ```bash
-dart run build_runner build
+dart run build_runner build --enable-experiment=augmentations
 ```
 
 This emits a `User` class with stored typed fields, validation helpers, and a
@@ -159,8 +159,12 @@ named recursion, and discriminated unions. One-way transforms are rejected
 because a generated model must be encodable. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
+The 2.0 development branch uses Flutter 3.50.0-0.1.pre / Dart 3.14 beta.
+Enable the `augmentations` experiment in consumer projects; see the
+[SDK setup](docs/getting-started/installation.mdx#dart-314-prerelease-setup).
+
 Already own the model class? Put `@Schemable()` on it to derive a codec schema from
-constructor-backed fields (including Dart 3.12+ primary constructors) while
+constructor-backed fields (including Dart 3.14 primary constructors) while
 keeping the class hand-written. A class named `Account` receives a private
 `_accountSchema` codec and a public `AccountSchema` facade for parsing, encoding,
 schema export, and nested composition:
@@ -171,15 +175,9 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable()
-final class Account with _$AccountAck {
-  const Account({required this.name});
-
-  @Validate.minLength(2)
-  final String name;
-
-  static final schema = _accountSchema;
-  static final fromJson = AccountSchema.fromJson;
-}
+final class const Account({
+  @Validate.minLength(2) required final String name,
+});
 ```
 
 `Account.fromJson({'name': 'Ada'})` (or `Account.schema.parse(...)`) validates

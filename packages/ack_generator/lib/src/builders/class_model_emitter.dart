@@ -14,13 +14,27 @@ final class AckClassModelEmitter {
 
   String emit(AckModelGraph graph) {
     final nodes = {for (final node in graph.nodes) node.id: node};
-    final output = StringBuffer();
+    final output = StringBuffer('''
+// Private aliases preserve public underlying types while avoiding model member
+// shadowing. Their visibility is intentional; no private runtime type escapes.
+// ignore_for_file: library_private_types_in_public_api
+
+typedef _AckObject = Object;
+typedef _AckDynamic = dynamic;
+typedef _AckString = String;
+typedef _AckMap<K, V> = Map<K, V>;
+typedef _AckBool = bool;
+typedef _AckInt = int;
+typedef _AckSchema<B extends Object, R extends Object> = ${_ack('AckSchema')}<B, R>;
+typedef _AckSchemaResult<T extends Object> = ${_ack('SchemaResult')}<T>;
+
+''');
     for (final node in graph.nodes) {
       switch (node) {
         case AckObjectModelNode(:final unionId) when unionId != null:
           continue;
         case AckObjectModelNode():
-          _emitObject(output, graph, node);
+          _emitConcrete(output, graph, node);
         case AckValueModelNode():
           throw StateError('Class-first graphs cannot contain value roots.');
         case AckUnionModelNode():
@@ -31,7 +45,7 @@ final class AckClassModelEmitter {
                 'Class-first union branch $branchId is not an object.',
               );
             }
-            _emitBranch(output, graph, branch);
+            _emitConcrete(output, graph, branch);
           }
           _emitUnion(output, graph, node, nodes);
       }
@@ -39,28 +53,11 @@ final class AckClassModelEmitter {
     return output.toString();
   }
 
-  void _emitObject(
-    StringBuffer output,
-    AckModelGraph graph,
-    AckObjectModelNode node,
-  ) {
-    _emitConcrete(output, graph, node, includeValueMembers: true);
-  }
-
-  void _emitBranch(
-    StringBuffer output,
-    AckModelGraph graph,
-    AckObjectModelNode node,
-  ) {
-    _emitConcrete(output, graph, node, includeValueMembers: true);
-  }
-
   void _emitConcrete(
     StringBuffer output,
     AckModelGraph graph,
-    AckObjectModelNode node, {
-    required bool includeValueMembers,
-  }) {
+    AckObjectModelNode node,
+  ) {
     final metadata = _metadata(graph, node);
     final rawName = ackClassRawObjectName(node.className);
     final wireName = ackClassWireSchemaName(node.className);
@@ -69,9 +66,11 @@ final class AckClassModelEmitter {
       ..writeln()
       ..writeln('final $wireName = ${_ack('Ack')}.preserveBoundary($rawName);')
       ..writeln()
-      ..writeln(
-        _codecSchema(node, backingName: metadata.backingName, input: rawName),
-      )
+      ..writeln('''
+final ${metadata.backingName} = $rawName.codec<${node.className}>(
+  decode: ${ackClassFromRuntimeName(node.className)},
+  encode: ${ackClassToRuntimeName(node.className)},
+)${_describe(node.description)};''')
       ..writeln()
       ..writeln(_facade(node.className, metadata, wireName: wireName))
       ..writeln()
@@ -80,12 +79,12 @@ final class AckClassModelEmitter {
       ..writeln(_toRuntimeFunction(node))
       ..writeln()
       ..writeln(
-        _dataClasses.mixin(
+        _dataClasses.augmentation(
           className: node.className,
           facadeName: metadata.facadeName,
           fields: node.fields,
           constructorParameters: node.constructorParameters,
-          includeValueMembers: includeValueMembers,
+          includeValueMembers: true,
           captureFieldName: node.captureFieldName,
           copyWithSupertypes: metadata.copyWithSupertypes,
         ),
@@ -167,7 +166,7 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
       ..writeln(_facade(node.className, metadata, wireName: wireName))
       ..writeln()
       ..writeln(
-        _dataClasses.mixin(
+        _dataClasses.augmentation(
           className: node.className,
           facadeName: metadata.facadeName,
           fields: const [],
@@ -176,19 +175,6 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
         ),
       )
       ..writeln();
-  }
-
-  String _codecSchema(
-    AckObjectModelNode node, {
-    required String backingName,
-    String? input,
-  }) {
-    final expression = input ?? _objectSchema(node);
-    return '''
-final $backingName = $expression.codec<${node.className}>(
-  decode: ${ackClassFromRuntimeName(node.className)},
-  encode: ${ackClassToRuntimeName(node.className)},
-)${_describe(node.description)};''';
   }
 
   /// Explicit class descriptions describe the wire object and model codec.
@@ -436,7 +422,7 @@ Map<String, Object?> $function(${node.className} model) {
 
   Set<String> _declaredKeys(AckObjectModelNode node) => {
     for (final field in node.fields) field.jsonKey,
-    if (node.discriminatorKey case final discriminator?) discriminator,
+    ?node.discriminatorKey,
   };
 
   AckClassModelMetadata _metadata(AckModelGraph graph, AckModelNode node) {

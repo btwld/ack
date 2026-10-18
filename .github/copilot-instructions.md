@@ -15,7 +15,7 @@
 - `example`: sample usage.
 
 ## Environment and setup
-- Required SDKs: Dart `>=3.9.0 <4.0.0`, Flutter `>=3.35.0` (see `/pubspec.yaml`).
+- Required SDKs: Dart `>=3.14.0-315.1.beta <4.0.0`, Flutter `>=3.50.0-0.1.pre` (see `/pubspec.yaml`).
 - CI pins Flutter to the version in `/.fvmrc`. Add a new version to `/.github/flutter-releases.json` with its checksum before a workflow may install it.
 - Use from repo root:
   1. `dart pub get`

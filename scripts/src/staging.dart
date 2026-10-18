@@ -92,10 +92,8 @@ String overrideWithStagedPackages(
 /// Removes the [flutterMembers] workspace entries and the Flutter SDK
 /// constraint from a workspace root [pubspec].
 ///
-/// The complete workspace cannot resolve on the minimum Dart SDK, because
-/// `flutter_test` pins an older `test_api` than the analyzer floor of
-/// `ack_generator` allows. Dropping the Flutter members produces a resolvable
-/// pure-Dart workspace that still covers every other package.
+/// Dropping Flutter members verifies that standalone Dart consumers can
+/// resolve the pure-Dart packages independently of Flutter's SDK packages.
 String toPureDartWorkspace(
   String pubspec, {
   required Set<String> flutterMembers,

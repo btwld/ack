@@ -45,44 +45,41 @@ void main() {
     expect(AckUnknownPropertyPolicy.values, hasLength(3));
   });
 
-  test(
-    'constraint names from package:ack/ack.dart and annotations.dart leave room for app types',
-    () {
-      const uuid = Uuid('7c9e6679');
-      const email = Email('ada@example.com');
-      const url = Url('https://example.com');
-      const date = Date('2026-10-01');
-      const min = Min(1);
-      const max = Max(10);
-      const pattern = Pattern('^a');
-      const contact = SingleImportContact(email, uuid);
+  test('constraint names from package:ack/ack.dart and annotations.dart leave room for app types', () {
+    const uuid = Uuid('7c9e6679');
+    const email = Email('ada@example.com');
+    const url = Url('https://example.com');
+    const date = Date('2026-10-01');
+    const min = Min(1);
+    const max = Max(10);
+    const pattern = Pattern('^a');
+    const contact = SingleImportContact(email, uuid);
 
-      expect(
-        [
-          uuid.value,
-          email.address,
-          url.href,
-          date.iso,
-          min.value,
-          max.value,
-          pattern.source,
-          contact.email.address,
-          contact.id.value,
-        ],
-        [
-          '7c9e6679',
-          'ada@example.com',
-          'https://example.com',
-          '2026-10-01',
-          1,
-          10,
-          '^a',
-          'ada@example.com',
-          '7c9e6679',
-        ],
-      );
-    },
-  );
+    expect(
+      [
+        uuid.value,
+        email.address,
+        url.href,
+        date.iso,
+        min.value,
+        max.value,
+        pattern.source,
+        contact.email.address,
+        contact.id.value,
+      ],
+      [
+        '7c9e6679',
+        'ada@example.com',
+        'https://example.com',
+        '2026-10-01',
+        1,
+        10,
+        '^a',
+        'ada@example.com',
+        '7c9e6679',
+      ],
+    );
+  });
 
   test(
     'a prefixed annotations import exposes Schemable, AckKey, and Validate',

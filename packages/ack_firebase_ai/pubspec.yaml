@@ -12,8 +12,8 @@ topics:
   - validation
 
 environment:
-  sdk: '>=3.11.0 <4.0.0'
-  flutter: '>=3.41.2'
+  sdk: '>=3.14.0-315.1.beta <4.0.0'
+  flutter: '>=3.50.0-0.1.pre'
 
 
 dependencies:
@@ -30,5 +30,5 @@ dev_dependencies:
   firebase_core_platform_interface: 7.1.0
   flutter_test:
     sdk: flutter
-  lints: ^5.0.0
+  lints: ^6.1.0
   test: ^1.25.15

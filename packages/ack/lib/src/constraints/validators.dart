@@ -94,8 +94,7 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<JsonMap>
   ObjectNoAdditionalPropertiesConstraint({required this.unexpectedPropertyKey})
     : super(
         constraintKey: 'object_additional_properties_disallowed',
-        description:
-            'Object must not contain properties beyond those defined in the schema.',
+        description: 'Object must not contain properties beyond those defined in the schema.',
       );
 
   @override

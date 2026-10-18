@@ -44,7 +44,6 @@ final profileSchema = Ack.object({
       encode: (color) => color.value,
     ),
   ),
-  'tagList': Ack.list(
-    Ack.string(),
-  ).codec<TagList>(decode: TagList.new, encode: (tags) => tags.value),
+  'tagList': Ack.list(Ack.string())
+      .codec<TagList>(decode: TagList.new, encode: (tags) => tags.value),
 });

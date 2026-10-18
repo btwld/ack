@@ -14,7 +14,7 @@ topics:
   - serialization
 
 environment:
-  sdk: '>=3.11.0 <4.0.0'
+  sdk: '>=3.14.0-315.1.beta <4.0.0'
 
 dependencies:
   meta: ^1.15.0
@@ -26,7 +26,7 @@ dev_dependencies:
   test: ^1.25.15
   coverage: ^1.11.1
   dart_code_metrics_presets: ^2.22.0
-  lints: ^5.0.0
+  lints: ^6.1.0
   path: ^1.9.0
 
 # Melos workspace configuration - managed by workspace
