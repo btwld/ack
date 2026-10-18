@@ -17,7 +17,7 @@ workspace:
   - example
 
 dev_dependencies:
-  melos: ^8.7.0
+  melos: 8.9.0
   # Release tooling under /scripts reads and rewrites pubspecs.
   path: ^1.9.0
   pub_semver: ^2.2.0
@@ -45,7 +45,7 @@ melos:
 
   scripts:
     analyze:
-      run: dart run melos exec -- "dart analyze . --fatal-infos"
+      run: dart pub global run melos exec -- "dart analyze . --fatal-infos"
       description: Run analyzer on all packages
       packageFilters:
         scope:
@@ -57,26 +57,26 @@ melos:
           - ack_example
 
     fix:
-      run: dart run melos exec -- "dart fix --apply"
+      run: dart pub global run melos exec -- "dart fix --apply"
       description: Apply fixes to all packages
 
     test:
       run: >-
-        dart run melos run analyze --no-select &&
+        dart pub global run melos run analyze --no-select &&
         dart test test &&
-        dart run melos run test:dart --no-select &&
-        dart run melos run test:flutter --no-select
+        dart pub global run melos run test:dart --no-select &&
+        dart pub global run melos run test:flutter --no-select
       description: Run strict analysis and all root, Dart, and Flutter tests
 
     test:dart:
-      run: dart run melos exec -c 1 --fail-fast -- "dart --enable-experiment=augmentations test"
+      run: dart pub global run melos exec -c 1 --fail-fast -- "dart --enable-experiment=augmentations test"
       description: Run Dart tests for pure Dart packages
       packageFilters:
         flutter: false
         dirExists: test
 
     test:flutter:
-      run: dart run melos exec -c 1 --fail-fast -- "flutter test --enable-experiment=augmentations"
+      run: dart pub global run melos exec -c 1 --fail-fast -- "flutter test --enable-experiment=augmentations"
       description: Run Flutter tests for Flutter packages
       packageFilters:
         flutter: true
@@ -87,16 +87,16 @@ melos:
       description: Format authored Dart sources across the workspace
 
     deps-outdated:
-      run: dart run melos exec -- "dart pub outdated"
+      run: dart pub global run melos exec -- "dart pub outdated"
       description: Check for outdated dependencies in all packages
 
     clean:
-      run: dart run melos clean
+      run: dart pub global run melos clean
       description: Clean all build outputs.
 
     # Build scripts for code generation
     build:
-      run: dart run melos exec -- "dart run build_runner build --enable-experiment=augmentations"
+      run: dart pub global run melos exec -- "dart run build_runner build --enable-experiment=augmentations"
       description: Run build_runner for all packages
       packageFilters:
         dependsOn: build_runner
@@ -108,13 +108,13 @@ melos:
 
     # ACK Generator specific test commands
     test:gen:
-      run: dart run melos exec -c 1 -- dart --enable-experiment=augmentations test
+      run: dart pub global run melos exec -c 1 -- dart --enable-experiment=augmentations test
       description: Run generator tests
       packageFilters:
         scope: ack_generator
 
     test:gen:unit:
-      run: dart run melos exec -c 1 -- dart --enable-experiment=augmentations test -x integration
+      run: dart pub global run melos exec -c 1 -- dart --enable-experiment=augmentations test -x integration
       description: Run generator tests except the build_runner integration tests
       packageFilters:
         scope: ack_generator
@@ -148,5 +148,5 @@ melos:
       description: "Check API compatibility against a published version"
 
     ci:
-      run: dart run melos run test --no-select
+      run: dart pub global run melos run test --no-select
       description: Run strict analysis (fatal infos) and all Dart & Flutter tests

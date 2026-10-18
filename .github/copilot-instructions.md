@@ -19,19 +19,20 @@
 - CI pins Flutter to the version in `/.fvmrc`. Add a new version to `/.github/flutter-releases.json` with its checksum before a workflow may install it.
 - Use from repo root:
   1. `dart pub get`
-  2. `dart run melos bootstrap`
-- Optional one-shot setup script: `./setup.sh` (validates the Flutter SDK, bootstraps the workspace, and installs Node tools when npm is available).
+  2. `dart pub global activate melos 8.9.0` (must match the exact root dev dependency)
+  3. `dart pub global run melos bootstrap`
+- Optional one-shot setup script: `./setup.sh` (validates the Flutter SDK, activates the pinned Melos CLI, bootstraps the workspace, and installs Node tools when npm is available).
 
 ## Commands you should run
-- Full CI-equivalent local check: `dart run melos run test --no-select`
+- Full CI-equivalent local check: `dart pub global run melos run test --no-select`
   - Runs strict analyze (`dart analyze . --fatal-infos`) and package tests.
 - Useful targeted commands:
-  - `dart run melos run analyze`
-  - `dart run melos run test:dart`
-  - `dart run melos run test:flutter`
-  - `dart run melos run build` (when generator-related code changes)
-  - `dart run melos run test:gen` (for generator changes)
-  - `dart run melos run validate-jsonschema` (for JSON Schema conformance tooling)
+  - `dart pub global run melos run analyze`
+  - `dart pub global run melos run test:dart`
+  - `dart pub global run melos run test:flutter`
+  - `dart pub global run melos run build` (when generator-related code changes)
+  - `dart pub global run melos run test:gen` (for generator changes)
+  - `dart pub global run melos run validate-jsonschema` (for JSON Schema conformance tooling)
 
 ## Change-scope guidance
 - Keep changes minimal and package-scoped; do not refactor unrelated files.
@@ -44,12 +45,12 @@
 - `/.github/workflows/release.yml` verifies the tag with `dart scripts/verify_release_tag.dart` and reruns the preflight before it publishes.
 - Conventional Commits are expected for commit messages.
 - Versioning and tag-only publishing are documented in `/PUBLISHING.md`.
-  Use `dart run melos version` to prepare versions; publication runs only from
+  Use `dart pub global run melos version` to prepare versions; publication runs only from
   a reviewed `v*` tag through the release workflow.
 
 ## Errors encountered during onboarding and workarounds
 1. **Error:** `melos: command not found` when running checks in a fresh environment.  
-   **Workaround:** resolve root dependencies with `dart pub get`, then invoke the workspace-local executable via `dart run melos ...`.
+   **Workaround:** complete the global Melos activation in the setup steps above, then use `dart pub global run melos ...`; a global executable `PATH` entry is not needed. Root dependency resolution alone does not install the global CLI.
 2. **Error:** `dart: command not found` in bare sandbox environments.  
    **Workaround:** install Flutter (which includes Dart), then run `./setup.sh`.
 3. **Observed CI state:** workflow run may show `conclusion: action_required` with no jobs for PR contexts awaiting approval/permissions.  

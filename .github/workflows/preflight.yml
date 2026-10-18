@@ -191,6 +191,9 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
+      - name: Activate the pinned Melos CLI
+        run: dart pub global activate melos 8.9.0
+
       # `.g.dart` holds the generated Ack models, schemas, and JSON mapping.
       # A clean rebuild must reproduce them identically.
       - name: Delete the committed generator output
@@ -200,7 +203,7 @@ jobs:
             | xargs -0 --no-run-if-empty rm --
 
       - name: Regenerate from a clean tree
-        run: dart run melos run build --no-select
+        run: dart pub global run melos run build --no-select
 
       - name: Require the regenerated output to match the repository
         run: |

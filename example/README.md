@@ -45,10 +45,11 @@ void main() {
 
 ## Running the examples
 
-Select Flutter `3.50.0-0.1.pre` / Dart `3.14.0-315.1.beta` from `.fvmrc` first.
+Complete the repository's [development setup](../CONTRIBUTING.md#development-setup)
+first, including the pinned SDK and global Melos CLI. From the repository root:
 
 ```bash
-dart run melos bootstrap
+dart pub global run melos bootstrap
 cd example
 dart run build_runner build --enable-experiment=augmentations
 dart --enable-experiment=augmentations test

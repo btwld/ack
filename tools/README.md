@@ -125,4 +125,4 @@ The validator outputs structured JSON results:
 
 The JSON Schema validation tool is integrated into the Melos workflow with `validate-jsonschema` scripts.
 
-Run `dart run melos run --list` from the workspace root for all available commands.
+Run `dart pub global run melos run --list` from the workspace root for all available commands.

@@ -253,6 +253,6 @@ void printUsage() {
   );
   print('');
   print('Melos usage:');
-  print('  dart run melos run api-check -- ack v1.1.0');
-  print('  dart run melos run api-check -- v1.1.0');
+  print('  dart pub global run melos run api-check -- ack v1.1.0');
+  print('  dart pub global run melos run api-check -- v1.1.0');
 }

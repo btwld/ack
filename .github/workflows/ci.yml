@@ -35,11 +35,14 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
+      - name: Activate the pinned Melos CLI
+        run: dart pub global activate melos 8.9.0
+
       - name: Check formatting
         run: dart run scripts/format.dart --output=none --set-exit-if-changed
 
       - name: Analyze and test every package
-        run: dart run melos run ci --no-select
+        run: dart pub global run melos run ci --no-select
 
       - name: Test numeric parity and JSON Schema imports in Chrome
         working-directory: packages/ack
