@@ -56,9 +56,19 @@ String _formatOutput(String code, Version languageVersion) {
     experimentFlags: const ['augmentations'],
   ).format(plainCode);
   for (final declaration in classes(formatted).reversed) {
-    if (!names.contains(declaration.namePart.typeName.lexeme)) continue;
-    final token = declaration.finalKeyword ?? declaration.sealedKeyword!;
-    formatted = formatted.replaceRange(token.offset, token.offset, 'augment ');
+    final name = declaration.namePart.typeName.lexeme;
+    if (!names.contains(name)) continue;
+    final modifier = declaration.finalKeyword ?? declaration.sealedKeyword;
+    if (modifier == null) {
+      throw FormatException(
+        'Augmented class $name is neither final nor sealed.',
+      );
+    }
+    formatted = formatted.replaceRange(
+      modifier.offset,
+      modifier.offset,
+      'augment ',
+    );
   }
   return formatted;
 }

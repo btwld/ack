@@ -69,6 +69,15 @@ $source
   expect(errors, isEmpty);
 }
 
+// Parent and child both emit `id`. Only the child carries minLength(4).
+Matcher _idSchema(String expression) => predicate<String>((source) {
+  final found = [
+    for (final match in RegExp(r"'id':\s*([^,}]+)").allMatches(source))
+      match.group(1)!.replaceAll(RegExp(r'\s+'), ''),
+  ].where((item) => item.contains('minLength(4)'));
+  return found.length == 1 && found.single == expression;
+}, "id schema exactly '$expression'");
+
 Future<void> _expectInvalid(
   String source,
   String diagnostic, {
@@ -204,8 +213,8 @@ final class Child extends Parent {
 }
 '''}
 ''',
-          contains(
-            "'id': Ack.string()"
+          _idSchema(
+            'Ack.string()'
             '${annotatedParent ? '.maxLength(6)' : ''}.minLength(4)',
           ),
         ),
