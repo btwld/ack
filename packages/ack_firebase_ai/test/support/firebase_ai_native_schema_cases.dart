@@ -51,9 +51,10 @@ final class FirebaseAiNativeSchemaCase {
     required this.source,
     required this.features,
     required this.comparisonEnum,
-    required Map<String, Object?> Function() this._buildJsonSchema,
+    required Map<String, Object?> Function() buildJsonSchema,
   }) : statusEnum = FirebaseAiNativeSchemaStatus.generated,
-       unsupportedReason = null;
+       unsupportedReason = null,
+       _buildJsonSchema = buildJsonSchema;
 
   const FirebaseAiNativeSchemaCase.unsupported({
     required this.id,
@@ -123,8 +124,9 @@ String firebaseAiPackageVersion() {
         break;
       }
 
-      final match = RegExp(r'^\s+version:\s+"?([^"\s]+)"?\s*$')
-          .firstMatch(line);
+      final match = RegExp(
+        r'^\s+version:\s+"?([^"\s]+)"?\s*$',
+      ).firstMatch(line);
       if (match != null) return match.group(1)!;
     }
   }

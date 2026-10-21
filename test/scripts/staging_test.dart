@@ -32,9 +32,9 @@ dependencies:
     test('points a dependency at the staged sibling', () {
       const pubspec = 'name: ack_generator\ndependencies:\n  ack: ^1.2.0\n';
 
-      final overridden = loadYaml(
-        overrideWithStagedPackages(pubspec, {'ack': '../ack'}),
-      ) as Map;
+      final overridden =
+          loadYaml(overrideWithStagedPackages(pubspec, {'ack': '../ack'}))
+              as Map;
 
       expect((overridden['dependency_overrides'] as Map)['ack'], {
         'path': '../ack',
@@ -63,12 +63,14 @@ workspace:
   - example
 ''';
 
-      final pure = loadYaml(
-        toPureDartWorkspace(
-          pubspec,
-          flutterMembers: const {'packages/ack_firebase_ai'},
-        ),
-      ) as Map;
+      final pure =
+          loadYaml(
+                toPureDartWorkspace(
+                  pubspec,
+                  flutterMembers: const {'packages/ack_firebase_ai'},
+                ),
+              )
+              as Map;
 
       expect(pure['workspace'], ['packages/ack', 'example']);
       expect((pure['environment'] as Map).containsKey('flutter'), isFalse);

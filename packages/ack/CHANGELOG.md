@@ -2,14 +2,6 @@
 
 ### Breaking
 
-* Target Dart 3.14 / Flutter 3.50; development is pinned to
-  Dart `3.14.0-315.1.beta` / Flutter `3.50.0-0.1.pre` until stable releases exist.
-* Class-first models use experimental augmentations instead of `_$ModelAck`
-  mixins. Remove mixins and handwritten schema/parsing forwarders; generation adds
-  `fromJson`, `parse`, `safeParse`, and `schema` directly. Both primary and
-  conventional constructors remain supported. Enable `augmentations` in
-  analyzer, build_runner, and runtime/test commands.
-
 * Remove legacy 1.x generator annotations (`@AckType`, `@AckInfer`, `@AckModel`,
   `@AckField`, `JsonKeyCaseStyle`, `AckFieldPresence`, and
   `@Schemable.generatedJson`). Use `@Schemable()` on both top-level schemas and

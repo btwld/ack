@@ -136,8 +136,9 @@ final class AckModelGenerator extends Generator {
     }
     if (classFirst != null) {
       output.add(
-        AckClassModelEmitter(ackPrefix: classFirst.ackPrefix)
-            .emit(classFirst.graph),
+        AckClassModelEmitter(
+          ackPrefix: classFirst.ackPrefix,
+        ).emit(classFirst.graph),
       );
     }
     final body = output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');

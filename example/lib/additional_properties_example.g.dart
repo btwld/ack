@@ -74,10 +74,10 @@ final class UserConfig {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserConfig &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.username, other.username) &&
-          deepEquals(this.email, other.email) &&
-          deepEquals(this.additionalProperties, other.additionalProperties));
+          runtimeType == other.runtimeType &&
+          deepEquals(username, other.username) &&
+          deepEquals(email, other.email) &&
+          deepEquals(additionalProperties, other.additionalProperties));
 
   @override
   int get hashCode => Object.hashAll([
@@ -208,10 +208,10 @@ final class ApiRequest {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ApiRequest &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.method, other.method) &&
-          deepEquals(this.url, other.url) &&
-          deepEquals(this.additionalProperties, other.additionalProperties));
+          runtimeType == other.runtimeType &&
+          deepEquals(method, other.method) &&
+          deepEquals(url, other.url) &&
+          deepEquals(additionalProperties, other.additionalProperties));
 
   @override
   int get hashCode => Object.hashAll([
@@ -343,10 +343,10 @@ final class FeatureFlags {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FeatureFlags &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.appVersion, other.appVersion) &&
-          deepEquals(this.environment, other.environment) &&
-          deepEquals(this.additionalProperties, other.additionalProperties));
+          runtimeType == other.runtimeType &&
+          deepEquals(appVersion, other.appVersion) &&
+          deepEquals(environment, other.environment) &&
+          deepEquals(additionalProperties, other.additionalProperties));
 
   @override
   int get hashCode => Object.hashAll([
@@ -471,8 +471,8 @@ final class DynamicData {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DynamicData &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.additionalProperties, other.additionalProperties));
+          runtimeType == other.runtimeType &&
+          deepEquals(additionalProperties, other.additionalProperties));
 
   @override
   int get hashCode =>

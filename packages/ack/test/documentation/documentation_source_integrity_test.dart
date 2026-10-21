@@ -98,8 +98,9 @@ void main() {
         isTrue,
       );
       expect(
-        File('../../docs/guides/creating-schema-converter-packages.mdx')
-            .existsSync(),
+        File(
+          '../../docs/guides/creating-schema-converter-packages.mdx',
+        ).existsSync(),
         isTrue,
       );
       expect(serializedConfig, contains('/guides/schema-converter-quickstart'));

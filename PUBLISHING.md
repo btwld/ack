@@ -48,9 +48,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 
 1. Check pub.dev and tags before selecting the version; published versions and
    their changelog sections are immutable.
-2. Complete [development setup](./CONTRIBUTING.md#development-setup), including
-   the pinned global Melos CLI. Start a release branch from current `origin/main`
-   and resolve dependencies:
+2. Start a release branch from current `origin/main` and resolve dependencies:
 
    ```sh
    dart pub get
@@ -59,13 +57,13 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 3. Preview/prepare a coordinated version without creating commits or tags:
 
    ```sh
-   dart pub global run melos version --manual-version=ack:2.0.0-alpha.1 --yes --no-git-commit-version
+   dart run melos version --manual-version=ack:2.0.0-alpha.1 --yes --no-git-commit-version
    ```
 
    Use the named flag, not a positional package argument: the positional form
    selects a package instead of requesting a coordinated version. Choose the
    next SemVer value for later releases. Normal automatic selection is also available with
-   `dart pub global run melos version --yes --no-git-commit-version` after reviewing commits.
+   `dart run melos version --yes --no-git-commit-version` after reviewing commits.
    Do not pass `--all`: that would include private packages. Melos fetches tags
    through Git; a new local branch needs an upstream before this command runs.
 
@@ -87,10 +85,10 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 
    ```sh
    dart scripts/verify_release_tag.dart v2.0.0-alpha.1 --skip-ancestry
-   dart pub global run melos run ci
+   dart run melos run ci
    dart scripts/api_check.dart 1.6.2
    dart scripts/publish_dry_run.dart
-   dart pub global run melos run validate-jsonschema:batch
+   dart run melos run validate-jsonschema:batch
    ```
 
    `--skip-ancestry` is only for preparing a version before the tag exists.

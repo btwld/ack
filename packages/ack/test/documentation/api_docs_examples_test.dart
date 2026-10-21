@@ -167,9 +167,9 @@ void main() {
       });
 
       test('list with constraints example', () {
-        final emailListSchema = Ack.list(Ack.string().email())
-            .minItems(1)
-            .maxItems(5);
+        final emailListSchema = Ack.list(
+          Ack.string().email(),
+        ).minItems(1).maxItems(5);
 
         final validEmails = ['user@example.com', 'admin@example.com'];
         final result = emailListSchema.safeParse(validEmails);

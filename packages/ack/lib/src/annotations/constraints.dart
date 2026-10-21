@@ -7,10 +7,12 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ```dart
 /// @Schemable()
-/// final class const User({
+/// final class User({
 ///   @Validate.email() required final String email,
 ///   @Validate.minLength(2) required final String name,
-/// });
+/// }) with _$UserAck {
+///   static final schema = _userSchema;
+/// }
 /// ```
 @Target({TargetKind.field, TargetKind.parameter})
 final class Validate {

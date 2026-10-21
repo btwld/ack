@@ -13,9 +13,6 @@ void main() {
     expect(AccountSchema.toJsonSchema()['type'], 'object');
     expect(AccountSchema.toSchemaModel(), isNotNull);
     expect(AccountSchema.wireSchema, isNotNull);
-    expect(Account.schema, same(AccountSchema.schema));
-    expect(Account.parse({'display_name': 'Ada'}), account);
-    expect(Account.safeParse({'display_name': 'A'}).isFail, isTrue);
   });
 
   test('explicit descriptions and tags become schema descriptions', () {
@@ -37,7 +34,7 @@ void main() {
   });
 
   test('class-first sealed models dispatch through a discriminator', () {
-    final pet = Pet.fromJson({'type': 'cat', 'id': 'c1', 'lives': 9});
+    final pet = PetSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9});
 
     expect(pet, isA<Cat>());
     expect(pet.toJson(), {'type': 'cat', 'id': 'c1', 'lives': 9});

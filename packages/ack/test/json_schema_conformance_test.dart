@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -362,8 +361,9 @@ void main() {
     });
 
     test('list-with-description', () {
-      final ackSchema = Ack.list(Ack.string())
-          .describe('A list of string values');
+      final ackSchema = Ack.list(
+        Ack.string(),
+      ).describe('A list of string values');
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('list-with-description');
       expect(ackOutput, equals(zodReference));
@@ -531,8 +531,10 @@ void main() {
     });
 
     test('anyof-with-description', () {
-      final ackSchema = Ack.anyOf([Ack.string(), Ack.boolean()])
-          .describe('Either a string or boolean value');
+      final ackSchema = Ack.anyOf([
+        Ack.string(),
+        Ack.boolean(),
+      ]).describe('Either a string or boolean value');
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('anyof-with-description');
       expect(ackOutput, equals(zodReference));
@@ -675,16 +677,18 @@ void main() {
     });
 
     test('enum-with-default', () {
-      final ackSchema = Ack.enumValues(UserRole.values)
-          .withDefault(UserRole.user);
+      final ackSchema = Ack.enumValues(
+        UserRole.values,
+      ).withDefault(UserRole.user);
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('enum-with-default');
       expect(ackOutput, equals(zodReference));
     });
 
     test('enum-with-description', () {
-      final ackSchema = Ack.enumValues(Status.values)
-          .describe('Status of the entity');
+      final ackSchema = Ack.enumValues(
+        Status.values,
+      ).describe('Status of the entity');
       final ackOutput = ackSchema.toJsonSchema();
       final zodReference = loadReferenceFixture('enum-with-description');
       expect(ackOutput, equals(zodReference));
@@ -805,11 +809,11 @@ Map<String, Object?> _canonicalAnySchema(Map<String, Object?> schema) {
       'object',
       'array',
     ])
-      {'type': type, 'description': ?description},
+      {'type': type, if (description != null) 'description': description},
   ];
 
   return {
-    'description': ?description,
+    if (description != null) 'description': description,
     if (schema.containsKey('default')) 'default': schema['default'],
     'anyOf': nullable
         ? [

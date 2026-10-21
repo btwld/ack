@@ -115,8 +115,8 @@ final class Cat extends Pet {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Cat &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.lives, other.lives));
+          runtimeType == other.runtimeType &&
+          deepEquals(lives, other.lives));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(lives)]);
@@ -201,8 +201,8 @@ final class Dog extends Pet {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Dog &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.breed, other.breed));
+          runtimeType == other.runtimeType &&
+          deepEquals(breed, other.breed));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(breed)]);

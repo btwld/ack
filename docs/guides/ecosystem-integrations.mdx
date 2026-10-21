@@ -20,7 +20,7 @@ import 'package:ack/ack.dart';
 part 'weather_models.g.dart';
 
 @Schemable(description: 'Parameters for querying current weather.')
-final class WeatherQuery {
+final class WeatherQuery with _$WeatherQueryAck {
   const WeatherQuery({required this.city, this.units = 'celsius'});
 
   /// @description City and country, e.g. "Tokyo, JP".
@@ -29,15 +29,19 @@ final class WeatherQuery {
 
   final String units;
 
+  static final schema = _weatherQuerySchema;
+  static final fromJson = WeatherQuerySchema.fromJson;
 }
 
 @Schemable(description: 'Current weather report.')
-final class WeatherReport {
+final class WeatherReport with _$WeatherReportAck {
   const WeatherReport({required this.city, required this.temperatureC});
 
   final String city;
   final double temperatureC;
 
+  static final schema = _weatherReportSchema;
+  static final fromJson = WeatherReportSchema.fromJson;
 }
 ```
 

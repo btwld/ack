@@ -63,10 +63,9 @@ Future<ProcessResult> _verify(List<String> args) => Process.run(
 );
 
 /// Reads the version that the core package currently declares.
-String _declaredAckVersion() =>
-    File('packages/ack/pubspec.yaml')
-        .readAsLinesSync()
-        .firstWhere((line) => line.startsWith('version:'))
-        .split(':')
-        .last
-        .trim();
+String _declaredAckVersion() => File('packages/ack/pubspec.yaml')
+    .readAsLinesSync()
+    .firstWhere((line) => line.startsWith('version:'))
+    .split(':')
+    .last
+    .trim();

@@ -47,7 +47,7 @@ targets:
           #   "https://example.test/common.json": "lib/common.json"
 ```
 
-Run `dart run build_runner build --enable-experiment=augmentations`. Import `contract.schema.dart` to use the
+Run `dart run build_runner build`. Import `contract.schema.dart` to use the
 generated models. A typed model also writes `contract.schema.g.dart` and offers
 typed fields and `copyWith`. A validated value model needs no parts:
 `User.parse(value)` returns a wrapper whose immutable `value` is the validated
@@ -90,34 +90,6 @@ differ for astral Unicode characters (code points in the importer versus UTF-16
 units in the fluent schema). Set `model_mode: validated` when these edge cases
 matter; typed output retains the original v1 contract for compatibility.
 
-## Dart 3.14 prerelease setup
-
-This Ack 2.0 development branch is pinned to **Flutter 3.50.0-0.1.pre**,
-which bundles **Dart 3.14.0-315.1.beta**. The stable 3.50.0 / 3.14.0 releases
-are not available yet. Use `sdk: '>=3.14.0-315.1.beta <4.0.0'` for this
-prerelease; the stable target is `sdk: '>=3.14.0 <4.0.0'` once released.
-Primary constructors are enabled by default. Augmentations remain experimental
-and must be enabled in consumer projects:
-
-```yaml title="analysis_options.yaml"
-analyzer:
-  enable-experiment:
-    - augmentations
-```
-
-```bash
-dart run build_runner build --enable-experiment=augmentations
-dart --enable-experiment=augmentations test
-# For a Dart application:
-dart --enable-experiment=augmentations run bin/main.dart
-# For a Flutter application:
-flutter run --enable-experiment=augmentations
-```
-
-`@Schemable()` classes use ordinary `part '<file>.g.dart';` directives.
-Generated `augment final class` / `augment sealed class` declarations add
-members to the source class; they do not change its primary constructor.
-
 ## Schema-first usage
 
 ```dart
@@ -132,7 +104,7 @@ final userSchema = Ack.object({
 });
 ```
 
-Run `dart run build_runner build --enable-experiment=augmentations`. A declaration ending in `Schema` loses that
+Run `dart run build_runner build`. A declaration ending in `Schema` loses that
 suffix, so `userSchema` generates `User`:
 
 ```dart
@@ -170,8 +142,8 @@ names must be unchanged UpperCamelCase identifiers.
 
 ## Class-first usage
 
-In a class-first library, keep the model in source (using a standard or Dart 3.14
-primary constructor). Augmentations add the generated API directly:
+In a class-first library, keep the model in source (using a standard or Dart 3.12+
+primary constructor) and apply the generated mixin:
 
 ```dart
 import 'package:ack/ack.dart';
@@ -179,9 +151,15 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable()
-final class const Account({
-  @Validate.minLength(2) required final String name,
-});
+final class Account with _$AccountAck {
+  const Account({required this.name});
+
+  @Validate.minLength(2)
+  final String name;
+
+  static final schema = _accountSchema;
+  static final fromJson = AccountSchema.fromJson;
+}
 ```
 
 After generation, `Account.schema`, the public `AccountSchema` facade, and model
@@ -213,8 +191,8 @@ or `Command.schema<void>()`. A `schema<A>()` that declares one positional
 `AckSchema<Object, A>` parameter per type parameter `A` receives each type
 argument's inferred schema, as in `Box.schema<Row>(RowSchema.schema)`. An enum
 with a static `schema` or a `@Schemable(schemas: [...])` entry resolves to it
-instead of `Ack.enumValues`. Annotated classes expose their generated codec
-automatically as `Account.schema`.
+instead of `Ack.enumValues`. A class may also expose its own generated codec
+with `static final schema = _accountSchema;` (or `AccountSchema.schema`).
 
 Use `@Schemable(description: ...)` for class descriptions and a single-line
 `@description` tag in a `///` or `/** */` doc comment on a class, field, or
@@ -325,16 +303,14 @@ means a JSON-safe value, not an arbitrary Dart instance:
 For a hand-written `Account`, class-first generation exposes an
 `AccountSchema` facade backed by a private `_accountSchema` codec. The facade
 provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
-typed `schema`, and raw `wireSchema`. Class augmentations supply a `fromJson`
-factory, static `parse` / `safeParse` / `schema`, `toJson`, `safeToJson`, typed
-`copyWith`, and deep collection-aware equality. No generated mixin is needed. Remove handwritten static forwarders before
-generation. Ack owns the
-generated names; colliding members and import prefixes receive actionable
-diagnostics. Generic annotated classes and generic union branches are unsupported.
-External domain types may still provide their own static schema.
-
-Imported nested models compose as `prefix.Address.schema`; `show`/`hide`
-combinators and barrel exports only need to expose `Address`. Explicit facade
-references also require `AddressSchema` to be visible. For schema-first types,
-expose the annotated schema and its generated model. Visibility may be split
-across multiple imports that use the same prefix.
+typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
+`_$AccountAck` mixin, which supplies `toJson`, `safeToJson`, a typed `copyWith`,
+and deep collection-aware equality. Add `static final schema = _accountSchema;`
+and `static final fromJson = AccountSchema.fromJson;` when the class should
+expose the schema and one-argument JSON constructor directly. Imported nested
+models compose as `prefix.AddressSchema.schema` (or `prefix.Address.schema` when
+`Address.schema` is declared and `AddressSchema` is hidden by a combinator).
+Across all imports and barrel exports, `show`/`hide` combinators must expose the
+authored declaration and either `Address.schema` or its generated companion
+(`AddressSchema` for class-first, or `Address` for schema-first). Visibility may
+be split across multiple imports that use the same prefix.

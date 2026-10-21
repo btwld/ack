@@ -174,12 +174,14 @@ void main() {
 
     test('transformation example adds derived age field', () {
       final personSchema =
-          Ack.object({'name': Ack.string(), 'birthYear': Ack.integer()})
-              .transform((data) {
-                final birthYear = data['birthYear'] as int;
-                final age = DateTime.now().year - birthYear;
-                return {...data, 'age': age};
-              });
+          Ack.object({
+            'name': Ack.string(),
+            'birthYear': Ack.integer(),
+          }).transform((data) {
+            final birthYear = data['birthYear'] as int;
+            final age = DateTime.now().year - birthYear;
+            return {...data, 'age': age};
+          });
 
       final result = personSchema.safeParse({
         'name': 'Taylor',

@@ -5,10 +5,13 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
-  final groups = jsonDecode(
-    File('test/fixtures/json_schema_import/draft2020-12.json')
-        .readAsStringSync(),
-  ) as List;
+  final groups =
+      jsonDecode(
+            File(
+              'test/fixtures/json_schema_import/draft2020-12.json',
+            ).readAsStringSync(),
+          )
+          as List;
 
   group('official draft 2020-12 supported subset', () {
     for (final group in groups.cast<Map<String, Object?>>()) {

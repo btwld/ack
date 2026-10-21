@@ -322,7 +322,7 @@ validation namespace.
 After adding a `part '<file>.g.dart';` directive, run:
 
 ```bash
-dart run build_runner build --enable-experiment=augmentations
+dart run build_runner build
 ```
 
 ### `@Schemable()` on a top-level schema
@@ -383,16 +383,16 @@ constructors remain responsible for defensively copying direct inputs.
 **Target**: Public, constructable classes
 
 **Generates**: A public `<ClassName>Schema` facade backed by a private raw
-`wireSchema` and typed codec (`_<className>Schema`), plus a class augmentation
-for a `fromJson` factory, static `parse`, `safeParse`, `schema`, `toJson`, `safeToJson`, `copyWith`, and deep collection-aware `==` /
+`wireSchema` and typed codec (`_<className>Schema`), plus the `_$ClassAck` mixin
+for `toJson`, `safeToJson`, `copyWith`, and deep collection-aware `==` /
 `hashCode` / `toString`
 
-Ack infers schema fields from constructor-backed fields (including Dart 3.14
+Ack infers schema fields from constructor-backed fields (including Dart 3.12+
 primary constructors). Required parameters, nullable types, optional parameters,
 `JsonMaybe<T>`, and constructor defaults determine field presence. Use
 `caseStyle` for model-wide JSON naming and `@AckKey(...)` on the field
-or primary constructor parameter for a wire-name override. No mixins or static
-forwarders are needed. In `copyWith`,
+or primary constructor parameter for a wire-name override. Instantiable models
+and implicit union branches must apply the generated mixin. In `copyWith`,
 omission keeps the current value and explicit `null` clears a nullable field.
 `copyWith` returns a typed interface, so a wrongly typed argument is a
 compile-time error.
@@ -428,10 +428,16 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class const Account({
-  @Validate.minLength(2) required final String displayName,
-  final String role = 'member',
-});
+final class Account with _$AccountAck {
+  const Account({required this.displayName, this.role = 'member'});
+
+  @Validate.minLength(2)
+  final String displayName;
+  final String role;
+
+  static final schema = _accountSchema;
+  static final fromJson = AccountSchema.fromJson;
+}
 
 final account = Account.schema.parse({'display_name': 'Ada'})!;
 print(account.toJson());
@@ -440,21 +446,20 @@ print(Account.schema.toJsonSchema());
 
 The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`, `fromJson`,
 `encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`. The backing
-`_accountSchema` is library-private (`Account.schema` exposes it automatically)
-and no public lower-camel alias is
+`_accountSchema` is library-private (`static final schema = _accountSchema;`
+attaches it directly to `Account.schema`) and no public lower-camel alias is
 generated. Set `schemaName: 'WireAccountSchema'` to choose the exact facade
 class name.
 
-Nested class-first fields compose through generated `Address.schema`. Imports
-and barrels may expose just `Address`. Explicit `AddressSchema.schema`
-references also require the facade to be visible. A schema-first `@Schemable()`
-declaration may compose either API, and class-first models can use schema-first
-generated model types on a clean build. Ack owns generated member names;
-remove handwritten forwarders and rename colliding members or import prefixes.
+Nested class-first fields compose through `AddressSchema.schema` (or
+`Address.schema` when declared on `Address`). Imports with combinators can
+expose just `show Address` when `Address.schema` is declared, or
+`show Address, AddressSchema` otherwise. A schema-first `@Schemable()`
+declaration may also compose the facade explicitly, and class-first models can
+use schema-first generated model types on a clean build.
 
 A class-first `@Schemable()` cannot share a class with `@JsonSerializable()`,
-and `name` is rejected on a class. Generic annotated classes and generic union
-branches are unsupported. Class-first value roots, automatic recursive
+and `name` is rejected on a class. Class-first value roots, automatic recursive
 graphs, and undiscriminated `anyOf` shapes
 are unsupported; use a schema-first `@Schemable()` schema and named `Ack.lazy` for those
 cases. See

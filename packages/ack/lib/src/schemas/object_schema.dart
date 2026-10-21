@@ -77,8 +77,9 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
                 onFail: errors.add,
               );
         } else if (!schema.isOptional) {
-          final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-              .validate(mapValue);
+          final ce = ObjectRequiredPropertiesConstraint(
+            missingPropertyKey: key,
+          ).validate(mapValue);
           if (ce != null) {
             errors.add(
               SchemaConstraintsError(
@@ -197,8 +198,9 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
             ),
           );
         } else {
-          final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
-              .validate(mapValue);
+          final ce = ObjectRequiredPropertiesConstraint(
+            missingPropertyKey: key,
+          ).validate(mapValue);
           if (ce != null) {
             errors.add(
               SchemaConstraintsError(constraints: [ce], context: propertyCtx),

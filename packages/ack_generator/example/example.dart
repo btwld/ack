@@ -10,7 +10,7 @@
 // Then run:
 //
 // ```bash
-// dart run build_runner build --enable-experiment=augmentations
+// dart run build_runner build --delete-conflicting-outputs
 // ```
 //
 // Add `ack` to `dependencies`, and `ack_generator` plus `build_runner` to
@@ -36,8 +36,8 @@ final settingsSchema = Ack.object({
 });
 
 /// Class-first. `@Schemable()` runs the other direction: it derives a validated
-/// schema from this hand-written class. The generated part augments `Product`
-/// with parsing, JSON, and equality members.
+/// schema from this hand-written class, which applies the generated
+/// `_$ProductAck` mixin once the parts are in place.
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Product {
   const Product({required this.displayName, required this.priceCents});

@@ -129,11 +129,13 @@ void main() {
     test('invalid discriminator fails before branch transform runs', () {
       var transformCalled = false;
       final catSchema =
-          Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()})
-              .transform<Animal>((map) {
-                transformCalled = true;
-                return Cat(map['name'] as String);
-              });
+          Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+          }).transform<Animal>((map) {
+            transformCalled = true;
+            return Cat(map['name'] as String);
+          });
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -149,11 +151,13 @@ void main() {
     test('invalid branch payload fails before transform output', () {
       var transformCalled = false;
       final catSchema =
-          Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()})
-              .transform<Animal>((map) {
-                transformCalled = true;
-                return Cat(map['name'] as String);
-              });
+          Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+          }).transform<Animal>((map) {
+            transformCalled = true;
+            return Cat(map['name'] as String);
+          });
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',
@@ -169,10 +173,12 @@ void main() {
 
     test('branch transform exceptions wrapped as SchemaTransformError', () {
       final catSchema =
-          Ack.object({'type': Ack.literal('cat'), 'name': Ack.string()})
-              .transform<Animal>((map) {
-                throw FormatException('bad data');
-              });
+          Ack.object({
+            'type': Ack.literal('cat'),
+            'name': Ack.string(),
+          }).transform<Animal>((map) {
+            throw FormatException('bad data');
+          });
 
       final schema = Ack.discriminated<Animal>(
         discriminatorKey: 'type',

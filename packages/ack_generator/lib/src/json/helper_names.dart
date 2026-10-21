@@ -1,3 +1,6 @@
+/// Generated mixin that exposes class-first JSON and value members.
+String ackClassMixinName(String className) => '_\$${className}Ack';
+
 /// Public static facade generated for a class-first schema.
 String ackClassSchemaFacadeName(String className, {String? override}) =>
     override ?? '${className}Schema';
@@ -41,25 +44,3 @@ String ackCopyWithInterfaceName(String className) => '\$${className}CopyWith';
 /// Private implementation behind a generated model's `copyWith` getter.
 String ackCopyWithImplementationName(String className) =>
     '_\$${className}CopyWith';
-
-/// Private facade alias used from a model's scope without member shadowing.
-String ackClassSchemaAliasName(String className) => '_\$${className}SchemaApi';
-
-/// Library-scoped value operations, outside user model member scope.
-String ackClassEqualsName(String className) => '_\$${className}Equals';
-String ackClassHashName(String className) => '_\$${className}HashCode';
-
-/// Types used inside augmentations are private aliases so user fields cannot
-/// shadow core type names or the Ack import prefix.
-const ackClassScopeTypeNames = {
-  '_AckObject',
-  '_AckDynamic',
-  '_AckString',
-  '_AckMap',
-  '_AckBool',
-  '_AckInt',
-  '_AckSchema',
-  '_AckSchemaResult',
-};
-String ackClassCopyWithAliasName(String className) =>
-    '_\$${className}CopyWithApi';

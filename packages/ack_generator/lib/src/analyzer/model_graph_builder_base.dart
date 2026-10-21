@@ -218,10 +218,6 @@ abstract base class ModelGraphBuilderBase {
         : null;
   }
 
-  /// Class-first models own their `.schema` member, including before parts exist.
-  bool isClassFirstModel(ClassElement element) =>
-      classFirstFacadeName(element) != null;
-
   /// The boundary and runtime type arguments of [type] as an
   /// `AckSchema<Boundary, Runtime>`.
   ({DartType boundary, DartType runtime})? ackSchemaTypeArguments(
@@ -556,7 +552,7 @@ abstract base class ModelGraphBuilderBase {
     }
   }
 
-  /// Resolves a `<prefix.>?<ModelOrFacadeName>.schema` reference to the underlying
+  /// Resolves a `<prefix.>?<FacadeName>.schema` reference to the underlying
   /// class-first `@Schemable` model class, if any.
   AckExternalTypeRef? resolveClassFirstModelReference(
     Expression expression,
@@ -576,18 +572,13 @@ abstract base class ModelGraphBuilderBase {
 
     void consider(ClassElement element) {
       final generatedFacade = classFirstFacadeName(element);
-      if (generatedFacade == null ||
-          (generatedFacade != facadeName && element.name != facadeName)) {
-        return;
-      }
+      if (generatedFacade != facadeName) return;
       candidates.add(element);
     }
 
     if (prefix == null) {
       for (final element in library.element.classes) {
-        if (isClassFirstModel(element) &&
-            (element.name == facadeName ||
-                classFirstFacadeName(element) == facadeName)) {
+        if (classFirstFacadeName(element) == facadeName) {
           matches.add(element);
         }
       }
@@ -613,15 +604,13 @@ abstract base class ModelGraphBuilderBase {
       }
     }
     for (final target in candidates) {
-      final facadeVisible =
-          target.name == facadeName ||
-          imports.any(
-            (import) => importExposesGeneratedCompanion(
-              import,
-              definingLibrary: target.library,
-              generatedName: facadeName,
-            ),
-          );
+      final facadeVisible = imports.any(
+        (import) => importExposesGeneratedCompanion(
+          import,
+          definingLibrary: target.library,
+          generatedName: facadeName,
+        ),
+      );
       if (visibleModels.contains(target) && facadeVisible) {
         matches.add(target);
       } else {
@@ -651,7 +640,8 @@ abstract base class ModelGraphBuilderBase {
 
   /// Names of all top-level declarations in the current [library].
   Set<String> localDeclarationNames() => {
-    for (final element in library.allElements) ?element.name,
+    for (final element in library.allElements)
+      if (element.name case final name?) name,
   };
 
   /// Validates that generated `copyWith` helper types for [className] do not

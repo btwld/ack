@@ -100,10 +100,8 @@ Matcher containsCode(String code) => predicate<String>(
   'contains code `$code`',
 );
 
-String _compact(String code) => code
-    .replaceAll(RegExp(r'\s+'), '')
-    .replaceAllMapped(RegExp(r',([)}])'), (match) => match[1]!)
-    .replaceAll(RegExp(r',$'), '');
+String _compact(String code) =>
+    code.replaceAll(RegExp(r'\s+'), '').replaceAll(',)', ')');
 
 Future<void> expectOutput(
   String body,

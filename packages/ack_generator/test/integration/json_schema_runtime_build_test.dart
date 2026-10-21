@@ -7,10 +7,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import '../test_utils/run_dart.dart';
-
 Future<ProcessResult> _run(Directory project, List<String> args) =>
-    runDart(project, args);
+    Process.run('dart', args, workingDirectory: project.path);
 
 void _succeeds(ProcessResult result, String command) {
   expect(
@@ -25,8 +23,9 @@ void main() {
     'JSON Schema builds into usable models in one deterministic build',
     () async {
       var repository = Directory.current;
-      while (!Directory(p.join(repository.path, 'packages', 'ack_generator'))
-          .existsSync()) {
+      while (!Directory(
+        p.join(repository.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
         repository = repository.parent;
       }
       final project = await Directory.systemTemp.createTemp('ack_json_schema_');
@@ -37,7 +36,7 @@ void main() {
 name: ack_json_schema_runtime
 publish_to: none
 environment:
-  sdk: '>=3.14.0-315.1.beta <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 dependencies:
   ack:
     path: ${p.join(repository.path, 'packages', 'ack')}
@@ -91,8 +90,9 @@ targets:
   }
 }
 ''');
-        File(p.join(project.path, 'test', 'models_test.dart'))
-            .writeAsStringSync(r'''
+        File(
+          p.join(project.path, 'test', 'models_test.dart'),
+        ).writeAsStringSync(r'''
 import 'package:ack_json_schema_runtime/contract.schema.dart';
 import 'package:test/test.dart';
 
@@ -118,8 +118,9 @@ void main() {
 }
 ''');
 
-        File(p.join(project.path, 'lib', 'advanced.schema.json'))
-            .writeAsStringSync(r'''
+        File(
+          p.join(project.path, 'lib', 'advanced.schema.json'),
+        ).writeAsStringSync(r'''
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
@@ -150,8 +151,9 @@ void main() {
   ]
 }
 ''');
-        File(p.join(project.path, 'test', 'advanced_test.dart'))
-            .writeAsStringSync(r'''
+        File(
+          p.join(project.path, 'test', 'advanced_test.dart'),
+        ).writeAsStringSync(r'''
 import 'package:ack_json_schema_runtime/advanced.schema.dart';
 import 'package:test/test.dart';
 
@@ -212,11 +214,13 @@ void main() {
           },
         };
         for (final entry in regressions.entries) {
-          File(p.join(project.path, 'lib', '${entry.key}.schema.json'))
-              .writeAsStringSync(jsonEncode({r'$defs': entry.value}));
+          File(
+            p.join(project.path, 'lib', '${entry.key}.schema.json'),
+          ).writeAsStringSync(jsonEncode({r'$defs': entry.value}));
         }
-        File(p.join(project.path, 'test', 'regressions_test.dart'))
-            .writeAsStringSync(r'''
+        File(
+          p.join(project.path, 'test', 'regressions_test.dart'),
+        ).writeAsStringSync(r'''
 import 'package:ack_json_schema_runtime/bounds.schema.dart';
 import 'package:ack_json_schema_runtime/patterns.schema.dart';
 import 'package:ack_json_schema_runtime/types.schema.dart' as types;
@@ -262,8 +266,9 @@ void main() {
         );
         final outputs = {
           for (final suffix in ['.dart', '.g.dart'])
-            suffix: File(p.join(project.path, 'lib', 'contract.schema$suffix'))
-                .readAsStringSync(),
+            suffix: File(
+              p.join(project.path, 'lib', 'contract.schema$suffix'),
+            ).readAsStringSync(),
         };
         expect(outputs['.dart'], contains('unknown_properties: preserve'));
         expect(outputs['.g.dart'], contains('class Listing'));
@@ -284,12 +289,14 @@ void main() {
         );
         expect({
           for (final suffix in outputs.keys)
-            suffix: File(p.join(project.path, 'lib', 'contract.schema$suffix'))
-                .readAsStringSync(),
+            suffix: File(
+              p.join(project.path, 'lib', 'contract.schema$suffix'),
+            ).readAsStringSync(),
         }, outputs);
         expect(
-          File(p.join(project.path, 'lib', 'advanced.schema.dart'))
-              .readAsStringSync(),
+          File(
+            p.join(project.path, 'lib', 'advanced.schema.dart'),
+          ).readAsStringSync(),
           advancedOutput,
         );
 

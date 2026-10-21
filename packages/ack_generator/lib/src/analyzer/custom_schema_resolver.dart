@@ -267,12 +267,12 @@ final class CustomSchemaResolver {
     final fieldOwner = field.enclosingElement;
     for (final scope in [
       if (activeClass != null) ...[
-        ?_classSchemas[activeClass],
+        if (_classSchemas[activeClass] case final classList?) classList,
         if (unionBaseByBranch[activeClass] case final base?)
-          ?_classSchemas[base],
+          if (_classSchemas[base] case final baseList?) baseList,
       ],
       if (fieldOwner is ClassElement && fieldOwner != activeClass)
-        ?_classSchemas[fieldOwner],
+        if (_classSchemas[fieldOwner] case final ownerList?) ownerList,
       _librarySchemas,
     ]) {
       for (final entry in scope) {
@@ -515,8 +515,33 @@ final class CustomSchemaResolver {
     }
     final target = interfaceType.element;
     final path = _fieldPath(field);
-    if (target is ClassElement && _base.isClassFirstModel(target)) {
-      return '${_base.visibleTypeNameFor(interfaceType, path: path, context: field)}.schema';
+    if (target is ClassElement) {
+      final facadeName = _base.classFirstFacadeName(target);
+      if (facadeName != null) {
+        final prefix = _base.visiblePrefixFor(
+          target,
+          path: path,
+          context: field,
+        );
+        if (target.library != _library.element &&
+            !_isClassFirstFacadeVisible(target, facadeName, prefix: prefix)) {
+          final typeOwned = await typeOwnedSchema(
+            interfaceType,
+            field,
+            activeClass: activeClass,
+            schemaForType: schemaForType,
+            typeArgumentRef: typeArgumentRef,
+          );
+          if (typeOwned != null) return typeOwned;
+        }
+        _validateClassFirstFacadeImport(
+          target,
+          facadeName,
+          prefix: prefix,
+          field: field,
+        );
+        return '${prefix == null ? '' : '$prefix.'}$facadeName.schema';
+      }
     }
     if (schemaFirstRuntimeRef(target, field, typeRef: typeRef) != null) {
       final visibleName = _base.visibleTypeNameFor(
@@ -654,6 +679,10 @@ final class CustomSchemaResolver {
       return null;
     }
     if (_base.containsInvalidType(returnType)) {
+      if (target is ClassElement &&
+          _base.classFirstFacadeName(target) != null) {
+        return expression;
+      }
       throw InvalidGenerationSource(
         '$path resolves to ${target.name}.schema, whose type does not resolve '
         'yet. Declare the type of ${target.name}.schema explicitly.',
@@ -898,6 +927,43 @@ final class CustomSchemaResolver {
       );
     }
     return matches.single;
+  }
+
+  bool _isClassFirstFacadeVisible(
+    ClassElement target,
+    String facadeName, {
+    required String? prefix,
+  }) {
+    final visibility = _base.checkCompanionVisibility(
+      target,
+      facadeName,
+      prefix: prefix,
+    );
+    return visibility.declarationVisible && visibility.companionVisible;
+  }
+
+  void _validateClassFirstFacadeImport(
+    ClassElement target,
+    String facadeName, {
+    required String? prefix,
+    required FieldElement field,
+  }) {
+    final visibility = _base.checkCompanionVisibility(
+      target,
+      facadeName,
+      prefix: prefix,
+    );
+    if (visibility.declarationVisible && visibility.companionVisible) return;
+    if (visibility.declarationVisible) {
+      final modelName = target.name!;
+      throw InvalidGenerationSource(
+        'Generated class-first facade "$facadeName" is hidden by an import '
+        'combinator or an upstream export combinator for $modelName. Expose '
+        'both through the full import route (for example, show $modelName, '
+        '$facadeName).',
+        element: field,
+      );
+    }
   }
 
   String _fieldPath(FieldElement field) =>

@@ -66,8 +66,8 @@ final class ColorModel {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ColorModel &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.value, other.value));
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -190,18 +190,18 @@ final class Profile {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Profile &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.homepage, other.homepage) &&
-          deepEquals(this.birthday, other.birthday) &&
-          deepEquals(this.lastLogin, other.lastLogin) &&
-          deepEquals(this.timeout, other.timeout) &&
-          deepEquals(this.links, other.links) &&
-          deepEquals(this.favoriteColor, other.favoriteColor) &&
-          deepEquals(this.slug, other.slug) &&
-          deepEquals(this.accent, other.accent) &&
-          deepEquals(this.colors, other.colors) &&
-          deepEquals(this.customColors, other.customColors) &&
-          deepEquals(this.tagList, other.tagList));
+          runtimeType == other.runtimeType &&
+          deepEquals(homepage, other.homepage) &&
+          deepEquals(birthday, other.birthday) &&
+          deepEquals(lastLogin, other.lastLogin) &&
+          deepEquals(timeout, other.timeout) &&
+          deepEquals(links, other.links) &&
+          deepEquals(favoriteColor, other.favoriteColor) &&
+          deepEquals(slug, other.slug) &&
+          deepEquals(accent, other.accent) &&
+          deepEquals(colors, other.colors) &&
+          deepEquals(customColors, other.customColors) &&
+          deepEquals(tagList, other.tagList));
 
   @override
   int get hashCode => Object.hashAll([

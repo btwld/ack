@@ -23,8 +23,8 @@ codec schemas. Annotated examples declare a single `.g.dart` part.
   [`lib/codecs_example.dart`](lib/codecs_example.dart)
 - Hand-written class-first models and sealed unions in
   [`lib/class_first_models.dart`](lib/class_first_models.dart), including the
-  primary constructors, generated class augmentations, `Account.schema`, and
-  schema facades with `wireSchema` for JSON Schema export
+  required `_$ClassAck` mixin, `AccountSchema.schema` / `wireSchema`, and union
+  facades backed by private codecs
 
 ## Try both generation directions
 
@@ -45,12 +45,9 @@ void main() {
 
 ## Running the examples
 
-Complete the repository's [development setup](../CONTRIBUTING.md#development-setup)
-first, including the pinned SDK and global Melos CLI. From the repository root:
-
 ```bash
-dart pub global run melos bootstrap
+dart run melos bootstrap
 cd example
-dart run build_runner build --enable-experiment=augmentations
-dart --enable-experiment=augmentations test
+dart run build_runner build
+dart test
 ```

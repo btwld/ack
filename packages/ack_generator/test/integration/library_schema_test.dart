@@ -3,9 +3,11 @@ import 'package:test/test.dart';
 import 'schema_resolution_support.dart';
 
 void main() {
-  test('automatically detects a unique top-level schema variable, getter, or function in the library', () async {
-    await expectOutput(
-      r'''
+  test(
+    'automatically detects a unique top-level schema variable, getter, or function in the library',
+    () async {
+      await expectOutput(
+        r'''
 final colorSchema = Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
@@ -22,7 +24,7 @@ AckSchema<String, Slug> slugSchema() => Ack.string().codec<Slug>(
 );
 
 @Schemable()
-final class Theme {
+final class Theme with _$ThemeAck {
   const Theme({
     required this.primary,
     this.secondary,
@@ -46,18 +48,18 @@ final class Theme {
   final Slug slug;
 }
 ''',
-      allOf([
-        containsCode("'primary': colorSchema,"),
-        containsCode("'secondary': colorSchema.optional().nullable(),"),
-        containsCode("'palette': Ack.list(colorSchema),"),
-        containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
-        containsCode("'namedColors': Ack.map(colorSchema),"),
-        containsCode("'maybeColor': colorSchema.optional().nullable(),"),
-        containsCode("'boxedColor': Box.schema<Color>(colorSchema),"),
-        containsCode("'price': centsSchema,"),
-        containsCode("'slug': slugSchema()"),
-      ]),
-      types: '''
+        allOf([
+          containsCode("'primary': colorSchema,"),
+          containsCode("'secondary': colorSchema.optional().nullable(),"),
+          containsCode("'palette': Ack.list(colorSchema),"),
+          containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
+          containsCode("'namedColors': Ack.map(colorSchema),"),
+          containsCode("'maybeColor': colorSchema.optional().nullable(),"),
+          containsCode("'boxedColor': Box.schema<Color>(colorSchema),"),
+          containsCode("'price': centsSchema,"),
+          containsCode("'slug': slugSchema()"),
+        ]),
+        types: '''
 import 'package:ack/ack.dart';
 
 final class Color {
@@ -84,8 +86,9 @@ final class Box<A extends Object> {
   ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
 }
 ''',
-    );
-  });
+      );
+    },
+  );
 
   test(
     'rejects ambiguous auto-detected top-level schemas for the same type',
@@ -103,7 +106,7 @@ final namedColorSchema = Ack.string().codec<Color>(
 );
 
 @Schemable()
-final class Theme {
+final class Theme with _$ThemeAck {
   const Theme({required this.primary});
 
   final Color primary;
@@ -138,7 +141,7 @@ final class Color {
 final colorSchema = Ack.string().transform<Color>(Color.new);
 
 @Schemable()
-final class Theme {
+final class Theme with _$ThemeAck {
   const Theme({required this.primary});
 
   final Color primary;

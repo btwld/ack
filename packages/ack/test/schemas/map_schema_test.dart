@@ -133,8 +133,9 @@ void main() {
     });
 
     test('applies refinements to the whole map', () {
-      final schema = Ack.map(Ack.string())
-          .refine((map) => map.length <= 1, message: 'At most one entry.');
+      final schema = Ack.map(
+        Ack.string(),
+      ).refine((map) => map.length <= 1, message: 'At most one entry.');
 
       expect(schema.safeParse({'a': 'x'}).isOk, isTrue);
       expect(schema.safeParse({'a': 'x', 'b': 'y'}).isFail, isTrue);
@@ -146,9 +147,9 @@ void main() {
       expect(Ack.map(Ack.string()), isNot(Ack.map(Ack.string().nullable())));
       expect(Ack.map(Ack.string()), isNot(Ack.map(Ack.string()).nullable()));
 
-      final copied = Ack.map(Ack.string())
-          .describe('Labels')
-          .copyWith(description: 'Tags');
+      final copied = Ack.map(
+        Ack.string(),
+      ).describe('Labels').copyWith(description: 'Tags');
 
       expect(copied.description, 'Tags');
       expect(copied.valueSchema, Ack.string());

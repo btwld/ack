@@ -9,19 +9,6 @@ part of 'class_first_models.dart';
 // ignore_for_file: type=lint
 // coverage:ignore-file
 
-// Private aliases preserve public underlying types while avoiding model member
-// shadowing. Their visibility is intentional; no private runtime type escapes.
-// ignore_for_file: library_private_types_in_public_api
-
-typedef _AckObject = Object;
-typedef _AckDynamic = dynamic;
-typedef _AckString = String;
-typedef _AckMap<K, V> = Map<K, V>;
-typedef _AckBool = bool;
-typedef _AckInt = int;
-typedef _AckSchema<B extends Object, R extends Object> = AckSchema<B, R>;
-typedef _AckSchemaResult<T extends Object> = SchemaResult<T>;
-
 final _catObject = Ack.object({
   'type': Ack.literal('cat').optional(),
   'id': Ack.string(),
@@ -88,22 +75,6 @@ Map<String, Object?> _$CatToRuntime(Cat model) => <String, Object?>{
   'type': 'cat',
 };
 
-typedef _$CatSchemaApi = CatSchema;
-typedef _$CatCopyWithApi<$Result> = $CatCopyWith<$Result>;
-
-bool _$CatEquals(Cat self, Object other) =>
-    identical(self, other) ||
-    (other is Cat &&
-        self.runtimeType == other.runtimeType &&
-        deepEquals(self.id, other.id) &&
-        deepEquals(self.lives, other.lives));
-
-int _$CatHashCode(Cat self) => Object.hashAll([
-  self.runtimeType,
-  deepHashCode(self.id),
-  deepHashCode(self.lives),
-]);
-
 /// Creates copies of [Cat] with selected fields replaced.
 abstract interface class $CatCopyWith<$Result> {
   /// Returns a copy with the given fields replaced.
@@ -123,40 +94,46 @@ final class _$CatCopyWith implements $CatCopyWith<Cat> {
       Cat(id: id ?? _source.id, lives: lives ?? _source.lives);
 }
 
-augment final class Cat {
-  /// Creates a copy with selected fields replaced.
-  _$CatCopyWithApi<Cat> get copyWith => _$CatCopyWith(this);
+mixin _$CatAck {
+  /// Creates a copy of this model with selected fields replaced.
+  $CatCopyWith<Cat> get copyWith => _$CatCopyWith(this as Cat);
 
-  _AckBool operator ==(_AckObject other) => _$CatEquals(this, other);
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Cat || runtimeType != other.runtimeType) {
+      return false;
+    }
+    final self = this as Cat;
+    return deepEquals(self.id, other.id) && deepEquals(self.lives, other.lives);
+  }
 
-  _AckInt get hashCode => _$CatHashCode(this);
+  @override
+  int get hashCode {
+    final self = this as Cat;
+    return Object.hashAll([
+      runtimeType,
+      deepHashCode(self.id),
+      deepHashCode(self.lives),
+    ]);
+  }
 
-  _AckString toString() => 'Cat(id: $id, lives: $lives)';
-
-  static _AckSchema<_AckMap<_AckString, _AckObject?>, Cat> get schema =>
-      _$CatSchemaApi.schema;
-
-  /// Validates decoded JSON and creates a model.
-  factory Cat.fromJson(_AckMap<_AckString, _AckDynamic> json) =>
-      _$CatSchemaApi.fromJson(json);
-
-  /// Validates an untrusted value and creates a model.
-  static Cat parse(_AckObject? value, {_AckString? debugName}) =>
-      _$CatSchemaApi.parse(value, debugName: debugName);
-
-  /// Validates an untrusted value without throwing on validation failure.
-  static _AckSchemaResult<Cat> safeParse(
-    _AckObject? value, {
-    _AckString? debugName,
-  }) => _$CatSchemaApi.safeParse(value, debugName: debugName);
+  @override
+  String toString() {
+    final self = this as Cat;
+    return 'Cat(id: ${self.id}, lives: ${self.lives})';
+  }
 
   /// Validates this model and encodes it for JSON.
-  _AckMap<_AckString, _AckDynamic> toJson() =>
-      _AckMap<_AckString, _AckDynamic>.from(_$CatSchemaApi.encode(this));
+  ///
+  /// Throws an `AckException` when validation fails.
+  Map<String, dynamic> toJson() =>
+      Map<String, dynamic>.from(CatSchema.encode(this as Cat));
 
-  /// Validates this model and encodes it without throwing on validation failure.
-  _AckSchemaResult<_AckMap<_AckString, _AckObject?>> safeToJson() =>
-      _$CatSchemaApi.safeEncode(this);
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
+  SchemaResult<Map<String, Object?>> safeToJson() =>
+      CatSchema.safeEncode(this as Cat);
 }
 
 final _dogObject = Ack.object({
@@ -226,22 +203,6 @@ Map<String, Object?> _$DogToRuntime(Dog model) => <String, Object?>{
   'type': 'Dog',
 };
 
-typedef _$DogSchemaApi = DogSchema;
-typedef _$DogCopyWithApi<$Result> = $DogCopyWith<$Result>;
-
-bool _$DogEquals(Dog self, Object other) =>
-    identical(self, other) ||
-    (other is Dog &&
-        self.runtimeType == other.runtimeType &&
-        deepEquals(self.id, other.id) &&
-        deepEquals(self.breed, other.breed));
-
-int _$DogHashCode(Dog self) => Object.hashAll([
-  self.runtimeType,
-  deepHashCode(self.id),
-  deepHashCode(self.breed),
-]);
-
 /// Creates copies of [Dog] with selected fields replaced.
 abstract interface class $DogCopyWith<$Result> {
   /// Returns a copy with the given fields replaced.
@@ -261,40 +222,46 @@ final class _$DogCopyWith implements $DogCopyWith<Dog> {
       Dog(id: id ?? _source.id, breed: breed ?? _source.breed);
 }
 
-augment final class Dog {
-  /// Creates a copy with selected fields replaced.
-  _$DogCopyWithApi<Dog> get copyWith => _$DogCopyWith(this);
+mixin _$DogAck {
+  /// Creates a copy of this model with selected fields replaced.
+  $DogCopyWith<Dog> get copyWith => _$DogCopyWith(this as Dog);
 
-  _AckBool operator ==(_AckObject other) => _$DogEquals(this, other);
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Dog || runtimeType != other.runtimeType) {
+      return false;
+    }
+    final self = this as Dog;
+    return deepEquals(self.id, other.id) && deepEquals(self.breed, other.breed);
+  }
 
-  _AckInt get hashCode => _$DogHashCode(this);
+  @override
+  int get hashCode {
+    final self = this as Dog;
+    return Object.hashAll([
+      runtimeType,
+      deepHashCode(self.id),
+      deepHashCode(self.breed),
+    ]);
+  }
 
-  _AckString toString() => 'Dog(id: $id, breed: $breed)';
-
-  static _AckSchema<_AckMap<_AckString, _AckObject?>, Dog> get schema =>
-      _$DogSchemaApi.schema;
-
-  /// Validates decoded JSON and creates a model.
-  factory Dog.fromJson(_AckMap<_AckString, _AckDynamic> json) =>
-      _$DogSchemaApi.fromJson(json);
-
-  /// Validates an untrusted value and creates a model.
-  static Dog parse(_AckObject? value, {_AckString? debugName}) =>
-      _$DogSchemaApi.parse(value, debugName: debugName);
-
-  /// Validates an untrusted value without throwing on validation failure.
-  static _AckSchemaResult<Dog> safeParse(
-    _AckObject? value, {
-    _AckString? debugName,
-  }) => _$DogSchemaApi.safeParse(value, debugName: debugName);
+  @override
+  String toString() {
+    final self = this as Dog;
+    return 'Dog(id: ${self.id}, breed: ${self.breed})';
+  }
 
   /// Validates this model and encodes it for JSON.
-  _AckMap<_AckString, _AckDynamic> toJson() =>
-      _AckMap<_AckString, _AckDynamic>.from(_$DogSchemaApi.encode(this));
+  ///
+  /// Throws an `AckException` when validation fails.
+  Map<String, dynamic> toJson() =>
+      Map<String, dynamic>.from(DogSchema.encode(this as Dog));
 
-  /// Validates this model and encodes it without throwing on validation failure.
-  _AckSchemaResult<_AckMap<_AckString, _AckObject?>> safeToJson() =>
-      _$DogSchemaApi.safeEncode(this);
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
+  SchemaResult<Map<String, Object?>> safeToJson() =>
+      DogSchema.safeEncode(this as Dog);
 }
 
 final _petObject = Ack.discriminated(
@@ -363,33 +330,17 @@ abstract final class PetSchema {
       AckSchemaModelExtension(_petSchema).toSchemaModel();
 }
 
-typedef _$PetSchemaApi = PetSchema;
-
-augment sealed class Pet {
-  static _AckSchema<_AckMap<_AckString, _AckObject?>, Pet> get schema =>
-      _$PetSchemaApi.schema;
-
-  /// Validates decoded JSON and creates a model.
-  factory Pet.fromJson(_AckMap<_AckString, _AckDynamic> json) =>
-      _$PetSchemaApi.fromJson(json);
-
-  /// Validates an untrusted value and creates a model.
-  static Pet parse(_AckObject? value, {_AckString? debugName}) =>
-      _$PetSchemaApi.parse(value, debugName: debugName);
-
-  /// Validates an untrusted value without throwing on validation failure.
-  static _AckSchemaResult<Pet> safeParse(
-    _AckObject? value, {
-    _AckString? debugName,
-  }) => _$PetSchemaApi.safeParse(value, debugName: debugName);
-
+mixin _$PetAck {
   /// Validates this model and encodes it for JSON.
-  _AckMap<_AckString, _AckDynamic> toJson() =>
-      _AckMap<_AckString, _AckDynamic>.from(_$PetSchemaApi.encode(this));
+  ///
+  /// Throws an `AckException` when validation fails.
+  Map<String, dynamic> toJson() =>
+      Map<String, dynamic>.from(PetSchema.encode(this as Pet));
 
-  /// Validates this model and encodes it without throwing on validation failure.
-  _AckSchemaResult<_AckMap<_AckString, _AckObject?>> safeToJson() =>
-      _$PetSchemaApi.safeEncode(this);
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
+  SchemaResult<Map<String, Object?>> safeToJson() =>
+      PetSchema.safeEncode(this as Pet);
 }
 
 final _accountObject = Ack.object({
@@ -463,24 +414,6 @@ Map<String, Object?> _$AccountToRuntime(Account model) => <String, Object?>{
   'role': model.role,
 };
 
-typedef _$AccountSchemaApi = AccountSchema;
-typedef _$AccountCopyWithApi<$Result> = $AccountCopyWith<$Result>;
-
-bool _$AccountEquals(Account self, Object other) =>
-    identical(self, other) ||
-    (other is Account &&
-        self.runtimeType == other.runtimeType &&
-        deepEquals(self.displayName, other.displayName) &&
-        deepEquals(self.website, other.website) &&
-        deepEquals(self.role, other.role));
-
-int _$AccountHashCode(Account self) => Object.hashAll([
-  self.runtimeType,
-  deepHashCode(self.displayName),
-  deepHashCode(self.website),
-  deepHashCode(self.role),
-]);
-
 final class _AccountCopyWithUnset {
   const _AccountCopyWithUnset();
 }
@@ -500,9 +433,6 @@ final class _$AccountCopyWith implements $AccountCopyWith<Account> {
   static const _AccountCopyWithUnset _ackCopyWithUnset =
       _AccountCopyWithUnset();
 
-  static bool _ackIsCopyWithUnset(Object? value) =>
-      identical(value, _ackCopyWithUnset);
-
   final Account _source;
 
   @override
@@ -512,44 +442,54 @@ final class _$AccountCopyWith implements $AccountCopyWith<Account> {
     String? role,
   }) => Account(
     displayName: displayName ?? _source.displayName,
-    website: _ackIsCopyWithUnset(website) ? _source.website : website as Uri?,
+    website: identical(website, _ackCopyWithUnset)
+        ? _source.website
+        : website as Uri?,
     role: role ?? _source.role,
   );
 }
 
-augment final class Account {
-  /// Creates a copy with selected fields replaced.
-  _$AccountCopyWithApi<Account> get copyWith => _$AccountCopyWith(this);
+mixin _$AccountAck {
+  /// Creates a copy of this model with selected fields replaced.
+  $AccountCopyWith<Account> get copyWith => _$AccountCopyWith(this as Account);
 
-  _AckBool operator ==(_AckObject other) => _$AccountEquals(this, other);
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Account || runtimeType != other.runtimeType) {
+      return false;
+    }
+    final self = this as Account;
+    return deepEquals(self.displayName, other.displayName) &&
+        deepEquals(self.website, other.website) &&
+        deepEquals(self.role, other.role);
+  }
 
-  _AckInt get hashCode => _$AccountHashCode(this);
+  @override
+  int get hashCode {
+    final self = this as Account;
+    return Object.hashAll([
+      runtimeType,
+      deepHashCode(self.displayName),
+      deepHashCode(self.website),
+      deepHashCode(self.role),
+    ]);
+  }
 
-  _AckString toString() =>
-      'Account(displayName: $displayName, website: $website, role: $role)';
-
-  static _AckSchema<_AckMap<_AckString, _AckObject?>, Account> get schema =>
-      _$AccountSchemaApi.schema;
-
-  /// Validates decoded JSON and creates a model.
-  factory Account.fromJson(_AckMap<_AckString, _AckDynamic> json) =>
-      _$AccountSchemaApi.fromJson(json);
-
-  /// Validates an untrusted value and creates a model.
-  static Account parse(_AckObject? value, {_AckString? debugName}) =>
-      _$AccountSchemaApi.parse(value, debugName: debugName);
-
-  /// Validates an untrusted value without throwing on validation failure.
-  static _AckSchemaResult<Account> safeParse(
-    _AckObject? value, {
-    _AckString? debugName,
-  }) => _$AccountSchemaApi.safeParse(value, debugName: debugName);
+  @override
+  String toString() {
+    final self = this as Account;
+    return 'Account(displayName: ${self.displayName}, website: ${self.website}, role: ${self.role})';
+  }
 
   /// Validates this model and encodes it for JSON.
-  _AckMap<_AckString, _AckDynamic> toJson() =>
-      _AckMap<_AckString, _AckDynamic>.from(_$AccountSchemaApi.encode(this));
+  ///
+  /// Throws an `AckException` when validation fails.
+  Map<String, dynamic> toJson() =>
+      Map<String, dynamic>.from(AccountSchema.encode(this as Account));
 
-  /// Validates this model and encodes it without throwing on validation failure.
-  _AckSchemaResult<_AckMap<_AckString, _AckObject?>> safeToJson() =>
-      _$AccountSchemaApi.safeEncode(this);
+  /// Validates this model and encodes it for JSON, returning the validation
+  /// failure instead of throwing.
+  SchemaResult<Map<String, Object?>> safeToJson() =>
+      AccountSchema.safeEncode(this as Account);
 }

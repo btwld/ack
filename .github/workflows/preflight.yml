@@ -25,8 +25,8 @@ env:
   # against the change severity, so a breaking change requires a major bump.
   API_BASELINE_VERSION: '1.6.2'
   # The lowest SDK versions that packages/*/pubspec.yaml accept.
-  MINIMUM_DART_VERSION: '3.14.0-315.1.beta'
-  MINIMUM_FLUTTER_VERSION: '3.50.0-0.1.pre'
+  MINIMUM_DART_VERSION: '3.11.0'
+  MINIMUM_FLUTTER_VERSION: '3.41.2'
 
 
 jobs:
@@ -46,8 +46,10 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
-      # Stage pure-Dart members without Flutter's SDK packages to verify that
-      # consumers using the standalone minimum Dart SDK can resolve them.
+      # The complete workspace cannot resolve on the minimum SDK, because
+      # flutter_test pins an older test_api than ack_generator's analyzer floor
+      # allows. The pure-Dart members still must resolve, so they get their own
+      # staged workspace.
       - name: Stage the pure-Dart workspace
         run: dart scripts/stage_min_sdk_workspace.dart "${{ runner.temp }}/min-dart"
 
@@ -84,7 +86,7 @@ jobs:
             echo "::group::$package"
             (cd "$package" && dart analyze . --fatal-infos)
             if [ -d "$package/test" ]; then
-              (cd "$package" && dart --enable-experiment=augmentations test)
+              (cd "$package" && dart test)
             fi
             echo "::endgroup::"
           done
@@ -121,7 +123,7 @@ jobs:
           set -euo pipefail
           flutter pub get
           flutter analyze --fatal-infos
-          flutter test --enable-experiment=augmentations
+          flutter test
 
   json-schema-draft7:
     name: JSON Schema Draft-7 batch validation
@@ -191,9 +193,6 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
-      - name: Activate the pinned Melos CLI
-        run: dart pub global activate melos 8.9.0
-
       # `.g.dart` holds the generated Ack models, schemas, and JSON mapping.
       # A clean rebuild must reproduce them identically.
       - name: Delete the committed generator output
@@ -203,7 +202,7 @@ jobs:
             | xargs -0 --no-run-if-empty rm --
 
       - name: Regenerate from a clean tree
-        run: dart pub global run melos run build --no-select
+        run: dart run melos run build --no-select
 
       - name: Require the regenerated output to match the repository
         run: |
