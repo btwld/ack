@@ -28,11 +28,10 @@ void main() {
   test(
     'repository guidance does not advertise disabled publishing commands',
     () {
-      final guidance = File(
-        '.github/copilot-instructions.md',
-      ).readAsStringSync();
+      final guidance = File('.github/copilot-instructions.md')
+          .readAsStringSync();
 
-      expect(guidance, isNot(contains('dart run melos publish')));
+      expect(guidance, isNot(contains('dart pub global run melos publish')));
       expect(guidance, contains('/PUBLISHING.md'));
     },
   );

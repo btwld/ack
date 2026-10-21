@@ -13,7 +13,7 @@ Ack is organized into five coordinated packages that share one version number an
 | Package | Role | Key Capabilities |
 | --- | --- | --- |
 | **`ack`** | Core runtime & annotations | • Fluent schema builders: `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`, `Ack.list()`, `Ack.map()`, `Ack.object()`, `Ack.any()`, `Ack.literal()`, `Ack.enumString()`, `Ack.enumValues()`, `Ack.anyOf()`, `Ack.discriminated()`, `Ack.lazy()`<br/>• Bidirectional `CodecSchema<Boundary, Runtime>`: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, `Ack.duration()`, `.codec()`, `.transform()`<br/>• Two-way string normalizers: `.trim()`, `.toLowerCase()`, `.toUpperCase()`<br/>• `JsonMaybe<T>` (`JsonAbsent<T>` / `JsonValue<T>`) for tri-state `PATCH` payloads<br/>• Full JSON Schema Draft 2020-12 runtime (`Ack.fromJsonSchema()`) and exporter (`toJsonSchema()`, `toSchemaModel()`, `toJsonSchemaDraft7()`)<br/>• Sealed `SchemaResult<T>` (`Ok` / `Fail`) and sealed `SchemaError` hierarchy<br/>• Unified codegen annotations in `package:ack/ack.dart`: `@Schemable()`, `@AckKey()`, and `@Validate.*` |
-| **`ack_generator`** | Two-way code generator | • **Schema-first (`@Schemable()` on a top-level schema)**: Generates an immutable model class, `Model.schema`, `parse`/`safeParse`, `fromJson`/`toJson`/`safeToJson`, typed `copyWith`, and deep `==`/`hashCode` in `<file>.g.dart`<br/>• **Class-first (`@Schemable()` on a `final class` or `sealed class`)**: Supports standard and Dart 3.12+ primary constructors; generates `_<name>Schema`, `<Name>Schema`, and `_$<Name>Ack` in `<file>.g.dart`<br/>• **`.schema.json` codegen (`ack_generator:ack_json_schema`)**: Compiles `lib/**/*.schema.json` assets into `<name>.schema.dart` + `<name>.schema.g.dart` |
+| **`ack_generator`** | Two-way code generator | • **Schema-first (`@Schemable()` on a top-level schema)**: Generates an immutable model class, `Model.schema`, `parse`/`safeParse`, `fromJson`/`toJson`/`safeToJson`, typed `copyWith`, and deep `==`/`hashCode` in `<file>.g.dart`<br/>• **Class-first (`@Schemable()` on a `final class` or `sealed class`)**: Supports standard and Dart 3.14 primary constructors; generates `_<name>Schema`, `<Name>Schema`, and class augmentations in `<file>.g.dart`<br/>• **`.schema.json` codegen (`ack_generator:ack_json_schema`)**: Compiles `lib/**/*.schema.json` assets into `<name>.schema.dart` + `<name>.schema.g.dart` |
 | **`ack_mcp_dart`** | MCP tool adapter | • `server.registerAckTool()`, `registerAckInputTool()`, `registerAckOutputTool()`, and `result.decodeAckOutput()` for `mcp_dart` |
 | **`ack_firebase_ai`** | Firebase AI (Gemini) adapter | • `schema.toFirebaseAiSchema()` for Gemini structured output and tool declarations |
 | **`ack_json_schema_builder`** | `json_schema_builder` bridge | • Bidirectional `schema.toJsonSchemaBuilder()` and `jsbSchema.toAckSchema()` |
@@ -100,6 +100,32 @@ All top-level validation and presence classes were removed in `2.0.0`. Replace t
 
 ---
 
+## Dart 3.14: remove model glue
+
+Use the [prerelease SDK setup](./installation.mdx#dart-314-prerelease-setup).
+Remove `with _$ModelAck` and handwritten `schema`, `fromJson`, `parse`, and
+`safeParse` forwarders from every class-first model and union branch.
+Regenerate the single `.g.dart` part. Ack now owns these members and adds a
+`fromJson` factory, static parsing methods, and `Model.schema` directly through
+an augmentation. Colliding members or import prefixes must be renamed.
+Generic annotated classes and generic union branches are unsupported; use
+concrete models or external domain types with type-owned schemas.
+
+Primary constructors are optional; existing generative constructors still work.
+For concise immutable models, use declaring parameters:
+
+```dart
+@Schemable()
+final class const Account({
+  @Validate.minLength(2) required final String name,
+  final String? nickname,
+});
+```
+
+Parsing and encoding still cross the Ack validation boundary. Direct
+construction is unchecked; `toJson` validates on encoding. Primary constructors
+do not automatically freeze mutable collections passed by callers.
+
 ## 4. Before & After Migration Examples
 
 ### Class-First Model Migration
@@ -135,20 +161,13 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Account with _$AccountAck {
-  const Account({required this.userName, required this.createdAt});
-
+final class const Account({
   @AckKey('username')
   @Validate.minLength(3)
   @Validate.matches(r'^[a-z0-9_]+$')
-  final String userName;
-
-  @Validate.dateTime()
-  final String createdAt;
-
-  static final schema = _accountSchema;
-  static final fromJson = AccountSchema.fromJson;
-}
+  required final String userName,
+  @Validate.dateTime() required final String createdAt,
+});
 ```
 
 ### Schema-First Model Migration

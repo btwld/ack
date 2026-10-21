@@ -7,6 +7,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Breaking & Substitutions
 
+* Target Dart 3.14 / Flutter 3.50 using the available prerelease toolchain.
+  Class-first model augmentations replace generated mixins and handwritten
+  schema/parsing forwarders; primary-constructor examples need only fields and
+  annotations. See the SDK setup and migration guide for experiment flags.
+
 * **Single `.g.dart` part & direct JSON emitter (`#189`)**: `ack_generator:ack_generator`
   now emits a single `<file>.g.dart` part via `SharedPartBuilder` with direct
   `toJson()` / `fromJson()` helpers (no `json_serializable` or `json_annotation`
@@ -83,6 +88,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Fixed
 
+* Preserve child validation on inherited primary-constructor fields and support
+  model fields named `dynamic` or `override` in generated augmentations.
+* Update the pinned API-audit tool to recognize primary constructors and public
+  names of private named field parameters correctly.
 * Explicit Draft-7 export rejects unsupported Draft 2020-12 assertions rather
   than emitting keywords that Draft-7 validators ignore.
 * Imported schema exports preserve JSON Pointer targets through retrieval URI

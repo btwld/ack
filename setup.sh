@@ -25,7 +25,9 @@ dart --version
 
 echo "Resolving workspace dependencies..."
 dart pub get
-dart run melos bootstrap
+echo "Activating Melos 8.9.0..."
+dart pub global activate melos 8.9.0
+dart pub global run melos bootstrap
 
 if [[ -f tools/npm-shrinkwrap.json ]]; then
   if command -v npm >/dev/null 2>&1; then
@@ -36,4 +38,4 @@ if [[ -f tools/npm-shrinkwrap.json ]]; then
   fi
 fi
 
-echo "Setup complete. Run 'dart run melos run --list' to see workspace scripts."
+echo "Setup complete. Run 'dart pub global run melos run --list' to see workspace scripts."

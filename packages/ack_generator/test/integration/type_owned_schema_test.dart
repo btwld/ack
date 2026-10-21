@@ -7,7 +7,7 @@ void main() {
     await expectOutput(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({
     required this.header,
     this.footer,
@@ -34,7 +34,7 @@ final class Section with _$SectionAck {
     await expectOutput(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({
     required this.children,
     required this.unique,
@@ -62,7 +62,7 @@ final class Section with _$SectionAck {
       await expectOutput(
         r'''
 @Schemable()
-final class Menu with _$MenuAck {
+final class Menu {
   const Menu({required this.open, required this.history});
 
   final Command<CompletionAction> open;
@@ -83,7 +83,7 @@ final class Menu with _$MenuAck {
     await expectOutput(
       r'''
 @Schemable()
-final class Panel with _$PanelAck {
+final class Panel {
   const Panel({
     required this.openAll,
     required this.anything,
@@ -111,7 +111,7 @@ final class Panel with _$PanelAck {
     await expectOutput(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.header});
 
   final types.Slot header;
@@ -131,7 +131,7 @@ part 'model.g.dart';
     final errors = await generationErrors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.header});
 
   final Label header;
@@ -164,7 +164,7 @@ final class Label {
     final errors = await generationErrors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.box});
 
   final Box<String> box;
@@ -201,14 +201,14 @@ final class Box<T extends Object> {
     await expectOutput(
       r'''
 @Schemable()
-final class Row with _$RowAck {
+final class Row {
   const Row({required this.name});
 
   final String name;
 }
 
 @Schemable()
-final class Screen with _$ScreenAck {
+final class Screen {
   const Screen({
     required this.row,
     required this.title,
@@ -225,12 +225,10 @@ final class Screen with _$ScreenAck {
 }
 ''',
       allOf(
-        containsCode("'row': Box.schema<Row>(RowSchema.schema),"),
+        containsCode("'row': Box.schema<Row>(Row.schema),"),
         containsCode("'title': Box.schema<String>(Ack.string()),"),
-        containsCode(
-          "'rows': Box.schema<List<Row>>(Ack.list(RowSchema.schema)),",
-        ),
-        containsCode("'boxes': Ack.list(Box.schema<Row>(RowSchema.schema)),"),
+        containsCode("'rows': Box.schema<List<Row>>(Ack.list(Row.schema)),"),
+        containsCode("'boxes': Ack.list(Box.schema<Row>(Row.schema)),"),
         containsCode(
           "'nested': Box.schema<Box<String>>(Box.schema<String>(Ack.string()))",
         ),
@@ -241,7 +239,7 @@ final class Screen with _$ScreenAck {
   test('a schema method with too few schema parameters is rejected', () async {
     final errors = await generationErrors(r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.pair});
 
   final Pair<String, int> pair;
@@ -263,7 +261,7 @@ final class Section with _$SectionAck {
   test('a wrongly typed schema parameter is rejected', () async {
     final errors = await generationErrors(r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.run});
 
   final Invoke<CompletionAction> run;
@@ -285,7 +283,7 @@ final class Section with _$SectionAck {
     final errors = await generationErrors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.color});
 
   final Box<Color> color;
@@ -317,7 +315,7 @@ final class Box<A extends Object> {
     final errors = await generationErrors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.color});
 
   final Color color;
@@ -342,39 +340,29 @@ final class Color {
     );
   });
 
-  test(
-    'a Schemable class may expose its backing schema or facade as a static schema',
-    () async {
-      await expectOutput(
-        r'''
+  test('a Schemable class generates its composable static schema', () async {
+    await expectOutput(r'''
 @Schemable()
-final class Habit with _$HabitAck {
+final class Habit {
   const Habit({required this.name});
 
   final String name;
 
-  static final schema = _habitSchema;
 }
 
 @Schemable()
-final class Routine with _$RoutineAck {
+final class Routine {
   const Routine({required this.habits});
 
   final List<Habit> habits;
 }
-''',
-        allOf(
-          containsCode("Ack.object({'habits': Ack.list(HabitSchema.schema)})"),
-          isNot(contains('Habit.schema')),
-        ),
-      );
-    },
-  );
+''', allOf(containsCode("Ack.object({'habits': Ack.list(Habit.schema)})")));
+  });
 
   test('a Schemable class rejects a static schema of another type', () async {
     final errors = await generationErrors(r'''
 @Schemable()
-final class Habit with _$HabitAck {
+final class Habit {
   const Habit({required this.name});
 
   final String name;
@@ -385,12 +373,7 @@ final class Habit with _$HabitAck {
 
     expect(
       errors,
-      contains(
-        contains(
-          'Habit.schema must be an AckSchema<Map<String, Object?>, Habit>; '
-          'it produces String.',
-        ),
-      ),
+      contains(contains('Habit.schema conflicts with a generated member.')),
     );
   });
 
@@ -398,12 +381,11 @@ final class Habit with _$HabitAck {
     await expectOutput(
       '''
 @Schemable()
-final class Habit with _\$HabitAck {
+final class Habit {
   const Habit({required this.name});
 
   final String name;
 
-  static final schema = _habitSchema;
 }
 
 @Schemable()
@@ -431,7 +413,7 @@ final sectionSchema = Ack.object({
     final errors = await generationErrors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.metric});
 
   final Metric<Object?> metric;
@@ -461,19 +443,17 @@ final class Metric<A> {
     );
   });
 
-  test(
-    'a generic type-owned schema enforces parameter boundary types',
-    () async {
-      final errors = await generationErrors(
-        r'''
+  test('a generic type-owned schema enforces parameter boundary types', () async {
+    final errors = await generationErrors(
+      r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.record});
 
   final RecordBox<int> record;
 }
 ''',
-        types: '''
+      types: '''
 import 'package:ack/ack.dart';
 
 final class RecordBox<A extends Object> {
@@ -485,26 +465,25 @@ final class RecordBox<A extends Object> {
   ) => throw UnimplementedError();
 }
 ''',
-      );
+    );
 
-      expect(
-        errors,
+    expect(
+      errors,
+      contains(
         contains(
-          contains(
-            'Section.record resolves to RecordBox.schema, whose parameter value '
-            'expects boundary type Map<String, Object?>, but the schema '
-            'inferred for int has boundary type num.',
-          ),
+          'Section.record resolves to RecordBox.schema, whose parameter value '
+          'expects boundary type Map<String, Object?>, but the schema '
+          'inferred for int has boundary type num.',
         ),
-      );
-    },
-  );
+      ),
+    );
+  });
 
   test('an enum with a static schema resolves to it', () async {
     await expectOutput(
       r'''
 @Schemable()
-final class Task with _$TaskAck {
+final class Task {
   const Task({required this.status, required this.plain});
 
   final Status status;
@@ -540,7 +519,7 @@ enum Plain { one, two }
     final errors = await generationErrors(
       r'''
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({required this.routine});
 
   final Routine routine;

@@ -6,8 +6,10 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import '../test_utils/run_dart.dart';
+
 Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
-    Process.run('dart', arguments, workingDirectory: directory.path);
+    runDart(directory, arguments);
 
 void _expectSuccess(ProcessResult result, String command) {
   expect(
@@ -23,9 +25,8 @@ void main() {
     'the model-generation guide sample builds and runs in both directions',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
 
@@ -37,9 +38,9 @@ void main() {
           'typesafe-schemas.mdx',
         ),
       ).readAsStringSync();
-      final sample = RegExp(
-        r'```dart title="lib/models.dart"\n([\s\S]*?)\n```',
-      ).firstMatch(guide)?.group(1);
+      final sample = RegExp(r'```dart title="lib/models.dart"\n([\s\S]*?)\n```')
+          .firstMatch(guide)
+          ?.group(1);
       expect(
         sample,
         isNotNull,
@@ -56,7 +57,7 @@ void main() {
 name: ack_model_generation_guide
 publish_to: none
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.14.0-315.1.beta <4.0.0'
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
@@ -69,12 +70,10 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(
-          p.join(temporary.path, 'lib', 'models.dart'),
-        ).writeAsStringSync(sample!);
-        File(
-          p.join(temporary.path, 'test', 'models_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(temporary.path, 'lib', 'models.dart'))
+            .writeAsStringSync(sample!);
+        File(p.join(temporary.path, 'test', 'models_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_model_generation_guide/models.dart';
 import 'package:test/test.dart';
 

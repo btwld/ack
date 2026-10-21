@@ -24,6 +24,38 @@ dependencies:
   ack: ^2.0.0-alpha.1
 ```
 
+## Dart 3.14 prerelease setup
+
+This Ack 2.0 development branch is pinned to **Flutter 3.50.0-0.1.pre**,
+which bundles **Dart 3.14.0-315.1.beta**. The stable 3.50.0 / 3.14.0 releases
+are not available yet. Use `sdk: '>=3.14.0-315.1.beta <4.0.0'` for this
+prerelease; the stable target is `sdk: '>=3.14.0 <4.0.0'` once released.
+Primary constructors are enabled by default. Augmentations remain experimental
+and must be enabled in consumer projects:
+
+```yaml title="analysis_options.yaml"
+analyzer:
+  enable-experiment:
+    - augmentations
+```
+
+```bash
+dart run build_runner build --enable-experiment=augmentations
+dart --enable-experiment=augmentations test
+# For a Dart application:
+dart --enable-experiment=augmentations run bin/main.dart
+# For a Flutter application:
+flutter run --enable-experiment=augmentations
+flutter test --enable-experiment=augmentations
+```
+
+`@Schemable()` classes use ordinary `part '<file>.g.dart';` directives.
+Generated `augment final class` / `augment sealed class` declarations add
+members to the source class; they do not change its primary constructor.
+The pinned beta formatter cannot preserve these declarations. Do not run
+`dart format` over generated `.g.dart` parts; Ack formats its generated output.
+In this repository, `dart pub global run melos run format` selects authored sources only.
+
 ## Optional code generator
 
 To generate models from Ack schemas or Ack schemas from hand-written models,
@@ -42,7 +74,7 @@ dependencies:
 
 dev_dependencies:
   ack_generator: ^2.0.0-alpha.1
-  build_runner: ^2.4.0
+  build_runner: ^2.16.2
 ```
 
 The generator works in both directions with one annotation, `@Schemable()`,
@@ -65,21 +97,15 @@ final userSchema = Ack.object({
 });
 
 @Schemable()
-final class Account with _$AccountAck {
-  const Account({required this.name});
-
-  @Validate.minLength(2)
-  final String name;
-
-  static final schema = _accountSchema;
-  static final fromJson = AccountSchema.fromJson;
-}
+final class const Account({
+  @Validate.minLength(2) required final String name,
+});
 ```
 
 Run the generator:
 
 ```bash
-dart run build_runner build
+dart run build_runner build --enable-experiment=augmentations
 ```
 
 See [Model Code Generation](../core-concepts/typesafe-schemas.mdx) for working
@@ -91,4 +117,4 @@ Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./q
 
 ## Requirements
 
-- Dart SDK: `>=3.9.0 <4.0.0` for `ack` and `ack_generator`
+- Dart SDK: `>=3.14.0-315.1.beta <4.0.0` for `ack` and `ack_generator`

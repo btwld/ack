@@ -112,8 +112,8 @@ final class _FirebaseAiNativeSchemaFixtures {
     required this.fixtureCount,
     required this.featureCoverage,
     required this.fixtureDirectory,
-    required Map<String, _FirebaseAiNativeSchemaFixture> fixtures,
-  }) : _fixtures = fixtures;
+    required this._fixtures,
+  });
 
   final String sourcePackage;
   final String sourceVersion;

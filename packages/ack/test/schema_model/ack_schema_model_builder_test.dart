@@ -77,9 +77,8 @@ void main() {
           .transform<int>((value) => int.parse(value))
           .withDefault(7);
       final constrained = Ack.integer().min(10).withDefault(5);
-      final invalidEnum = Ack.enumValues([
-        _Role.admin,
-      ]).withDefault(_Role.member);
+      final invalidEnum = Ack.enumValues([_Role.admin])
+          .withDefault(_Role.member);
 
       expect(transformed.toJsonSchema(), isNot(contains('default')));
       expect(constrained.toJsonSchema(), isNot(contains('default')));
@@ -175,64 +174,55 @@ void main() {
       },
     );
 
-    test(
-      'uses existing composition models for Draft-7 lowered imported JSON Schema',
-      () {
-        final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+    test('uses existing composition models for Draft-7 lowered imported JSON Schema', () {
+      final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
 
-        final model = schema.toSchemaModelDraft7();
+      final model = schema.toSchemaModelDraft7();
 
-        expect(model, isA<AckAllOfSchemaModel>());
-        final allOf = model as AckAllOfSchemaModel;
-        expect(allOf.schemas, hasLength(1));
-        expect(allOf.schemas.single, isA<AckRefSchemaModel>());
-        expect(model.toJsonSchema(), schema.toJsonSchemaDraft7());
-      },
-    );
+      expect(model, isA<AckAllOfSchemaModel>());
+      final allOf = model as AckAllOfSchemaModel;
+      expect(allOf.schemas, hasLength(1));
+      expect(allOf.schemas.single, isA<AckRefSchemaModel>());
+      expect(model.toJsonSchema(), schema.toJsonSchemaDraft7());
+    });
 
-    test(
-      'rejects an imported definition reused as a lazy target in Draft-7 lowering',
-      () {
-        final imported = Ack.fromJsonSchema(true).nullable(value: false);
-        final schema = Ack.object({
-          'a': imported,
-          'b': Ack.lazy('_ack_import_0_0', () => imported),
-        });
+    test('rejects an imported definition reused as a lazy target in Draft-7 lowering', () {
+      final imported = Ack.fromJsonSchema(true).nullable(value: false);
+      final schema = Ack.object({
+        'a': imported,
+        'b': Ack.lazy('_ack_import_0_0', () => imported),
+      });
 
-        expect(
-          schema.toJsonSchemaDraft7,
-          throwsA(
-            isA<ArgumentError>().having(
-              (error) => error.message,
-              'message',
-              contains('collides with an imported definition'),
-            ),
+      expect(
+        schema.toJsonSchemaDraft7,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('collides with an imported definition'),
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
 
-    test(
-      'rejects an import generated name occupied by an earlier lazy in Draft-7 lowering',
-      () {
-        final imported = Ack.fromJsonSchema(true);
-        final schema = Ack.object({
-          'a': Ack.lazy('_ack_import_0_0', Ack.string),
-          'b': imported,
-        });
+    test('rejects an import generated name occupied by an earlier lazy in Draft-7 lowering', () {
+      final imported = Ack.fromJsonSchema(true);
+      final schema = Ack.object({
+        'a': Ack.lazy('_ack_import_0_0', Ack.string),
+        'b': imported,
+      });
 
-        expect(
-          schema.toJsonSchemaDraft7,
-          throwsA(
-            isA<ArgumentError>().having(
-              (error) => error.message,
-              'message',
-              contains('Imported definition collides with'),
-            ),
+      expect(
+        schema.toJsonSchemaDraft7,
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('Imported definition collides with'),
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
 
     test('rejects nullable list item schemas at construction', () {
       expect(
@@ -335,9 +325,8 @@ void main() {
         final schema = Ack.discriminated<Object>(
           discriminatorKey: 'type',
           schemas: {
-            'cat': Ack.object({
-              'name': Ack.string(),
-            }).transform<Object>((map) => map),
+            'cat': Ack.object({'name': Ack.string()})
+                .transform<Object>((map) => map),
           },
         );
 
@@ -452,9 +441,8 @@ void main() {
           .minLength(2)
           .withDefault('ack')
           .toSchemaModel();
-      final boundary = Ack.preserveBoundary(
-        Ack.string().minLength(2),
-      ).toSchemaModel();
+      final boundary = Ack.preserveBoundary(Ack.string().minLength(2))
+          .toSchemaModel();
 
       expect(withDefault.toJsonSchema(), {
         'type': 'string',
@@ -479,9 +467,9 @@ void main() {
         expect(_keywordValues(model.toJsonSchema(), 'minimum'), isEmpty);
       }
       expect(
-        Ack.object({
-          't': Ack.duration().min(const Duration(seconds: 5)),
-        }).toSchemaModel().toJsonSchema(),
+        Ack.object({'t': Ack.duration().min(const Duration(seconds: 5))})
+            .toSchemaModel()
+            .toJsonSchema(),
         containsPair(
           'properties',
           containsPair('t', containsPair('minimum', 5000)),
@@ -502,10 +490,8 @@ void main() {
       final boolean = Ack.boolean().withConstraint(
         const _TestSchemaModelConstraint<bool>(),
       );
-      final anyOf = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]).withConstraint(const _TestSchemaModelConstraint<Object>());
+      final anyOf = Ack.anyOf([Ack.string(), Ack.integer()])
+          .withConstraint(const _TestSchemaModelConstraint<Object>());
 
       expect(boolean.toSchemaModel().extensions['x-test-marker'], isTrue);
       expect(anyOf.toSchemaModel().extensions['x-test-marker'], isTrue);

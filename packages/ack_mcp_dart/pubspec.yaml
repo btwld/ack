@@ -10,7 +10,7 @@ topics:
   - validation
 
 environment:
-  sdk: '>=3.11.0 <4.0.0'
+  sdk: '>=3.14.0-315.1.beta <4.0.0'
 
 
 dependencies:
@@ -18,5 +18,5 @@ dependencies:
   mcp_dart: ^2.4.2
 
 dev_dependencies:
-  lints: ^5.0.0
+  lints: ^6.1.0
   test: ^1.25.15

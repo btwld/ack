@@ -8,7 +8,9 @@ import 'package:pub_semver/pub_semver.dart';
 import 'src/workspace_packages.dart';
 
 final ackPackages = publishableAckPackages;
-const dartApiToolVersion = '0.23.0';
+// Earlier releases misidentify primary constructors and private named field
+// parameters, producing incorrect public API reports for the Dart 3.14 code.
+const dartApiToolVersion = '0.23.2';
 
 Future<void> main(List<String> args) async {
   final inputs = [...args];
@@ -251,6 +253,6 @@ void printUsage() {
   );
   print('');
   print('Melos usage:');
-  print('  dart run melos run api-check -- ack v1.1.0');
-  print('  dart run melos run api-check -- v1.1.0');
+  print('  dart pub global run melos run api-check -- ack v1.1.0');
+  print('  dart pub global run melos run api-check -- v1.1.0');
 }

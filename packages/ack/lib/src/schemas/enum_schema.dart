@@ -60,7 +60,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
         context: {
           'received': value,
           'allowedValues': allowed,
-          if (closest != null) 'closestMatchSuggestion': closest,
+          'closestMatchSuggestion': ?closest,
         },
       );
 

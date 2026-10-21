@@ -40,8 +40,8 @@ final class AckDataClassEmitter {
 
   final String? ackPrefix;
 
-  /// Private mixin applied by a hand-written `@AckModel` class.
-  String mixin({
+  /// Adds generated members directly to a hand-written `@Schemable` class.
+  String augmentation({
     required String className,
     required String facadeName,
     required List<AckFieldNode> fields,
@@ -73,21 +73,59 @@ final class AckDataClassEmitter {
           positional: parameter.kind != AckConstructorParameterKind.named,
         ),
     ];
+    final schemaApi = ackClassSchemaAliasName(className);
+    final copyWithApi = ackClassCopyWithAliasName(className);
+    final equalsHelper = ackClassEqualsName(className);
+    final hashHelper = ackClassHashName(className);
     final members = [
       if (includeValueMembers) ...[
-        copyWithGetter(
-          className: className,
-          hasParameters: copyWithParameters.isNotEmpty,
-          castSelf: true,
-        ),
-        equalityMembers(className: className, fields: stored, castSelf: true),
-        toStringMethod(className: className, fields: stored, castSelf: true),
+        '/// Creates a copy with selected fields replaced.\n'
+            '$copyWithApi<$className> get copyWith => '
+            '${_copyWithCreation(className, hasParameters: copyWithParameters.isNotEmpty)};',
+        // Override annotations add no runtime semantics here, and a legal
+        // source field named `override` would shadow the annotation constant.
+        '_AckBool operator ==(_AckObject other) => $equalsHelper(this, other);'
+            '\n\n_AckInt get hashCode => $hashHelper(this);',
+        "_AckString toString() => '${_toStringPreview(className, stored)}';",
       ],
-      jsonMembers(className: className, facadeName: facadeName),
+      'static _AckSchema<_AckMap<_AckString, _AckObject?>, $className> '
+          'get schema => $schemaApi.schema;',
+      '''
+/// Validates decoded JSON and creates a model.
+factory $className.fromJson(_AckMap<_AckString, _AckDynamic> json) =>
+    $schemaApi.fromJson(json);
+
+/// Validates an untrusted value and creates a model.
+static $className parse(_AckObject? value, {_AckString? debugName}) =>
+    $schemaApi.parse(value, debugName: debugName);
+
+/// Validates an untrusted value without throwing on validation failure.
+static _AckSchemaResult<$className> safeParse(
+  _AckObject? value, {_AckString? debugName}
+) => $schemaApi.safeParse(value, debugName: debugName);
+''',
+      '''
+/// Validates this model and encodes it for JSON.
+_AckMap<_AckString, _AckDynamic> toJson() =>
+    _AckMap<_AckString, _AckDynamic>.from($schemaApi.encode(this));
+
+/// Validates this model and encodes it without throwing on validation failure.
+_AckSchemaResult<_AckMap<_AckString, _AckObject?>> safeToJson() =>
+    $schemaApi.safeEncode(this);
+''',
     ];
 
     return '''
-${includeValueMembers ? '${copyWithContract(className: className, parameters: copyWithParameters, supertypes: copyWithSupertypes)}\n\n' : ''}mixin ${'_\$${className}Ack'} {
+typedef $schemaApi = $facadeName;
+${includeValueMembers ? 'typedef $copyWithApi<\$Result> = ${ackCopyWithInterfaceName(className)}<\$Result>;' : ''}
+
+${includeValueMembers ? '''
+bool $equalsHelper($className self, Object other) =>
+    ${_directEqualsExpression(className, stored, receiver: 'self')};
+
+int $hashHelper($className self) => ${_hashExpression(stored, receiver: 'self')};
+
+''' : ''}${includeValueMembers ? '${copyWithContract(className: className, parameters: copyWithParameters, supertypes: copyWithSupertypes)}\n\n' : ''}augment ${includeValueMembers ? 'final' : 'sealed'} class $className {
   ${members.join('\n\n  ')}
 }''';
   }
@@ -190,6 +228,8 @@ ${includeValueMembers ? '${copyWithContract(className: className, parameters: co
         : '';
     final sentinelField = needsSentinel
         ? '  static const $sentinelType $_copyWithUnset = $sentinelType();\n\n'
+              '  static bool _ackIsCopyWithUnset(Object? value) =>\n'
+              '      identical(value, $_copyWithUnset);\n\n'
         : '';
     final sourceField = hasSource ? '  final $className _source;\n\n' : '';
     return '''
@@ -211,121 +251,31 @@ $sentinelField$sourceField  @override
 }''';
   }
 
-  /// The `copyWith` getter that exposes [copyWithContract]'s interface.
-  String copyWithGetter({
-    required String className,
-    required bool hasParameters,
-    bool castSelf = false,
-  }) {
-    final creation = _copyWithCreation(
-      className,
-      hasParameters: hasParameters,
-      castSelf: castSelf,
-    );
-    return '''
-/// Creates a copy of this model with selected fields replaced.
-${ackCopyWithInterfaceName(className)}<$className> get copyWith => $creation;''';
-  }
-
-  String equalityMembers({
-    required String className,
-    required List<AckFieldNode> fields,
-    bool castSelf = false,
-  }) {
-    if (castSelf && fields.isNotEmpty) {
-      final fieldEquals = [
-        for (final field in fields)
-          _equals('self.${field.dartName}', 'other.${field.dartName}'),
-      ];
-      final equality = fieldEquals.isEmpty ? 'true' : fieldEquals.join(' && ');
-      final hashes = _hashExpression(fields, receiver: 'self');
-      return '''
-@override
-bool operator ==(Object other) {
-  if (identical(this, other)) return true;
-  if (other is! $className || runtimeType != other.runtimeType) {
-    return false;
-  }
-  final self = this as $className;
-  return $equality;
-}
-
-@override
-int get hashCode {
-  final self = this as $className;
-  return $hashes;
-}''';
-    }
-    return '''
-@override
-bool operator ==(Object other) =>
-    ${_directEqualsExpression(className, fields)};
-
-@override
-int get hashCode => ${_hashExpression(fields)};''';
-  }
-
-  String toStringMethod({
-    required String className,
-    required List<AckFieldNode> fields,
-    bool castSelf = false,
-  }) {
-    if (castSelf && fields.isNotEmpty) {
-      final parts = [
-        for (final field in fields)
-          '${field.dartName}: \${self.${field.dartName}}',
-      ];
-      return '''
-@override
-String toString() {
-  final self = this as $className;
-  return '$className(${parts.join(', ')})';
-}''';
-    }
-    return '''
-@override
-String toString() => '${_toStringPreview(className, fields)}';''';
-  }
-
-  String jsonMembers({required String className, required String facadeName}) {
-    return '''
-/// Validates this model and encodes it for JSON.
-///
-/// Throws an `AckException` when validation fails.
-Map<String, dynamic> toJson() =>
-    Map<String, dynamic>.from($facadeName.encode(this as $className));
-
-/// Validates this model and encodes it for JSON, returning the validation
-/// failure instead of throwing.
-${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
-    $facadeName.safeEncode(this as $className);''';
-  }
-
-  String _copyWithCreation(
-    String className, {
-    required bool hasParameters,
-    bool castSelf = false,
-  }) {
+  String _copyWithCreation(String className, {required bool hasParameters}) {
     final implementationName = ackCopyWithImplementationName(className);
     return hasParameters
-        ? '$implementationName(${castSelf ? 'this as $className' : 'this'})'
+        ? '$implementationName(this)'
         : 'const $implementationName()';
   }
 
-  String _directEqualsExpression(String className, List<AckFieldNode> fields) {
+  String _directEqualsExpression(
+    String className,
+    List<AckFieldNode> fields, {
+    String receiver = 'this',
+  }) {
     final comparisons = [
       'other is $className',
-      'runtimeType == other.runtimeType',
+      '$receiver.runtimeType == other.runtimeType',
       for (final field in fields)
-        _equals(field.dartName, 'other.${field.dartName}'),
+        _equals('$receiver.${field.dartName}', 'other.${field.dartName}'),
     ];
-    return 'identical(this, other) || (${comparisons.join(' && ')})';
+    return 'identical($receiver, other) || (${comparisons.join(' && ')})';
   }
 
   String _hashExpression(List<AckFieldNode> fields, {String? receiver}) {
     final prefix = receiver == null ? '' : '$receiver.';
     final hashes = [
-      'runtimeType',
+      '${prefix}runtimeType',
       for (final field in fields) _hash('$prefix${field.dartName}'),
     ];
     return 'Object.hashAll([${hashes.join(', ')}])';
@@ -346,7 +296,7 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
         ? parameter.name
         : '${parameter.name} as ${parameter.type}';
     final replacement = parameter.nullable
-        ? 'identical(${parameter.name}, $_copyWithUnset) '
+        ? '_ackIsCopyWithUnset(${parameter.name}) '
               '? _source.${parameter.fieldName} '
               ': $value'
         : '${parameter.name} ?? _source.${parameter.fieldName}';

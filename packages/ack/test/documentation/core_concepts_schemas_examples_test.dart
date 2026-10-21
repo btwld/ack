@@ -84,9 +84,10 @@ void main() {
         final tagsSchema = Ack.list(Ack.string());
         expect(tagsSchema.safeParse(['news', 'tech']).isOk, isTrue);
 
-        final itemsSchema = Ack.list(
-          Ack.string(),
-        ).minLength(1).maxLength(3).unique();
+        final itemsSchema = Ack.list(Ack.string())
+            .minLength(1)
+            .maxLength(3)
+            .unique();
         expect(itemsSchema.safeParse(['a', 'b']).isOk, isTrue);
         expect(itemsSchema.safeParse([]).isFail, isTrue);
 
@@ -435,14 +436,12 @@ void main() {
         expect(upperSchema.safeParse('hello').getOrThrow(), equals('HELLO'));
 
         final userWithAgeSchema =
-            Ack.object({
-              'name': Ack.string(),
-              'birthYear': Ack.integer(),
-            }).transform((data) {
-              final birthYear = data['birthYear'] as int;
-              final age = DateTime.now().year - birthYear;
-              return {...data, 'age': age};
-            });
+            Ack.object({'name': Ack.string(), 'birthYear': Ack.integer()})
+                .transform((data) {
+                  final birthYear = data['birthYear'] as int;
+                  final age = DateTime.now().year - birthYear;
+                  return {...data, 'age': age};
+                });
 
         final transformed =
             userWithAgeSchema.safeParse({

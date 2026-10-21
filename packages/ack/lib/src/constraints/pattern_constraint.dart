@@ -227,7 +227,7 @@ class PatternConstraint extends Constraint<String>
       return {
         ...baseContext,
         'allowedValues': allowedValues,
-        if (closestMatch != null) 'closestMatchSuggestion': closestMatch,
+        'closestMatchSuggestion': ?closestMatch,
       };
     }
 

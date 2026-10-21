@@ -6,8 +6,10 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import '../test_utils/run_dart.dart';
+
 Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
-    Process.run('dart', arguments, workingDirectory: directory.path);
+    runDart(directory, arguments);
 
 void _expectSuccess(ProcessResult result, String command) {
   expect(
@@ -21,9 +23,8 @@ void _expectSuccess(ProcessResult result, String command) {
 void main() {
   test('type-owned schemas build, analyze, and round-trip', () async {
     var projectRoot = Directory.current;
-    while (!Directory(
-      p.join(projectRoot.path, 'packages', 'ack_generator'),
-    ).existsSync()) {
+    while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+        .existsSync()) {
       projectRoot = projectRoot.parent;
     }
     final temporary = await Directory.systemTemp.createTemp('ack_type_owned_');
@@ -34,7 +35,7 @@ void main() {
 name: ack_type_owned
 publish_to: none
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.14.0-315.1.beta <4.0.0'
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
@@ -152,16 +153,15 @@ final colorSchema = Ack.string().codec<Color>(
 );
 
 @Schemable()
-final class Habit with _$HabitAck {
+final class Habit {
   const Habit({required this.name});
 
   final String name;
 
-  static final schema = _habitSchema;
 }
 
 @Schemable(schemas: [importedMoneySchema])
-final class Palette with _$PaletteAck {
+final class Palette {
   const Palette({
     required this.primary,
     required this.swatches,
@@ -174,7 +174,7 @@ final class Palette with _$PaletteAck {
 }
 
 @Schemable()
-final class Section with _$SectionAck {
+final class Section {
   const Section({
     required this.header,
     this.footer,
@@ -195,7 +195,7 @@ final class Section with _$SectionAck {
 }
 
 @Schemable()
-final class Toolbar with _$ToolbarAck {
+final class Toolbar {
   const Toolbar({
     required this.openAll,
     required this.anything,
@@ -208,7 +208,7 @@ final class Toolbar with _$ToolbarAck {
 }
 
 @Schemable()
-final class Shelf with _$ShelfAck {
+final class Shelf {
   const Shelf({
     required this.habit,
     required this.title,
@@ -232,9 +232,8 @@ final panelSchema = Ack.object({
   'habit': Habit.schema.optional(),
 });
 ''');
-      File(
-        p.join(temporary.path, 'test', 'type_owned_test.dart'),
-      ).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'test', 'type_owned_test.dart'))
+          .writeAsStringSync(r'''
 import 'package:ack_type_owned/models.dart';
 import 'package:ack_type_owned/types.dart';
 import 'package:test/test.dart';
@@ -350,12 +349,11 @@ void main() {
         await _run(temporary, ['run', 'build_runner', 'build']),
         'build_runner build',
       );
-      final generated = File(
-        p.join(temporary.path, 'lib', 'models.g.dart'),
-      ).readAsStringSync();
+      final generated = File(p.join(temporary.path, 'lib', 'models.g.dart'))
+          .readAsStringSync();
       expect(generated, contains('Command.schema<CompletionAction>()'));
       expect(generated, contains('Trigger.schema<void>()'));
-      expect(generated, contains('Box.schema<Habit>(HabitSchema.schema)'));
+      expect(generated, contains('Box.schema<Habit>(Habit.schema)'));
       expect(generated, contains('Ack.map(Slot.schema)'));
       _expectSuccess(
         await _run(temporary, ['analyze', '--fatal-infos']),

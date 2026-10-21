@@ -142,7 +142,7 @@ final userSchema = Ack.object({
 Run the generator:
 
 ```bash
-dart run build_runner build
+dart run build_runner build --enable-experiment=augmentations
 ```
 
 This emits a `User` class with stored typed fields, validation helpers, and a
@@ -159,8 +159,12 @@ named recursion, and discriminated unions. One-way transforms are rejected
 because a generated model must be encodable. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
+The 2.0 development branch uses Flutter 3.50.0-0.1.pre / Dart 3.14 beta.
+Enable the `augmentations` experiment in consumer projects; see the
+[SDK setup](docs/getting-started/installation.mdx#dart-314-prerelease-setup).
+
 Already own the model class? Put `@Schemable()` on it to derive a codec schema from
-constructor-backed fields (including Dart 3.12+ primary constructors) while
+constructor-backed fields (including Dart 3.14 primary constructors) while
 keeping the class hand-written. A class named `Account` receives a private
 `_accountSchema` codec and a public `AccountSchema` facade for parsing, encoding,
 schema export, and nested composition:
@@ -171,15 +175,9 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable()
-final class Account with _$AccountAck {
-  const Account({required this.name});
-
-  @Validate.minLength(2)
-  final String name;
-
-  static final schema = _accountSchema;
-  static final fromJson = AccountSchema.fromJson;
-}
+final class const Account({
+  @Validate.minLength(2) required final String name,
+});
 ```
 
 `Account.fromJson({'name': 'Ada'})` (or `Account.schema.parse(...)`) validates
@@ -229,37 +227,45 @@ This project uses [Melos](https://github.com/invertase/melos) to manage the mono
 
 ### Setup
 
+Select the SDK pinned by `.fvmrc` first; see
+[development setup](./CONTRIBUTING.md#development-setup). Melos requires a
+globally activated CLI matching the exact workspace version. `./setup.sh`
+performs these steps and optionally installs the Node tooling:
+
 ```bash
-# Resolve the workspace-local Melos dependency
+# Resolve workspace dependencies
 dart pub get
 
+# Activate the pinned CLI (no global executable PATH entry is needed)
+dart pub global activate melos 8.9.0
+
 # Bootstrap the workspace (installs dependencies for all packages)
-dart run melos bootstrap
+dart pub global run melos bootstrap
 ```
 
 ### Common commands (run from root)
 
 ```bash
 # Run tests across all packages
-dart run melos run test
+dart pub global run melos run test
 
 # Format code across all packages
-dart run melos run format
+dart pub global run melos run format
 
 # Analyze code across all packages
-dart run melos run analyze
+dart pub global run melos run analyze
 
 # Check for outdated dependencies
-dart run melos run deps-outdated
+dart pub global run melos run deps-outdated
 
 # Run build_runner for packages that need it (e.g., ack_generator, example)
-dart run melos run build
+dart pub global run melos run build
 
 # Clean build artifacts
-dart run melos run clean
+dart pub global run melos run clean
 
 # Propose/apply version and changelog updates
-dart run melos version
+dart pub global run melos version
 
 # Dry-run pub.dev validation for every package, requiring zero warnings
 dart scripts/publish_dry_run.dart
@@ -272,13 +278,13 @@ Publishing runs only from a `v*` tag through GitHub Actions. See
 
 ```bash
 # JSON Schema validation (JSON Schema Draft-7 compatibility)
-dart run melos run validate-jsonschema
+dart pub global run melos run validate-jsonschema
 
 # API compatibility check (for semantic versioning)
-dart run melos run api-check -- 1.1.0
+dart pub global run melos run api-check -- 1.1.0
 
 # See all available scripts
-dart run melos run --list
+dart pub global run melos run --list
 ```
 
 Additional development documentation is available in the `tools/` directory.
@@ -294,6 +300,6 @@ Contributions are welcome. Follow these steps:
 1. Fork the repository
 2. Create a feature branch
 3. Add your changes
-4. Run tests with `dart run melos run test`
+4. Run tests with `dart pub global run melos run test`
 5. Follow [Conventional Commits](https://www.conventionalcommits.org/) in your commit messages
 6. Submit a pull request

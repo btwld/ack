@@ -192,5 +192,5 @@ dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart
 From the workspace root, the same generator is available through Melos:
 
 ```bash
-dart run melos run firebase-ai-fixtures
+dart pub global run melos run firebase-ai-fixtures
 ```

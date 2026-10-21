@@ -252,8 +252,7 @@ void main() {
         expect(
           ageType,
           equals('integer'),
-          reason:
-              'Optional field should NOT include "null" unless also marked nullable',
+          reason: 'Optional field should NOT include "null" unless also marked nullable',
         );
 
         // But it should NOT be in the required array
@@ -272,8 +271,7 @@ void main() {
         expect(
           jsonSchema['type'],
           equals('string'),
-          reason:
-              'Optional schema should NOT include null type unless also nullable',
+          reason: 'Optional schema should NOT include null type unless also nullable',
         );
       });
 
@@ -366,21 +364,18 @@ void main() {
       );
     });
 
-    test(
-      'should return SchemaConstraintsError for direct constraint violation',
-      () {
-        final schema = Ack.string().minLength(5);
+    test('should return SchemaConstraintsError for direct constraint violation', () {
+      final schema = Ack.string().minLength(5);
 
-        final result = schema.safeParse('hi');
+      final result = schema.safeParse('hi');
 
-        expect(result.isFail, isTrue);
-        expect(
-          result.getError(),
-          isA<SchemaConstraintsError>(),
-          reason:
-              'Direct constraint violation should return SchemaConstraintsError',
-        );
-      },
-    );
+      expect(result.isFail, isTrue);
+      expect(
+        result.getError(),
+        isA<SchemaConstraintsError>(),
+        reason:
+            'Direct constraint violation should return SchemaConstraintsError',
+      );
+    });
   });
 }

@@ -37,6 +37,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     r'$ack',
     'parse',
     'safeParse',
+    'schema',
     'fromJson',
     'toJson',
     'safeToJson',
@@ -48,6 +49,13 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
   };
 
   static const _generatedSerializationMembers = {'toJson', 'safeToJson'};
+
+  static const _generatedParsingMembers = {
+    'fromJson',
+    'parse',
+    'safeParse',
+    'schema',
+  };
 
   static const _generatedValueMembers = {
     'copyWith',
@@ -142,22 +150,28 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
       generatedOwners[name] = element;
     }
 
+    for (final name in ackClassScopeTypeNames) {
+      claim(name, graph.nodes.first);
+    }
     for (final node in graph.nodes) {
       final metadata = graph.classMetadataFor(node.id);
       if (metadata == null) {
         throw StateError('Missing class-first metadata for ${node.id}.');
       }
       claim(metadata.facadeName, node);
+      claim(ackClassSchemaAliasName(node.className), node);
       claim(metadata.backingName, node);
       claim(ackClassWireSchemaName(node.className), node);
-      claim(ackClassMixinName(node.className), node);
       claim(ackClassRawObjectName(node.className), node);
       if (node is! AckObjectModelNode) continue;
       claim(ackClassFromRuntimeName(node.className), node);
+      claim(ackClassEqualsName(node.className), node);
+      claim(ackClassHashName(node.className), node);
       claim(ackClassToRuntimeName(node.className), node);
       if (node.fields.any((field) => field.nullable || !field.isRequired)) {
         claim(ackCopyWithUnsetTypeName(node.className), node);
       }
+      claim(ackClassCopyWithAliasName(node.className), node);
       claim(ackCopyWithInterfaceName(node.className), node);
       claim(ackCopyWithImplementationName(node.className), node);
     }
@@ -183,7 +197,6 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
       );
     }
     _rejectRedirectingFactory(element);
-    _validateStaticSchema(element);
     _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {
       throw InvalidGenerationSource(
@@ -215,30 +228,6 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
         element: element,
       );
     }
-  }
-
-  /// A model may expose its facade as `static final schema = XSchema.schema;`.
-  ///
-  /// The facade is generated in this build, so the type is checked only once
-  /// it resolves.
-  void _validateStaticSchema(ClassElement element) {
-    final getter = element.getGetter('schema');
-    if (getter == null ||
-        !getter.isStatic ||
-        containsInvalidType(getter.returnType)) {
-      return;
-    }
-    final runtime = ackSchemaRuntimeType(getter.returnType);
-    if (runtime != null &&
-        sameTypeIgnoringNullability(runtime, element.thisType)) {
-      return;
-    }
-    throw InvalidGenerationSource(
-      '${element.name}.schema must be an AckSchema<Map<String, Object?>, '
-      '${element.name}>; it produces '
-      '${runtime?.getDisplayString() ?? 'an untyped value'}.',
-      element: getter,
-    );
   }
 
   /// json_serializable applies a `JsonConverter` before Ack's runtime bridge,
@@ -285,7 +274,6 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
   }
 
   Future<void> _buildUnion(ClassElement base) async {
-    _requireMixin(base);
     _rejectGeneratedMemberCollisions(base, includeValueMembers: false);
     final baseOptions = _options(base)!;
     final discriminatorKey = baseOptions.discriminatorKey!;
@@ -427,7 +415,6 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
         element: element,
       );
     }
-    _requireMixin(element);
     _rejectGeneratedMemberCollisions(element, includeValueMembers: true);
 
     final fields = _instanceFields(element);
@@ -853,14 +840,10 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     FormalParameterElement? parameter,
   ) {
     final effectiveType = unwrapJsonMaybeType(field.type);
-    if (field.isOriginDeclaringFormalParameter) {
-      final target = field.metadata.annotations.isNotEmpty
-          ? field
-          : (parameter ?? field);
-      return _inference.applyConstraints(schema, target, effectiveType);
-    }
     var output = _inference.applyConstraints(schema, field, effectiveType);
-    if (parameter != null && !identical(parameter, field)) {
+    // Primary fields expose their declaring parameter's metadata already.
+    // A child's super parameter is a distinct declaration with its own metadata.
+    if (parameter != null && parameter != field.declaringFormalParameter) {
       output = _inference.applyConstraints(output, parameter, effectiveType);
     }
     return output;
@@ -887,7 +870,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     if (direct != null) return direct;
     final resolved = inputResolved;
     if (resolved == null) return null;
-    for (final element in [field, if (parameter != null) parameter]) {
+    for (final element in [field, ?parameter]) {
       final node = declarationNode(resolved, element);
       if (node is FormalParameter) {
         final comment = node.documentationComment;
@@ -1035,6 +1018,28 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
   }
 
   void _requireFinalConcreteClass(ClassElement element) {
+    final declaration = declarationNode(inputResolved!, element);
+    final legacyMixin = '_\$${element.name}Ack';
+    if (declaration is ClassDeclaration &&
+        (declaration.withClause?.mixinTypes.any(
+              (type) => type.toSource() == legacyMixin,
+            ) ??
+            false)) {
+      throw InvalidGenerationSource(
+        '${element.name} uses the removed generated mixin $legacyMixin. '
+        'Remove the with clause; @Schemable now adds its API through augmentations.',
+        element: element,
+      );
+    }
+
+    if (element.typeParameters.isNotEmpty) {
+      throw InvalidGenerationSource(
+        '${element.name} is generic. @Schemable class-first models must not '
+        'declare type parameters.',
+        element: element,
+      );
+    }
+
     if (element.isAbstract || element.isSealed || element.isFinal) return;
     throw InvalidGenerationSource(
       '${element.name} must be declared as a final class because '
@@ -1174,27 +1179,11 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     );
   }
 
-  void _requireMixin(ClassElement element) {
-    final mixinName = ackClassMixinName(element.name!);
-    if (_declaresMixin(element, mixinName)) return;
-    throw InvalidGenerationSource(
-      '${element.name} must apply mixin $mixinName.',
-      element: element,
-      todo: 'Add `with $mixinName` to ${element.name}.',
-    );
-  }
-
-  bool _declaresMixin(ClassElement element, String mixinName) {
-    if (element.mixins.any((type) => type.element.name == mixinName)) {
-      return true;
-    }
-    final resolved = inputResolved;
-    if (resolved == null) return false;
-    final node = declarationNode(resolved, element);
-    if (node is! ClassDeclaration) return false;
-    final withClause = node.withClause;
-    if (withClause == null) return false;
-    return withClause.mixinTypes.any((type) => type.name.lexeme == mixinName);
+  bool _isGeneratedAugmentationMember(Element element) {
+    final fragment = element.firstFragment;
+    return fragment.enclosingFragment is ClassFragment &&
+        (fragment.enclosingFragment as ClassFragment).isAugmentation &&
+        fragment.libraryFragment?.source.uri.path.endsWith('.g.dart') == true;
   }
 
   void _rejectGeneratedMemberCollisions(
@@ -1203,24 +1192,82 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
   }) {
     final blocked = {
       ..._generatedSerializationMembers,
+      ..._generatedParsingMembers,
+      ...ackClassScopeTypeNames,
+      ackClassSchemaAliasName(element.name!),
+      ackClassCopyWithAliasName(element.name!),
+      ackCopyWithImplementationName(element.name!),
+      if (includeValueMembers) ...{
+        ackClassEqualsName(element.name!),
+        ackClassHashName(element.name!),
+      },
       if (includeValueMembers) ..._generatedValueMembers,
     };
-    for (final method in element.methods) {
-      if (method.isStatic) continue;
-      final name = method.name;
-      if (name != null && blocked.contains(name)) {
+    for (final import in library.element.firstFragment.libraryImports) {
+      final prefix = import.prefix?.element.name;
+      if (blocked.contains(prefix)) {
         throw InvalidGenerationSource(
-          '${element.name}.$name would silently override a generated member.',
+          'Import prefix "$prefix" conflicts with a generated member on '
+          '${element.name}. Rename the import prefix.',
+          element: element,
+        );
+      }
+    }
+    for (final setter in element.setters) {
+      if (!_isGeneratedAugmentationMember(setter) &&
+          blocked.contains(setter.name)) {
+        throw InvalidGenerationSource(
+          '${element.name}.${setter.name} conflicts with a generated member.',
+          element: setter,
+        );
+      }
+    }
+    for (final parent in element.allSupertypes) {
+      if (isCoreType(parent, 'Object')) continue;
+      for (final member in [
+        ...parent.element.methods,
+        ...parent.element.getters,
+        ...parent.element.setters,
+      ]) {
+        if (!member.isStatic &&
+            member.isAccessibleIn(library.element) &&
+            !_isGeneratedAugmentationMember(member) &&
+            blocked.contains(member.name)) {
+          throw InvalidGenerationSource(
+            '${element.name} inherits ${parent.element.name}.${member.name}, '
+            'which conflicts with a generated member.',
+            element: element,
+          );
+        }
+      }
+    }
+    for (final constructor in element.constructors) {
+      if (!_isGeneratedAugmentationMember(constructor) &&
+          _generatedParsingMembers.contains(constructor.name)) {
+        throw InvalidGenerationSource(
+          '${element.name}.${constructor.name} conflicts with a generated member.',
+          element: constructor,
+        );
+      }
+    }
+    for (final method in element.methods) {
+      final name = method.name;
+      if (!_isGeneratedAugmentationMember(method) &&
+          name != null &&
+          blocked.contains(name)) {
+        throw InvalidGenerationSource(
+          '${element.name}.$name conflicts with a generated member.',
           element: method,
         );
       }
     }
     for (final getter in element.getters) {
-      if (getter.isStatic) continue;
       final name = getter.name;
-      if (name != null && blocked.contains(name)) {
+      if (!_isGeneratedAugmentationMember(getter) &&
+          name != null &&
+          blocked.contains(name)) {
         throw InvalidGenerationSource(
-          '${element.name}.$name would silently override a generated member.',
+          '${element.name}.$name conflicts with a generated member.',
           element: getter,
         );
       }

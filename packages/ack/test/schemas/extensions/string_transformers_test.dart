@@ -327,20 +327,17 @@ void main() {
     });
 
     group('Two-way StringSchema normalizers (C3)', () {
-      test(
-        'trim, toLowerCase, and toUpperCase return StringSchema and chain directly',
-        () {
-          final StringSchema schema = Ack.string()
-              .trim()
-              .toLowerCase()
-              .minLength(3)
-              .email();
+      test('trim, toLowerCase, and toUpperCase return StringSchema and chain directly', () {
+        final StringSchema schema = Ack.string()
+            .trim()
+            .toLowerCase()
+            .minLength(3)
+            .email();
 
-          expect(schema.parse('  USER@EXAMPLE.COM  '), 'user@example.com');
-          expect(schema.safeParse('  a  ').isFail, isTrue);
-          expect(schema.safeParse('  not-an-email  ').isFail, isTrue);
-        },
-      );
+        expect(schema.parse('  USER@EXAMPLE.COM  '), 'user@example.com');
+        expect(schema.safeParse('  a  ').isFail, isTrue);
+        expect(schema.safeParse('  not-an-email  ').isFail, isTrue);
+      });
 
       test(
         'declaration order is preserved between normalizers and constraints',

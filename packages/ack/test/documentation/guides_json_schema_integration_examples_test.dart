@@ -18,9 +18,10 @@ void main() {
         'email': Ack.string().email().describe("User's email address"),
         'role': Ack.enumValues(UserRole.values).withDefault(UserRole.user),
         'isActive': Ack.boolean().withDefault(true),
-        'tags': Ack.list(
-          Ack.string(),
-        ).unique().describe('List of user tags').nullable(),
+        'tags': Ack.list(Ack.string())
+            .unique()
+            .describe('List of user tags')
+            .nullable(),
         'age': Ack.integer().min(0).max(120).nullable().describe("User's age"),
       }).describe('Represents a user in the system');
     }
@@ -83,11 +84,9 @@ void main() {
         isTrue,
       );
 
-      final enumBranch =
-          anyOf.firstWhere(
-                (e) => e is Map<String, Object?> && e['type'] == 'string',
-              )
-              as Map<String, Object?>;
+      final enumBranch = anyOf.firstWhere(
+        (e) => e is Map<String, Object?> && e['type'] == 'string',
+      ) as Map<String, Object?>;
       expect(enumBranch['enum'], equals(['admin', 'user', 'guest']));
     });
 
@@ -114,11 +113,9 @@ void main() {
         isTrue,
       );
 
-      final unionBranch =
-          outerAnyOf.firstWhere(
-                (e) => e is Map<String, Object?> && e['anyOf'] is List,
-              )
-              as Map<String, Object?>;
+      final unionBranch = outerAnyOf.firstWhere(
+        (e) => e is Map<String, Object?> && e['anyOf'] is List,
+      ) as Map<String, Object?>;
       final innerAnyOf = unionBranch['anyOf'] as List<Object?>;
       expect(innerAnyOf, hasLength(2));
     });

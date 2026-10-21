@@ -6,17 +6,18 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import '../test_utils/run_dart.dart';
+
 Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
-    Process.run('dart', arguments, workingDirectory: directory.path);
+    runDart(directory, arguments);
 
 void main() {
   test(
     'a clean build rejects a two-library class-first cycle with a field path',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(
@@ -29,7 +30,7 @@ void main() {
 name: ack_class_first_cycle
 publish_to: none
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.14.0-315.1.beta <4.0.0'
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
@@ -49,7 +50,7 @@ import 'child.dart';
 part 'parent.g.dart';
 
 @Schemable()
-final class Parent with _$ParentAck {
+final class Parent {
   const Parent({required this.child});
 
   final Child child;
@@ -63,7 +64,7 @@ import 'parent.dart';
 part 'child.g.dart';
 
 @Schemable()
-final class Child with _$ChildAck {
+final class Child {
   const Child({required this.parent});
 
   final Parent parent;

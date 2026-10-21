@@ -24,12 +24,12 @@ class DateTimeConstraint extends Constraint<DateTime>
 
   const DateTimeConstraint._({
     required this.reference,
-    required bool isMinimum,
+    required this._isMinimum,
     required this.jsonSchemaFormat,
     required this.formattedReference,
     required super.constraintKey,
     required super.description,
-  }) : _isMinimum = isMinimum;
+  });
 
   /// Creates a date-formatted minimum constraint for `Ack.date()`.
   factory DateTimeConstraint.minDate(DateTime date) {

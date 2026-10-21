@@ -184,7 +184,7 @@ targets:
 
 `ack_generator:ack_json_schema` emits `<name>.schema.dart` (declaring
 `part '<name>.schema.g.dart';`), which `ack_generator:ack_generator` compiles
-in the same `dart run build_runner build` pass:
+in the same `dart run build_runner build --enable-experiment=augmentations` pass:
 
 ```dart
 import 'person.schema.dart';

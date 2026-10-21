@@ -3,11 +3,9 @@ import 'package:test/test.dart';
 import 'schema_resolution_support.dart';
 
 void main() {
-  test(
-    '@Schemable(schemas: [...]) on a class resolves imported schemas, disambiguates local schemas, and overrides DateTime',
-    () async {
-      await expectOutput(
-        r'''
+  test('@Schemable(schemas: [...]) on a class resolves imported schemas, disambiguates local schemas, and overrides DateTime', () async {
+    await expectOutput(
+      r'''
 AckSchema<String, Color> hexColorSchema() => Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
@@ -29,7 +27,7 @@ AckSchema<Object, Object> cellValueSchema() =>
     cellValueSchema,
   ],
 )
-final class Order with _$OrderAck {
+final class Order {
   const Order({
     required this.color,
     required this.total,
@@ -47,15 +45,15 @@ final class Order with _$OrderAck {
   final Object? anyJson;
 }
 ''',
-        allOf(
-          containsCode("'color': hexColorSchema(),"),
-          containsCode("'total': importedMoneySchema(),"),
-          containsCode("'createdAt': epochDateTimeSchema(),"),
-          containsCode("'timestamps': Ack.list(epochDateTimeSchema()),"),
-          containsCode("'cellValue': cellValueSchema(),"),
-          containsCode("'anyJson': Ack.any().optional().nullable()"),
-        ),
-        types: '''
+      allOf(
+        containsCode("'color': hexColorSchema(),"),
+        containsCode("'total': importedMoneySchema(),"),
+        containsCode("'createdAt': epochDateTimeSchema(),"),
+        containsCode("'timestamps': Ack.list(epochDateTimeSchema()),"),
+        containsCode("'cellValue': cellValueSchema(),"),
+        containsCode("'anyJson': Ack.any().optional().nullable()"),
+      ),
+      types: '''
 import 'package:ack/ack.dart';
 
 final class Color {
@@ -78,28 +76,25 @@ AckSchema<int, DateTime> epochDateTimeSchema() => Ack.integer().codec<DateTime>(
   encode: (dt) => dt.millisecondsSinceEpoch,
 );
 ''',
-      );
-    },
-  );
+    );
+  });
 
-  test(
-    '@Schemable(schemas: [...]) on a library directive applies across models and imported schema libraries',
-    () async {
-      await expectOutput(
-        r'''
+  test('@Schemable(schemas: [...]) on a library directive applies across models and imported schema libraries', () async {
+    await expectOutput(
+      r'''
 @Schemable()
-final class Palette with _$PaletteAck {
+final class Palette {
   const Palette({required this.primary, required this.budget});
 
   final Color primary;
   final Money budget;
 }
 ''',
-        allOf(
-          containsCode("'primary': libraryColorSchema(),"),
-          containsCode("'budget': sharedMoneySchema()"),
-        ),
-        head: '''
+      allOf(
+        containsCode("'primary': libraryColorSchema(),"),
+        containsCode("'budget': sharedMoneySchema()"),
+      ),
+      head: '''
 @Schemable(schemas: [libraryColorSchema])
 library;
 
@@ -113,7 +108,7 @@ AckSchema<String, Color> libraryColorSchema() => Ack.string().codec<Color>(
   encode: (color) => color.hex,
 );
 ''',
-        types: '''
+      types: '''
 @Schemable(schemas: [sharedMoneySchema])
 library;
 
@@ -134,35 +129,32 @@ AckSchema<int, Money> sharedMoneySchema() => Ack.integer().codec<Money>(
   encode: (money) => money.cents,
 );
 ''',
-      );
-    },
-  );
+    );
+  });
 
-  test(
-    'rejects core primitive types and duplicate runtime types in @Schemable(schemas: [...])',
-    () async {
-      final coreErrors = await generationErrors(r'''
+  test('rejects core primitive types and duplicate runtime types in @Schemable(schemas: [...])', () async {
+    final coreErrors = await generationErrors(r'''
 AckSchema<String, String> customStringSchema() => Ack.string();
 
 @Schemable(schemas: [customStringSchema])
-final class Post with _$PostAck {
+final class Post {
   const Post({required this.title});
 
   final String title;
 }
 ''');
 
-      expect(
-        coreErrors,
+    expect(
+      coreErrors,
+      contains(
         contains(
-          contains(
-            'Post @Schemable(schemas: ...) cannot override core type String.',
-          ),
+          'Post @Schemable(schemas: ...) cannot override core type String.',
         ),
-      );
+      ),
+    );
 
-      final duplicateErrors = await generationErrors(
-        r'''
+    final duplicateErrors = await generationErrors(
+      r'''
 AckSchema<String, Color> firstColorSchema() => Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
@@ -174,29 +166,28 @@ AckSchema<String, Color> secondColorSchema() => Ack.string().codec<Color>(
 );
 
 @Schemable(schemas: [firstColorSchema, secondColorSchema])
-final class Theme with _$ThemeAck {
+final class Theme {
   const Theme({required this.primary});
 
   final Color primary;
 }
 ''',
-        types: '''
+      types: '''
 final class Color {
   const Color(this.hex);
   final String hex;
 }
 ''',
-      );
+    );
 
-      expect(
-        duplicateErrors,
+    expect(
+      duplicateErrors,
+      contains(
         contains(
-          contains(
-            'Theme @Schemable(schemas: ...) registers multiple schemas for '
-            'Color: firstColorSchema and secondColorSchema.',
-          ),
+          'Theme @Schemable(schemas: ...) registers multiple schemas for '
+          'Color: firstColorSchema and secondColorSchema.',
         ),
-      );
-    },
-  );
+      ),
+    );
+  });
 }

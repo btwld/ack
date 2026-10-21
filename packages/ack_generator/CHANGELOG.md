@@ -2,6 +2,14 @@
 
 ### Breaking
 
+* Target Dart 3.14 / Flutter 3.50; development is pinned to
+  Dart `3.14.0-315.1.beta` / Flutter `3.50.0-0.1.pre` until stable releases exist.
+* Class-first models use experimental augmentations instead of `_$ModelAck`
+  mixins. Remove mixins and handwritten schema/parsing forwarders; generation adds
+  `fromJson`, `parse`, `safeParse`, and `schema` directly. Both primary and
+  conventional constructors remain supported. Enable `augmentations` in
+  analyzer, build_runner, and runtime/test commands.
+
 * Requires `ack: ^2.0.0-alpha.1`.
 * **Single-pass `.g.dart` builder (`#189`)**: `ack_generator:ack_generator` is
   now a `SharedPartBuilder` that emits `<file>.g.dart` directly with generated
@@ -19,8 +27,7 @@
 * Support `@Validate.*` presence and constraint annotations (`@Validate.optional()`,
   `@Validate.required()`, `@Validate.notNull()`, `@Validate.notEmpty()` on
   `String`/`List`/`Set`, etc.) from `package:ack/ack.dart` across field
-  declarations and primary/generative constructor parameters, as well as
-  `static final schema = _<name>Schema;` on class-first models (`#191`).
+  declarations and primary/generative constructor parameters (`#191`).
 * Support `JsonMaybe<T>` fields in `@Schemable()` class-first models for PATCH
   tri-state presence (`#148`).
 * Support `@AckKey('...')` directly without `package:json_annotation` (`#189`).
@@ -40,6 +47,10 @@
 
 ### Fixed
 
+* Preserve child `super` parameter validation alongside annotations on inherited
+  primary fields, without applying direct primary parameter constraints twice.
+* Support fields named `dynamic` or `override` in augmentations, and ignore
+  inaccessible private superclass members when checking generated-name conflicts.
 * Preserve integral decimal length and item bounds in JSON Schema generation.
   Use validated value models for Unicode regex patterns and named scalar unions
   that the typed model generator cannot represent faithfully.
