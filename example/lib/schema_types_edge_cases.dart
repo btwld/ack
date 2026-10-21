@@ -11,8 +11,7 @@ library;
 
 import 'package:ack/ack.dart';
 
-part 'schema_types_edge_cases.ack.dart';
-part 'schema_types_edge_cases.ack.g.dart';
+part 'schema_types_edge_cases.g.dart';
 
 // ============================================================================
 // EDGE CASE 1: List Type Extraction

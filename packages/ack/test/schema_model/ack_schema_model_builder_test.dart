@@ -162,55 +162,77 @@ void main() {
       );
     });
 
-    test('uses existing composition models for imported JSON Schema', () {
-      final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
+    test(
+      'uses a resource-preserving model for imported JSON Schema by default',
+      () {
+        final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
 
-      final model = schema.toSchemaModel();
+        final model = schema.toSchemaModel();
 
-      expect(model, isA<AckAllOfSchemaModel>());
-      final allOf = model as AckAllOfSchemaModel;
-      expect(allOf.schemas, hasLength(1));
-      expect(allOf.schemas.single, isA<AckRefSchemaModel>());
-      expect(model.toJsonSchema(), schema.toJsonSchema());
-    });
+        expect(model, isA<AckRawSchemaModel>());
+        expect(model.toJsonSchema()['type'], 'string');
+        expect(model.toJsonSchema(), schema.toJsonSchema());
+      },
+    );
 
-    test('rejects an imported definition reused as a lazy target', () {
-      final imported = Ack.fromJsonSchema(true).nullable(value: false);
-      final schema = Ack.object({
-        'a': imported,
-        'b': Ack.lazy('_ack_import_0_0', () => imported),
-      });
+    test(
+      'uses existing composition models for Draft-7 lowered imported JSON Schema',
+      () {
+        final schema = Ack.fromJsonSchema({'type': 'string', 'minLength': 2});
 
-      expect(
-        schema.toJsonSchema,
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            contains('collides with an imported definition'),
+        final model = schema.toSchemaModelDraft7();
+
+        expect(model, isA<AckAllOfSchemaModel>());
+        final allOf = model as AckAllOfSchemaModel;
+        expect(allOf.schemas, hasLength(1));
+        expect(allOf.schemas.single, isA<AckRefSchemaModel>());
+        expect(model.toJsonSchema(), schema.toJsonSchemaDraft7());
+      },
+    );
+
+    test(
+      'rejects an imported definition reused as a lazy target in Draft-7 lowering',
+      () {
+        final imported = Ack.fromJsonSchema(true).nullable(value: false);
+        final schema = Ack.object({
+          'a': imported,
+          'b': Ack.lazy('_ack_import_0_0', () => imported),
+        });
+
+        expect(
+          schema.toJsonSchemaDraft7,
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('collides with an imported definition'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
-    test('rejects an import generated name occupied by an earlier lazy', () {
-      final imported = Ack.fromJsonSchema(true);
-      final schema = Ack.object({
-        'a': Ack.lazy('_ack_import_0_0', Ack.string),
-        'b': imported,
-      });
+    test(
+      'rejects an import generated name occupied by an earlier lazy in Draft-7 lowering',
+      () {
+        final imported = Ack.fromJsonSchema(true);
+        final schema = Ack.object({
+          'a': Ack.lazy('_ack_import_0_0', Ack.string),
+          'b': imported,
+        });
 
-      expect(
-        schema.toJsonSchema,
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            contains('Imported definition collides with'),
+        expect(
+          schema.toJsonSchemaDraft7,
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.message,
+              'message',
+              contains('Imported definition collides with'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test('rejects nullable list item schemas at construction', () {
       expect(
@@ -325,7 +347,7 @@ void main() {
             branch.properties!['type'] as AckStringSchemaModel;
 
         expect(discriminator.constValue, 'cat');
-        expect(branch.extensions['x-transformed'], isTrue);
+        expect(branch.extensions, isEmpty);
         expect(branch.required, ['type', 'name']);
       },
     );
@@ -336,11 +358,7 @@ void main() {
           .max(DateTime(2026, 12, 31));
       final model = schema.toSchemaModel();
 
-      expect(model.toJsonSchema(), {
-        'type': 'string',
-        'format': 'date',
-        'x-transformed': true,
-      });
+      expect(model.toJsonSchema(), {'type': 'string', 'format': 'date'});
       expect(
         model.warnings.map((warning) => warning.code),
         everyElement('datetime_constraint_not_draft7'),
@@ -393,11 +411,7 @@ void main() {
           .transform((value) => value.trim());
       final model = schema.toSchemaModel();
 
-      expect(model.toJsonSchema(), {
-        'type': 'string',
-        'minLength': 1,
-        'x-transformed': true,
-      });
+      expect(model.toJsonSchema(), {'type': 'string', 'minLength': 1});
       expect(model.warnings, isEmpty);
     });
 
@@ -412,7 +426,7 @@ void main() {
       );
       final model = schema.toSchemaModel();
 
-      expect(model.toJsonSchema(), {'type': 'integer', 'x-transformed': true});
+      expect(model.toJsonSchema(), {'type': 'integer'});
       expect(model.warnings, isEmpty);
     });
 

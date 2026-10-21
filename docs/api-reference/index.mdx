@@ -25,20 +25,17 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
   types. Parses enum `.name` strings into typed enum values. Pass typed enum
   values to `encode` or `safeEncode` for the reverse direction. **Preferred
   over `enumString` when a Dart enum exists.**
-- `Ack.enumCodec(List<T> values)`: Like `enumValues`, but returns a
-  `CodecSchema<String, T>` instead of an `EnumSchema<T>`. Use this when
-  downstream code expects every value-shape to be a `CodecSchema` (e.g. a
-  registry of codecs). The decode and encode functions are identity — the
-  underlying `EnumSchema` still maps between `T` and the enum's `.name`.
 - `Ack.enumString(List<String> values)`: Creates a `StringSchema` constrained
   to the given values. For ad-hoc string lists without a backing Dart enum.
 - `Ack.anyOf(List<AckSchema> schemas)`: Creates an `AnyOfSchema` for union types.
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
 - `Ack.fromJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object>
-  documents = const {}})`: Strictly imports a decoded draft 2020-12
-  JSON Schema. Referenced documents must be supplied explicitly; Ack never
-  fetches files or URLs. The supported `date-time` format is asserted; see
+  documents = const {}, bool assertFormats = false})`: Strictly imports a
+  decoded draft 2020-12 or Draft-7 JSON Schema. Referenced documents must be
+  supplied explicitly; Ack never fetches files or URLs. `format` is treated as
+  an annotation by default unless `assertFormats: true` (or the schema's
+  `$vocabulary` requires `format-assertion`); see
   [format import](../guides/json-schema-integration.mdx#importing-format).
 - `Ack.map(AckSchema valueSchema)`: Creates a `MapSchema` for a JSON object
   with arbitrary string keys whose values all match `valueSchema`. Use
@@ -46,7 +43,7 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.instance<T extends Object>()`: Creates a schema that checks a value is a
   Dart instance of `T` (runtime type check; handy as a codec `output` schema).
 - `Ack.codec(...)` / `Ack.date()` / `Ack.datetime()` / `Ack.uri()` /
-  `Ack.duration()` / `Ack.enumCodec(...)`: Create codecs. See
+  `Ack.duration()`: Create codecs. See
   [Codecs](../core-concepts/codecs.mdx).
 - `Ack.lazy(String name, AckSchema Function() builder, {int maxDepth = 100})`:
   Creates a memoized deferred schema reference for recursive schema graphs.
@@ -84,10 +81,10 @@ Base class for all schema types.
 
 - `SchemaResult<Runtime> safeParse(Object? data, {String? debugName})`: Validates
   `data` and returns a `SchemaResult`. Invalid input and recoverable `Exception`
-  values thrown by constraint/refinement callbacks become failures. `Error`
-  values from those callbacks are rethrown with their original stack trace.
-  Codec/transform decoder failures, including `Error` values, become
-  `SchemaTransformError` failures.
+  values thrown by constraint, refinement, or `CodecSchema` `decode`/`encode`
+  callbacks become validation failures (`SchemaValidationError` /
+  `SchemaTransformError` / `SchemaEncodeError`), while programmer `Error` values
+  are rethrown with their original stack trace.
 - `Runtime? parse(Object? data, {String? debugName})`: Validates `data` and returns the value; throws `AckException` on failure.
 - `SchemaResult<TOut> safeParseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Parses and maps the validated value to `TOut`. Mapper `Exception`s become `SchemaTransformError` failures; mapper `Error` values are rethrown with their original stack trace.
 - `TOut parseAs<TOut extends Object>(Object? data, TOut Function(Runtime?) map, {String? debugName})`: Throwing variant of `safeParseAs`.
@@ -121,10 +118,16 @@ For non-`num` boundary types (e.g. numeric strings), use
 
 ### Utility Methods
 
-- `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via
-  the canonical `AckSchemaModel` boundary.
+- `Map<String, Object?> toJsonSchema()`: Returns a JSON Schema map via the
+  canonical `AckSchemaModel` boundary, preserving imported Draft 2020-12
+  resources by default and emitting Draft-7 for native Ack schemas.
+- `Map<String, Object?> toJsonSchemaDraft7()`: Lowers imported schemas into the
+  legacy Draft-7 `definitions` / `$ref` representation when possible.
 - `AckSchemaModel toSchemaModel()`: Returns the canonical, target-independent
-  boundary model for schema adapters, including export warnings.
+  boundary model for schema adapters (preserving imported Draft 2020-12
+  resources by default), including export warnings.
+- `AckSchemaModel toSchemaModelDraft7()`: Returns the canonical boundary model
+  with imported schemas lowered to Draft-7 `definitions` / `$ref` when possible.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.
@@ -311,16 +314,12 @@ Schema reference for recursive object graphs.
 
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
 either direction with one annotation, `@Schemable()`: on a top-level schema it
-generates a model, and on a class it generates a schema. `package:ack/ack.dart`
-exports `@Schemable` and the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`). Constraint annotations come from
-`package:ack/annotations.dart`, imported with a prefix (`as ack`, then
-`@ack.Email()`) where a name clashes with another type, and `@Uri()` /
-`@DateTime()` from `package:ack/format_annotations.dart`. `@AckInfer()` and
-`@AckModel()` are
-deprecated spellings that keep working until 2.0.0. `AckSchema` is the
-runtime schema type; there is no `@AckSchema()` annotation. After adding matching
-`.ack.dart` and `.ack.g.dart` part directives, run:
+generates a model, on a class it generates a schema, and on a `library;`
+directive it registers shared custom schemas via `@Schemable(schemas: [...])`.
+`package:ack/ack.dart` exports `@Schemable`, `@AckKey`, and the `@Validate.*`
+validation namespace.
+`AckSchema` is the runtime schema type; there is no `@AckSchema()` annotation.
+After adding a `part '<file>.g.dart';` directive, run:
 
 ```bash
 dart run build_runner build
@@ -355,8 +354,7 @@ here. For `Ack.discriminated(...)` constraints, see
 ```dart
 import 'package:ack/ack.dart';
 
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -385,47 +383,38 @@ constructors remain responsible for defensively copying direct inputs.
 **Target**: Public, constructable classes
 
 **Generates**: A public `<ClassName>Schema` facade backed by a private raw
-`wireSchema` and typed codec, plus the `_$ClassAck` mixin for `toJson`,
-`safeToJson`, `copyWith`, and deep collection-aware `==` / `hashCode` /
-`toString`
+`wireSchema` and typed codec (`_<className>Schema`), plus the `_$ClassAck` mixin
+for `toJson`, `safeToJson`, `copyWith`, and deep collection-aware `==` /
+`hashCode` / `toString`
 
-Ack infers schema fields from constructor-backed fields. Required parameters,
-nullable types, optional parameters, and constructor defaults determine field
-presence. Use `caseStyle` for model-wide JSON naming and `@JsonKey(name: ...)`
-on the field for an override; `JsonKey` comes from
-`package:json_annotation/json_annotation.dart`, which the app then depends on.
-Other `JsonKey` options, constructor-parameter placement, and `JsonConverter`
-annotations are rejected. Instantiable models and implicit union branches must
-apply the generated mixin. In `copyWith`, omission keeps the current value and
-explicit `null` clears a nullable field. `copyWith` returns a typed interface,
-so a wrongly typed argument is a compile-time error.
+Ack infers schema fields from constructor-backed fields (including Dart 3.12+
+primary constructors). Required parameters, nullable types, optional parameters,
+`JsonMaybe<T>`, and constructor defaults determine field presence. Use
+`caseStyle` for model-wide JSON naming and `@AckKey(...)` on the field
+or primary constructor parameter for a wire-name override. Instantiable models
+and implicit union branches must apply the generated mixin. In `copyWith`,
+omission keeps the current value and explicit `null` clears a nullable field.
+`copyWith` returns a typed interface, so a wrongly typed argument is a
+compile-time error.
 
 **Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
-`Duration`, enums, nested lists, and sets
+`Duration`, enums, `JsonMaybe<T>`, nested lists, sets, and string-keyed maps
 
-**Constraint annotations:**
+**Validation annotations (`@Validate.*` from `package:ack/ack.dart`):**
 
-- numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`
-- strings: `@MinLength`, `@MaxLength`, `@Matches`, `@Email`, `@NotEmpty`
-- string formats: `@Url`, `@Uuid`, `@Date`; `@Uri()` and `@DateTime()` from
-  `package:ack/format_annotations.dart` imported with a prefix
-  (`@formats.Uri()`)
-- collections: `@MinItems`, `@MaxItems`, `@UniqueItems`
+- presence & nullability: `@Validate.required`, `@Validate.optional`, `@Validate.notNull`
+- numeric: `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`
+- strings: `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.email`, `@Validate.notEmpty`
+- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`
+- collections: `@Validate.notEmpty`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems`
 
-`@Matches` replaces `@Pattern`, which remains a deprecated alias in
-`package:ack/annotations.dart` only.
 
-**Type-owned schemas:** a field whose type declares a static `schema` resolves
-to it with no annotation, also per `List` / `Set` item and as a `Map` value. A
-generic type declares `static AckSchema<B, T<A>> schema<A>()`, which is called
-with the field's type arguments; if it declares one positional parameter typed
-`AckSchema<Object, A>` per type parameter `A`, it also receives each type argument's inferred
-schema. An enum's static `schema` wins over `Ack.enumValues`. The schema must
-produce the field type.
+**Custom schemas:** a field of custom type `T` resolves through:
+1. `@Schemable(schemas: [...])` on the class, union base, `library;` directive, or an imported `library;` directive;
+2. a static `T.schema` / `T.schema<A>(...)` on the type;
+3. a unique top-level `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the current library.
 
-Use `@AckField(schema: ...)` for a type you cannot edit; the non-generic
-function must produce the field type. A no-op `@AckField()` is rejected. A
-sealed base annotated with `@Schemable(discriminatorKey: ...)` generates a discriminated union from its
+A sealed base annotated with `@Schemable(discriminatorKey: ...)` generates a discriminated union from its
 same-library concrete branches. Unknown properties use
 `unknownProperties: AckUnknownPropertyPolicy.<policy>` (`reject` by default).
 Raw `Ack.object(..., additionalProperties: true)` schemas preserve extras.
@@ -435,35 +424,39 @@ select the target map with `captureField`.
 
 ```dart
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
+
+part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
-  @MinLength(2)
+  @Validate.minLength(2)
   final String displayName;
   final String role;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 
-final account = AccountSchema.parse({'display_name': 'Ada'});
+final account = Account.schema.parse({'display_name': 'Ada'})!;
 print(account.toJson());
-print(AccountSchema.toJsonSchema());
+print(Account.schema.toJsonSchema());
 ```
 
 The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`, `fromJson`,
 `encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`. The backing
-`_accountSchema` is library-private and no public lower-camel alias is
+`_accountSchema` is library-private (`static final schema = _accountSchema;`
+attaches it directly to `Account.schema`) and no public lower-camel alias is
 generated. Set `schemaName: 'WireAccountSchema'` to choose the exact facade
 class name.
 
-Nested class-first fields compose through `AddressSchema.schema`. Imports with
-combinators must expose both names (`show Address, AddressSchema`). A
-schema-first `@Schemable()` declaration may also compose the facade explicitly,
-and class-first models can use schema-first generated model types on a clean
-build.
+Nested class-first fields compose through `AddressSchema.schema` (or
+`Address.schema` when declared on `Address`). Imports with combinators can
+expose just `show Address` when `Address.schema` is declared, or
+`show Address, AddressSchema` otherwise. A schema-first `@Schemable()`
+declaration may also compose the facade explicitly, and class-first models can
+use schema-first generated model types on a clean build.
 
 A class-first `@Schemable()` cannot share a class with `@JsonSerializable()`,
 and `name` is rejected on a class. Class-first value roots, automatic recursive
@@ -497,9 +490,9 @@ Schema for polymorphic validation based on a discriminator field.
 
 Canonical export model for Ack schemas.
 
-- Created by `schema.toSchemaModel()`.
+- Created by `schema.toSchemaModel()` (preserving imported Draft 2020-12 resources by default) or `schema.toSchemaModelDraft7()` (lowering imported schemas to Draft-7 `definitions` / `$ref`).
 - Represents the boundary/export shape, JSON-compatible defaults, discriminator metadata, target-independent constraints, and export warnings.
-- `schema.toSchemaModel().toJsonSchema()` returns the same Draft-7 map as `schema.toJsonSchema()`.
+- `schema.toSchemaModel().toJsonSchema()` returns the same JSON Schema map as `schema.toJsonSchema()` (and `schema.toSchemaModelDraft7().toJsonSchema()` matches `schema.toJsonSchemaDraft7()`).
 - Adapters that need a JSON map should call `schema.toJsonSchema()`; adapters for non-JSON targets should convert from `AckSchemaModel` rather than traversing `AckSchema` subclasses directly.
 
 ### `AnySchema`
@@ -547,9 +540,8 @@ reverse direction. See [Codecs](../core-concepts/codecs.mdx).
   them)
 - `Ack.uri()` → `CodecSchema<String, Uri>` (absolute URI string ↔ `Uri`)
 - `Ack.duration()` → `CodecSchema<int, Duration>` (milliseconds ↔ `Duration`)
-- `Ack.enumCodec(List<T> values)` → `CodecSchema<String, T>` (enum `.name` ↔ enum value)
 
-### Optional schemas
+### Optional schemas and `JsonMaybe<T>`
 
 Every schema can be marked optional via the `optional({bool value = true})` fluent API.
 
@@ -557,4 +549,16 @@ Every schema can be marked optional via the `optional({bool value = true})` flue
 - `schema.optional(value: false)` clears the optional flag.
 - Optional affects object-field presence only; combine with `.nullable()` to also allow explicit `null`.
 
-*See the [Schema types](../core-concepts/schemas.mdx) guide for detailed usage and examples.*
+In class-first `@Schemable()` models, use `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) when you need to distinguish an omitted JSON property from an explicit `null` on both `parse` and `toJson`:
+
+- `const JsonMaybe<T>.absent()` (`JsonAbsent<T>`) — key omitted from JSON.
+- `const JsonMaybe<T>.value(T? value)` (`JsonValue<T>`) — key present in JSON (with non-null or `null` value).
+- `const JsonMaybe<T>.nullValue()` — shorthand for `JsonValue<T>(null)`.
+- `maybe.isAbsent`, `maybe.isPresent`, `maybe.valueOrNull`.
+
+### `.schema.json` code generation (`ack_generator:ack_json_schema`)
+
+- **Builder (`build.yaml`)**: Enable `ack_generator|ack_json_schema` on `lib/**/*.schema.json` to emit `<name>.schema.dart` (with `part '<name>.schema.g.dart';`), which `ack_generator|ack_generator` compiles into typed `@Schemable()` models or validated value models.
+- **Programmatic API (`package:ack_generator/ack_generator.dart`)**: `generateAckSchemaLibrary(schema, {schemaFileName, rootName, baseUri, documents, assertFormats})` returns a `GeneratedAckSchemaFile`.
+
+*See the [Schema types](../core-concepts/schemas.mdx) and [What's New & Migration Guide](../getting-started/migration-guide.mdx) for detailed usage and migration tables.*

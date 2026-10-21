@@ -38,11 +38,17 @@ mixin FluentSchema<
 
   /// Marks the schema as nullable.
   @override
-  Schema nullable({bool value = true}) => copyWith(isNullable: value);
+  Schema nullable({bool value = true}) {
+    if (isNullable == value) return this as Schema;
+    return copyWith(isNullable: value);
+  }
 
   /// Marks the schema as optional so the field can be omitted from an object.
   @override
-  Schema optional({bool value = true}) => copyWith(isOptional: value);
+  Schema optional({bool value = true}) {
+    if (isOptional == value) return this as Schema;
+    return copyWith(isOptional: value);
+  }
 
   /// Sets the description for the schema.
   @override

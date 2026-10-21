@@ -19,22 +19,18 @@ void _expectSuccess(ProcessResult result, String command) {
 }
 
 void main() {
-  test(
-    'type-owned schemas build, analyze, and round-trip',
-    () async {
-      var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
-        projectRoot = projectRoot.parent;
-      }
-      final temporary = await Directory.systemTemp.createTemp(
-        'ack_type_owned_',
-      );
-      try {
-        Directory(p.join(temporary.path, 'lib')).createSync();
-        Directory(p.join(temporary.path, 'test')).createSync();
-        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+  test('type-owned schemas build, analyze, and round-trip', () async {
+    var projectRoot = Directory.current;
+    while (!Directory(
+      p.join(projectRoot.path, 'packages', 'ack_generator'),
+    ).existsSync()) {
+      projectRoot = projectRoot.parent;
+    }
+    final temporary = await Directory.systemTemp.createTemp('ack_type_owned_');
+    try {
+      Directory(p.join(temporary.path, 'lib')).createSync();
+      Directory(p.join(temporary.path, 'test')).createSync();
+      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_type_owned
 publish_to: none
 environment:
@@ -51,7 +47,7 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(p.join(temporary.path, 'lib', 'types.dart')).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'lib', 'types.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 final class Slot {
@@ -113,15 +109,47 @@ final class Command<A extends Object> {
         encode: (command) => command.name,
       );
 }
+
+final class Color {
+  const Color(this.hex);
+
+  final String hex;
+
+  @override
+  bool operator ==(Object other) => other is Color && other.hex == hex;
+
+  @override
+  int get hashCode => hex.hashCode;
+}
+
+final class Money {
+  const Money(this.cents);
+
+  final int cents;
+
+  @override
+  bool operator ==(Object other) => other is Money && other.cents == cents;
+
+  @override
+  int get hashCode => cents.hashCode;
+}
+
+AckSchema<int, Money> importedMoneySchema() => Ack.integer().codec<Money>(
+  decode: Money.new,
+  encode: (money) => money.cents,
+);
 ''');
-        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
-          r'''
+      File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 import 'types.dart';
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
+
+final colorSchema = Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
 
 @Schemable()
 final class Habit with _$HabitAck {
@@ -129,7 +157,20 @@ final class Habit with _$HabitAck {
 
   final String name;
 
-  static final schema = HabitSchema.schema;
+  static final schema = _habitSchema;
+}
+
+@Schemable(schemas: [importedMoneySchema])
+final class Palette with _$PaletteAck {
+  const Palette({
+    required this.primary,
+    required this.swatches,
+    required this.budget,
+  });
+
+  final Color primary;
+  final List<Color> swatches;
+  final Money budget;
 }
 
 @Schemable()
@@ -187,13 +228,13 @@ final class Shelf with _$ShelfAck {
 final panelSchema = Ack.object({
   'header': Slot.schema,
   'commands': Ack.list(Command.schema<CompletionAction>()),
+  'openAll': Trigger.schema<void>(),
   'habit': Habit.schema.optional(),
 });
-''',
-        );
-        File(
-          p.join(temporary.path, 'test', 'type_owned_test.dart'),
-        ).writeAsStringSync(r'''
+''');
+      File(
+        p.join(temporary.path, 'test', 'type_owned_test.dart'),
+      ).writeAsStringSync(r'''
 import 'package:ack_type_owned/models.dart';
 import 'package:ack_type_owned/types.dart';
 import 'package:test/test.dart';
@@ -276,37 +317,53 @@ void main() {
     final panel = Panel.parse({
       'header': 'h',
       'commands': ['go'],
+      'openAll': 'open',
       'habit': {'name': 'run'},
     });
 
     expect(panel.header, const Slot('h'));
     expect(panel.commands.single, isA<Command<CompletionAction>>());
+    expect(panel.openAll, isA<Trigger<void>>());
     expect(panel.habit, const Habit(name: 'run'));
+  });
+
+  test('auto-detected library schemas and @Schemable(schemas: [...]) round-trip', () {
+    final json = {
+      'primary': '#ff0000',
+      'swatches': ['#00ff00', '#0000ff'],
+      'budget': 2500,
+    };
+    final palette = PaletteSchema.parse(json);
+    expect(palette.primary, const Color('#ff0000'));
+    expect(palette.swatches, const [Color('#00ff00'), Color('#0000ff')]);
+    expect(palette.budget, const Money(2500));
+    expect(palette.toJson(), json);
   });
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'build_runner build',
-        );
-        final generated = File(
-          p.join(temporary.path, 'lib', 'models.ack.dart'),
-        ).readAsStringSync();
-        expect(generated, contains('Command.schema<CompletionAction>()'));
-        expect(generated, contains('Trigger.schema<void>()'));
-        expect(generated, contains('Box.schema<Habit>(HabitSchema.schema)'));
-        expect(generated, contains('Ack.map(Slot.schema)'));
-        _expectSuccess(
-          await _run(temporary, ['analyze', '--fatal-infos']),
-          'dart analyze --fatal-infos',
-        );
-        _expectSuccess(await _run(temporary, ['test']), 'dart test');
-      } finally {
-        temporary.deleteSync(recursive: true);
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+      _expectSuccess(
+        await _run(temporary, ['pub', 'get', '--offline']),
+        'dart pub get --offline',
+      );
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'build_runner build',
+      );
+      final generated = File(
+        p.join(temporary.path, 'lib', 'models.g.dart'),
+      ).readAsStringSync();
+      expect(generated, contains('Command.schema<CompletionAction>()'));
+      expect(generated, contains('Trigger.schema<void>()'));
+      expect(generated, contains('Box.schema<Habit>(HabitSchema.schema)'));
+      expect(generated, contains('Ack.map(Slot.schema)'));
+      _expectSuccess(
+        await _run(temporary, ['analyze', '--fatal-infos']),
+        'dart analyze --fatal-infos',
+      );
+      _expectSuccess(await _run(temporary, ['test']), 'dart test');
+    } finally {
+      temporary.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

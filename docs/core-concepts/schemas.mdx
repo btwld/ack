@@ -287,6 +287,8 @@ final userSchema = Ack.object({
 {'name': 'John', 'bio': 'Developer'}
 ```
 
+> **Distinguishing omitted vs. `null` in generated models (`JsonMaybe<T>`):** In raw map schemas (`Ack.object`), `map.containsKey('bio')` tells you whether `'bio'` was omitted or set to `null`. In class-first `@Schemable()` models, declare the field as `JsonMaybe<String>` (`JsonAbsent` when omitted, `JsonValue(null)` when explicitly `null`, `JsonValue('...')` when present) so `PATCH` requests round-trip both states accurately. See [Model Code Generation](./typesafe-schemas.mdx).
+
 ## Object schema operations
 
 ### Extension

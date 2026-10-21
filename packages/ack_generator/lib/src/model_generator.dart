@@ -15,16 +15,6 @@ import 'models/schema_model_graph.dart';
 
 /// Generates Ack models for `@Schemable` top-level schemas and classes.
 final class AckModelGenerator extends Generator {
-  static const _ackInferChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
-    AckInfer,
-    inPackage: 'ack',
-  );
-  static const _ackModelChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
-    AckModel,
-    inPackage: 'ack',
-  );
   static const _schemableChecker = TypeChecker.typeNamed(
     Schemable,
     inPackage: 'ack',
@@ -49,42 +39,42 @@ final class AckModelGenerator extends Generator {
 
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
+    _validateLibrarySchemable(library.element);
     final annotated = <Element>[];
     final annotatedModels = <ClassElement>[];
 
     for (final element in library.allElements) {
-      if (!_hasAckInfer(element)) continue;
-      if (element is ClassElement) {
-        throw InvalidGenerationSource(
-          '@AckInfer can only be applied to top-level schema variables or '
-          'getters, not classes. Use @Schemable() on the class.',
-          element: element,
-        );
-      }
+      if (!_hasSchemableSchema(element)) continue;
       if (element is TopLevelVariableElement) {
         annotated.add(element);
-      } else if (element is GetterElement && element.isOriginDeclaration) {
+      } else if (element is GetterElement) {
+        if (!element.isOriginDeclaration) continue;
         if (element.enclosingElement is! LibraryElement) {
           throw InvalidGenerationSource(
-            '${_annotationLabel(element)} can only be applied to top-level '
-            'schema variables or getters.',
+            '@Schemable can only be applied to top-level schema variables or '
+            'getters.',
             element: element,
           );
         }
         annotated.add(element);
+      } else {
+        throw InvalidGenerationSource(
+          '@Schemable can only be applied to classes or top-level schema '
+          'variables and getters, or library directives.',
+          element: element,
+        );
       }
     }
 
     for (final classElement in library.classes) {
-      if (_ackModelChecker.hasAnnotationOfExact(classElement) ||
-          _schemableChecker.hasAnnotationOfExact(classElement)) {
+      if (_schemableChecker.hasAnnotationOfExact(classElement)) {
         annotatedModels.add(classElement);
       }
       for (final getter in classElement.getters) {
-        if (_hasAckInfer(getter)) {
+        if (_hasSchemableSchema(getter)) {
           throw InvalidGenerationSource(
-            '${_annotationLabel(getter)} can only be applied to top-level '
-            'schema variables or getters.',
+            '@Schemable can only be applied to top-level schema variables or '
+            'getters.',
             element: getter,
           );
         }
@@ -97,14 +87,12 @@ final class AckModelGenerator extends Generator {
       annotated.isNotEmpty ? annotated.first : annotatedModels.first,
     );
 
-    ({AckModelGraph graph, String? ackPrefix, String? schemablePrefix})?
-    schemaFirst;
+    ({AckModelGraph graph, String? ackPrefix})? schemaFirst;
     if (annotated.isNotEmpty) {
       final graph = await SchemaModelGraphBuilder(library).build(annotated);
       schemaFirst = (
         graph: graph,
         ackPrefix: _ackRuntimeQualifier(library, annotated.first),
-        schemablePrefix: _schemableQualifier(library, annotated.first),
       );
     }
     ({AckModelGraph graph, String? ackPrefix})? classFirst;
@@ -130,7 +118,6 @@ final class AckModelGenerator extends Generator {
     if (schemaFirst != null) {
       final specs = AckModelEmitter(
         ackPrefix: schemaFirst.ackPrefix,
-        schemablePrefix: schemaFirst.schemablePrefix,
         schemaPrefixInScope: library.element.firstFragment.libraryImports.any(
           (import) => import.prefix?.element.name == 'schema',
         ),
@@ -154,7 +141,11 @@ final class AckModelGenerator extends Generator {
         ).emit(classFirst.graph),
       );
     }
-    return output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');
+    final body = output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');
+    if (body.isEmpty) return '';
+    return '// ignore_for_file: type=lint\n'
+        '// coverage:ignore-file\n\n'
+        '$body';
   }
 
   void _validateModernGeneratedNames(
@@ -205,18 +196,47 @@ final class AckModelGenerator extends Generator {
     todo: 'Import package:ack/ack.dart, directly or through a barrel.',
   );
 
-  String _annotationLabel(Element element) =>
-      _ackInferChecker.hasAnnotationOfExact(element)
-      ? '@AckInfer'
-      : '@Schemable';
+  bool _hasSchemableSchema(Element element) =>
+      element is! ClassElement &&
+      element is! LibraryElement &&
+      _schemableChecker.hasAnnotationOfExact(element);
 
-  bool _hasAckInfer(Element element) =>
-      _ackInferChecker.hasAnnotationOfExact(element) ||
-      (element is! ClassElement &&
-          _schemableChecker.hasAnnotationOfExact(element));
+  void _validateLibrarySchemable(LibraryElement libraryElement) {
+    final annotation = _schemableChecker.firstAnnotationOfExact(libraryElement);
+    if (annotation == null) return;
+    final reader = ConstantReader(annotation);
+    int index(String option) =>
+        reader.read(option).objectValue.getField('index')!.toIntValue()!;
+    final configured = [
+      if (!reader.read('name').isNull) 'name',
+      if (!reader.read('schemaName').isNull) 'schemaName',
+      if (!reader.read('description').isNull) 'description',
+      if (index('caseStyle') != 0) 'caseStyle',
+      if (!reader.read('discriminatorKey').isNull) 'discriminatorKey',
+      if (!reader.read('discriminatorValue').isNull) 'discriminatorValue',
+      if (index('unknownProperties') != 0) 'unknownProperties',
+      if (reader.read('captureField').stringValue != 'additionalProperties')
+        'captureField',
+    ];
+    if (configured.isNotEmpty) {
+      throw InvalidGenerationSource(
+        '@Schemable on a library directive only supports schemas; received: '
+        '${configured.join(', ')}.',
+        element: libraryElement,
+      );
+    }
+    final schemasReader = reader.read('schemas');
+    if (schemasReader.isNull || schemasReader.listValue.isEmpty) {
+      throw InvalidGenerationSource(
+        '@Schemable on a library directive must specify a non-empty schemas '
+        'list.',
+        element: libraryElement,
+      );
+    }
+  }
 
-  /// Strips `./` segments so `part './user.ack.dart'` matches the file next to
-  /// the input, without treating `part 'sub/user.ack.dart'` as the same path.
+  /// Strips `./` segments so `part './user.g.dart'` matches the file next to
+  /// the input, without treating `part 'sub/user.g.dart'` as the same path.
   String _normalizedPartUri(String uri) {
     final segments = [
       for (final segment in Uri.parse(uri).pathSegments)
@@ -231,23 +251,19 @@ final class AckModelGenerator extends Generator {
   ) async {
     final inputName = buildStep.inputId.pathSegments.last;
     final baseName = inputName.substring(0, inputName.length - '.dart'.length);
-    final expectedAckPart = '$baseName.ack.dart';
-    final expectedJsonPart = '$baseName.ack.g.dart';
+    final expectedPart = '$baseName.g.dart';
     final unit = await buildStep.resolver.compilationUnitFor(buildStep.inputId);
     final parts = {
       for (final directive in unit.directives.whereType<PartDirective>())
         if (directive.uri.stringValue case final uri?) _normalizedPartUri(uri),
     };
-    if (parts.contains(expectedAckPart) && parts.contains(expectedJsonPart)) {
+    if (parts.contains(expectedPart)) {
       return;
     }
     throw InvalidGenerationSource(
-      "Ack model generation requires `part '$expectedAckPart';` and "
-      "`part '$expectedJsonPart';` in this library.",
+      "Ack model generation requires `part '$expectedPart';` in this library.",
       element: annotatedElement,
-      todo:
-          "Add `part '$expectedAckPart';` and `part '$expectedJsonPart';` "
-          "next to the library's directives.",
+      todo: "Add `part '$expectedPart';` next to the library's directives.",
     );
   }
 
@@ -276,25 +292,6 @@ final class AckModelGenerator extends Generator {
         'Import package:ack/ack.dart, directly or through a barrel, and '
         'ensure AckModelAdapter, SchemaResult, deepEquals, and deepHashCode '
         'are exposed.',
-  );
-
-  /// Resolves the visible `Schemable` qualifier for generated JSON markers.
-  ///
-  /// Uses import namespaces so barrel re-exports and `show` combinators work.
-  /// Prefixed imports win over unprefixed ones, in import order.
-  String? _schemableQualifier(
-    LibraryReader library,
-    Element annotatedElement,
-  ) => _visibleQualifier(
-    library,
-    annotatedElement,
-    requiredTypes: const {'Schemable': _schemableChecker},
-    message:
-        'Generated @Schemable.generatedJson requires a visible exact Schemable '
-        'import in this library.',
-    todo:
-        'Import Schemable from package:ack, using the same prefix as the '
-        'schema annotation when one is present.',
   );
 
   String? _visibleQualifier(

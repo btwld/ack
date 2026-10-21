@@ -1,7 +1,7 @@
 part of 'schema.dart';
 
-/// Defers resolving another schema until parse, validation, encode, or export
-/// time.
+/// Schema wrapper that defers resolving another schema until parse,
+/// validation, encode, or export time.
 ///
 /// This enables recursive schema graphs where a child schema needs to refer
 /// back to an outer schema that is assigned after construction.
@@ -184,13 +184,6 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
       refinements: refinements ?? this.refinements,
     );
   }
-
-  @override
-  Map<String, Object?> toMap() => {
-    ...super.toMap(),
-    'name': name,
-    'maxDepth': maxDepth,
-  };
 
   @override
   bool operator ==(Object other) {

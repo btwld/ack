@@ -10,10 +10,23 @@ void main() {
     final Map<String, Object?> modelExport = schema
         .toSchemaModel()
         .toJsonSchema();
+    final Map<String, Object?> draft7Export = schema.toJsonSchemaDraft7();
 
-    expect(exported['type'], isNull);
-    expect(exported['definitions'], isA<Map<String, Object?>>());
+    expect(
+      exported[r'$schema'],
+      'https://json-schema.org/draft/2020-12/schema',
+    );
+    expect(exported['type'], 'string');
+    expect(exported['minLength'], 2);
     expect(modelExport, exported);
+    expect(draft7Export['type'], isNull);
+    expect(draft7Export['allOf'], [
+      {r'$ref': '#/definitions/_ack_import_0_0'},
+    ]);
+    expect((draft7Export['definitions'] as Map)['_ack_import_0_0'], {
+      'type': 'string',
+      'minLength': 2,
+    });
     expect(schema.safeParse('Ada').isOk, isTrue);
     expect(schema.safeParse('A').isFail, isTrue);
   });
@@ -90,17 +103,19 @@ void main() {
     }
   });
 
-  test('unsupported assertions expose immutable diagnostics', () {
-    final document = {'type': 'string', 'format': 'hostname'};
+  test('unknown required vocabularies expose immutable diagnostics', () {
+    final document = {
+      r'$vocabulary': {'https://example.test/required': true},
+    };
     late JsonSchemaImportException failure;
     try {
       Ack.fromJsonSchema(document);
-      fail('Expected an unsupported keyword failure.');
+      fail('Expected an unsupported vocabulary failure.');
     } on JsonSchemaImportException catch (error) {
       failure = error;
     }
-    expect(failure.diagnostics.single.code, 'unsupported_keyword');
-    expect(failure.diagnostics.single.pointer, '#/format');
+    expect(failure.diagnostics.single.code, 'unsupported_vocabulary');
+    expect(failure.diagnostics.single.pointer, r'#/$vocabulary');
     expect(() => failure.diagnostics.clear(), throwsUnsupportedError);
   });
 
@@ -121,5 +136,34 @@ void main() {
     final AckSchema<Object, Object> never = Ack.fromJsonSchema(false);
     expect(never.safeParse(null).isFail, isTrue);
     expect(never.safeParse('anything').isFail, isTrue);
+  });
+
+  test('Draft-07 dialect URIs are accepted by Ack.fromJsonSchema', () {
+    for (final dialectUri in [
+      'http://json-schema.org/draft-07/schema#',
+      'http://json-schema.org/draft-07/schema',
+      'https://json-schema.org/draft-07/schema#',
+      'https://json-schema.org/draft-07/schema',
+    ]) {
+      final schema = Ack.fromJsonSchema({
+        r'$schema': dialectUri,
+        'type': 'string',
+        'format': 'email',
+      }, assertFormats: true);
+      expect(schema.safeParse('alice@example.com').isOk, isTrue);
+      expect(schema.safeParse('not-an-email').isFail, isTrue);
+    }
+  });
+
+  test('dynamic references export by default and reject Draft-7 lowering', () {
+    final schema = Ack.fromJsonSchema({
+      r'$dynamicAnchor': 'node',
+      'type': 'object',
+      'properties': {
+        'next': {r'$dynamicRef': '#node'},
+      },
+    });
+    expect(schema.toJsonSchema()[r'$dynamicAnchor'], 'node');
+    expect(schema.toJsonSchemaDraft7, throwsUnsupportedError);
   });
 }

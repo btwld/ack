@@ -10,6 +10,7 @@ export 'src/ack.dart';
 export 'src/common_types.dart' show JsonMap;
 // Generated model support
 export 'src/models/ack_model_adapter.dart';
+export 'src/models/json_maybe.dart';
 export 'src/utils/collection_utils.dart'
     show deepEquals, deepHashCode, deepUnmodifiableJsonMap;
 // Constraints
@@ -40,13 +41,13 @@ export 'src/schemas/schema.dart'
         Refinement,
         SchemaOperation,
         WrapperSchema,
-        createCodecSchemaInternal;
+        createCodecSchemaInternal,
+        jsonMapOrNull;
 export 'src/validation/ack_exception.dart';
 export 'src/validation/schema_error.dart';
 // Validation results
 export 'src/validation/schema_result.dart';
-// Model annotations. Constraint annotations live in annotations.dart.
+// Model annotations
 export 'src/annotations/ack_field.dart';
-export 'src/annotations/ack_model.dart'
-    show AckCaseStyle, AckUnknownPropertyPolicy;
+export 'src/annotations/constraints.dart' show Validate;
 export 'src/annotations/schemable.dart';

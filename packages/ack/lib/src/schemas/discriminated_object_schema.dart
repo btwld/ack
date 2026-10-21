@@ -61,7 +61,7 @@ final class DiscriminatedObjectSchema<T extends Object>
           'Discriminated branches must be object-backed schemas.',
         );
       }
-      // Union-owned discriminator (PR #107): if a branch declares the
+      // Union-owned discriminator: if a branch declares the
       // discriminator property, it must accept the branch label. Otherwise
       // the union synthesizes the literal automatically via [effectiveBranch].
       final branchDiscriminator = base.properties[discriminatorKey];
@@ -298,7 +298,7 @@ final class DiscriminatedObjectSchema<T extends Object>
     final discValue = discriminatorResult.getOrNull()!;
 
     // Route through `effectiveBranch` so branches authored without the
-    // discriminator property (per PR #107) still validate the literal at parse
+    // discriminator property still validate the literal at parse
     // time. The shared discriminator check guarantees the branch exists, so
     // `effectiveBranch` is always callable here.
     final effective = effectiveBranch(discValue);
@@ -401,7 +401,7 @@ final class DiscriminatedObjectSchema<T extends Object>
     String? matchedDiscValue;
     for (final discValue in schemas.keys) {
       // Select the branch via the effective schema (its literal discriminator
-      // gates selection per PR #107); the union itself writes the discriminator
+      // gates selection); the union itself writes the discriminator
       // onto the encoded boundary in [_encodeBranch].
       final effective = effectiveBranch(discValue, optionalDiscriminator: true);
       final branchCtx = context.createChild(
@@ -471,18 +471,6 @@ final class DiscriminatedObjectSchema<T extends Object>
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
-  }
-
-  @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'discriminatorKey': discriminatorKey,
-      'schemas': schemas.length,
-    };
   }
 
   @override
