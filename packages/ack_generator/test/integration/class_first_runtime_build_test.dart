@@ -109,6 +109,9 @@ dev_dependencies:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
   build_runner: ^2.15.0
   json_serializable: ^6.14.1
+  # json_serializable 6.14.1 does not compile against source_helper 1.4.0.
+  # 6.15.1 fixes that and requires Dart 3.12.
+  source_helper: '>=1.3.10 <1.4.0'
   test: ^1.29.0
 dependency_overrides:
   ack:
