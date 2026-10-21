@@ -103,8 +103,9 @@ void main() {
     });
 
     test('verifies the downloaded archive against a pinned checksum', () {
-      final action = File('.github/actions/setup-flutter/action.yml')
-          .readAsStringSync();
+      final action = File(
+        '.github/actions/setup-flutter/action.yml',
+      ).readAsStringSync();
 
       expect(action, contains('sha256sum --check'));
       expect(action, contains('.github/flutter-releases.json'));
@@ -120,7 +121,7 @@ void main() {
         );
         expect(
           entry.value['dart'],
-          matches(RegExp(r'^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$')),
+          matches(RegExp(r'^\d+\.\d+\.\d+$')),
           reason: 'Flutter ${entry.key} needs the exact bundled Dart version',
         );
       }
@@ -223,8 +224,9 @@ void main() {
     });
 
     test('proves the hosted dependency graph before it uploads', () {
-      final source = File('.github/workflows/publish-packages.yml')
-          .readAsStringSync();
+      final source = File(
+        '.github/workflows/publish-packages.yml',
+      ).readAsStringSync();
 
       expect(source, contains('scripts/stage_package.dart'));
       expect(source, contains('scripts/publish_dry_run.dart'));
@@ -256,9 +258,9 @@ Map<String, String> _automationSources() {
 }
 
 Map<String, Map<String, Object?>> get _flutterReleases {
-  final manifest = jsonDecode(
-    File('.github/flutter-releases.json').readAsStringSync(),
-  ) as Map;
+  final manifest =
+      jsonDecode(File('.github/flutter-releases.json').readAsStringSync())
+          as Map;
   final releases = manifest['releases'] as Map;
 
   return {

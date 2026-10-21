@@ -31,8 +31,9 @@ void _writeAckAdapterFixtures() {
   for (final schemaCase in cases) {
     final fixtureName = '${schemaCase.id}.json';
     final fixturePath = '$_fixtureDirectory/$fixtureName';
-    File(fixturePath)
-        .writeAsStringSync('${_prettyJson(schemaCase.buildJsonSchema())}\n');
+    File(
+      fixturePath,
+    ).writeAsStringSync('${_prettyJson(schemaCase.buildJsonSchema())}\n');
 
     manifestFixtures.add({
       'id': schemaCase.id,
@@ -86,8 +87,9 @@ void _writeNativeFixtures(FirebaseAiNativeSchemaFixtureFamily family) {
     if (schemaCase.isGenerated) {
       fixtureName = '${schemaCase.id}.json';
       final fixturePath = '$fixtureDirectory/$fixtureName';
-      File(fixturePath)
-          .writeAsStringSync('${_prettyJson(schemaCase.buildJsonSchema())}\n');
+      File(
+        fixturePath,
+      ).writeAsStringSync('${_prettyJson(schemaCase.buildJsonSchema())}\n');
     }
 
     manifestFixtures.add({
@@ -97,7 +99,7 @@ void _writeNativeFixtures(FirebaseAiNativeSchemaFixtureFamily family) {
       'features': schemaCase.features,
       'status': schemaCase.status,
       'comparison': schemaCase.comparison,
-      'fixture': ?fixtureName,
+      if (fixtureName != null) 'fixture': fixtureName,
       if (schemaCase.unsupportedReason != null)
         'unsupportedReason': schemaCase.unsupportedReason,
     });

@@ -52,16 +52,22 @@ void main() {
   });
 
   group('official 2020-12 format-assertion vocabulary', () {
-    final groups = (jsonDecode(
-      File('$root/optional/format-assertion.json').readAsStringSync(),
-    ) as List).cast<Map<String, Object?>>();
+    final groups =
+        (jsonDecode(
+                  File(
+                    '$root/optional/format-assertion.json',
+                  ).readAsStringSync(),
+                )
+                as List)
+            .cast<Map<String, Object?>>();
     final documents = <Uri, Object>{
       for (final value in ['true', 'false'])
         Uri.parse(
           'http://localhost:1234/draft2020-12/format-assertion-$value.json',
         ): jsonDecode(
-          File('$root/../remotes/draft2020-12/format-assertion-$value.json')
-              .readAsStringSync(),
+          File(
+            '$root/../remotes/draft2020-12/format-assertion-$value.json',
+          ).readAsStringSync(),
         )!,
     };
     for (final group in groups) {

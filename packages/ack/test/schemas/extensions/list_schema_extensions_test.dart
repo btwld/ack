@@ -146,8 +146,9 @@ void main() {
       });
 
       test('should handle nested structures', () {
-        final schema = Ack.list(Ack.object({'items': Ack.list(Ack.integer())}))
-            .unique();
+        final schema = Ack.list(
+          Ack.object({'items': Ack.list(Ack.integer())}),
+        ).unique();
 
         final result = schema.safeParse([
           {

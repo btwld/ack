@@ -35,9 +35,9 @@ const _schemaShorthand = r'static final schema = $ack.modelSchema;';
 /// static `schema` shorthand.
 Matcher _schemaShorthandOn(String className, {required bool present}) =>
     predicate<String>((source) {
-      final start = RegExp('class ${RegExp.escape(className)}\\b')
-          .firstMatch(source)
-          ?.start;
+      final start = RegExp(
+        'class ${RegExp.escape(className)}\\b',
+      ).firstMatch(source)?.start;
       if (start == null) return false;
       final end = source.indexOf('\n}\n', start);
       final body = source.substring(start, end == -1 ? null : end);

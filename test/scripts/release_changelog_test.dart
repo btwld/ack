@@ -98,9 +98,9 @@ Duplicate stable notes.
   });
 
   test('failed batches leave every changelog unchanged', () async {
-    final scriptPath = File('scripts/update_release_changelog.dart')
-        .absolute
-        .path;
+    final scriptPath = File(
+      'scripts/update_release_changelog.dart',
+    ).absolute.path;
     final workingDirectory = Directory.systemTemp.createTempSync(
       'ack-release-changelog-',
     );

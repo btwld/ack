@@ -1,10 +1,5 @@
 # Ack
 
-Ack 2.0 development uses Flutter 3.50.0-0.1.pre / Dart 3.14.0-315.1.beta.
-Class-first generation requires `augmentations` in analyzer.enable-experiment,
-`build_runner build --enable-experiment=augmentations`, and Dart/Flutter runtime
-commands. Primary constructors are enabled by default.
-
 > A schema validation library for Dart and Flutter with a fluent runtime API, bidirectional codecs, JSON Schema Draft 2020-12 import/export, and two-way model/schema code generation.
 
 Ack validates untrusted boundary data with schemas built through the `Ack`
@@ -57,7 +52,7 @@ Codecs decode a boundary value into a runtime value and encode it back.
 ## Model code generation
 
 Both directions use `@Schemable()`, a single `part '<file>.g.dart';` directive,
-and `dart run build_runner build --enable-experiment=augmentations`. On a top-level schema it is schema-first; on
+and `dart run build_runner build`. On a top-level schema it is schema-first; on
 a class it is class-first; on a `library;` directive `@Schemable(schemas: [...])`
 registers shared custom schemas. `name` applies only to a schema; class options
 apply only to a class, and `schemas` applies to a class or `library;` directive.
@@ -80,7 +75,7 @@ final userSchema = Ack.object({
 });
 ```
 
-Run `dart run build_runner build --enable-experiment=augmentations`. `addressSchema` and `userSchema` generate
+Run `dart run build_runner build`. `addressSchema` and `userSchema` generate
 `Address` and `User`. A custom `@Schemable(name: 'Member')` value is used exactly.
 
 Generated object models provide:
@@ -97,7 +92,7 @@ Generated object models provide:
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 
-For class-first generation (supporting both standard constructors and Dart 3.14
+For class-first generation (supporting both standard constructors and Dart 3.12+
 primary constructors):
 
 ```dart
@@ -106,16 +101,21 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class const Account({
-  @Validate.minLength(2) required final String displayName,
-  final String role = 'member',
-});
+final class Account with _$AccountAck {
+  const Account({required this.displayName, this.role = 'member'});
+
+  @Validate.minLength(2)
+  final String displayName;
+  final String role;
+
+  static final schema = _accountSchema;
+  static final fromJson = AccountSchema.fromJson;
+}
 ```
 
 This generates an `AccountSchema` facade backed by a private `_accountObject`
-wire schema and `_accountSchema` codec. The generated
-class augmentation adds a `fromJson` factory, static `parse` / `safeParse` /
-`schema`, `toJson`, `safeToJson`, `copyWith`, and deep
+wire schema and `_accountSchema` codec. Instantiable models apply the
+`_$AccountAck` mixin for `toJson`, `safeToJson`, `copyWith`, and deep
 equality. The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`,
 `fromJson`, `encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`.
 `schemaName:` overrides the exact public UpperCamelCase facade name; no public
@@ -184,17 +184,14 @@ static `schema` or a `@Schemable(schemas: [...])` entry resolves to it instead o
 
 Extension types work the same way when they implement `Object`. The schema
 must produce the field type, or generation fails. A class-first model
-exposes its generated codec automatically as `Account.schema` (or
+may expose its generated codec as `static final schema = _accountSchema;` (or
 `AccountSchema.schema`). Schema-first objects may reference the same members
 (`'header': Slot.schema`, `'open': Command.schema<void>()`).
 
-Nested class-first models compose through generated `Address.schema`,
-preserving import prefixes. Import combinators and barrels need only expose
-`Address`; explicit facade references also require `AddressSchema`. Ack owns
-the schema/parsing/serialization/value member names; remove handwritten
-forwarders and rename colliding members or import prefixes. Generic annotated
-classes and union branches are unsupported. External domain types may still
-provide their own type-owned schemas. Schema-first
+Nested class-first models compose through `AddressSchema.schema` (or
+`Address.schema` when declared on `Address`), preserving import prefixes. Import
+combinators and barrels can expose just `Address` when `Address.schema` is
+declared, or both `Address` and `AddressSchema` otherwise. Schema-first
 declarations may explicitly use `Address.schema` or the facade, and class-first
 fields may use schema-first generated model types; both directions work from a
 clean build. Nullable/list/set wrappers are preserved. Automatic recursive
@@ -232,7 +229,7 @@ and constraint annotations (`@Validate.optional()`, `@Validate.required()`,
 constructor defaults, case styles, `AckUnknownPropertyPolicy`, and same-library
 sealed discriminated unions. It rejects `dynamic`, nullable list or set
 elements, non-String map keys, recursive class-first graphs, class-first value
-roots, undiscriminated `anyOf` models, and generated-member collisions.
+roots, undiscriminated `anyOf` models, and missing `_$ClassAck` mixins.
 
 Open JSON and presence-aware fields are inferred from their Dart types. `Object`
 means a JSON-safe value (finite numbers, strings, booleans, lists, and

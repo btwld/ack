@@ -6,8 +6,6 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import '../test_utils/run_dart.dart';
-
 void _copyDirectory(
   Directory source,
   Directory destination, {
@@ -31,7 +29,7 @@ void _copyDirectory(
 }
 
 Future<ProcessResult> _run(Directory directory, List<String> arguments) {
-  return runDart(directory, arguments);
+  return Process.run('dart', arguments, workingDirectory: directory.path);
 }
 
 void _expectSuccess(ProcessResult result, String command) {
@@ -61,8 +59,9 @@ void main() {
     'example clean-builds, analyzes, tests, and regenerates deterministically',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
-          .existsSync()) {
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final sourceExample = Directory(p.join(projectRoot.path, 'example'));
@@ -75,18 +74,19 @@ void main() {
 
       try {
         _copyDirectory(sourceExample, temporaryExample);
-        File(p.join(temporaryExample.path, 'analysis_options.yaml'))
-            .writeAsStringSync('''
+        File(
+          p.join(temporaryExample.path, 'analysis_options.yaml'),
+        ).writeAsStringSync('''
 analyzer:
   language:
     strict-casts: true
 ''');
-        File(p.join(temporaryExample.path, 'pubspec.yaml'))
-            .writeAsStringSync('''
+        File(p.join(temporaryExample.path, 'pubspec.yaml')).writeAsStringSync(
+          '''
 name: ack_example
 publish_to: none
 environment:
-  sdk: '>=3.14.0-315.1.beta <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
@@ -98,7 +98,8 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-''');
+''',
+        );
 
         _expectSuccess(
           await _run(temporaryExample, ['pub', 'get', '--offline']),
@@ -124,7 +125,7 @@ dependency_overrides:
         for (final entry in first.entries) {
           final isClassFirst = entry.key.contains('class_first_models');
           if (isClassFirst) {
-            expect(entry.value, contains(r'augment final class Account'));
+            expect(entry.value, contains(r'mixin _$AccountAck'));
             expect(entry.value, contains('final _accountSchema'));
             expect(entry.value, contains('abstract final class AccountSchema'));
             expect(entry.value, contains(r'decode: _$AccountFromRuntime'));
@@ -158,8 +159,9 @@ dependency_overrides:
 
   test('rebuilds when generated outputs are already present', () async {
     var projectRoot = Directory.current;
-    while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
-        .existsSync()) {
+    while (!Directory(
+      p.join(projectRoot.path, 'packages', 'ack_generator'),
+    ).existsSync()) {
       projectRoot = projectRoot.parent;
     }
     final sourceExample = Directory(p.join(projectRoot.path, 'example'));
@@ -172,8 +174,9 @@ dependency_overrides:
 
     try {
       _copyDirectory(sourceExample, temporaryExample, keepGenerated: true);
-      File(p.join(temporaryExample.path, 'analysis_options.yaml'))
-          .writeAsStringSync('''
+      File(
+        p.join(temporaryExample.path, 'analysis_options.yaml'),
+      ).writeAsStringSync('''
 analyzer:
   language:
     strict-casts: true
@@ -182,7 +185,7 @@ analyzer:
 name: ack_example
 publish_to: none
 environment:
-  sdk: '>=3.14.0-315.1.beta <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}

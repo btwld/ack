@@ -80,7 +80,7 @@ final userSchema = Ack.string();
 import 'package:ack/annotations.dart';
 
 @Schemable()
-final class User {
+final class User with _\$UserAck {
   const User({required this.name});
 
   final String name;

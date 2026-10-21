@@ -44,8 +44,10 @@ void main() {
       'should prefer member schema null acceptance over AnyOfSchema nullable',
       () {
         // When a member schema is nullable, it should match first
-        final schema = Ack.anyOf([Ack.string().nullable(), Ack.integer()])
-            .nullable(); // AnyOfSchema is also nullable
+        final schema = Ack.anyOf([
+          Ack.string().nullable(),
+          Ack.integer(),
+        ]).nullable(); // AnyOfSchema is also nullable
 
         final result = schema.safeParse(null);
         expect(result.isOk, isTrue);
@@ -115,8 +117,10 @@ void main() {
   group('AnyOf defaults', () {
     test('should apply anyOf default when input is null', () {
       const defaultValue = 'default string';
-      final schema = Ack.anyOf([Ack.string(), Ack.integer()])
-          .withDefault(defaultValue);
+      final schema = Ack.anyOf([
+        Ack.string(),
+        Ack.integer(),
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -125,8 +129,10 @@ void main() {
 
     test('should prefer default over nullable member schema', () {
       const defaultValue = 'default string';
-      final schema = Ack.anyOf([Ack.string().nullable(), Ack.integer()])
-          .withDefault(defaultValue);
+      final schema = Ack.anyOf([
+        Ack.string().nullable(),
+        Ack.integer(),
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isOk, isTrue);
@@ -149,8 +155,10 @@ void main() {
     test('should fail when default is invalid for all member schemas', () {
       // Use a list as default - neither integer nor double accept lists
       const defaultValue = [1, 2, 3];
-      final schema = Ack.anyOf([Ack.integer(), Ack.double()])
-          .withDefault(defaultValue);
+      final schema = Ack.anyOf([
+        Ack.integer(),
+        Ack.double(),
+      ]).withDefault(defaultValue);
 
       final result = schema.safeParse(null);
       expect(result.isFail, isTrue);

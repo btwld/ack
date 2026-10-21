@@ -210,8 +210,10 @@ void main() {
           'email': Ack.string().email().describe('User email address'),
           'age': Ack.integer().min(13).max(120).describe('User age in years'),
           'preferences': Ack.object({
-            'theme': Ack.enumString(['light', 'dark'])
-                .describe('UI theme preference'),
+            'theme': Ack.enumString([
+              'light',
+              'dark',
+            ]).describe('UI theme preference'),
             'notifications': Ack.boolean().describe(
               'Email notifications enabled',
             ),

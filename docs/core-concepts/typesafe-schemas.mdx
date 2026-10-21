@@ -8,7 +8,7 @@ from a Dart class, or start from a `.schema.json` document.
 | Starting point | Trigger | Generated output |
 | --- | --- | --- |
 | A top-level Ack schema (`final userSchema = ...`) | `@Schemable()` | Immutable `User` class, `User.schema`, `parse`/`safeParse`, `fromJson`/`toJson`, `copyWith` in `<file>.g.dart` |
-| A Dart class or sealed union (`final class Account`) | `@Schemable()` | `_accountSchema` codec, `AccountSchema` facade, and class augmentation in `<file>.g.dart` |
+| A Dart class or sealed union (`final class Account`) | `@Schemable()` | `_accountSchema` codec, `AccountSchema` facade, and `_$AccountAck` mixin in `<file>.g.dart` |
 | A JSON Schema asset (`lib/**/*.schema.json`) | `ack_generator:ack_json_schema` in `build.yaml` | `<name>.schema.dart` + `<name>.schema.g.dart` with typed `@Schemable()` models or validated value models |
 
 `@Schemable()`, `@AckKey`, and the `@Validate.*` constraint and presence
@@ -19,9 +19,6 @@ runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 > **Upgrading from Ack 1.x?** See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for a complete table of changes, removed 1.x annotations, and drop-in 2.0 substitutions.
 
 ## Install the generator
-
-Use the [Dart 3.14 prerelease setup](../getting-started/installation.mdx#dart-314-prerelease-setup),
-including the augmentation experiment flag.
 
 ```bash
 dart pub add ack
@@ -37,7 +34,7 @@ part 'models.g.dart';
 Run the generator after adding or changing a model:
 
 ```bash
-dart run build_runner build --enable-experiment=augmentations
+dart run build_runner build
 ```
 
 ## A working example of both directions
@@ -59,13 +56,28 @@ final orderSchema = Ack.object({
 
 // Class-first: write Account; Ack generates _accountSchema and AccountSchema.
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class const Account({
-  @Validate.minLength(2) required final String displayName,
-  @Validate.email() required final String email,
-  required final String? middleName,
-  final Uri? website,
-  final String role = 'member',
-});
+final class Account with _$AccountAck {
+  const Account({
+    required this.displayName,
+    required this.email,
+    required this.middleName,
+    this.website,
+    this.role = 'member',
+  });
+
+  @Validate.minLength(2)
+  final String displayName;
+
+  @Validate.email()
+  final String email;
+
+  final String? middleName;
+  final Uri? website;
+  final String role;
+
+  static final schema = _accountSchema;
+  static final fromJson = AccountSchema.fromJson;
+}
 ```
 
 After generation, both directions have a typed parsing and JSON boundary:
@@ -161,7 +173,7 @@ This generates a sealed `Pet` base plus `Cat` and `Dog` branches.
 ## Class-first: `@Schemable()` on a class
 
 Use class-first generation when the Dart class is the primary artifact. Ack
-reads constructor-backed fields (including primary constructors) and
+reads constructor-backed fields (including Dart 3.12+ primary constructors) and
 generates a codec schema whose runtime value is your class:
 
 ```dart
@@ -170,7 +182,10 @@ final class Profile({
   @Validate.minLength(2) required final String displayName,
   @Validate.email() required final String email,
   final String role = 'member',
-});
+}) with _$ProfileAck {
+  static final schema = _profileSchema;
+  static final fromJson = ProfileSchema.fromJson;
+}
 ```
 
 Ack generates a library-private `_profileSchema` codec variable and a public
@@ -186,7 +201,8 @@ Ack generates a library-private `_profileSchema` codec variable and a public
 
 Every instantiable `@Schemable` class and implicit sealed-union branch must
 be declared `final class`, initialize its fields through an unnamed generative
-or primary constructor, and contain only final stored fields. An augmentation supplies `toJson()`, `safeToJson()`, a
+or primary constructor, contain only final stored fields, and apply its
+generated `_$ClassAck` mixin. The mixin supplies `toJson()`, `safeToJson()`, a
 typed `copyWith` where omission keeps the current value, explicit `null`
 clears a nullable field, and a wrongly typed argument is a compile-time error,
 and deep collection-aware `==`, `hashCode`, and
@@ -198,17 +214,36 @@ rewrite a hand-written constructor, so direct construction and collection
 replacements passed to `copyWith` must defensively copy mutable inputs in the
 source class when that guarantee is required.
 
-Augmentations add `Profile.fromJson` as a factory constructor, static `parse`
-and `safeParse`, and a static `schema` getter. No mixin, handwritten factory,
-or static forwarder is needed. The `ProfileSchema` facade remains available
-for encoding and schema export. All entry points use the same Ack codec.
+Generated `toJson()` and `safeToJson()` methods delegate through that same
+facade. Ack cannot inject static members or constructors into a hand-written
+class, so the recommended conventions are one-line static tear-offs/fields:
 
-Ack owns these generated member names. Remove handwritten schema/parsing
-forwarders; colliding members or import prefixes fail with a source-located
-diagnostic. For a JSON property named `schema`, use another Dart field name
-with `@AckKey('schema')`. Generic `@Schemable` classes and generic union
-branches are unsupported; use a concrete model or an external domain type
-with a type-owned schema.
+```dart
+static final schema = _profileSchema;
+static final fromJson = ProfileSchema.fromJson;
+```
+
+`static final schema = _profileSchema;` (or `ProfileSchema.schema`) attaches the
+generated codec directly to `Profile.schema` so callers can write
+`Profile.schema.parse(...)`, `Profile.schema.toJsonSchema()`, or
+`Ack.list(Profile.schema)`, and other libraries only need to import `Profile`.
+Both lines are optional: if omitted, `ProfileSchema` still provides every static
+entry point and nested `@Schemable()` models still compose automatically.
+Generation rejects a `schema` static whose type produces another class.
+
+If a framework specifically requires a factory constructor for `fromJson`, use:
+
+```dart
+factory Profile.fromJson(Map<String, dynamic> json) =>
+    ProfileSchema.fromJson(json);
+```
+
+An explicit function-field type is also valid but normally unnecessary:
+
+```dart
+static final Profile Function(Map<String, dynamic>) fromJson =
+    ProfileSchema.fromJson;
+```
 
 Use `@Schemable(description: ...)` and a single-line `@description` tag in a
 `///` or `/** */` doc comment on classes, fields, or constructor parameters to
@@ -225,7 +260,7 @@ It does not change a nested model's own description.
 ```dart
 /// Tracks one unit of work. This prose is not exported.
 @Schemable(description: 'A task the person can complete.')
-final class Task {
+final class Task with _$TaskAck {
   const Task({required this.id, required this.title});
 
   final String id;
@@ -271,7 +306,7 @@ the annotation that changes null acceptance:
 
 ```dart
 @Schemable()
-final class Example {
+final class Example with _$ExampleAck {
   const Example({this.label});
 
   @Validate.optional()
@@ -301,13 +336,15 @@ Use `JsonMaybe<T>` when a `PATCH` request needs to distinguish an omitted field
 
 ```dart
 @Schemable()
-final class ProfilePatch {
+final class ProfilePatch with _$ProfilePatchAck {
   const ProfilePatch({
     this.bio = const JsonMaybe.absent(),
   });
 
   final JsonMaybe<String> bio;
 
+  static final schema = _profilePatchSchema;
+  static final fromJson = ProfilePatchSchema.fromJson;
 }
 
 // Omitted key -> JsonAbsent(); toJson() returns {}
@@ -357,7 +394,7 @@ its schema in the following priority order:
    `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the
    current library.
 
-A domain type without `@Schemable` can declare its schema once, as a static member named
+A type you own can declare its schema once, as a static member named
 `schema`. Any field of that type then resolves to it with no annotation on
 the field, also as a `List` or `Set` item and as a `Map` value:
 
@@ -373,7 +410,7 @@ final class Slot {
 }
 
 @Schemable()
-final class Section {
+final class Section with _$SectionAck {
   const Section({required this.header, this.footer, required this.children});
 
   final Slot header;          // Slot.schema
@@ -475,7 +512,7 @@ AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
 );
 
 @Schemable()
-final class Theme {
+final class Theme with _$ThemeAck {
   const Theme({required this.primary});
 
   final Color primary;
@@ -495,18 +532,18 @@ super parameters:
 
 ```dart
 @Schemable(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _$PetAck {
   const Pet({required this.id});
   final String id;
 }
 
 @Schemable(discriminatorValue: 'cat')
-final class Cat extends Pet {
+final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
   final int lives;
 }
 
-final class Dog extends Pet {
+final class Dog extends Pet with _$DogAck {
   const Dog({required super.id, required this.breed});
   final String breed;
 }
@@ -544,19 +581,19 @@ inputs without validating them.
 
 ### Reusing generated schemas
 
-Nested class-first fields compose through the generated `Address.schema`
-automatically:
+Nested class-first fields compose through the target facade (or `Address.schema`
+when declared on the class) automatically:
 
 ```dart
 import 'address.dart' as address;
 
 @Schemable()
-final class Order {
+final class Order with _$OrderAck {
   const Order({required this.shipping});
   final address.Address shipping;
 }
 
-// Generated field schema: address.Address.schema
+// Generated field schema: address.AddressSchema.schema
 ```
 
 Schema-first declarations can use `Address.schema` or the facade explicitly:
@@ -580,15 +617,16 @@ visible in the annotated library itself. A type reached only through a
 `typedef` from another library, or a codec's runtime type from a library you
 did not import, fails generation with the library to import.
 
-When importing with `show` / `hide` combinators or through a barrel, a
-class-first model only needs to expose `Address`:
+When importing with `show` / `hide` combinators, if a class-first model declares
+`static final schema = _addressSchema;`, importing libraries only need to expose
+`Address`:
 
 ```dart
 import 'address.dart' show Address;
 ```
 
-Only explicit facade references such as `AddressSchema.schema` also require
-the facade to be visible:
+If `Address` does not declare a static `schema`, expose both the hand-written
+model and its generated facade:
 
 ```dart
 import 'address.dart' show Address, AddressSchema;
@@ -631,7 +669,7 @@ targets:
 2. Add `ack_generator` and `build_runner` to dev dependencies.
 3. Declare `part '<file>.g.dart';` in each annotated library.
 4. Put `@Schemable()` on a top-level schema or on a class.
-5. Run `dart run build_runner build --enable-experiment=augmentations`.
+5. Run `dart run build_runner build`.
 
 ## Migrating from 1.x
 

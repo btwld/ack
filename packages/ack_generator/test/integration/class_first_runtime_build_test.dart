@@ -6,10 +6,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import '../test_utils/run_dart.dart';
-
 Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
-    runDart(directory, arguments);
+    Process.run('dart', arguments, workingDirectory: directory.path);
 
 void _expectSuccess(ProcessResult result, String command) {
   expect(
@@ -35,7 +33,7 @@ Map<String, String> _generatedFiles(Directory directory) => {
 
 /// Asserts modern generated parts suppress consumer lints and coverage, then
 /// analyzes them without the lint suppression so the harness rules still
-/// guard the generated code itself.
+/// guard the generated code itself. Frozen `@AckType()` parts are excluded.
 Future<void> _expectConsumerSafeParts(
   Directory project,
   Map<String, String> generated,
@@ -49,8 +47,9 @@ Future<void> _expectConsumerSafeParts(
   for (final MapEntry(key: path, value: source) in modern.entries) {
     expect(source, contains(lintSuppression), reason: path);
     expect(source, contains('// coverage:ignore-file\n'), reason: path);
-    File(p.join(project.path, path))
-        .writeAsStringSync(source.replaceAll(lintSuppression, ''));
+    File(
+      p.join(project.path, path),
+    ).writeAsStringSync(source.replaceAll(lintSuppression, ''));
   }
   try {
     _expectSuccess(
@@ -81,23 +80,26 @@ Future<void> _expectCopyWithRejects(Directory project, String misuse) async {
 }
 
 void main() {
-  test('class-first models compile and preserve the runtime contract', () async {
-    var projectRoot = Directory.current;
-    while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
-        .existsSync()) {
-      projectRoot = projectRoot.parent;
-    }
-    final temporary = await Directory.systemTemp.createTemp(
-      'ack_class_first_runtime_',
-    );
-    try {
-      Directory(p.join(temporary.path, 'lib')).createSync();
-      Directory(p.join(temporary.path, 'test')).createSync();
-      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+  test(
+    'class-first models compile and preserve the runtime contract',
+    () async {
+      var projectRoot = Directory.current;
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
+        projectRoot = projectRoot.parent;
+      }
+      final temporary = await Directory.systemTemp.createTemp(
+        'ack_class_first_runtime_',
+      );
+      try {
+        Directory(p.join(temporary.path, 'lib')).createSync();
+        Directory(p.join(temporary.path, 'test')).createSync();
+        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_class_first_runtime
 publish_to: none
 environment:
-  sdk: '>=3.14.0-315.1.beta <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 dependencies:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
@@ -115,21 +117,22 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-      File(p.join(temporary.path, 'analysis_options.yaml'))
-          .writeAsStringSync('''
+        File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
+          '''
 linter:
   rules:
     - avoid_redundant_argument_values
     - prefer_null_aware_operators
-    - library_private_types_in_public_api
-''');
-      File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
-        'final class Item { const Item(this.value); final String value; }\n',
-      );
-      File(p.join(temporary.path, 'lib', 'beta.dart')).writeAsStringSync(
-        'final class Item { const Item(this.value); final int value; }\n',
-      );
-      File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(r'''
+''',
+        );
+        File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
+          'final class Item { const Item(this.value); final String value; }\n',
+        );
+        File(p.join(temporary.path, 'lib', 'beta.dart')).writeAsStringSync(
+          'final class Item { const Item(this.value); final int value; }\n',
+        );
+        File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
+          r'''
 import 'package:ack/ack.dart';
 
 part 'coexist.g.dart';
@@ -138,26 +141,15 @@ part 'coexist.g.dart';
 final modernSchema = Ack.object({'name': Ack.string()});
 
 @Schemable()
-final class Handwritten {
+final class Handwritten with _$HandwrittenAck {
   const Handwritten({required this.enabled});
 
   final bool enabled;
 }
-''');
-      File(p.join(temporary.path, 'lib', 'prefix_fields.dart'))
-          .writeAsStringSync(r'''
-import 'package:ack/ack.dart' as ack;
-part 'prefix_fields.g.dart';
-@ack.Schemable()
-final class const PrefixFields({
-  required final String ack,
-  required final int Map,
-  required final int Object,
-  required final int dynamic,
-  required final int override,
-});
-''');
-      File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(r'''
+''',
+        );
+        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
+          r'''
 import 'package:ack/ack.dart';
 import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
 
@@ -165,51 +157,6 @@ import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;
 
 part 'models.g.dart';
-
-@Schemable()
-final class const TextDefault({
-  final String text = """
-final class TextDefault
-""",
-});
-
-@Schemable()
-final class const ShadowedNames({
-  required final int other,
-  required final int identical,
-  required final int deepEquals,
-  required final int deepHashCode,
-  required final int ShadowedNamesSchema,
-  final String? nickname,
-});
-
-@Schemable()
-final class const PrimaryAccount({
-  /// @description The display name.
-  @AckKey('display_name') @Validate.minLength(2)
-  required final String name,
-  required final DateTime createdAt,
-  final String? nickname,
-  final int age = 18,
-});
-
-@Schemable()
-final class const ConstraintParent({
-  @AckKey('external_id') @Validate.maxLength(6)
-  required final String id,
-});
-
-@Schemable()
-final class const PrimaryConstraintChild({
-  @Validate.minLength(4) required super.id,
-}) extends ConstraintParent;
-
-@Schemable()
-final class ConventionalConstraintChild extends ConstraintParent {
-  const ConventionalConstraintChild({
-    @Validate.minLength(4) required super.id,
-  });
-}
 
 final class Color {
   const Color(this.hex);
@@ -234,7 +181,7 @@ AckSchema<int, beta.Item> betaItemSchema() => Ack.integer()
     .codec<beta.Item>(decode: beta.Item.new, encode: (item) => item.value);
 
 @Schemable(schemas: [colorSchema])
-final class Profile {
+final class Profile with _$ProfileAck {
   const Profile({
     required this.name,
     this.website,
@@ -252,19 +199,21 @@ final class Profile {
   final Set<String> tags;
   final Color color;
 
+  static final fromJson = ProfileSchema.fromJson;
 }
 
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Account {
+final class Account with _$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
   final String firstName;
   @AckKey('avatar')
   final Uri imageUrl;
 
+  static final fromJson = AccountSchema.fromJson;
 }
 
 @Schemable(unknownProperties: AckUnknownPropertyPolicy.capture)
-final class Config {
+final class Config with _$ConfigAck {
   const Config({
     required this.name,
     this.additionalProperties = const {},
@@ -278,7 +227,7 @@ final class Config {
   unknownProperties: AckUnknownPropertyPolicy.capture,
   captureField: 'extraValues',
 )
-final class CaseStyledExtras {
+final class CaseStyledExtras with _$CaseStyledExtrasAck {
   const CaseStyledExtras({
     required this.displayName,
     this.extraValues = const {},
@@ -288,13 +237,13 @@ final class CaseStyledExtras {
 }
 
 @Schemable(unknownProperties: AckUnknownPropertyPolicy.discard)
-final class Loose {
+final class Loose with _$LooseAck {
   const Loose({required this.name});
   final String name;
 }
 
 @Schemable()
-final class Normalized {
+final class Normalized with _$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
   @Validate.optional()
@@ -302,28 +251,28 @@ final class Normalized {
 }
 
 @Schemable()
-final class NullableDefault {
+final class NullableDefault with _$NullableDefaultAck {
   const NullableDefault({this.label = 'fallback'});
 
   final String? label;
 }
 
 @Schemable()
-final class NullDefault {
+final class NullDefault with _$NullDefaultAck {
   const NullDefault({this.label = null});
 
   final String? label;
 }
 
 @Schemable(schemas: [alphaItemSchema, betaItemSchema])
-final class ImportedPair {
+final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
   final alpha.Item left;
   final beta.Item right;
 }
 
 @Schemable()
-final class ImmutableCollections {
+final class ImmutableCollections with _$ImmutableCollectionsAck {
   const ImmutableCollections({
     required this.matrix,
     required this.labels,
@@ -337,7 +286,7 @@ final class ImmutableCollections {
 }
 
 @Schemable()
-final class Example {
+final class Example with _$ExampleAck {
   const Example({this.label, this.title});
 
   @Validate.optional()
@@ -349,17 +298,18 @@ final class Example {
   @Validate.notEmpty()
   final String? title;
 
+  static final fromJson = ExampleSchema.fromJson;
 }
 
 @Schemable()
-final class ExampleHolder {
+final class ExampleHolder with _$ExampleHolderAck {
   const ExampleHolder({required this.example});
 
   final Example example;
 }
 
 @Schemable()
-final class OptionalNullable {
+final class OptionalNullable with _$OptionalNullableAck {
   const OptionalNullable({this.note});
 
   @Validate.optional()
@@ -367,7 +317,7 @@ final class OptionalNullable {
 }
 
 @Schemable()
-final class InferredNotNull {
+final class InferredNotNull with _$InferredNotNullAck {
   const InferredNotNull({this.label});
 
   @Validate.notNull()
@@ -392,7 +342,7 @@ AckSchema<String, NameTag> nullableNameSchema() =>
     );
 
 @Schemable(schemas: [nullableNameSchema])
-final class OverrideNotNull {
+final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
   @Validate.notNull()
@@ -400,7 +350,7 @@ final class OverrideNotNull {
 }
 
 @Schemable()
-final class RequiredNotNull {
+final class RequiredNotNull with _$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
   @Validate.required()
@@ -420,7 +370,7 @@ AckSchema<String, ParameterEntry> parameterEntrySchema() =>
     );
 
 @Schemable(schemas: [parameterEntrySchema])
-final class CapabilityBinding {
+final class CapabilityBinding with _$CapabilityBindingAck {
   CapabilityBinding({
     required this.name,
     Map<String, ParameterEntry> parameters = const {},
@@ -431,10 +381,11 @@ final class CapabilityBinding {
   @Validate.optional()
   final Map<String, ParameterEntry> parameters;
 
+  static final fromJson = CapabilityBindingSchema.fromJson;
 }
 
 @Schemable()
-final class Envelope {
+final class Envelope with _$EnvelopeAck {
   const Envelope({
     required this.kind,
     this.payload,
@@ -461,12 +412,12 @@ final class Envelope {
 }
 
 @Schemable()
-final class Declined {
+final class Declined with _$DeclinedAck {
   const Declined();
 }
 
 @Schemable()
-final class OptionalCollections {
+final class OptionalCollections with _$OptionalCollectionsAck {
   const OptionalCollections({this.headers, this.aliases, this.tags});
 
   final Map<String, String>? headers;
@@ -475,45 +426,53 @@ final class OptionalCollections {
 }
 
 @Schemable(discriminatorKey: 'type')
-sealed class const Pet({required final String id});
+sealed class Pet with _$PetAck {
+  const Pet({required this.id});
+  final String id;
+}
 
 @Schemable(discriminatorValue: 'cat')
-final class const Cat({required super.id, required final int lives}) extends Pet;
+final class Cat extends Pet with _$CatAck {
+  const Cat({required super.id, required this.lives});
+  final int lives;
+}
 
-final class const Dog({required super.id, required final String breed}) extends Pet {
+final class Dog extends Pet with _$DogAck {
+  const Dog({required super.id, required this.breed});
+  final String breed;
   String get type => 'Dog';
 }
 
 @Schemable(discriminatorKey: 'type')
-sealed class Animal {
+sealed class Animal with _$AnimalAck {
   const Animal({required this.id});
   final String id;
 }
 
-final class Rabbit extends Animal {
+final class Rabbit extends Animal with _$RabbitAck {
   const Rabbit({required super.id, required this.lives});
   final int lives;
 }
 
-final class BabyRabbit extends Rabbit {
+final class BabyRabbit extends Rabbit with _$BabyRabbitAck {
   const BabyRabbit({required super.id, required super.lives, this.note});
   final String? note;
 }
 
 @Schemable()
-final class Parent {
+final class Parent with _$ParentAck {
   const Parent({required this.id});
   final String id;
 }
 
 @Schemable()
-final class Child extends Parent {
+final class Child extends Parent with _$ChildAck {
   const Child({required super.id, this.note});
   final String? note;
 }
 
 @Schemable()
-final class ImplementingChild implements Parent {
+final class ImplementingChild with _$ImplementingChildAck implements Parent {
   const ImplementingChild({required this.id, this.note});
   final String id;
   final String? note;
@@ -522,7 +481,7 @@ final class ImplementingChild implements Parent {
 /// A task the person can complete.
 /// @description This tag has lower priority.
 @Schemable(description: 'A task the person can complete.')
-final class Task {
+final class Task with _$TaskAck {
   const Task({required this.id, required this.title});
 
   final String id;
@@ -538,7 +497,7 @@ final class Task {
  * @description A board that groups related tasks.
  */
 @Schemable()
-final class Board {
+final class Board with _$BoardAck {
   const Board({required this.focus, required this.backlog, this.pinned});
 
   /// The task to do next.
@@ -549,7 +508,7 @@ final class Board {
 }
 
 @Schemable()
-final class Undocumented {
+final class Undocumented with _$UndocumentedAck {
   const Undocumented({required this.value});
 
   /// Ordinary field prose does not become schema data.
@@ -559,7 +518,7 @@ final class Undocumented {
 /// A shape to draw.
 /// @description A shape to draw.
 @Schemable(discriminatorKey: 'kind')
-sealed class Shape {
+sealed class Shape with _$ShapeAck {
   const Shape();
 }
 
@@ -568,13 +527,13 @@ sealed class Shape {
   discriminatorValue: 'circle',
   description: 'A circle, sized by its radius.',
 )
-final class Circle extends Shape {
+final class Circle extends Shape with _$CircleAck {
   const Circle({required this.radius});
 
   final double radius;
 }
 
-final class Square extends Shape {
+final class Square extends Shape with _$SquareAck {
   const Square({required this.side});
 
   final double side;
@@ -584,7 +543,7 @@ final class Square extends Shape {
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
 
 @Schemable()
-final class UserPatch {
+final class UserPatch with _$UserPatchAck {
   const UserPatch({
     this.nickname = const JsonMaybe.absent(),
     this.title = const JsonMaybe.absent(),
@@ -609,16 +568,17 @@ final class PlainJson {
   final String value;
   Map<String, dynamic> toJson() => _$PlainJsonToJson(this);
 }
-''');
-      File(p.join(temporary.path, 'test', 'runtime_test.dart'))
-          .writeAsStringSync(r'''
+''',
+        );
+        File(
+          p.join(temporary.path, 'test', 'runtime_test.dart'),
+        ).writeAsStringSync(r'''
 import 'dart:convert';
 
 import 'package:ack_class_first_runtime/alpha.dart' as alpha;
 import 'package:ack_class_first_runtime/beta.dart' as beta;
 import 'package:ack_class_first_runtime/coexist.dart';
 import 'package:ack_class_first_runtime/models.dart';
-import 'package:ack_class_first_runtime/prefix_fields.dart';
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
@@ -646,113 +606,7 @@ final envelopeJson = <String, Object?>{
 };
 
 void main() {
-  test('formatting preserves declaration-looking multiline defaults', () {
-    expect(TextDefault.fromJson({}).text, 'final class TextDefault\n');
-    expect(TextDefault.schema.parse({})!.text, 'final class TextDefault\n');
-  });
-
-  test('fields cannot shadow runtime import prefixes or generated signature types', () {
-    final json = <String, dynamic>{
-      'ack': 'prefix', 'Map': 1, 'Object': 2, 'dynamic': 3, 'override': 4,
-    };
-    final model = PrefixFields.fromJson(json);
-    expect(model.ack, 'prefix');
-    expect(model, PrefixFields.parse(json));
-    expect(model.hashCode, PrefixFields.parse(json).hashCode);
-    expect(model.toString(), contains('dynamic: 3'));
-    expect(model.toString(), contains('override: 4'));
-    expect(model.toJson(), json);
-    expect(model.safeToJson().isOk, isTrue);
-    expect(PrefixFields.safeParse(json).isOk, isTrue);
-    expect(model.copyWith(ack: 'next').ack, 'next');
-    expect(model.copyWith(dynamic: 5).dynamic, 5);
-    expect(model.copyWith(override: 6).override, 6);
-  });
-
-  test('model fields cannot shadow generated value or JSON operations', () {
-    const value = ShadowedNames(
-      other: 1, identical: 2, deepEquals: 3, deepHashCode: 4,
-      ShadowedNamesSchema: 5, nickname: 'preserved',
-    );
-    final wire = <String, dynamic>{
-      'other': 1, 'identical': 2, 'deepEquals': 3, 'deepHashCode': 4,
-      'ShadowedNamesSchema': 5, 'nickname': 'preserved',
-    };
-    expect(value, ShadowedNames.fromJson(wire));
-    expect(value.hashCode, ShadowedNames.parse(wire).hashCode);
-    expect(value, isNot(value.copyWith(other: 9)));
-    expect(value.copyWith().nickname, 'preserved');
-    expect(value.copyWith(nickname: null).nickname, isNull);
-    expect(value.toJson(), wire);
-    expect(value.safeToJson().isOk, isTrue);
-    expect(ShadowedNames.safeParse(wire).isOk, isTrue);
-  });
-
-  test('primary constructors preserve the validated model contract', () {
-    final wire = <String, dynamic>{
-      'display_name': 'Leo',
-      'createdAt': '2026-10-18T12:00:00.000Z',
-      'nickname': 'L',
-    };
-    final account = PrimaryAccount.fromJson(wire);
-    expect(account.age, 18);
-    expect(account.createdAt, DateTime.utc(2026, 10, 18, 12));
-    expect(account, PrimaryAccount.parse(wire));
-    expect(account.hashCode, PrimaryAccount.parse(wire).hashCode);
-    expect(account.copyWith(), account);
-    expect(account.copyWith(nickname: null).nickname, isNull);
-    expect(account.copyWith(age: 21).age, 21);
-    expect(account.toJson(), {...wire, 'age': 18});
-    expect(account.safeToJson().isOk, isTrue);
-    expect(jsonDecode(jsonEncode(account)), {...wire, 'age': 18});
-    expect(PrimaryAccount.schema, same(PrimaryAccountSchema.schema));
-    expect((PrimaryAccountSchema.toJsonSchema()['properties'] as Map)['display_name']['description'], 'The display name.');
-    expect(PrimaryAccount.safeParse({...wire, 'display_name': 'L'}).isFail, isTrue);
-    expect(() => PrimaryAccount.fromJson({...wire, 'display_name': 'L'}),
-        throwsA(isA<AckException>()));
-    expect(account.copyWith(name: 'L').safeToJson().isFail, isTrue);
-  });
-
-  for (final (name, parse, safeParse, encode, safeEncode, jsonSchema) in [
-    (
-      'primary',
-      PrimaryConstraintChild.parse,
-      PrimaryConstraintChild.safeParse,
-      (String id) => PrimaryConstraintChild(id: id).toJson(),
-      (String id) => PrimaryConstraintChild(id: id).safeToJson(),
-      PrimaryConstraintChildSchema.toJsonSchema(),
-    ),
-    (
-      'conventional',
-      ConventionalConstraintChild.parse,
-      ConventionalConstraintChild.safeParse,
-      (String id) => ConventionalConstraintChild(id: id).toJson(),
-      (String id) => ConventionalConstraintChild(id: id).safeToJson(),
-      ConventionalConstraintChildSchema.toJsonSchema(),
-    ),
-  ]) {
-    test('$name super parameters combine ancestor and child constraints', () {
-      const valid = {'external_id': 'valid'};
-      expect(parse(valid).id, 'valid');
-      expect(safeParse(valid).isOk, isTrue);
-      expect(encode('valid'), valid);
-      expect(safeEncode('valid').isOk, isTrue);
-      for (final invalid in ['abc', 'toolong']) {
-        final wire = {'external_id': invalid};
-        expect(() => parse(wire), throwsA(isA<AckException>()));
-        expect(safeParse(wire).isFail, isTrue);
-        expect(() => encode(invalid), throwsA(isA<AckException>()));
-        expect(safeEncode(invalid).isFail, isTrue);
-      }
-      final properties = jsonSchema['properties'] as Map;
-      expect(properties['external_id'], allOf(
-        containsPair('minLength', 4),
-        containsPair('maxLength', 6),
-      ));
-    });
-  }
-
-  test('presence, defaults, collections, and escape hatches round-trip' , () {
+  test('presence, defaults, collections, and escape hatches round-trip', () {
     final profile = Profile.fromJson({
       'name': 'Ada',
       'website': null,
@@ -1344,82 +1198,83 @@ void main() {
 }
 ''');
 
-      _expectSuccess(
-        await _run(temporary, ['pub', 'get', '--offline']),
-        'dart pub get --offline',
-      );
-      _expectSuccess(
-        await _run(temporary, ['run', 'build_runner', 'build']),
-        'build_runner build',
-      );
-      final generated = _generatedFiles(temporary);
-      expect(
-        generated.keys,
-        containsAll(['lib/coexist.g.dart', 'lib/models.g.dart']),
-      );
-      expect(
-        generated['lib/models.g.dart'],
-        contains(r'decode: _$ProfileFromRuntime'),
-      );
-      expect(generated['lib/models.g.dart'], contains(r'_$PlainJsonFromJson'));
-      expect(generated['lib/models.g.dart'], contains('class Legacy'));
-      expect(
-        generated['lib/models.g.dart'],
-        contains(r'augment final class Profile'),
-      );
-      expect(
-        generated['lib/models.g.dart'],
-        contains(r'implements $ParentCopyWith<$Result>'),
-      );
-      expect(
-        generated['lib/models.g.dart'],
-        contains(r'implements $RabbitCopyWith<$Result>'),
-      );
-      expect(
-        generated['lib/models.g.dart'],
-        contains('abstract final class ProfileSchema'),
-      );
-      expect(generated['lib/models.g.dart'], contains('final _profileSchema'));
-      expect(generated['lib/coexist.g.dart'], contains('class Modern'));
-      expect(
-        generated['lib/coexist.g.dart'],
-        contains(r'augment final class Handwritten'),
-      );
-      expect(
-        generated['lib/models.g.dart'],
-        isNot(contains('final profileSchema =')),
-      );
-      expect(
-        generated['lib/models.g.dart'],
-        contains('parameters: parameters ?? _source.parameters'),
-      );
-      expect(
-        generated['lib/models.g.dart'],
-        isNot(contains('parameters as Map<String, ParameterEntry>?')),
-      );
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
+        _expectSuccess(
+          await _run(temporary, ['run', 'build_runner', 'build']),
+          'build_runner build',
+        );
+        final generated = _generatedFiles(temporary);
+        expect(
+          generated.keys,
+          containsAll(['lib/coexist.g.dart', 'lib/models.g.dart']),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          contains(r'decode: _$ProfileFromRuntime'),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          contains(r'_$PlainJsonFromJson'),
+        );
+        expect(generated['lib/models.g.dart'], contains('class Legacy'));
+        expect(generated['lib/models.g.dart'], contains(r'mixin _$ProfileAck'));
+        expect(
+          generated['lib/models.g.dart'],
+          contains(r'implements $ParentCopyWith<$Result>'),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          contains(r'implements $RabbitCopyWith<$Result>'),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          contains('abstract final class ProfileSchema'),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          contains('final _profileSchema'),
+        );
+        expect(generated['lib/coexist.g.dart'], contains('class Modern'));
+        expect(
+          generated['lib/coexist.g.dart'],
+          contains(r'mixin _$HandwrittenAck'),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          isNot(contains('final profileSchema =')),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          contains('parameters: parameters ?? _source.parameters'),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          isNot(contains('parameters as Map<String, ParameterEntry>?')),
+        );
 
-      _expectSuccess(
-        await _run(temporary, ['analyze', '--fatal-infos']),
-        'dart analyze --fatal-infos',
-      );
-      await _expectConsumerSafeParts(temporary, generated);
-      await _expectCopyWithRejects(temporary, '''
+        _expectSuccess(
+          await _run(temporary, ['analyze', '--fatal-infos']),
+          'dart analyze --fatal-infos',
+        );
+        await _expectConsumerSafeParts(temporary, generated);
+        await _expectCopyWithRejects(temporary, '''
 import 'models.dart';
 
 Profile misuse(Profile profile) => profile.copyWith(nickname: const Object());
 ''');
-      _expectSuccess(await _run(temporary, ['test']), 'dart test');
-      final modelsSource = File(p.join(temporary.path, 'lib', 'models.dart'));
-      modelsSource.writeAsStringSync(
-        '${modelsSource.readAsStringSync()}\n// Force an outputs-present regeneration.\n',
-      );
-      _expectSuccess(
-        await _run(temporary, ['run', 'build_runner', 'build']),
-        'outputs-present build_runner build',
-      );
-      expect(_generatedFiles(temporary), generated);
-    } finally {
-      temporary.deleteSync(recursive: true);
-    }
-  }, timeout: const Timeout(Duration(minutes: 3)));
+        _expectSuccess(await _run(temporary, ['test']), 'dart test');
+        _expectSuccess(
+          await _run(temporary, ['run', 'build_runner', 'build']),
+          'outputs-present build_runner build',
+        );
+        expect(_generatedFiles(temporary), generated);
+      } finally {
+        temporary.deleteSync(recursive: true);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 }

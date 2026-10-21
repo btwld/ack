@@ -24,30 +24,33 @@ part 'model.g.dart';
 ''';
 
 void main() {
-  test('class-first runtime mapping uses direct constructor and map literals with pinned case style', () async {
-    await _expectGeneratedPart(
-      '''
+  test(
+    'class-first runtime mapping uses direct constructor and map literals with pinned case style',
+    () async {
+      await _expectGeneratedPart(
+        '''
 $_head
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class User {
+final class User with _\$UserAck {
   const User({required this.firstName, this.nickname});
 
   final String firstName;
   final String? nickname;
 }
 ''',
-      allOf([
-        contains(r'User _$UserFromRuntime(Map<String, Object?> value)'),
-        contains("firstName: value['first_name'] as String"),
-        contains("nickname: value['nickname'] as String?"),
-        contains(r'Map<String, Object?> _$UserToRuntime(User model)'),
-        contains("'first_name': model.firstName"),
-        contains("'nickname': ?model.nickname"),
-        isNot(contains(r'_$UserFromJson')),
-        isNot(contains(r'_$UserToJson')),
-      ]),
-    );
-  });
+        allOf([
+          contains(r'User _$UserFromRuntime(Map<String, Object?> value)'),
+          contains("firstName: value['first_name'] as String"),
+          contains("nickname: value['nickname'] as String?"),
+          contains(r'Map<String, Object?> _$UserToRuntime(User model)'),
+          contains("'first_name': model.firstName"),
+          contains("'nickname': ?model.nickname"),
+          isNot(contains(r'_$UserFromJson')),
+          isNot(contains(r'_$UserToJson')),
+        ]),
+      );
+    },
+  );
 
   test(
     'runtime emission auto-includes unannotated concrete sealed branches',
@@ -56,12 +59,12 @@ final class User {
         '''
 $_head
 @Schemable(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet({required this.id});
   final String id;
 }
 
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat({required super.id, required this.lives});
   final int lives;
 }
@@ -83,12 +86,12 @@ final class Cat extends Pet {
       '''
 $_head
 @Schemable(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat({required this.livesLeft});
   final int livesLeft;
 }
@@ -113,7 +116,7 @@ final class Cat extends Pet {
         '''
 $_head
 @Schemable(caseStyle: AckCaseStyle.${style.name})
-final class User {
+final class User with _\$UserAck {
   const User({required this.firstName});
 
   final String firstName;

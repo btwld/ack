@@ -48,15 +48,17 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
   ImportedJsonSchema._(
     this._root, {
-    required this._externalRoots,
-    required this._indexedNodes,
+    required List<_ImportedNode> externalRoots,
+    required List<_ImportedNode> indexedNodes,
     required this.assertFormats,
     bool? isNullable,
     super.isOptional,
     String? description,
     super.constraints,
     super.refinements,
-  }) : super(
+  }) : _externalRoots = externalRoots,
+       _indexedNodes = indexedNodes,
+       super(
          isNullable: isNullable ?? _checkImportedNode(_root, null) == null,
          description: description ?? _root.keywords['description'] as String?,
        );

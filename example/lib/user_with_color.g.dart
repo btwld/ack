@@ -66,8 +66,8 @@ final class ColorModel {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ColorModel &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.value, other.value));
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
@@ -156,9 +156,9 @@ final class Profile {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Profile &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.bio, other.bio) &&
-          deepEquals(this.website, other.website));
+          runtimeType == other.runtimeType &&
+          deepEquals(bio, other.bio) &&
+          deepEquals(website, other.website));
 
   @override
   int get hashCode =>
@@ -195,15 +195,14 @@ final class _$ProfileCopyWith implements $ProfileCopyWith<Profile> {
   static const _ProfileCopyWithUnset _ackCopyWithUnset =
       _ProfileCopyWithUnset();
 
-  static bool _ackIsCopyWithUnset(Object? value) =>
-      identical(value, _ackCopyWithUnset);
-
   final Profile _source;
 
   @override
   Profile call({String? bio, Object? website = _ackCopyWithUnset}) => Profile(
     bio: bio ?? _source.bio,
-    website: _ackIsCopyWithUnset(website) ? _source.website : website as Uri?,
+    website: identical(website, _ackCopyWithUnset)
+        ? _source.website
+        : website as Uri?,
   );
 }
 
@@ -287,15 +286,15 @@ final class UserWithColor {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserWithColor &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.firstName, other.firstName) &&
-          deepEquals(this.lastName, other.lastName) &&
-          deepEquals(this.age, other.age) &&
-          deepEquals(this.profile, other.profile) &&
-          deepEquals(this.color, other.color) &&
-          deepEquals(this.favoriteColor, other.favoriteColor) &&
-          deepEquals(this.pet, other.pet) &&
-          deepEquals(this.pets, other.pets));
+          runtimeType == other.runtimeType &&
+          deepEquals(firstName, other.firstName) &&
+          deepEquals(lastName, other.lastName) &&
+          deepEquals(age, other.age) &&
+          deepEquals(profile, other.profile) &&
+          deepEquals(color, other.color) &&
+          deepEquals(favoriteColor, other.favoriteColor) &&
+          deepEquals(pet, other.pet) &&
+          deepEquals(pets, other.pets));
 
   @override
   int get hashCode => Object.hashAll([
@@ -379,9 +378,6 @@ final class _$UserWithColorCopyWith
   static const _UserWithColorCopyWithUnset _ackCopyWithUnset =
       _UserWithColorCopyWithUnset();
 
-  static bool _ackIsCopyWithUnset(Object? value) =>
-      identical(value, _ackCopyWithUnset);
-
   final UserWithColor _source;
 
   @override
@@ -400,7 +396,7 @@ final class _$UserWithColorCopyWith
     age: age ?? _source.age,
     profile: profile ?? _source.profile,
     color: color ?? _source.color,
-    favoriteColor: _ackIsCopyWithUnset(favoriteColor)
+    favoriteColor: identical(favoriteColor, _ackCopyWithUnset)
         ? _source.favoriteColor
         : favoriteColor as ColorModel?,
     pet: pet ?? _source.pet,

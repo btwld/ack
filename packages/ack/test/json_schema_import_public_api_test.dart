@@ -8,8 +8,9 @@ import 'package:test/test.dart';
 Future<ProcessResult> _compileFixture(String name) {
   final temporary = Directory.systemTemp.createTempSync('ack-import-api-');
   addTearDown(() => temporary.deleteSync(recursive: true));
-  final source = File('test/fixtures/public_api/$name.dart.txt')
-      .copySync('${temporary.path}/consumer.dart');
+  final source = File(
+    'test/fixtures/public_api/$name.dart.txt',
+  ).copySync('${temporary.path}/consumer.dart');
 
   return Process.run(Platform.resolvedExecutable, [
     'compile',

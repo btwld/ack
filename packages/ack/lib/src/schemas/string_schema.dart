@@ -55,8 +55,8 @@ final class StringSchema extends AckSchema<String, String>
     super.description,
     super.constraints,
     super.refinements,
-    this._normalizers = const [],
-  });
+    List<_StringNormalizerStep> normalizers = const [],
+  }) : _normalizers = normalizers;
 
   @internal
   int? get firstPostNormalizerConstraintIndex =>

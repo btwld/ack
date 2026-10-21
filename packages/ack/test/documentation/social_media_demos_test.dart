@@ -14,10 +14,9 @@ void main() {
               return {...data, 'age': age};
             });
 
-        final result = userSchema.parse({
-          'name': 'John Doe',
-          'birthYear': 1990,
-        }) as Map<String, dynamic>;
+        final result =
+            userSchema.parse({'name': 'John Doe', 'birthYear': 1990})
+                as Map<String, dynamic>;
 
         expect(result['name'], equals('John Doe'));
         expect(result['birthYear'], equals(1990));

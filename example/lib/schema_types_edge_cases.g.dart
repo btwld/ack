@@ -78,11 +78,11 @@ final class Product {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Product &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.name, other.name) &&
-          deepEquals(this.tags, other.tags) &&
-          deepEquals(this.scores, other.scores) &&
-          deepEquals(this.flags, other.flags));
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(tags, other.tags) &&
+          deepEquals(scores, other.scores) &&
+          deepEquals(flags, other.flags));
 
   @override
   int get hashCode => Object.hashAll([
@@ -205,9 +205,9 @@ final class Grid {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Grid &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.name, other.name) &&
-          deepEquals(this.matrix, other.matrix));
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(matrix, other.matrix));
 
   @override
   int get hashCode =>
@@ -317,11 +317,11 @@ final class Address {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Address &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.street, other.street) &&
-          deepEquals(this.city, other.city) &&
-          deepEquals(this.zipCode, other.zipCode) &&
-          deepEquals(this.country, other.country));
+          runtimeType == other.runtimeType &&
+          deepEquals(street, other.street) &&
+          deepEquals(city, other.city) &&
+          deepEquals(zipCode, other.zipCode) &&
+          deepEquals(country, other.country));
 
   @override
   int get hashCode => Object.hashAll([
@@ -450,11 +450,11 @@ final class Person {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Person &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.name, other.name) &&
-          deepEquals(this.email, other.email) &&
-          deepEquals(this.address, other.address) &&
-          deepEquals(this.age, other.age));
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(email, other.email) &&
+          deepEquals(address, other.address) &&
+          deepEquals(age, other.age));
 
   @override
   int get hashCode => Object.hashAll([
@@ -575,11 +575,11 @@ final class Employee {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Employee &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.name, other.name) &&
-          deepEquals(this.employeeId, other.employeeId) &&
-          deepEquals(this.homeAddress, other.homeAddress) &&
-          deepEquals(this.workAddress, other.workAddress));
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(employeeId, other.employeeId) &&
+          deepEquals(homeAddress, other.homeAddress) &&
+          deepEquals(workAddress, other.workAddress));
 
   @override
   int get hashCode => Object.hashAll([
@@ -716,12 +716,12 @@ final class Modifier {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Modifier &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.requiredField, other.requiredField) &&
-          deepEquals(this.optionalField, other.optionalField) &&
-          deepEquals(this.nullableField, other.nullableField) &&
-          deepEquals(this.optionalNullable, other.optionalNullable) &&
-          deepEquals(this.nullableOptional, other.nullableOptional));
+          runtimeType == other.runtimeType &&
+          deepEquals(requiredField, other.requiredField) &&
+          deepEquals(optionalField, other.optionalField) &&
+          deepEquals(nullableField, other.nullableField) &&
+          deepEquals(optionalNullable, other.optionalNullable) &&
+          deepEquals(nullableOptional, other.nullableOptional));
 
   @override
   int get hashCode => Object.hashAll([
@@ -779,9 +779,6 @@ final class _$ModifierCopyWith implements $ModifierCopyWith<Modifier> {
   static const _ModifierCopyWithUnset _ackCopyWithUnset =
       _ModifierCopyWithUnset();
 
-  static bool _ackIsCopyWithUnset(Object? value) =>
-      identical(value, _ackCopyWithUnset);
-
   final Modifier _source;
 
   @override
@@ -793,16 +790,16 @@ final class _$ModifierCopyWith implements $ModifierCopyWith<Modifier> {
     Object? nullableOptional = _ackCopyWithUnset,
   }) => Modifier(
     requiredField: requiredField ?? _source.requiredField,
-    optionalField: _ackIsCopyWithUnset(optionalField)
+    optionalField: identical(optionalField, _ackCopyWithUnset)
         ? _source.optionalField
         : optionalField as String?,
-    nullableField: _ackIsCopyWithUnset(nullableField)
+    nullableField: identical(nullableField, _ackCopyWithUnset)
         ? _source.nullableField
         : nullableField as String?,
-    optionalNullable: _ackIsCopyWithUnset(optionalNullable)
+    optionalNullable: identical(optionalNullable, _ackCopyWithUnset)
         ? _source.optionalNullable
         : optionalNullable as String?,
-    nullableOptional: _ackIsCopyWithUnset(nullableOptional)
+    nullableOptional: identical(nullableOptional, _ackCopyWithUnset)
         ? _source.nullableOptional
         : nullableOptional as String?,
   );
@@ -889,11 +886,11 @@ final class TaggedItem {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is TaggedItem &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.name, other.name) &&
-          deepEquals(this.requiredTags, other.requiredTags) &&
-          deepEquals(this.optionalTags, other.optionalTags) &&
-          deepEquals(this.nullableTags, other.nullableTags));
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(requiredTags, other.requiredTags) &&
+          deepEquals(optionalTags, other.optionalTags) &&
+          deepEquals(nullableTags, other.nullableTags));
 
   @override
   int get hashCode => Object.hashAll([
@@ -953,9 +950,6 @@ final class _$TaggedItemCopyWith implements $TaggedItemCopyWith<TaggedItem> {
   static const _TaggedItemCopyWithUnset _ackCopyWithUnset =
       _TaggedItemCopyWithUnset();
 
-  static bool _ackIsCopyWithUnset(Object? value) =>
-      identical(value, _ackCopyWithUnset);
-
   final TaggedItem _source;
 
   @override
@@ -967,10 +961,10 @@ final class _$TaggedItemCopyWith implements $TaggedItemCopyWith<TaggedItem> {
   }) => TaggedItem(
     name: name ?? _source.name,
     requiredTags: requiredTags ?? _source.requiredTags,
-    optionalTags: _ackIsCopyWithUnset(optionalTags)
+    optionalTags: identical(optionalTags, _ackCopyWithUnset)
         ? _source.optionalTags
         : optionalTags as List<String>?,
-    nullableTags: _ackIsCopyWithUnset(nullableTags)
+    nullableTags: identical(nullableTags, _ackCopyWithUnset)
         ? _source.nullableTags
         : nullableTags as List<String>?,
   );
@@ -1035,9 +1029,9 @@ final class ContactList {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ContactList &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.name, other.name) &&
-          deepEquals(this.addresses, other.addresses));
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(addresses, other.addresses));
 
   @override
   int get hashCode => Object.hashAll([
@@ -1137,7 +1131,7 @@ final class Empty {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Empty && this.runtimeType == other.runtimeType);
+      (other is Empty && runtimeType == other.runtimeType);
 
   @override
   int get hashCode => Object.hashAll([runtimeType]);
@@ -1222,8 +1216,8 @@ final class Minimal {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Minimal &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.id, other.id));
+          runtimeType == other.runtimeType &&
+          deepEquals(id, other.id));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(id)]);
@@ -1311,8 +1305,8 @@ final class NamedItem {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is NamedItem &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.name, other.name));
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(name)]);
@@ -1399,8 +1393,8 @@ final class Item {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Item &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.id, other.id));
+          runtimeType == other.runtimeType &&
+          deepEquals(id, other.id));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(id)]);
@@ -1489,8 +1483,8 @@ final class MyCustomSchema123 {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is MyCustomSchema123 &&
-          this.runtimeType == other.runtimeType &&
-          deepEquals(this.value, other.value));
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);

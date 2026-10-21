@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  test('ack_generator pins Analyzer to the supported 14.x line', () {
+  test('ack_generator pins Analyzer to the supported 13.x line', () {
     final pubspec = File(
       p.join(
         Directory.current.path.endsWith('ack_generator')
@@ -14,10 +14,10 @@ void main() {
       ),
     ).readAsStringSync();
 
-    expect(pubspec, contains('analyzer: ">=14.3.0 <15.0.0"'));
+    expect(pubspec, contains('analyzer: ">=13.0.0 <14.0.0"'));
   });
 
-  test('schema analysis uses only the supported Analyzer 14 AST shape', () {
+  test('schema analysis uses only the supported Analyzer 10 AST shape', () {
     final packageRoot = Directory.current.path.endsWith('ack_generator')
         ? Directory.current.path
         : p.join(Directory.current.path, 'packages', 'ack_generator');

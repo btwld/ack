@@ -95,7 +95,7 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
 
   /// Creates the shared configuration for a concrete schema.
   ///
-  /// Direct concrete-schema constructors retain `constraints` and `refinements`
+  /// Direct concrete-schema constructors retain [constraints] and [refinements]
   /// without copying so they can remain `const`. Prefer the `Ack` factories and
   /// fluent methods, which own the collections they create; callers using a
   /// concrete constructor must not mutate supplied collections afterward.
@@ -103,9 +103,10 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
     this.isNullable = false,
     this.isOptional = false,
     this.description,
-    this._constraints = const [],
-    this._refinements = const [],
-  });
+    List<Constraint<Runtime>> constraints = const [],
+    List<Refinement<Runtime>> refinements = const [],
+  }) : _constraints = constraints,
+       _refinements = refinements;
 
   // ---------------------------------------------------------------------------
   // Subclass-facing internal lifecycle

@@ -147,9 +147,9 @@ List<_LiveFirebaseAiSchemaCase> _liveFirebaseAiSchemaCases() => [
     name: 'any JSON-compatible payload',
     schema: Ack.object({
       'id': Ack.string().uuid(),
-      'labels': Ack.list(Ack.enumString(['alpha', 'beta', 'stable']))
-          .minLength(2)
-          .maxLength(2),
+      'labels': Ack.list(
+        Ack.enumString(['alpha', 'beta', 'stable']),
+      ).minLength(2).maxLength(2),
       'payload': Ack.any(),
     }, additionalProperties: true).describe('Flexible event response'),
     prompt:

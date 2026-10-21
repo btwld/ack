@@ -70,10 +70,8 @@ CallToolResult ackValidationErrorToCallToolResult(
 );
 
 /// A tool callback receiving validated ACK runtime arguments and MCP context.
-typedef AckToolFunction<R> = FutureOr<CallToolResult> Function(
-  R args,
-  RequestHandlerExtra extra,
-);
+typedef AckToolFunction<R> =
+    FutureOr<CallToolResult> Function(R args, RequestHandlerExtra extra);
 
 /// Registers MCP tools whose input contracts and parsing are owned by ACK.
 extension AckMcpServer on McpServer {
