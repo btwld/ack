@@ -24,8 +24,8 @@ via `@Schemable(schemas: [...])` and automatic same-library detection,
 (`StandardSchemaV1`, `@AckType`, `@AckInfer`, `@AckModel`, and `.ack.dart` /
 `.ack.g.dart` dual-part generation).
 
-The shared API baseline for this release is 1.6.2. Confirm that all five
-packages have published 1.6.2 versions before preparing the release.
+The shared API baseline for this release is 1.7.0. Confirm that all five
+packages have published 1.7.0 versions before preparing the release.
 
 Melos **8.x** is configured with `mode: fixed` and `workspaceTag: true`, matching
 this repository's release-tag verifier. `smartDependents: true` preserves
@@ -72,7 +72,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    Update installation snippets to match each package's version.
 5. Compare against the most recent coordinated stable release in
    `API_BASELINE_VERSION` in `.github/workflows/preflight.yml` (currently
-   `1.6.2`). Keep that stable baseline for prereleases, so a prerelease cannot hide a
+   `1.7.0`). Keep that stable baseline for prereleases, so a prerelease cannot hide a
    breaking change since the last stable version. Raise it after the next
    stable release. Record a new
    package's actual first release in `ackPackageFirstReleases` in
@@ -86,7 +86,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    ```sh
    dart scripts/verify_release_tag.dart v2.0.0-alpha.1 --skip-ancestry
    dart run melos run ci
-   dart scripts/api_check.dart 1.6.2
+   dart scripts/api_check.dart 1.7.0
    dart scripts/publish_dry_run.dart
    dart run melos run validate-jsonschema:batch
    ```

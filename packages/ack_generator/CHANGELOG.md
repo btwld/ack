@@ -37,6 +37,13 @@
   `lib/**/*.schema.json` Draft 2020-12 documents, which
   `ack_generator:ack_generator` compiles into `<name>.schema.g.dart` typed
   models or validated value-model libraries (`#167`).
+* Apply scalar `@Validate.*` constraints on `List` and `Set` fields and
+  parameters to the items, alongside the collection's own constraints:
+  `@Validate.min(1) @Validate.minItems(1) List<int>` infers
+  `Ack.list(Ack.integer().min(1)).minItems(1)`.
+* Resolve non-nullable `Object` fields through a class-level or union-level
+  `@Schemable(schemas: [...])` entry whose schema targets `Object`; `Object?`
+  fields still infer `Ack.any()`.
 
 ### Fixed
 
