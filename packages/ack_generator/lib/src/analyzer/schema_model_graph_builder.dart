@@ -343,18 +343,19 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           todo: 'Extract it to a named @Schemable schema declaration.',
         );
       }
+      final runtimeRef = await _runtimeRefForSchema(
+        entry.value,
+        path: fieldPath,
+        context: declaration.element,
+        throughLazy: false,
+      );
       fields.add(
         AckFieldNode(
           dartName: jsonKey,
           jsonKey: jsonKey,
           presence: _fieldPresence(fieldChain),
-          nullable: fieldChain.nullable,
-          runtimeRef: await _runtimeRefForSchema(
-            entry.value,
-            path: fieldPath,
-            context: declaration.element,
-            throughLazy: false,
-          ),
+          nullable: fieldChain.nullable || runtimeRef is AckNullableTypeRef,
+          runtimeRef: runtimeRef,
           description: descriptionFromExpression(entry.value),
         ),
       );
@@ -521,7 +522,13 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         );
       case 'any':
         // A JSON-safe value field. Ack.any() roots are rejected in _resolve.
-        return const AckScalarTypeRef('Object');
+        return const AckScalarTypeRef('Object', isJsonValue: true);
+      case 'preserveBoundary':
+        final arguments = argumentExpressions(chain.base!.argumentList);
+        if (arguments.length != 1) {
+          _rejectUnsupportedRoot('preserveBoundary', path, context);
+        }
+        return _jsonBoundaryRef(arguments.single, path: path, context: context);
       case 'anyOf':
       case 'instance':
         _rejectUnsupportedRoot(baseName, path, context);
@@ -692,6 +699,187 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       collectionElement: collectionElement,
     );
   }
+
+  /// Infers an explicitly preserved JSON boundary without inferring opaque
+  /// codec runtime values. Reuses the normal source/reference machinery.
+  Future<AckInferRef> _jsonBoundaryRef(
+    Expression expression, {
+    required String path,
+    required Element context,
+    Set<Element> visited = const {},
+    int depth = 0,
+  }) async {
+    if (depth >= ModelGraphBuilderBase.maxReferenceDepth) {
+      throw InvalidGenerationSource(
+        '$path exceeds JSON boundary reference depth.',
+        element: context,
+      );
+    }
+    final chain = parseSchemaChain(expression);
+    _rejectTransform(chain, path, context);
+    final base = chain.base;
+    AckInferRef result;
+    switch (base?.methodName.name) {
+      case 'string' ||
+          'literal' ||
+          'enumString' ||
+          'integer' ||
+          'number' ||
+          'double' ||
+          'boolean' ||
+          'date' ||
+          'datetime' ||
+          'uri' ||
+          'duration' ||
+          'enumValues':
+        // Native factories own their boundary types; decoded codec types do
+        // not belong in a preserved wire field.
+        result = _schemaTypes(base!, path, context).boundary;
+      case 'any':
+        result = const AckScalarTypeRef('Object', isJsonValue: true);
+      case 'codec':
+        Expression? input;
+        for (final node in base!.argumentList.arguments) {
+          final argument = namedArgument(node);
+          if (argument?.name == 'input') {
+            input = argument!.expression;
+            break;
+          }
+        }
+        if (input == null) return _unsupportedJsonBoundary(path, context);
+        result = await _jsonBoundaryRef(
+          input,
+          path: '$path.input',
+          context: context,
+          visited: visited,
+          depth: depth + 1,
+        );
+      case 'lazy':
+        final arguments = argumentExpressions(base!.argumentList);
+        if (arguments.length < 2 || arguments[1] is! FunctionExpression) {
+          return _unsupportedJsonBoundary(path, context);
+        }
+        final target = functionBodyExpression(
+          (arguments[1] as FunctionExpression).body,
+        );
+        if (target == null) return _unsupportedJsonBoundary(path, context);
+        result = await _jsonBoundaryRef(
+          target,
+          path: '$path.lazy',
+          context: context,
+          visited: visited,
+          depth: depth + 1,
+        );
+      case 'list' || 'map' || 'preserveBoundary':
+        final arguments = argumentExpressions(base!.argumentList);
+        if (arguments.length != 1) {
+          return _unsupportedJsonBoundary(path, context);
+        }
+        var inner = await _jsonBoundaryRef(
+          arguments.single,
+          path: '$path[]',
+          context: context,
+          visited: visited,
+          depth: depth + 1,
+        );
+        if (base.methodName.name == 'list') {
+          if (inner is AckNullableTypeRef) {
+            return _unsupportedJsonBoundary(path, context);
+          }
+          result = AckListTypeRef(inner);
+        } else if (base.methodName.name == 'map') {
+          result = AckMapTypeRef(inner);
+        } else {
+          result = inner;
+        }
+      case 'object':
+        final arguments = argumentExpressions(base!.argumentList);
+        if (arguments.firstOrNull case SetOrMapLiteral(:final elements)) {
+          for (final entry in elements) {
+            if (entry is! MapLiteralEntry) {
+              return _unsupportedJsonBoundary(path, context);
+            }
+            await _jsonBoundaryRef(
+              entry.value,
+              path: '$path{}',
+              context: context,
+              visited: visited,
+              depth: depth + 1,
+            );
+          }
+          result = const AckMapTypeRef(
+            AckNullableTypeRef(AckScalarTypeRef('Object', isJsonValue: true)),
+          );
+        } else {
+          return _unsupportedJsonBoundary(path, context);
+        }
+      case 'anyOf':
+        final arguments = argumentExpressions(base!.argumentList);
+        if (arguments.firstOrNull case ListLiteral(
+          :final elements,
+        ) when elements.isNotEmpty) {
+          for (final branch in elements) {
+            if (branch is! Expression) {
+              return _unsupportedJsonBoundary(path, context);
+            }
+            final inner = await _jsonBoundaryRef(
+              branch,
+              path: '$path.anyOf',
+              context: context,
+              visited: visited,
+              depth: depth + 1,
+            );
+            // Nullable alternatives require an explicit union .nullable() so
+            // the field's storage/constructor nullability remains unambiguous.
+            if (inner is AckNullableTypeRef) {
+              return _unsupportedJsonBoundary(path, context);
+            }
+          }
+          result = const AckScalarTypeRef('Object', isJsonValue: true);
+        } else {
+          return _unsupportedJsonBoundary(path, context);
+        }
+      default:
+        final reference = chain.reference;
+        final element = reference == null ? null : referencedElement(reference);
+        if (element == null ||
+            (element is! TopLevelVariableElement &&
+                element is! GetterElement) ||
+            visited.contains(element.baseElement)) {
+          return _unsupportedJsonBoundary(path, context);
+        }
+        final declaration = propertyDeclaration(element);
+        final owningLibrary = declaration.library;
+        if (owningLibrary == null) {
+          return _unsupportedJsonBoundary(path, context);
+        }
+        final initializer = declarationExpression(
+          await resolvedLibraryFor(owningLibrary),
+          declaration,
+        );
+        if (initializer == null) return _unsupportedJsonBoundary(path, context);
+        result = await _jsonBoundaryRef(
+          initializer,
+          path: '$path(→ ${element.name})',
+          context: context,
+          visited: {...visited, element.baseElement},
+          depth: depth + 1,
+        );
+    }
+    // Codec outputs are intentionally ignored here: preserveBoundary stores
+    // and validates the original input-side JSON, not decoded runtime objects.
+    return chain.nullable && result is! AckNullableTypeRef
+        ? AckNullableTypeRef(result)
+        : result;
+  }
+
+  Never _unsupportedJsonBoundary(String path, Element context) =>
+      throw InvalidGenerationSource(
+        '$path cannot prove a native JSON boundary. Use Ack.preserveBoundary '
+        'with statically resolvable JSON schemas; opaque instance/codec input '
+        'types and nullable union alternatives are not inferred.',
+        element: context,
+      );
 
   /// Whether [expression] marks its schema `.nullable()`, following
   /// unannotated variable references such as `Ack.map(nullableLabel)`.
@@ -1043,7 +1231,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       );
     }
     if (!RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(jsonKey) ||
-        isDartKeyword(jsonKey)) {
+        isDartReservedWord(jsonKey)) {
       throw InvalidGenerationSource(
         '$path.$jsonKey cannot be represented as a Dart field name.',
         element: element,
