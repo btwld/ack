@@ -173,6 +173,26 @@ void main() {
 }
 ```
 
+### Heterogeneous JSON fields
+
+Use `Ack.preserveBoundary(...)` for a generated field that stores wire JSON
+rather than a codec's decoded runtime values. For example:
+
+```dart
+final answerValues = Ack.preserveBoundary(Ack.map(Ack.anyOf([
+  Ack.string(), Ack.number(), Ack.list(Ack.string()),
+])));
+
+@Schemable()
+final answerSchema = Ack.object({'values': answerValues});
+```
+
+The constructor snapshots nested JSON collections without validating them.
+Parsing and encoding still enforce the original schema. Opaque codec runtime
+values retain their identity and runtime container types. Statically
+unresolvable or opaque JSON input schemas are rejected instead of inferred.
+`Ack.anyOf(...)` model roots remain unsupported.
+
 ### Custom schema resolution
 
 A field of custom type `T` (including inside `List<T>`, `Set<T>`, `Map<String, T>`,
