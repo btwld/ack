@@ -14,6 +14,9 @@
   retain their identity and container types. Use `Ack.preserveBoundary(...)`
   for heterogeneous JSON fields; native JSON unions are inferred only within
   that explicit wire view.
+* Preserve native codec boundary types when inferring `Ack.preserveBoundary`
+  fields, including dates, datetimes, URIs, durations, enums, explicit codec
+  inputs and statically resolvable nonrecursive lazy schemas.
 
 ## 2.0.0-alpha.1
 

@@ -274,6 +274,7 @@ final payloadSchema = ${unsupported.key};
   for (final boundary in [
     'Ack.instance<Object>()',
     'Ack.anyOf([Ack.string(), Ack.instance<Object>()])',
+    'Ack.codec(input: Ack.instance<Object>(), decode: (value) => value, encode: (value) => value)',
   ]) {
     test('rejects opaque JSON boundary inference for $boundary', () async {
       await _expectFailure(
@@ -288,6 +289,42 @@ final boundaryRecordSchema = Ack.object({
       );
     });
   }
+
+  test(
+    'preserves native codec boundary types instead of decoded types',
+    () async {
+      await _expectOutput(
+        '''
+$_head
+enum Status { active, archived }
+
+@Schemable()
+final nativeBoundarySchema = Ack.object({
+  'day': Ack.preserveBoundary(Ack.date()),
+  'instant': Ack.preserveBoundary(Ack.datetime()),
+  'url': Ack.preserveBoundary(Ack.uri()),
+  'milliseconds': Ack.preserveBoundary(Ack.duration()),
+  'status': Ack.preserveBoundary(Ack.enumValues(Status.values)),
+  'boxed': Ack.preserveBoundary(Ack.codec(
+    input: Ack.string(),
+    decode: DateTime.parse,
+    encode: (DateTime value) => value.toIso8601String(),
+  )),
+  'later': Ack.preserveBoundary(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+});
+''',
+        allOf([
+          contains('final String day;'),
+          contains('final String instant;'),
+          contains('final String url;'),
+          contains('final int milliseconds;'),
+          contains('final String status;'),
+          contains('final String boxed;'),
+          contains('final int later;'),
+        ]),
+      );
+    },
+  );
 
   test('rejects a .transform() field with the declaration path', () async {
     await _expectFailure(
