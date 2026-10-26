@@ -12,7 +12,11 @@ export 'src/common_types.dart' show JsonMap;
 export 'src/models/ack_model_adapter.dart';
 export 'src/models/json_maybe.dart';
 export 'src/utils/collection_utils.dart'
-    show deepEquals, deepHashCode, deepUnmodifiableJsonMap;
+    show
+        deepEquals,
+        deepHashCode,
+        deepUnmodifiableCopy,
+        deepUnmodifiableJsonMap;
 // Constraints
 export 'src/constraints/constraint.dart';
 export 'src/constraints/duration_constraint.dart';

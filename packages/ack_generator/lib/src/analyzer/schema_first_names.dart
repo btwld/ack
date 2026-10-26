@@ -1,9 +1,10 @@
 import '../utils/string_literal.dart';
 
-/// Member names every schema-first model generates, so a field cannot use
-/// them.
+/// Names that conflict with generated APIs or their unqualified type references.
 const ackSchemaFirstReservedMembers = {
   r'$ack',
+  // Generated JSON signatures use the unqualified dynamic type.
+  'dynamic',
   'parse',
   'safeParse',
   'fromJson',
@@ -30,8 +31,11 @@ String? ackSchemaFirstFieldNameProblem(
     return "cannot start with '_' (private Dart member).";
   }
   if (!RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(key) ||
-      isDartKeyword(key)) {
+      isDartReservedWord(key)) {
     return 'cannot be represented as a Dart field name.';
+  }
+  if (key == 'dynamic') {
+    return 'shadows the dynamic type used by generated JSON methods.';
   }
   if (ackSchemaFirstReservedMembers.contains(key)) {
     return 'conflicts with generated/Object member "$key".';
