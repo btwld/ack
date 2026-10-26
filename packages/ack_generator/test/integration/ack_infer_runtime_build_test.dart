@@ -237,6 +237,97 @@ final openPolicySchema = strictPolicySchema.passthrough();
 @Schemable()
 final resetNullableSchema = Ack.string().nullable().nullable(value: false);
 
+@Schemable()
+final keywordFieldsSchema = Ack.object({
+  'required': Ack.boolean().withDefault(false),
+  'abstract': Ack.string(),
+  'as': Ack.string(),
+  'late': Ack.string(),
+  'operator': Ack.string(),
+  'async': Ack.string(),
+  'await': Ack.string(),
+  'yield': Ack.string(),
+});
+
+final choiceOptionSchema = Ack.anyOf([
+  Ack.string(),
+  Ack.object({'label': Ack.string(), 'value': Ack.string()}),
+]);
+final choiceOptionsSchema = Ack.preserveBoundary(Ack.list(choiceOptionSchema));
+
+@Schemable()
+final choiceFieldSchema = Ack.object({'options': choiceOptionsSchema.optional()});
+
+final opaqueValueSchema = Ack.string().codec<Object>(
+  decode: DateTime.parse,
+  encode: (value) => (value as DateTime).toIso8601String(),
+);
+
+@Schemable()
+final opaqueRecordSchema = Ack.object({'value': opaqueValueSchema});
+final typedListValueSchema = Ack.string().codec<Object>(
+  decode: (_) => <int>[1, 2],
+  encode: (value) => (value as List<int>).join(','),
+);
+final typedMapValueSchema = Ack.string().codec<Object>(
+  decode: (_) => <String, List<int>>{'values': <int>[3, 4]},
+  encode: (value) => (value as Map<String, List<int>>)['values']!.join(','),
+);
+
+@Schemable()
+final opaqueCollectionsSchema = Ack.object({
+  'value': typedListValueSchema,
+  'items': Ack.list(typedListValueSchema),
+  'byKey': Ack.map(typedListValueSchema),
+  'map': typedMapValueSchema,
+  'nullable': typedListValueSchema.nullable(),
+});
+
+final answerValueSchema = Ack.anyOf([
+  Ack.string(), Ack.number(), Ack.list(Ack.string()),
+]);
+final answerValuesSchema = Ack.preserveBoundary(Ack.map(answerValueSchema));
+
+@Schemable()
+final answerRecordSchema = Ack.object({
+  'values': answerValuesSchema,
+  'ratio': Ack.preserveBoundary(Ack.double()),
+});
+
+final nullableBoundaryValue = Ack.string().nullable();
+final nullableBoundaryAlias = nullableBoundaryValue;
+
+@Schemable()
+final boundaryFlagsSchema = Ack.object({
+  'copiedValues': Ack.preserveBoundary(Ack.map(Ack.string().copyWith(isNullable: true))),
+  'configuredValues': Ack.preserveBoundary(Ack.map(Ack.string().withRuntimeConfig(isNullable: true))),
+  'clearedValues': Ack.preserveBoundary(Ack.map(nullableBoundaryAlias.nullable(value: false))),
+  'items': Ack.preserveBoundary(Ack.list(nullableBoundaryAlias.nullable(value: false))),
+  'outer': Ack.preserveBoundary(nullableBoundaryValue).nullable(value: false),
+  'outerMap': Ack.preserveBoundary(Ack.map(nullableBoundaryValue).nullable()).nullable(value: false),
+});
+
+
+@Schemable()
+final keywordBranchSchema = Ack.object({'answer': Ack.string()});
+
+@Schemable()
+final keywordUnionSchema = Ack.discriminated(
+  discriminatorKey: 'required',
+  schemas: {'yes': keywordBranchSchema},
+);
+
+@Schemable(
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'required',
+)
+final class KeywordCapture with _$KeywordCaptureAck {
+  KeywordCapture({Map<String, Object?> required = const {}})
+      : required = Map.unmodifiable(required);
+
+  final Map<String, Object?> required;
+}
+
 final class Counted {
   Counted(this.value);
   final String value;
@@ -337,6 +428,169 @@ import 'package:ack_ack_infer_runtime/person.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('contextual and built-in field names retain their JSON keys', () {
+    final json = <String, Object?>{
+      'required': true,
+      'abstract': 'a',
+      'as': 'b',
+      'late': 'c',
+      'operator': 'd',
+      'async': 'e',
+      'await': 'f',
+      'yield': 'g',
+    };
+    final fields = KeywordFields.parse(json);
+    expect(fields.required, isTrue);
+    expect(fields.abstract, 'a');
+    expect(fields.as, 'b');
+    expect(fields.late, 'c');
+    expect(fields.operator, 'd');
+    expect(fields.async, 'e');
+    expect(fields.await, 'f');
+    expect(fields.yield, 'g');
+    expect(fields.toJson(), json);
+    expect(fields.copyWith(required: false).toJson(), {...json, 'required': false});
+    expect(KeywordFields.parse({...json}..remove('required')).required, isFalse);
+  });
+
+  test('constructor snapshots Object-valued option maps without validating them', () {
+    final option = <String, Object?>{'label': 'Keep', 'value': 'keep'};
+    final options = <Object>['skip', option];
+    final field = ChoiceField(options: options);
+    option['value'] = 'changed';
+    options.clear();
+    final expected = ChoiceField.parse({
+      'options': ['skip', {'label': 'Keep', 'value': 'keep'}],
+    });
+    expect(field, expected);
+    expect(field.hashCode, expected.hashCode);
+    expect(field.toJson(), expected.toJson());
+    expect(() => field.options!.clear(), throwsUnsupportedError);
+    expect(() => (field.options!.last as Map)['value'] = 'changed',
+        throwsUnsupportedError);
+    expect(ChoiceField(options: [false]).safeToJson().isFail, isTrue);
+    expect(ChoiceField(options: [Object()]).safeToJson().isFail, isTrue);
+    expect(ChoiceField(options: [<Object?, Object?>{1: 'invalid'}])
+        .safeToJson().isFail, isTrue);
+  });
+
+  test('direct Object fields and typed collections snapshot nested aliases', () {
+    final items = <Object?>['original'];
+    final nested = <String, Object?>{'items': items};
+    final optional = <Object?>[nested];
+    final record = Envelope(
+      kind: nested,
+      payload: optional,
+      items: [nested],
+      values: {'key': nested},
+      metadata: {'key': nested, 'absent': null},
+      labels: const {},
+    );
+    items.add('changed');
+    nested.clear();
+    optional.clear();
+    const expected = {'items': ['original']};
+    expect(record.kind, expected);
+    expect(record.payload, [expected]);
+    expect(record.items, [expected]);
+    expect(record.values, {'key': expected});
+    expect(record.metadata, {'key': expected, 'absent': null});
+    expect(() => (record.kind as Map).clear(), throwsUnsupportedError);
+    expect(() => ((record.kind as Map)['items'] as List).clear(), throwsUnsupportedError);
+    expect(() => (record.payload as List).clear(), throwsUnsupportedError);
+    expect(() => (record.values['key']! as Map).clear(), throwsUnsupportedError);
+    expect(() => (record.metadata['key']! as Map).clear(), throwsUnsupportedError);
+  });
+
+  test('Object-valued codecs preserve opaque constructor values', () {
+    final value = DateTime.utc(2026, 10, 26);
+    final record = OpaqueRecord(value: value);
+    expect(record.value, same(value));
+    expect(record.toJson(), {'value': value.toIso8601String()});
+  });
+
+
+  test('opaque codec Object collections retain their reified runtime types', () {
+    final list = <int>[1, 2];
+    final nested = <String, List<int>>{'values': <int>[3, 4]};
+    final record = OpaqueCollections(value: list, items: [list], byKey: {'key': list},
+        map: nested, nullable: list);
+    expect(record.value, same(list));
+    expect(record.items.single, same(list));
+    expect(record.byKey['key'], same(list));
+    expect(record.map, same(nested));
+    expect(record.nullable, same(list));
+    expect(record.toJson(), {'value': '1,2', 'items': ['1,2'], 'byKey': {'key': '1,2'},
+        'map': '3,4', 'nullable': '1,2'});
+    final parsed = OpaqueCollections.parse({'value': 'x', 'items': ['x'], 'byKey': {'key': 'x'},
+        'map': 'x', 'nullable': 'x'});
+    expect(parsed.value, isA<List<int>>());
+    expect(parsed.items.single, isA<List<int>>());
+    expect(parsed.byKey['key'], isA<List<int>>());
+    expect(parsed.map, isA<Map<String, List<int>>>());
+    expect(parsed.nullable, isA<List<int>>());
+    expect(parsed.copyWith(nullable: null).toJson()['nullable'], isNull);
+    expect(parsed.toJson(), record.toJson());
+  });
+
+  test('explicit JSON boundary unions encode normalized nested string lists', () {
+    final tags = <String>['a', 'b'];
+    final values = <String, Object>{'tags': tags, 'title': 'Review', 'count': 2};
+    final record = AnswerRecord(values: values, ratio: 0.5);
+    tags.add('changed');
+    values.clear();
+    final expected = <String, Object>{'tags': ['a', 'b'], 'title': 'Review', 'count': 2};
+    expect(record.values, expected);
+    expect(record.toJson(), {'values': expected, 'ratio': 0.5});
+    final double ratio = record.ratio;
+    expect(ratio, 0.5);
+    expect(AnswerRecord.parse({'values': expected, 'ratio': 0.5}).toJson(),
+        {'values': expected, 'ratio': 0.5});
+    expect(() => (record.values['tags'] as List).clear(), throwsUnsupportedError);
+    expect(AnswerRecord(values: {'invalid': false}, ratio: 0.5).safeToJson().isFail, isTrue);
+  });
+
+  test('preserved boundary metadata agrees with generated runtime fields', () {
+    final json = <String, Object?>{
+      'copiedValues': {'a': null},
+      'configuredValues': {'b': null},
+      'clearedValues': {'c': 'present'},
+      'items': ['present'],
+      'outer': 'present',
+      'outerMap': {'d': null},
+    };
+    final record = BoundaryFlags.parse(json);
+    final Map<String, String?> copied = record.copiedValues;
+    final Map<String, String?> configured = record.configuredValues;
+    final Map<String, String> cleared = record.clearedValues;
+    final List<String> items = record.items;
+    final String outer = record.outer;
+    final Map<String, String?> outerMap = record.outerMap;
+    expect(copied['a'], isNull);
+    expect(configured['b'], isNull);
+    expect(cleared['c'], 'present');
+    expect(items, ['present']);
+    expect(outer, 'present');
+    expect(outerMap['d'], isNull);
+    expect(record.toJson(), json);
+    expect(BoundaryFlags.parse(record.toJson()), record);
+    expect(BoundaryFlags.safeParse({...json, 'outer': null}).isFail, isTrue);
+    expect(BoundaryFlags.safeParse({...json, 'outerMap': null}).isFail, isTrue);
+    expect(BoundaryFlags.safeParse({...json, 'clearedValues': {'c': null}}).isFail, isTrue);
+    expect(() => record.copiedValues['a'] = 'changed', throwsUnsupportedError);
+  });
+
+  test('contextual discriminator and capture members retain their wire shape', () {
+    final unionJson = <String, Object?>{'required': 'yes', 'answer': 'done'};
+    final union = KeywordUnion.parse(unionJson);
+    expect(union.required, 'yes');
+    expect(union.toJson(), unionJson);
+
+    final capture = KeywordCaptureSchema.parse({'extra': 1});
+    expect(capture.required, {'extra': 1});
+    expect(capture.toJson(), {'extra': 1});
+  });
+
   test('models expose their model schema as a static shorthand', () {
     final AckSchema<Map<String, Object?>, Node> schema = Node.schema;
     expect(identical(Node.schema, schema), isTrue);

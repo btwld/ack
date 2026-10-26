@@ -8,6 +8,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Fixed
 
+* Accept contextual Dart member names and deeply snapshot JSON-owned generated
+  fields without changing opaque codec values. Preserve effective nullable
+  overrides when inferring explicit JSON boundaries.
 * Align wrapper and lazy nullability across parsing, encoding, and JSON Schema
   export; validate discriminated codec outputs against their runtime branches.
 * Reject duration inputs that cannot preserve their original milliseconds.
