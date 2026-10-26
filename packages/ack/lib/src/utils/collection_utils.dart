@@ -5,31 +5,34 @@ import '../common_types.dart';
 /// Nested maps, lists, and sets are copied without validating their contents.
 JsonMap deepUnmodifiableJsonMap(JsonMap value) =>
     Map<String, Object?>.unmodifiable(
-      value.map((key, item) => MapEntry(key, _deepUnmodifiableCopy(item))),
+      value.map((key, item) => MapEntry(key, deepUnmodifiableCopy(item))),
     );
 
-/// Deeply snapshots a schema default without exposing it from ACK's public API.
-Object? cloneDefault(Object? value) => _deepUnmodifiableCopy(value);
-
-Object? _deepUnmodifiableCopy(Object? value) {
+/// Returns a detached, recursively unmodifiable snapshot of [value].
+///
+/// Maps retain their keys while their values are copied. Lists and sets are
+/// copied recursively. Other objects, including opaque codec values, retain
+/// their identity. This does not validate data; schemas still validate it at
+/// parse and encode boundaries. Inputs must be acyclic.
+Object? deepUnmodifiableCopy(Object? value) {
   if (value is Map) {
     if (value.keys.every((key) => key is String)) {
       return Map<String, Object?>.unmodifiable(
         value.map(
-          (key, item) => MapEntry(key as String, _deepUnmodifiableCopy(item)),
+          (key, item) => MapEntry(key as String, deepUnmodifiableCopy(item)),
         ),
       );
     }
 
     return Map<Object?, Object?>.unmodifiable(
-      value.map((key, item) => MapEntry(key, _deepUnmodifiableCopy(item))),
+      value.map((key, item) => MapEntry(key, deepUnmodifiableCopy(item))),
     );
   }
   if (value is List) {
-    return List<Object?>.unmodifiable(value.map(_deepUnmodifiableCopy));
+    return List<Object?>.unmodifiable(value.map(deepUnmodifiableCopy));
   }
   if (value is Set) {
-    return Set<Object?>.unmodifiable(value.map(_deepUnmodifiableCopy));
+    return Set<Object?>.unmodifiable(value.map(deepUnmodifiableCopy));
   }
 
   return value;
