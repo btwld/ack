@@ -12,6 +12,9 @@
 * Diagnose value-model helper collisions, class/member name conflicts, and
   duplicate schema-first keys before emission. Resolve same-build models
   declared with annotated getters.
+* Preserve application-generic argument nullability when selecting custom
+  schemas, and substitute nested generic bounds before validating type-owned
+  schema methods.
 
 ## 2.0.0-alpha.1
 

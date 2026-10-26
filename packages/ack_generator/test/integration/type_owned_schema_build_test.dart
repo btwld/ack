@@ -86,6 +86,22 @@ final class Box<A extends Object> {
   ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
 }
 
+final class ComparableBox<T> {
+  const ComparableBox(this.value);
+  final T value;
+
+  static AckSchema<String, ComparableBox<U>> schema<U extends Comparable<U>>() =>
+      Ack.string().codec<ComparableBox<U>>(
+        decode: (value) => ComparableBox<U>(value as U),
+        encode: (box) => box.value.toString(),
+      );
+}
+
+final class NullableBox<T> {
+  const NullableBox(this.value);
+  final T value;
+}
+
 final class Trigger<A> {
   const Trigger(this.name);
 
@@ -150,6 +166,23 @@ final colorSchema = Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
 );
+
+AckSchema<String, NullableBox<String>> stringBoxSchema() =>
+    Ack.string().codec<NullableBox<String>>(
+      decode: NullableBox<String>.new, encode: (box) => box.value,
+    );
+AckSchema<String, NullableBox<String?>> nullableStringBoxSchema() =>
+    Ack.string().codec<NullableBox<String?>>(
+      decode: NullableBox<String?>.new, encode: (box) => box.value!,
+    );
+
+@Schemable(schemas: [stringBoxSchema, nullableStringBoxSchema])
+final class GenericFields with _$GenericFieldsAck {
+  const GenericFields({required this.bounded, required this.strict, required this.loose});
+  final ComparableBox<String> bounded;
+  final NullableBox<String> strict;
+  final NullableBox<String?> loose;
+}
 
 @Schemable()
 final class Habit with _$HabitAck {
@@ -240,6 +273,17 @@ import 'package:ack_type_owned/types.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('F-bounds and distinct generic nullability compile and round-trip', () {
+    final json = {'bounded': 'bound', 'strict': 'present', 'loose': 'nullable'};
+    final fields = GenericFieldsSchema.parse(json);
+    expect(fields.bounded.value, 'bound');
+    expect(fields.strict, isA<NullableBox<String>>());
+    expect(fields.loose, isA<NullableBox<String?>>());
+    expect(fields.strict.value, 'present');
+    expect(fields.loose.value, 'nullable');
+    expect(fields.toJson(), json);
+  });
+
   test('class-first fields decode through their types', () {
     final json = {
       'header': 'top',
