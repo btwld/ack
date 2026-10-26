@@ -1,4 +1,9 @@
-## Unreleased
+## 2.0.0-alpha.2
+
+### Changed
+
+* Require `ack: ^2.0.0-alpha.2` so consumers receive the corrected runtime
+  nullability, discriminated validation, and imported JSON Schema contracts.
 
 ### Documentation
 

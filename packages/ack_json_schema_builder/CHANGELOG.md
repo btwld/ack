@@ -1,3 +1,11 @@
+## 2.0.0-alpha.2
+
+### Changed
+
+* Require `ack: ^2.0.0-alpha.2` so consumers receive the corrected runtime
+  nullability, discriminated validation, and imported JSON Schema contracts.
+* Align with the coordinated alpha.2 release; the bridge public API is unchanged.
+
 ## 2.0.0-alpha.1
 
 ### Breaking

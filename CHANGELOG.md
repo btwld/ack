@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+
+## 2.0.0-alpha.2
+
+### Fixed
+
+* Align wrapper and lazy nullability across parsing, encoding, and JSON Schema
+  export; validate discriminated codec outputs against their runtime branches.
+* Reject duration inputs that cannot preserve their original milliseconds.
+* Preserve custom JSON Schema vocabulary semantics, inert annotation payloads,
+  explicit format assertions, and fluent null policies through export.
+* Preserve schema-first alias metadata and strict/passthrough precedence;
+  diagnose unsupported shape transformations instead of emitting wrong fields.
+* Resolve same-build value-model and getter references, nullable nested Sets,
+  generated-name collisions, and application-generic nullability correctly.
+* Substitute nested and recursive type bounds when resolving type-owned schemas.
+
+### Documentation and release preparation
+
+* Correct integration examples, converter templates, migration guidance, and
+  SDK floors; include new cross-platform contract regressions in CI.
+* Coordinate all five packages at alpha.2 and require the corrected alpha.2
+  core in dependent packages. Published alpha.1 release notes remain unchanged.
+
 ## 2.0.0-alpha.1
 
 ### Breaking & Substitutions
