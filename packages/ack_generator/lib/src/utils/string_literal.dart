@@ -1,3 +1,5 @@
+import 'package:analyzer/dart/ast/token.dart' show Keyword;
+
 /// Returns [value] as a single-quoted Dart string literal.
 ///
 /// Escapes backslashes, quotes, and `$`, and writes control characters and
@@ -19,75 +21,13 @@ String dartStringLiteral(String value) {
 String qualifySymbol(String? prefix, String symbol) =>
     prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
 
-/// Whether [value] is a reserved word, built-in identifier, or contextual
-/// keyword that cannot be used as an unqualified Dart member or type name.
-bool isDartKeyword(String value) => _dartKeywords.contains(value);
+/// Whether [value] is a Dart keyword, including built-in identifiers and
+/// contextual keywords. Type-name guards have stricter rules than members.
+bool isDartKeyword(String value) => Keyword.keywords.containsKey(value);
 
-const _dartKeywords = {
-  'abstract',
-  'as',
-  'assert',
-  'async',
-  'await',
-  'base',
-  'break',
-  'case',
-  'catch',
-  'class',
-  'const',
-  'continue',
-  'covariant',
-  'default',
-  'deferred',
-  'do',
-  'dynamic',
-  'else',
-  'enum',
-  'export',
-  'extends',
-  'extension',
-  'external',
-  'factory',
-  'false',
-  'final',
-  'finally',
-  'for',
-  'get',
-  'hide',
-  'if',
-  'implements',
-  'import',
-  'in',
-  'interface',
-  'is',
-  'late',
-  'library',
-  'mixin',
-  'new',
-  'null',
-  'of',
-  'on',
-  'operator',
-  'part',
-  'required',
-  'rethrow',
-  'return',
-  'sealed',
-  'set',
-  'show',
-  'static',
-  'super',
-  'switch',
-  'sync',
-  'this',
-  'throw',
-  'true',
-  'try',
-  'typedef',
-  'var',
-  'void',
-  'when',
-  'while',
-  'with',
-  'yield',
-};
+/// Whether [value] is reserved in every Dart identifier context.
+///
+/// Built-in identifiers and contextual keywords remain valid member names in
+/// the synchronous constructors, getters, and methods emitted by the generator.
+bool isDartReservedWord(String value) =>
+    Keyword.keywords[value]?.isReservedWord ?? false;

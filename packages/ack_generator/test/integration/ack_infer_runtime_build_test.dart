@@ -203,6 +203,38 @@ final labelsSchema = Ack.object({
   'groups': Ack.map(Ack.list(Ack.string()).nullable()),
 });
 
+@Schemable()
+final keywordFieldsSchema = Ack.object({
+  'required': Ack.boolean().withDefault(false),
+  'abstract': Ack.string(),
+  'as': Ack.string(),
+  'late': Ack.string(),
+  'operator': Ack.string(),
+  'async': Ack.string(),
+  'await': Ack.string(),
+  'yield': Ack.string(),
+});
+
+@Schemable()
+final keywordBranchSchema = Ack.object({'answer': Ack.string()});
+
+@Schemable()
+final keywordUnionSchema = Ack.discriminated(
+  discriminatorKey: 'required',
+  schemas: {'yes': keywordBranchSchema},
+);
+
+@Schemable(
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'required',
+)
+final class KeywordCapture with _$KeywordCaptureAck {
+  KeywordCapture({Map<String, Object?> required = const {}})
+      : required = Map.unmodifiable(required);
+
+  final Map<String, Object?> required;
+}
+
 final class Counted {
   Counted(this.value);
   final String value;
@@ -298,6 +330,42 @@ import 'package:ack_ack_infer_runtime/person.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('contextual and built-in field names retain their JSON keys', () {
+    final json = <String, Object?>{
+      'required': true,
+      'abstract': 'a',
+      'as': 'b',
+      'late': 'c',
+      'operator': 'd',
+      'async': 'e',
+      'await': 'f',
+      'yield': 'g',
+    };
+    final fields = KeywordFields.parse(json);
+    expect(fields.required, isTrue);
+    expect(fields.abstract, 'a');
+    expect(fields.as, 'b');
+    expect(fields.late, 'c');
+    expect(fields.operator, 'd');
+    expect(fields.async, 'e');
+    expect(fields.await, 'f');
+    expect(fields.yield, 'g');
+    expect(fields.toJson(), json);
+    expect(fields.copyWith(required: false).toJson(), {...json, 'required': false});
+    expect(KeywordFields.parse({...json}..remove('required')).required, isFalse);
+  });
+
+  test('contextual discriminator and capture members retain their wire shape', () {
+    final unionJson = <String, Object?>{'required': 'yes', 'answer': 'done'};
+    final union = KeywordUnion.parse(unionJson);
+    expect(union.required, 'yes');
+    expect(union.toJson(), unionJson);
+
+    final capture = KeywordCaptureSchema.parse({'extra': 1});
+    expect(capture.required, {'extra': 1});
+    expect(capture.toJson(), {'extra': 1});
+  });
+
   test('models expose their model schema as a static shorthand', () {
     final AckSchema<Map<String, Object?>, Node> schema = Node.schema;
     expect(identical(Node.schema, schema), isTrue);

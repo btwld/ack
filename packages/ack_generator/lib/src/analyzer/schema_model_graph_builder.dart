@@ -1043,7 +1043,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       );
     }
     if (!RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(jsonKey) ||
-        isDartKeyword(jsonKey)) {
+        isDartReservedWord(jsonKey)) {
       throw InvalidGenerationSource(
         '$path.$jsonKey cannot be represented as a Dart field name.',
         element: element,

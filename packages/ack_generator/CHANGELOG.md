@@ -1,3 +1,14 @@
+## Unreleased
+
+### Fixed
+
+* Allow built-in and contextual Dart keywords such as `required` as generated
+  field, discriminator, and capture-member names without changing their JSON
+  keys. Reserved words such as `class` remain rejected. Member validation now
+  follows the analyzer's keyword classification rather than a fixed word list.
+  `dynamic` remains rejected because it shadows the type in generated JSON
+  methods, not because it is a reserved Dart word.
+
 ## 2.0.0-alpha.1
 
 ### Breaking
