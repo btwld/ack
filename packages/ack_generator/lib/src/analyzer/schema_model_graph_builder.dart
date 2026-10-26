@@ -27,6 +27,37 @@ final class _Declaration {
 
 typedef _SchemaTypes = ({AckInferRef boundary, AckInferRef runtime});
 
+/// The effective flags of a schema expression, including referenced aliases.
+///
+/// DefaultSchema cannot clear a nullable/optional flag inherited from its inner
+/// schema. Other public wrappers copy the flags but have no such inner floor.
+final class _SchemaMetadata {
+  const _SchemaMetadata({
+    this.optional = false,
+    this.nullable = false,
+    this.defaulted = false,
+    this.innerOptional = false,
+    this.innerNullable = false,
+  });
+
+  final bool optional;
+  final bool nullable;
+  final bool defaulted;
+  final bool innerOptional;
+  final bool innerNullable;
+
+  _SchemaMetadata copyWith({bool? optional, bool? nullable}) => _SchemaMetadata(
+    optional: (optional ?? this.optional) || innerOptional,
+    nullable: (nullable ?? this.nullable) || innerNullable,
+    defaulted: defaulted,
+    innerOptional: innerOptional,
+    innerNullable: innerNullable,
+  );
+
+  _SchemaMetadata get wrapped =>
+      _SchemaMetadata(optional: optional, nullable: nullable);
+}
+
 /// Builds the single normalized graph consumed by Ack model emission.
 final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
   SchemaModelGraphBuilder(super.library);
@@ -160,7 +191,17 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     graph.begin(declaration.id);
     final chain = parseSchemaChain(declaration.expression);
     _rejectTransform(chain, path, declaration.element);
-    if (chain.nullable) {
+    await _rejectObjectShapeChanges(
+      declaration.expression,
+      path: path,
+      context: declaration.element,
+    );
+    final metadata = await _schemaMetadata(
+      declaration.expression,
+      path: path,
+      context: declaration.element,
+    );
+    if (metadata.nullable) {
       throw InvalidGenerationSource(
         '$path is a nullable root. Generated Ack models are non-nullable.',
         element: declaration.element,
@@ -268,13 +309,23 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     );
     final source = graph.nodeFor(target.id)!;
     if (source is AckObjectModelNode) {
+      final additionalProperties = await _additionalProperties(
+        declaration.expression,
+        path: path,
+        context: declaration.element,
+      );
       return AckObjectModelNode(
         id: declaration.id,
         className: declaration.className,
         fields: source.fields,
-        unknownPropertyPolicy: source.unknownPropertyPolicy,
-        captureFieldName: source.captureFieldName,
-        constructorParameters: source.constructorParameters,
+        unknownPropertyPolicy: additionalProperties
+            ? AckUnknownPropertyPolicy.capture
+            : AckUnknownPropertyPolicy.reject,
+        captureFieldName: additionalProperties ? 'additionalProperties' : null,
+        constructorParameters: _schemaFirstConstructorParameters(
+          source.fields,
+          capture: additionalProperties,
+        ),
         description: source.description,
       );
     }
@@ -300,6 +351,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     SchemaChain chain,
     String path,
   ) async {
+    _schemaTypes(declaration.expression, path, declaration.element);
     final invocation = chain.base!;
     final arguments = argumentExpressions(invocation.argumentList);
     if (arguments.isEmpty || arguments.first is! SetOrMapLiteral) {
@@ -309,10 +361,10 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       );
     }
     final literal = arguments.first as SetOrMapLiteral;
-    final additionalProperties = _additionalProperties(
+    final additionalProperties = await _additionalProperties(
       declaration.expression,
       path: path,
-      element: declaration.element,
+      context: declaration.element,
     );
     final fields = <AckFieldNode>[];
     for (final entry in literal.elements) {
@@ -335,6 +387,11 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       }
       final fieldPath = '$path.$jsonKey';
       final fieldChain = parseSchemaChain(entry.value);
+      final fieldMetadata = await _schemaMetadata(
+        entry.value,
+        path: fieldPath,
+        context: declaration.element,
+      );
       _rejectTransform(fieldChain, fieldPath, declaration.element);
       if (fieldChain.base?.methodName.name == 'object') {
         throw InvalidGenerationSource(
@@ -347,8 +404,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         AckFieldNode(
           dartName: jsonKey,
           jsonKey: jsonKey,
-          presence: _fieldPresence(fieldChain),
-          nullable: fieldChain.nullable,
+          presence: _fieldPresence(fieldMetadata),
+          nullable: fieldMetadata.nullable,
           runtimeRef: await _runtimeRefForSchema(
             entry.value,
             path: fieldPath,
@@ -380,6 +437,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     SchemaChain chain,
     String path,
   ) async {
+    _schemaTypes(declaration.expression, path, declaration.element);
     String? discriminatorKey;
     SetOrMapLiteral? branchesLiteral;
     for (final argumentNode in chain.base!.argumentList.arguments) {
@@ -487,9 +545,16 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
   }) async {
     final chain = parseSchemaChain(expression);
     _rejectTransform(chain, path, context);
-    if (collectionElement && chain.nullable) {
+    await _rejectObjectShapeChanges(expression, path: path, context: context);
+    if (collectionElement &&
+        (await _schemaMetadata(
+          expression,
+          path: path,
+          context: context,
+        )).nullable) {
       throw InvalidGenerationSource(
-        '$path uses nullable collection elements. Ack.list does not support '
+        '$path uses nullable collection elements (${expression.toSource()}). '
+        'Ack.list does not support '
         'nullable item schemas.',
         element: context,
         todo:
@@ -542,7 +607,11 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           depth: depth,
         );
         // Unlike list items, JSON object values may be null.
-        final nullableValue = await _isNullableSchema(arguments.first);
+        final nullableValue = (await _schemaMetadata(
+          arguments.first,
+          path: '$path{}',
+          context: context,
+        )).nullable;
         return AckMapTypeRef(
           nullableValue && valueType is! AckNullableTypeRef
               ? AckNullableTypeRef(valueType)
@@ -627,7 +696,6 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           throughLazy: throughLazy,
           visited: visited ?? {},
           depth: depth,
-          collectionElement: collectionElement,
         );
         if (followed != null) return followed;
       }
@@ -647,7 +715,6 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     required bool throughLazy,
     required Set<Element> visited,
     required int depth,
-    required bool collectionElement,
   }) async {
     final element = referencedElement(reference);
     if (element == null) return null;
@@ -689,35 +756,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       visited: {...visited, canonical},
       depth: depth + 1,
       followedName: element.name,
-      collectionElement: collectionElement,
     );
-  }
-
-  /// Whether [expression] marks its schema `.nullable()`, following
-  /// unannotated variable references such as `Ack.map(nullableLabel)`.
-  Future<bool> _isNullableSchema(Expression expression, {int depth = 0}) async {
-    final chain = parseSchemaChain(expression);
-    if (chain.nullable) return true;
-    final reference = chain.reference;
-    if (chain.base != null ||
-        reference == null ||
-        depth >= ModelGraphBuilderBase.maxReferenceDepth) {
-      return false;
-    }
-    final element = referencedElement(reference);
-    if (element == null ||
-        (element is! TopLevelVariableElement && element is! GetterElement)) {
-      return false;
-    }
-    final declaration = propertyDeclaration(element);
-    final owningLibrary = declaration.library;
-    if (owningLibrary == null) return false;
-    final initializer = declarationExpression(
-      await resolvedLibraryFor(owningLibrary),
-      declaration,
-    );
-    return initializer != null &&
-        await _isNullableSchema(initializer, depth: depth + 1);
   }
 
   Future<AckInferRef> _lazyType(
@@ -904,9 +943,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     ];
   }
 
-  AckSchemaFieldPresence _fieldPresence(SchemaChain chain) {
-    if (chain.defaulted) return AckSchemaFieldPresence.defaulted;
-    if (chain.optional) return AckSchemaFieldPresence.optional;
+  AckSchemaFieldPresence _fieldPresence(_SchemaMetadata metadata) {
+    if (metadata.defaulted) return AckSchemaFieldPresence.defaulted;
+    if (metadata.optional) return AckSchemaFieldPresence.optional;
     return AckSchemaFieldPresence.required;
   }
 
@@ -1122,30 +1161,230 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     );
   }
 
-  bool _additionalProperties(
+  Future<void> _rejectObjectShapeChanges(
     Expression expression, {
     required String path,
-    required Element element,
-  }) {
+    required Element context,
+    Set<Element> visited = const {},
+  }) async {
     Expression? current = expression;
+    while (current is ParenthesizedExpression) {
+      current = current.expression;
+    }
     while (current is MethodInvocation) {
-      if (current.methodName.name == 'passthrough') return true;
-      if (current.methodName.name == 'object') {
-        for (final argumentNode in current.argumentList.arguments) {
-          final argument = namedArgument(argumentNode);
-          if (argument != null && argument.name == 'additionalProperties') {
-            final value = constantBool(argument.expression);
-            if (value != null) return value;
-            throw InvalidGenerationSource(
-              '$path additionalProperties must be a bool literal or const '
-              'variable reference.',
-              element: element,
-            );
-          }
-        }
+      final name = current.methodName.name;
+      // A value codec owns its runtime shape, so its input need not expose
+      // statically generated object fields.
+      if (name == 'codec') return;
+      if (const {'extend', 'partial', 'merge', 'pick', 'omit'}.contains(name) ||
+          (name == 'copyWith' &&
+              current.argumentList.arguments.any(
+                (argument) => const {
+                  'properties',
+                  'schemas',
+                  'discriminatorKey',
+                }.contains(namedArgument(argument)?.name),
+              ))) {
+        throw InvalidGenerationSource(
+          '$path uses .$name(...), which changes the object shape and cannot '
+          'be modeled statically. Declare the final shape in literal '
+          'Ack.object({...}) or Ack.discriminated(...) arguments instead.',
+          element: context,
+        );
+      }
+      if (isAckTarget(current.target)) return;
+      if (current.methodName.element is TopLevelFunctionElement ||
+          isTypeOwnedSchema(current.methodName.element)) {
+        break;
       }
       current = current.target;
     }
-    return false;
+    if (current == null) return;
+    final target = await resolveReferencedTopLevelExpression(
+      memberElement(current) ?? referencedElement(current),
+      visited: visited,
+    );
+    if (target == null) return;
+    await _rejectObjectShapeChanges(
+      target.expression,
+      path: '$path(→ ${target.declaration.name})',
+      context: context,
+      visited: {...visited, target.declaration.baseElement},
+    );
+  }
+
+  Future<bool> _additionalProperties(
+    Expression expression, {
+    required String path,
+    required Element context,
+    Set<Element> visited = const {},
+  }) async {
+    Expression? current = expression;
+    while (current is MethodInvocation) {
+      final name = current.methodName.name;
+      // The outermost policy wins; an earlier dynamic value is irrelevant
+      // when strict() or passthrough() replaces it.
+      if (name == 'strict') return false;
+      if (name == 'passthrough') return true;
+      if (name == 'object' || name == 'copyWith') {
+        for (final argument in current.argumentList.arguments) {
+          final entry = namedArgument(argument);
+          if (entry?.name != 'additionalProperties') continue;
+          if (entry!.expression is NullLiteral && name == 'copyWith') continue;
+          final value = constantBool(entry.expression);
+          if (value != null) return value;
+          throw InvalidGenerationSource(
+            '$path additionalProperties must be a bool literal or const '
+            'variable reference.',
+            element: context,
+          );
+        }
+      }
+      if (isAckTarget(current.target)) return false;
+      current = current.target;
+    }
+    if (current == null) return false;
+    if (current is ParenthesizedExpression) {
+      return _additionalProperties(
+        current.expression,
+        path: path,
+        context: context,
+        visited: visited,
+      );
+    }
+    final referenced = referencedElement(current);
+    final target = await resolveReferencedTopLevelExpression(
+      referenced,
+      visited: visited,
+    );
+    if (target == null) return false;
+    return _additionalProperties(
+      target.expression,
+      path: path,
+      context: context,
+      visited: {...visited, target.declaration.baseElement},
+    );
+  }
+
+  Future<_SchemaMetadata> _schemaMetadata(
+    Expression expression, {
+    required String path,
+    required Element context,
+    Set<Element> visited = const {},
+  }) async {
+    if (expression is ParenthesizedExpression) {
+      return _schemaMetadata(
+        expression.expression,
+        path: path,
+        context: context,
+        visited: visited,
+      );
+    }
+    if (expression is MethodInvocation) {
+      final name = expression.methodName.name;
+      final arguments = expression.argumentList.arguments;
+      Expression? named(String key) {
+        for (final argument in arguments) {
+          final entry = namedArgument(argument);
+          if (entry?.name == key) return entry!.expression;
+        }
+        return null;
+      }
+
+      bool flag(Expression value, String option) {
+        final resolved = constantBool(value);
+        if (resolved != null) return resolved;
+        throw InvalidGenerationSource(
+          '$path $option must be a bool literal or const variable reference.',
+          element: context,
+        );
+      }
+
+      if (isAckTarget(expression.target)) {
+        final input = name == 'codec'
+            ? named('input')
+            : name == 'preserveBoundary'
+            ? argumentExpressions(expression.argumentList).firstOrNull
+            : null;
+        if (input != null) {
+          return (await _schemaMetadata(
+            input,
+            path: path,
+            context: context,
+            visited: visited,
+          )).wrapped;
+        }
+        // Factories, including Ack.lazy, start with their own unset flags.
+        return const _SchemaMetadata();
+      }
+
+      final target = expression.target;
+      if (target != null && !isTypeOwnedSchema(expression.methodName.element)) {
+        final inner = await _schemaMetadata(
+          target,
+          path: path,
+          context: context,
+          visited: visited,
+        );
+        switch (name) {
+          case 'nullable':
+            final value = named('value');
+            return inner.copyWith(
+              nullable: value == null ? true : flag(value, 'nullable value'),
+            );
+          case 'optional':
+            final value = named('value');
+            return inner.copyWith(
+              optional: value == null ? true : flag(value, 'optional value'),
+            );
+          case 'withDefault':
+            return _SchemaMetadata(
+              optional: inner.optional,
+              nullable: inner.nullable,
+              defaulted: true,
+              innerOptional: inner.optional,
+              innerNullable: inner.nullable,
+            );
+          case 'codec' || 'transform':
+            return inner.wrapped;
+          case 'copyWith' || 'withRuntimeConfig' || 'extend':
+            final nullable = named('isNullable');
+            final optional = named('isOptional');
+            return inner.copyWith(
+              nullable: nullable == null || nullable is NullLiteral
+                  ? null
+                  : flag(nullable, '$name isNullable'),
+              optional: optional == null || optional is NullLiteral
+                  ? null
+                  : flag(optional, '$name isOptional'),
+            );
+          default:
+            return inner;
+        }
+      }
+    }
+
+    final element = memberElement(expression) ?? referencedElement(expression);
+    final declaration = element == null ? null : propertyDeclaration(element);
+    if (declaration == null ||
+        visited.contains(declaration.baseElement) ||
+        visited.length >= ModelGraphBuilderBase.maxReferenceDepth) {
+      // Shape/type resolution owns cycle and depth diagnostics. Do not hide
+      // its actionable alias trace while resolving only metadata.
+      return const _SchemaMetadata();
+    }
+    final owningLibrary = declaration.library;
+    if (owningLibrary == null) return const _SchemaMetadata();
+    final initializer = declarationExpression(
+      await resolvedLibraryFor(owningLibrary),
+      declaration,
+    );
+    if (initializer == null) return const _SchemaMetadata();
+    return _schemaMetadata(
+      initializer,
+      path: path,
+      context: context,
+      visited: {...visited, declaration.baseElement},
+    );
   }
 }

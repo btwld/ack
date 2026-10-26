@@ -17,18 +17,12 @@ final class SchemaChain {
   const SchemaChain({
     required this.base,
     required this.reference,
-    required this.optional,
-    required this.nullable,
-    required this.defaulted,
     required this.hasTransform,
     required this.hasCodec,
   });
 
   final MethodInvocation? base;
   final Expression? reference;
-  final bool optional;
-  final bool nullable;
-  final bool defaulted;
   final bool hasTransform;
   final bool hasCodec;
 }
@@ -677,9 +671,6 @@ abstract base class ModelGraphBuilderBase {
       return SchemaChain(
         base: null,
         reference: expression,
-        optional: false,
-        nullable: false,
-        defaulted: false,
         hasTransform: false,
         hasCodec: false,
       );
@@ -687,16 +678,10 @@ abstract base class ModelGraphBuilderBase {
     MethodInvocation? current = expression;
     MethodInvocation? base;
     Expression? reference;
-    var optional = false;
-    var nullable = false;
-    var defaulted = false;
     var transform = false;
     var codec = false;
     while (current != null) {
       final name = current.methodName.name;
-      optional |= name == 'optional';
-      nullable |= name == 'nullable';
-      defaulted |= name == 'withDefault';
       transform |= oneWayTransformMethods.contains(name);
       codec |= name == 'codec';
       if (current.methodName.element is TopLevelFunctionElement ||
@@ -719,9 +704,6 @@ abstract base class ModelGraphBuilderBase {
     return SchemaChain(
       base: base,
       reference: reference,
-      optional: optional,
-      nullable: nullable,
-      defaulted: defaulted,
       hasTransform: transform,
       hasCodec: codec,
     );

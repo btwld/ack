@@ -203,6 +203,40 @@ final labelsSchema = Ack.object({
   'groups': Ack.map(Ack.list(Ack.string()).nullable()),
 });
 
+final optionalLabel = Ack.string().optional();
+final optionalLabelAlias = optionalLabel;
+StringSchema get nullableLabelAlias => nullableLabel;
+final defaultLabel = Ack.string().withDefault('member');
+final optionalDefaultLabel = optionalLabel.withDefault('member');
+final nullableDefaultLabel = nullableLabel.withDefault('member');
+
+@Schemable()
+final flagAliasesSchema = Ack.object({
+  'name': optionalLabelAlias,
+  'nickname': nullableLabelAlias,
+  'role': defaultLabel,
+  'forced': optionalLabel.optional(value: false),
+  'notNull': nullableLabel.nullable(value: false),
+  'codec': optionalDefaultLabel.codec<String>(
+    decode: (value) => value,
+    encode: (value) => value,
+  ),
+  'wrapped': nullableDefaultLabel.nullable(value: false),
+  'labels': Ack.map(nullableLabel.nullable(value: false)),
+});
+
+@Schemable()
+final strictPolicySchema = Ack.object(
+  {'name': Ack.string()},
+  additionalProperties: true,
+).passthrough().strict();
+
+@Schemable()
+final openPolicySchema = strictPolicySchema.passthrough();
+
+@Schemable()
+final resetNullableSchema = Ack.string().nullable().nullable(value: false);
+
 final class Counted {
   Counted(this.value);
   final String value;
@@ -268,6 +302,9 @@ part 'address.g.dart';
 
 @Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
+
+final optionalLabel = Ack.string().optional();
+StringSchema get nullableLabel => Ack.string().nullable();
 ''',
         );
         File(
@@ -286,6 +323,8 @@ part 'person.g.dart';
 final personSchema = Ack.object({
   'home': direct.addressSchema,
   'history': Ack.list(exported.addressSchema),
+  'note': direct.optionalLabel,
+  'label': exported.nullableLabel,
 });
 ''',
         );
@@ -386,12 +425,17 @@ void main() {
 
     final person = Person.parse({
       'home': {'city': 'New York'},
+      'label': null,
       'history': [
         {'city': 'Amsterdam'},
       ],
     });
     expect(person.home.city, 'New York');
     expect(person.history.single.city, 'Amsterdam');
+    expect(person.note, isNull);
+    expect(person.label, isNull);
+    expect(person.toJson()['label'], isNull);
+    expect(person.toJson().containsKey('note'), isFalse);
   });
 
   test('generated list fields use deep equality, hashing, and copyWith', () {
@@ -537,6 +581,35 @@ void main() {
     expect(labels.byKey, {'a': 'x', 'b': null});
     expect(labels.groups['none'], isNull);
     expect(labels.toJson(), json);
+  });
+
+  test('aliases and wrapper boundaries preserve field flags', () {
+    final json = <String, Object?>{
+      'nickname': null,
+      'forced': 'present',
+      'notNull': 'present',
+      'wrapped': null,
+      'labels': {'a': 'x'},
+    };
+    final value = FlagAliases.parse(json);
+    expect(value.name, isNull);
+    expect(value.nickname, isNull);
+    expect(value.role, 'member');
+    expect(value.codec, isNull);
+    expect(value.wrapped, 'member');
+    expect(value.toJson(), {...json, 'role': 'member', 'wrapped': 'member'});
+    expect(FlagAliases.parse(value.toJson()), value);
+    expect(FlagAliases.safeParse({...json, 'notNull': null}).isFail, isTrue);
+    expect(FlagAliases.safeParse({...json, 'labels': {'a': null}}).isFail, isTrue);
+    expect(ResetNullable.parse('value').value, 'value');
+    expect(ResetNullable.safeParse(null).isFail, isTrue);
+  });
+
+  test('strict and passthrough override object policy through aliases', () {
+    expect(StrictPolicy.safeParse({'name': 'Ada', 'extra': 1}).isFail, isTrue);
+    final open = OpenPolicy.parse({'name': 'Ada', 'extra': 1});
+    expect(open.additionalProperties, {'extra': 1});
+    expect(open.toJson(), {'name': 'Ada', 'extra': 1});
   });
 
   test('union discriminators cannot be spoofed through extras', () {
