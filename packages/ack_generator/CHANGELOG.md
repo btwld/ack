@@ -7,6 +7,8 @@
   strict/passthrough policy to object models and aliases.
 * Reject object shape-changing methods that cannot be modeled statically,
   instead of generating fields that disagree with the authored schema.
+* Resolve same-build scalar, list, and codec model references using their
+  actual runtime types, and generate valid codecs for nullable nested Sets.
 
 ## 2.0.0-alpha.1
 
