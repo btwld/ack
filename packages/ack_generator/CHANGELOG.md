@@ -7,6 +7,9 @@
 
 ### Fixed
 
+* Preserve native codec boundary types when inferring `Ack.preserveBoundary`
+  fields, including dates, datetimes, URIs, durations, enums, explicit codec
+  inputs and statically resolvable nonrecursive lazy schemas.
 * Resolve preserved JSON boundary nullability through the same effective
   metadata as ordinary fields, including aliases and explicit flag overrides.
 * Snapshot nested JSON collections held as `Object` or `Object?` in

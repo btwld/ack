@@ -809,18 +809,56 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     final base = chain.base;
     AckInferRef result;
     switch (base?.methodName.name) {
-      case 'string' || 'literal' || 'enumString':
-        result = const AckScalarTypeRef('String');
-      case 'integer':
-        result = const AckScalarTypeRef('int');
-      case 'number':
-        result = const AckScalarTypeRef('num');
-      case 'double':
-        result = const AckScalarTypeRef('double');
-      case 'boolean':
-        result = const AckScalarTypeRef('bool');
+      case 'string' ||
+          'literal' ||
+          'enumString' ||
+          'integer' ||
+          'number' ||
+          'double' ||
+          'boolean' ||
+          'date' ||
+          'datetime' ||
+          'uri' ||
+          'duration' ||
+          'enumValues':
+        // Native factories own their boundary types; decoded codec types do
+        // not belong in a preserved wire field.
+        result = _schemaTypes(base!, path, context).boundary;
       case 'any':
         result = const AckScalarTypeRef('Object', isJsonValue: true);
+      case 'codec':
+        Expression? input;
+        for (final node in base!.argumentList.arguments) {
+          final argument = namedArgument(node);
+          if (argument?.name == 'input') {
+            input = argument!.expression;
+            break;
+          }
+        }
+        if (input == null) return _unsupportedJsonBoundary(path, context);
+        result = await _jsonBoundaryRef(
+          input,
+          path: '$path.input',
+          context: context,
+          visited: visited,
+          depth: depth + 1,
+        );
+      case 'lazy':
+        final arguments = argumentExpressions(base!.argumentList);
+        if (arguments.length < 2 || arguments[1] is! FunctionExpression) {
+          return _unsupportedJsonBoundary(path, context);
+        }
+        final target = functionBodyExpression(
+          (arguments[1] as FunctionExpression).body,
+        );
+        if (target == null) return _unsupportedJsonBoundary(path, context);
+        result = await _jsonBoundaryRef(
+          target,
+          path: '$path.lazy',
+          context: context,
+          visited: visited,
+          depth: depth + 1,
+        );
       case 'list' || 'map' || 'preserveBoundary':
         final arguments = argumentExpressions(base!.argumentList);
         if (arguments.length != 1) {

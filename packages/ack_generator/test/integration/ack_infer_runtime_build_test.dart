@@ -320,6 +320,27 @@ final boundaryAliasesSchema = Ack.object({
   'byName': Ack.map(boundaryMapAlias.nullable(value: false)),
 });
 
+enum WireStatus { active, archived }
+
+@Schemable()
+final nativeBoundarySchema = Ack.object({
+  'day': Ack.preserveBoundary(Ack.date()),
+  'instant': Ack.preserveBoundary(Ack.datetime()),
+  'url': Ack.preserveBoundary(Ack.uri()),
+  'milliseconds': Ack.preserveBoundary(Ack.duration()),
+  'status': Ack.preserveBoundary(Ack.enumValues(WireStatus.values)),
+  'boxed': Ack.preserveBoundary(Ack.codec(
+    input: Ack.string(),
+    decode: DateTime.parse,
+    encode: (DateTime value) => value.toIso8601String(),
+  )),
+  'later': Ack.preserveBoundary(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+  'payload': Ack.preserveBoundary(Ack.object({
+    'createdAt': Ack.datetime(),
+    'statuses': Ack.list(Ack.enumValues(WireStatus.values)),
+  })),
+});
+
 
 @Schemable()
 final keywordBranchSchema = Ack.object({'answer': Ack.string()});
@@ -615,6 +636,40 @@ void main() {
     expect(BoundaryAliases.safeParse({...json, 'values': null}).isFail, isTrue);
     expect(BoundaryAliases.safeParse({...json, 'groups': [null]}).isFail, isTrue);
     expect(BoundaryAliases.safeParse({...json, 'byName': {'first': null}}).isFail, isTrue);
+  });
+
+  test('preserved native codecs keep JSON boundary types and validation', () {
+    final json = <String, Object?>{
+      'day': '2026-10-26',
+      'instant': '2026-10-26T12:00:00Z',
+      'url': 'https://example.invalid/review',
+      'milliseconds': 1500,
+      'status': 'active',
+      'boxed': '2026-10-26T12:00:00Z',
+      'later': 7,
+      'payload': {
+        'createdAt': '2026-10-26T12:00:00Z',
+        'statuses': ['active'],
+      },
+    };
+    final record = NativeBoundary.parse(json);
+    final String instant = record.instant;
+    final String status = record.status;
+    final int milliseconds = record.milliseconds;
+    final int later = record.later;
+    expect(instant, json['instant']);
+    expect(status, 'active');
+    expect(milliseconds, 1500);
+    expect(later, 7);
+    expect(record.toJson(), json);
+    expect(record.copyWith(milliseconds: 2500).toJson(), {
+      ...json,
+      'milliseconds': 2500,
+    });
+    expect(NativeBoundary.safeParse({...json, 'instant': 'bad'}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'status': 'unknown'}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'milliseconds': 1.5}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'boxed': 'bad'}).isFail, isTrue);
   });
 
   test('contextual discriminator and capture members retain their wire shape', () {
