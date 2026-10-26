@@ -10,6 +10,11 @@
   without decoding runtime values again or adding encode callback passes.
 * Reject duration millisecond inputs that overflow the platform's `Duration`
   representation instead of silently decoding to a different duration.
+* Respect custom JSON Schema vocabularies during import and export: keep
+  inactive keywords inert, preserve annotation payloads and explicit format
+  assertions, and apply fluent nullability under an active assertion dialect.
+  Identical caller-supplied standard meta-schemas can replace offline fallbacks
+  without relaxing duplicate-ID checks between caller resources.
 
 ## 2.0.0-alpha.1
 

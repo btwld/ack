@@ -365,27 +365,6 @@ Map<String, Object?> _relocateRootPointers(
   Set<String> retainedKeywords,
   Set<Map<String, Object?>> indexedSchemas,
 ) {
-  const mapKeywords = {
-    r'$defs',
-    'definitions',
-    'properties',
-    'patternProperties',
-    'dependentSchemas',
-  };
-  const childKeywords = {
-    'items',
-    'additionalProperties',
-    'not',
-    'contains',
-    'propertyNames',
-    'if',
-    'then',
-    'else',
-    'unevaluatedProperties',
-    'unevaluatedItems',
-  };
-  const listKeywords = {'anyOf', 'allOf', 'oneOf', 'prefixItems'};
-
   late Object? Function(Object?, Uri) visit;
 
   Object? visitExtension(Object? value, Uri base) {
@@ -437,31 +416,7 @@ Map<String, Object?> _relocateRootPointers(
           .replace(fragment: '/anyOf/0$fragment')
           .toString();
     }
-    for (final key in mapKeywords) {
-      if (rewritten[key] case final Map<String, Object?> children) {
-        rewritten[key] = children.map(
-          (name, child) => MapEntry(name, visit(child, currentBase)),
-        );
-      }
-    }
-    for (final key in childKeywords) {
-      if (rewritten.containsKey(key)) {
-        rewritten[key] = visit(rewritten[key], currentBase);
-      }
-    }
-    for (final key in listKeywords) {
-      if (rewritten[key] case final List children) {
-        rewritten[key] = [
-          for (final child in children) visit(child, currentBase),
-        ];
-      }
-    }
     for (final key in rewritten.keys.toList(growable: false)) {
-      if (mapKeywords.contains(key) ||
-          childKeywords.contains(key) ||
-          listKeywords.contains(key)) {
-        continue;
-      }
       rewritten[key] = visitExtension(rewritten[key], currentBase);
     }
     return rewritten;
