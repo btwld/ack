@@ -219,10 +219,7 @@ final choiceOptionSchema = Ack.anyOf([
   Ack.string(),
   Ack.object({'label': Ack.string(), 'value': Ack.string()}),
 ]);
-final choiceOptionsSchema = Ack.list(choiceOptionSchema).codec<List<Object?>>(
-  decode: List<Object?>.unmodifiable,
-  encode: List<Object>.from,
-);
+final choiceOptionsSchema = Ack.preserveBoundary(Ack.list(choiceOptionSchema));
 
 @Schemable()
 final choiceFieldSchema = Ack.object({'options': choiceOptionsSchema.optional()});
@@ -234,6 +231,35 @@ final opaqueValueSchema = Ack.string().codec<Object>(
 
 @Schemable()
 final opaqueRecordSchema = Ack.object({'value': opaqueValueSchema});
+final typedListValueSchema = Ack.string().codec<Object>(
+  decode: (_) => <int>[1, 2],
+  encode: (value) => (value as List<int>).join(','),
+);
+final typedMapValueSchema = Ack.string().codec<Object>(
+  decode: (_) => <String, List<int>>{'values': <int>[3, 4]},
+  encode: (value) => (value as Map<String, List<int>>)['values']!.join(','),
+);
+
+@Schemable()
+final opaqueCollectionsSchema = Ack.object({
+  'value': typedListValueSchema,
+  'items': Ack.list(typedListValueSchema),
+  'byKey': Ack.map(typedListValueSchema),
+  'map': typedMapValueSchema,
+  'nullable': typedListValueSchema.nullable(),
+});
+
+final answerValueSchema = Ack.anyOf([
+  Ack.string(), Ack.number(), Ack.list(Ack.string()),
+]);
+final answerValuesSchema = Ack.preserveBoundary(Ack.map(answerValueSchema));
+
+@Schemable()
+final answerRecordSchema = Ack.object({
+  'values': answerValuesSchema,
+  'ratio': Ack.preserveBoundary(Ack.double()),
+});
+
 
 @Schemable()
 final keywordBranchSchema = Ack.object({'answer': Ack.string()});
@@ -377,7 +403,7 @@ void main() {
 
   test('constructor snapshots Object-valued option maps without validating them', () {
     final option = <String, Object?>{'label': 'Keep', 'value': 'keep'};
-    final options = <Object?>['skip', option];
+    final options = <Object>['skip', option];
     final field = ChoiceField(options: options);
     option['value'] = 'changed';
     options.clear();
@@ -388,7 +414,7 @@ void main() {
     expect(field.hashCode, expected.hashCode);
     expect(field.toJson(), expected.toJson());
     expect(() => field.options!.clear(), throwsUnsupportedError);
-    expect(() => (field.options!.last! as Map)['value'] = 'changed',
+    expect(() => (field.options!.last as Map)['value'] = 'changed',
         throwsUnsupportedError);
     expect(ChoiceField(options: [false]).safeToJson().isFail, isTrue);
     expect(ChoiceField(options: [Object()]).safeToJson().isFail, isTrue);
@@ -429,6 +455,47 @@ void main() {
     final record = OpaqueRecord(value: value);
     expect(record.value, same(value));
     expect(record.toJson(), {'value': value.toIso8601String()});
+  });
+
+
+  test('opaque codec Object collections retain their reified runtime types', () {
+    final list = <int>[1, 2];
+    final nested = <String, List<int>>{'values': <int>[3, 4]};
+    final record = OpaqueCollections(value: list, items: [list], byKey: {'key': list},
+        map: nested, nullable: list);
+    expect(record.value, same(list));
+    expect(record.items.single, same(list));
+    expect(record.byKey['key'], same(list));
+    expect(record.map, same(nested));
+    expect(record.nullable, same(list));
+    expect(record.toJson(), {'value': '1,2', 'items': ['1,2'], 'byKey': {'key': '1,2'},
+        'map': '3,4', 'nullable': '1,2'});
+    final parsed = OpaqueCollections.parse({'value': 'x', 'items': ['x'], 'byKey': {'key': 'x'},
+        'map': 'x', 'nullable': 'x'});
+    expect(parsed.value, isA<List<int>>());
+    expect(parsed.items.single, isA<List<int>>());
+    expect(parsed.byKey['key'], isA<List<int>>());
+    expect(parsed.map, isA<Map<String, List<int>>>());
+    expect(parsed.nullable, isA<List<int>>());
+    expect(parsed.copyWith(nullable: null).toJson()['nullable'], isNull);
+    expect(parsed.toJson(), record.toJson());
+  });
+
+  test('explicit JSON boundary unions encode normalized nested string lists', () {
+    final tags = <String>['a', 'b'];
+    final values = <String, Object>{'tags': tags, 'title': 'Review', 'count': 2};
+    final record = AnswerRecord(values: values, ratio: 0.5);
+    tags.add('changed');
+    values.clear();
+    final expected = <String, Object>{'tags': ['a', 'b'], 'title': 'Review', 'count': 2};
+    expect(record.values, expected);
+    expect(record.toJson(), {'values': expected, 'ratio': 0.5});
+    final double ratio = record.ratio;
+    expect(ratio, 0.5);
+    expect(AnswerRecord.parse({'values': expected, 'ratio': 0.5}).toJson(),
+        {'values': expected, 'ratio': 0.5});
+    expect(() => (record.values['tags'] as List).clear(), throwsUnsupportedError);
+    expect(AnswerRecord(values: {'invalid': false}, ratio: 0.5).safeToJson().isFail, isTrue);
   });
 
   test('contextual discriminator and capture members retain their wire shape', () {

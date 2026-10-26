@@ -21,6 +21,7 @@ Future<void> _expectFailure(String source, List<String> messages) async {
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   final seen = <String>{};
+  final logs = <String>[];
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
@@ -28,13 +29,14 @@ Future<void> _expectFailure(String source, List<String> messages) async {
     readerWriter: readerWriter,
     outputs: const {},
     onLog: (LogRecord log) {
+      logs.add('${log.level}: ${log.message}');
       if (log.level.name != 'SEVERE') return;
       for (final message in messages) {
         if (log.message.contains(message)) seen.add(message);
       }
     },
   );
-  expect(seen, containsAll(messages));
+  expect(seen, containsAll(messages), reason: logs.join('\n'));
 }
 
 const _head = '''
@@ -265,6 +267,24 @@ $_head
 final payloadSchema = ${unsupported.key};
 ''',
         ['payloadSchema', unsupported.value],
+      );
+    });
+  }
+
+  for (final boundary in [
+    'Ack.instance<Object>()',
+    'Ack.anyOf([Ack.string(), Ack.instance<Object>()])',
+  ]) {
+    test('rejects opaque JSON boundary inference for $boundary', () async {
+      await _expectFailure(
+        '''
+$_head
+@Schemable()
+final boundaryRecordSchema = Ack.object({
+  'value': Ack.preserveBoundary($boundary),
+});
+''',
+        ['boundaryRecordSchema.value', 'cannot prove a native JSON boundary'],
       );
     });
   }

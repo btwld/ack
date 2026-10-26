@@ -367,7 +367,7 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
 
   bool requiresImmutableCopy(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => requiresImmutableCopy(inner),
-    AckScalarTypeRef(dartType: 'Object') ||
+    AckScalarTypeRef(dartType: 'Object', isJsonValue: true) ||
     AckListTypeRef() ||
     AckSetTypeRef() ||
     AckMapTypeRef() => true,
@@ -385,10 +385,12 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
 
   String immutableCopy(AckInferRef type, String expression) {
     return switch (type) {
-      AckNullableTypeRef(inner: AckScalarTypeRef(dartType: 'Object')) =>
+      AckNullableTypeRef(
+        inner: AckScalarTypeRef(dartType: 'Object', isJsonValue: true),
+      ) =>
         '${_ack('deepUnmodifiableCopy')}($expression)',
       // A non-null input stays non-null; no generic collection casts are used.
-      AckScalarTypeRef(dartType: 'Object') =>
+      AckScalarTypeRef(dartType: 'Object', isJsonValue: true) =>
         '${_ack('deepUnmodifiableCopy')}($expression)!',
       AckNullableTypeRef(:final inner) when !requiresImmutableCopy(inner) =>
         expression,
