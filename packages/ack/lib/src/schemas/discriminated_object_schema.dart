@@ -334,6 +334,55 @@ final class DiscriminatedObjectSchema<T extends Object>
     Object? value,
     SchemaContext context,
   ) {
+    final checked = _checkRuntimeType(value, context);
+    if (checked.isFail || value == null) return checked;
+    final runtime = checked.getOrNull()!;
+
+    final mapRuntime = jsonMapOrNull(runtime);
+    if (mapRuntime != null) {
+      final discResult = _validateDiscriminatorKey(mapRuntime, context);
+      if (discResult.isFail) return SchemaResult.fail(discResult.getError());
+      final discValue = discResult.getOrNull()!;
+      final effective = effectiveBranch(discValue);
+      final branchContext = context.createChild(
+        name: 'when $discriminatorKey="$discValue"',
+        schema: effective,
+        value: runtime,
+        pathSegment: '',
+      );
+      final result = effective.validateRuntimeWithContext(
+        runtime,
+        branchContext,
+      );
+      if (result.isFail) return SchemaResult.fail(result.getError());
+      return applyConstraintsAndRefinements(result.getOrNull()!, context);
+    }
+
+    final errors = <SchemaError>[];
+    for (final discValue in schemas.keys) {
+      final effective = effectiveBranch(discValue);
+      final branchContext = context.createChild(
+        name: 'when $discriminatorKey="$discValue"',
+        schema: effective,
+        value: runtime,
+        pathSegment: '',
+      );
+      final result = effective.validateRuntimeWithContext(
+        runtime,
+        branchContext,
+      );
+      if (result.isOk) {
+        return applyConstraintsAndRefinements(result.getOrNull()!, context);
+      }
+      errors.add(result.getError());
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  SchemaResult<T> _checkRuntimeType(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
     if (value is! T) {
@@ -346,13 +395,20 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    return applyConstraintsAndRefinements(value, context);
+    return SchemaResult.ok(value);
   }
 
   @override
   @protected
   SchemaResult<JsonMap> encodeWithContext(T value, SchemaContext context) {
-    final validated = validateRuntimeWithContext(value, context);
+    final checked = _checkRuntimeType(value, context);
+    if (checked.isFail) return SchemaResult.fail(checked.getError());
+    final typed = checked.getOrNull();
+    if (typed == null) return SchemaResult.ok(null);
+
+    // Encoding validates each branch below. Repeating the full runtime
+    // membership check here would execute branch callbacks an extra time.
+    final validated = applyConstraintsAndRefinements(typed, context);
     if (validated.isFail) {
       return SchemaResult.fail(validated.getError());
     }

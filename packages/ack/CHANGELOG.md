@@ -5,6 +5,9 @@
 * Honor explicit boundary-wrapper nullability consistently during parse and
   encode. Preserve non-null restrictions on wrappers and lazy references when
   exporting nullable primitives, unions, and imported JSON Schema resources.
+* Validate discriminated codec output against its selected map branch or a
+  matching typed runtime branch, including required fields and refinements,
+  without decoding runtime values again or adding encode callback passes.
 
 ## 2.0.0-alpha.1
 
