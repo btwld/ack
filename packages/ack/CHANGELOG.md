@@ -10,6 +10,9 @@
   without decoding runtime values again or adding encode callback passes.
 * Reject duration millisecond inputs that overflow the platform's `Duration`
   representation instead of silently decoding to a different duration.
+* Expose the shared `deepUnmodifiableCopy` helper for generated immutable
+  constructors. It snapshots nested collections without validating data or
+  changing opaque noncollection objects.
 
 ## 2.0.0-alpha.1
 

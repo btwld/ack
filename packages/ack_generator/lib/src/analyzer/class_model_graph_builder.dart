@@ -1411,9 +1411,16 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     Element element, {
     required String memberKind,
   }) {
+    if (name == 'dynamic') {
+      throw InvalidGenerationSource(
+        '${element.name}.$name shadows the dynamic type used by generated '
+        'JSON methods.',
+        element: element,
+      );
+    }
     if (name.startsWith('_') ||
         !RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(name) ||
-        isDartKeyword(name)) {
+        isDartReservedWord(name)) {
       throw InvalidGenerationSource(
         '${element.name}.$name is not a valid public $memberKind.',
         element: element,
