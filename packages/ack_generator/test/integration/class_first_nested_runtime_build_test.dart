@@ -286,6 +286,8 @@ final scalarSchema = Ack.integer();
 @Schemable()
 final stringsSchema = Ack.list(Ack.string());
 @Schemable()
+StringSchema get getterLabelSchema => Ack.string();
+@Schemable()
 final encodedSchema = Ack.string().codec<Token>(
   decode: Token.decode,
   encode: Token.encode,
@@ -305,6 +307,7 @@ final class ValueHolder with _$ValueHolderAck {
     required this.scalar,
     required this.strings,
     required this.encoded,
+    required this.getterLabel,
     required this.history,
     required this.unique,
     this.patch = const JsonMaybe.absent(),
@@ -315,6 +318,7 @@ final class ValueHolder with _$ValueHolderAck {
   final values.Scalar scalar;
   final values.Strings strings;
   final values.Encoded encoded;
+  final values.GetterLabel getterLabel;
   final List<values.Scalar> history;
   final Set<values.Scalar> unique;
   final JsonMaybe<values.Encoded> patch;
@@ -367,6 +371,7 @@ void main() {
       'scalar': 7,
       'strings': ['one', 'two'],
       'encoded': 'token',
+      'getterLabel': 'from-getter',
       'history': [1, 2],
       'unique': [3, 4],
       'sets': {'present': [1, 2], 'none': null},
@@ -379,6 +384,7 @@ void main() {
     expect(holder.scalar.value, 7);
     expect(holder.strings.value, ['one', 'two']);
     expect(holder.encoded.value.value, 'token');
+    expect(holder.getterLabel.value, 'from-getter');
     expect(holder.history.map((model) => model.value), [1, 2]);
     expect(holder.unique.map((model) => model.value), [3, 4]);
     expect(holder.patch, const JsonMaybe<values.Encoded>.absent());

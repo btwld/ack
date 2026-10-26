@@ -9,6 +9,9 @@
   instead of generating fields that disagree with the authored schema.
 * Resolve same-build scalar, list, and codec model references using their
   actual runtime types, and generate valid codecs for nullable nested Sets.
+* Diagnose value-model helper collisions, class/member name conflicts, and
+  duplicate schema-first keys before emission. Resolve same-build models
+  declared with annotated getters.
 
 ## 2.0.0-alpha.1
 
