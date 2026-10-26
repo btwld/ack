@@ -91,9 +91,12 @@ final class AckNullableTypeRef extends AckInferRef {
 
 /// A core scalar such as `String`, `int`, `double`, `bool`, or `num`.
 final class AckScalarTypeRef extends AckInferRef {
-  const AckScalarTypeRef(this.dartType);
+  const AckScalarTypeRef(this.dartType, {this.isJsonValue = false});
 
   final String dartType;
+
+  /// Object values owned by a JSON schema, rather than an opaque codec.
+  final bool isJsonValue;
 }
 
 /// A visible type declared outside the generated model graph.
