@@ -307,6 +307,19 @@ final boundaryFlagsSchema = Ack.object({
   'outerMap': Ack.preserveBoundary(Ack.map(nullableBoundaryValue).nullable()).nullable(value: false),
 });
 
+final nullableBoundaryText = Ack.preserveBoundary(Ack.string().nullable());
+final boundaryTextAlias = nullableBoundaryText;
+final nullableBoundaryMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
+final boundaryMapAlias = nullableBoundaryMap;
+
+@Schemable()
+final boundaryAliasesSchema = Ack.object({
+  'text': boundaryTextAlias.nullable(value: false),
+  'values': boundaryMapAlias.nullable(value: false),
+  'groups': Ack.list(boundaryMapAlias.nullable(value: false)),
+  'byName': Ack.map(boundaryMapAlias.nullable(value: false)),
+});
+
 
 @Schemable()
 final keywordBranchSchema = Ack.object({'answer': Ack.string()});
@@ -578,6 +591,30 @@ void main() {
     expect(BoundaryFlags.safeParse({...json, 'outerMap': null}).isFail, isTrue);
     expect(BoundaryFlags.safeParse({...json, 'clearedValues': {'c': null}}).isFail, isTrue);
     expect(() => record.copiedValues['a'] = 'changed', throwsUnsupportedError);
+  });
+
+  test('preserved boundary aliases clear only their outer nullable type', () {
+    final json = <String, Object?>{
+      'text': 'present',
+      'values': {'a': null},
+      'groups': [{'b': null}],
+      'byName': {'first': {'c': null}},
+    };
+    final record = BoundaryAliases.parse(json);
+    final String text = record.text;
+    final Map<String, String?> values = record.values;
+    final List<Map<String, String?>> groups = record.groups;
+    final Map<String, Map<String, String?>> byName = record.byName;
+    expect(text, 'present');
+    expect(values['a'], isNull);
+    expect(groups.single['b'], isNull);
+    expect(byName['first']!['c'], isNull);
+    expect(record.toJson(), json);
+    expect(BoundaryAliases.parse(record.toJson()), record);
+    expect(BoundaryAliases.safeParse({...json, 'text': null}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'values': null}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'groups': [null]}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'byName': {'first': null}}).isFail, isTrue);
   });
 
   test('contextual discriminator and capture members retain their wire shape', () {

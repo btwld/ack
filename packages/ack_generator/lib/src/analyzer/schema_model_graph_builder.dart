@@ -717,7 +717,17 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           visited: visited,
           depth: depth,
         );
-        if (followed != null) return followed;
+        if (followed != null) {
+          if (followed is AckNullableTypeRef &&
+              !(await _schemaMetadata(
+                expression,
+                path: path,
+                context: context,
+              )).nullable) {
+            return followed.inner;
+          }
+          return followed;
+        }
       }
     }
 

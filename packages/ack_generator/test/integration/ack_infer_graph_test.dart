@@ -170,6 +170,31 @@ final boundaryFlagsSchema = Ack.object({
     );
   });
 
+  test('preserved boundary aliases honor consuming flag overrides', () async {
+    await _expectOutput(
+      '''
+$_head
+final nullableText = Ack.preserveBoundary(Ack.string().nullable());
+final textAlias = nullableText;
+final nullableMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
+final mapAlias = nullableMap;
+@Schemable()
+final boundaryAliasesSchema = Ack.object({
+  'text': textAlias.nullable(value: false),
+  'values': mapAlias.nullable(value: false),
+  'groups': Ack.list(mapAlias.nullable(value: false)),
+  'byName': Ack.map(mapAlias.nullable(value: false)),
+});
+''',
+      allOf([
+        contains('final String text;'),
+        contains('final Map<String, String?> values;'),
+        contains('final List<Map<String, String?>> groups;'),
+        contains('final Map<String, Map<String, String?>> byName;'),
+      ]),
+    );
+  });
+
   test('rejects actually nullable preserved boundary list items', () async {
     await _expectFailure(
       '''
