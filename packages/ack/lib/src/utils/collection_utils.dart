@@ -8,9 +8,6 @@ JsonMap deepUnmodifiableJsonMap(JsonMap value) =>
       value.map((key, item) => MapEntry(key, deepUnmodifiableCopy(item))),
     );
 
-/// Internal schema-default wrapper over the shared snapshot helper.
-Object? cloneDefault(Object? value) => deepUnmodifiableCopy(value);
-
 /// Returns a detached, recursively unmodifiable snapshot of [value].
 ///
 /// Maps retain their keys while their values are copied. Lists and sets are
