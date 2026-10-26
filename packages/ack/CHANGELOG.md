@@ -15,6 +15,9 @@
   assertions, and apply fluent nullability under an active assertion dialect.
   Identical caller-supplied standard meta-schemas can replace offline fallbacks
   without relaxing duplicate-ID checks between caller resources.
+* Discover selected custom dialects bundled beneath their own active schema
+  keywords, without interpreting inactive keyword payloads or annotation data
+  as schemas.
 
 ## 2.0.0-alpha.1
 

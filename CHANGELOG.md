@@ -13,6 +13,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * Reject duration inputs that cannot preserve their original milliseconds.
 * Preserve custom JSON Schema vocabulary semantics, inert annotation payloads,
   explicit format assertions, and fluent null policies through export.
+* Resolve custom dialects bundled under active schema keywords while leaving
+  unrelated annotation data untouched.
 * Preserve schema-first alias metadata and strict/passthrough precedence;
   diagnose unsupported shape transformations instead of emitting wrong fields.
 * Resolve same-build value-model and getter references, nullable nested Sets,
