@@ -502,6 +502,32 @@ final class \$UserCopyWith {}
     },
   );
 
+  test('rejects a field that shadows the generated dynamic type', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'bad.dart':
+            '''
+$_imports
+part 'bad.g.dart';
+
+@Schemable()
+final badSchema = Ack.object({'dynamic': Ack.string()});
+''',
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(
+      messages.single,
+      contains(
+        'badSchema.dynamic shadows the dynamic type used by generated JSON methods',
+      ),
+    );
+  });
+
   test('rejects Dart keywords used as generated field names', () async {
     final messages = <String>{};
     await _build(
