@@ -550,6 +550,26 @@ final class Config with _\$ConfigAck {
     );
   });
 
+  test(
+    'rejects a capture field that shadows the generated dynamic type',
+    () async {
+      await _expectFailure(
+        '''
+@Schemable(
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'dynamic',
+)
+final class Config with _\$ConfigAck {
+  const Config({required this.dynamic});
+
+  final Map<String, Object?> dynamic;
+}
+''',
+        ['Config.dynamic', 'shadows the dynamic type'],
+      );
+    },
+  );
+
   test('rejects captureField without the capture policy', () async {
     await _expectFailure(
       '''
