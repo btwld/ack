@@ -305,5 +305,5 @@ validates through the union's effective branch.
 | `@AckField(description: ...)` | `/// @description ...` doc tag |
 | `@AckField(presence: ...)` | `@Validate.optional()`, `@Validate.required()`, `@Validate.notNull()`, or `JsonMaybe<T>` |
 | `Ack.enumCodec(MyEnum.values)` | `Ack.enumValues(MyEnum.values)` |
-| `registerAckModelTool(...)` (`ack_mcp_dart`) | `server.registerAckTool(name, inputSchema: Model.schema, ...)` |
+| `registerAckModelTool(...)` (`ack_mcp_dart`) | `server.registerAckTool(name, input: Model.schema, callback: ...)` |
 | `convertAckSchemaModelToBuilder(model)` (`ack_json_schema_builder`) | `schema.toJsonSchemaBuilder()` |

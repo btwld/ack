@@ -39,10 +39,11 @@ final jsonSchema = schema.toJsonSchema();
 `AckSchemaModel` describes the boundary shape, constraints, export-safe
 defaults, discriminator metadata, and warnings that adapters can reuse for
 non-JSON targets. JSON-map adapters can call `schema.toJsonSchema()` directly.
-Imported schemas use the existing `AckAllOfSchemaModel` and
-`AckRefSchemaModel` variants, with their preserved definition bodies attached
-to the root model. They do not introduce an import-only variant into the sealed
-model hierarchy.
+Imported JSON Schema resources can surface as `AckRawSchemaModel`, directly or
+inside composition models, preserving their dialect and resource semantics.
+Non-JSON adapters must implement support for those resources or reject them
+explicitly. Native lazy schemas surface as `AckRefSchemaModel`; supporting
+references also requires resolving their definitions, not just emitting a name.
 Adapters should not traverse `AckSchema` subclasses or parse rendered JSON
 Schema output as their source of truth for non-JSON formats.
 
@@ -141,9 +142,9 @@ repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
 
 environment:
-  sdk: '>=3.9.0 <4.0.0'
+  sdk: '>=3.11.0 <4.0.0'
   # Add flutter if target SDK requires it
-  # flutter: '>=3.35.0'
+  # flutter: '>=3.41.2'
 
 dependencies:
   ack: ^2.0.0-alpha.1
@@ -343,6 +344,9 @@ class <Target>SchemaConverter {
       AckRefSchemaModel() => throw UnsupportedError(
         'Reference schemas (Ack.lazy) are not supported by this target.',
       ),
+      AckRawSchemaModel() => throw UnsupportedError(
+        'Imported JSON Schema resources are not supported by this target.',
+      ),
     };
   }
 
@@ -351,7 +355,7 @@ class <Target>SchemaConverter {
   // ========================================================================
 
   static <TargetSchema> _convertString(AckStringSchemaModel schema) {
-    final enumValues = schema.allowedStringValues;
+    final enumValues = schema.enumValues;
     if (enumValues != null) {
       return _buildEnumSchema(enumValues, schema);
     }
@@ -399,7 +403,8 @@ class <Target>SchemaConverter {
 
   static <TargetSchema> _convertObject(AckObjectSchemaModel schema) {
     final properties = <String, TargetSchema>{};
-    for (final entry in schema.properties?.entries ?? const []) {
+    for (final entry in
+        schema.properties?.entries ?? const <MapEntry<String, AckSchemaModel>>[]) {
       properties[entry.key] = _convertModel(entry.value);
     }
 
@@ -1193,6 +1198,9 @@ TargetSchema _convert(AckSchemaModel schema) {
     AckAllOfSchemaModel() => _convertAllOf(schema),
     AckNullSchemaModel() => TargetSchema.nullValue(),
     AckRefSchemaModel() => TargetSchema.ref(schema.refName),
+    AckRawSchemaModel() => throw UnsupportedError(
+      'Implement target-specific support for imported JSON Schema resources.',
+    ),
   };
 }
 
@@ -1246,23 +1254,24 @@ TargetSchema _convert(AckSchema schema) {
 
 ### Handling Transformed Schemas
 
-`toSchemaModel()` projects transformed schemas from their boundary input schema
-and preserves adapter-safe metadata such as description, nullability, and
-`x-transformed`.
+`toSchemaModel()` projects codecs and transforms from their boundary input
+schema. It describes external data, not the decoded Dart runtime value.
+Decoder, encoder, and refinement callbacks still belong to Ack runtime
+validation; they cannot be reproduced by a target schema renderer.
 
-**Option 1: Render projected boundary model** (Recommended)
+**Render the projected boundary model**:
 ```dart
 TargetSchema _convertTransformed(AckSchemaModel schema) {
   return _convert(schema);
 }
 ```
 
-**Option 2: Reject explicit transformed marker** (If target cannot tolerate transforms)
-```dart
-if (schema.extensions['x-transformed'] == true) {
-  throw UnsupportedError('Transformed Ack schemas are not supported here.');
-}
-```
+Native transforms do not emit an `x-transformed` detection marker. An imported
+document may preserve that extension as ordinary annotation data, but it is not
+a reliable way to identify native callbacks. Validate returned data with the
+original Ack schema, and inspect export warnings for omitted runtime checks.
+Use a bidirectional `.codec()` when the application also needs runtime-to-wire
+encoding; `.transform()` is parse-only.
 
 ### Handling Discriminated Unions
 
@@ -1375,6 +1384,12 @@ class OpenApiSchemaConverter {
 
 **Target**: GraphQL Schema Definition Language
 
+This illustration supports object roots with scalar fields and arrays of those
+scalars. Field names and `typeName` must already be valid GraphQL identifiers.
+Nested objects, enums, compositions, references, and imported raw resources are
+rejected until their target definitions are implemented. It is not a lossless
+translation of Ack constraints; for example, GraphQL `Int` has its own range.
+
 ```dart
 // lib/src/converter.dart
 import 'package:ack/ack.dart';
@@ -1396,15 +1411,20 @@ class GraphQlSchemaConverter {
     if (schema is! AckObjectSchemaModel) {
       throw UnsupportedError('Only object schema models can be converted.');
     }
+    if (schema.properties?.isNotEmpty != true) {
+      throw UnsupportedError('GraphQL object definitions need at least one field.');
+    }
 
     buffer.writeln('type $typeName {');
 
     final required = schema.required ?? const <String>[];
-    for (final entry in schema.properties?.entries ?? const []) {
+    for (final entry in
+        schema.properties?.entries ?? const <MapEntry<String, AckSchemaModel>>[]) {
       final fieldName = entry.key;
       final fieldSchema = entry.value;
       final gqlType = _getGraphQLType(fieldSchema);
-      final nullableSuffix = required.contains(fieldName) ? '!' : '';
+      final nullableSuffix =
+          required.contains(fieldName) && !fieldSchema.nullable ? '!' : '';
 
       if (fieldSchema.description != null) {
         buffer.writeln('  """${fieldSchema.description}"""');
@@ -1417,21 +1437,19 @@ class GraphQlSchemaConverter {
 
   static String _getGraphQLType(AckSchemaModel schema) {
     return switch (schema) {
-      AckStringSchemaModel(allowedStringValues: final values)
-          when values != null && values.isNotEmpty =>
-        _generateEnumType(schema),
+      AckStringSchemaModel(enumValues: final values)
+          when values != null =>
+        throw UnsupportedError('Generate enum definitions before using enums.'),
       AckStringSchemaModel() => 'String',
       AckIntegerSchemaModel() => 'Int',
       AckNumberSchemaModel() => 'Float',
       AckBooleanSchemaModel() => 'Boolean',
-      AckArraySchemaModel(items: final item?) => '[${_getGraphQLType(item)}]',
-      _ => 'String', // Fallback
+      AckArraySchemaModel(items: final item?) =>
+        '[${_getGraphQLType(item)}${item.nullable ? '' : '!'}]',
+      _ => throw UnsupportedError(
+        'Only scalar fields and arrays of supported scalars are implemented.',
+      ),
     };
-  }
-
-  static String _generateEnumType(AckStringSchemaModel schema) {
-    // Would need to generate enum definitions separately
-    return 'EnumType';
   }
 }
 ```

@@ -2,12 +2,12 @@
 title: Ecosystem Integrations
 ---
 
-Every `AckSchema` (and every `@Schemable()` model via `Model.schema`) can be reused directly across Ack's official adapter packages:
+Reuse an `AckSchema` (or a `@Schemable()` model's `Model.schema`) across Ack's official adapter packages. Each adapter has its own supported schema shapes; MCP tool inputs, for example, must render as a non-null object root.
 
 | Adapter Package | Target Ecosystem | Primary Entry Point |
 | --- | --- | --- |
-| **`ack_mcp_dart`** | [Model Context Protocol (`mcp_dart`)](https://pub.dev/packages/mcp_dart) | `server.registerAckTool(...)`, `result.decodeAckOutput(...)` |
-| **`ack_firebase_ai`** | [Firebase AI Logic (`firebase_ai` / Gemini)](https://pub.dev/packages/firebase_ai) | `schema.toFirebaseAiSchema()` |
+| **`ack_mcp_dart`** | [Model Context Protocol (`mcp_dart`)](https://pub.dev/packages/mcp_dart) | `server.registerAckTool(...)`, `schema.toMcpToolInputSchema()` |
+| **`ack_firebase_ai`** | [Firebase AI Logic (`firebase_ai` / Gemini)](https://pub.dev/packages/firebase_ai) | `schema.toFirebaseAiResponseJsonSchema()` |
 | **`ack_json_schema_builder`** | [`json_schema_builder`](https://pub.dev/packages/json_schema_builder) | `schema.toJsonSchemaBuilder()`, `jsbSchema.toAckSchema()` |
 
 ---
@@ -49,7 +49,7 @@ final class WeatherReport with _$WeatherReportAck {
 
 ## 2. MCP Tool Servers (`ack_mcp_dart`)
 
-`ack_mcp_dart` bridges `AckSchema` with `McpServer` from `package:mcp_dart/mcp_dart.dart`. It exports the tool's JSON Schema automatically, validates incoming tool arguments before your callback runs, validates structured tool output, and formats validation failures as MCP `CallToolResult(isError: true)` responses.
+`ack_mcp_dart` bridges `AckSchema` with `McpServer` from `package:mcp_dart/mcp_dart.dart`. It exports the tool's input JSON Schema, validates and decodes incoming arguments before your callback runs, and formats Ack validation failures as MCP `CallToolResult(isError: true)` responses. MCP's structural validation runs first; its failures do not reach the Ack callback.
 
 ### Install
 
@@ -57,43 +57,56 @@ final class WeatherReport with _$WeatherReportAck {
 dart pub add ack ack_mcp_dart mcp_dart
 ```
 
-### Register a typed input + output tool
+### Register a typed input tool
 
-Pass `WeatherQuery.schema` and `WeatherReport.schema` directly to `server.registerAckTool`:
+Pass `WeatherQuery.schema` through `input`. The callback receives a `WeatherQuery` and returns a `CallToolResult`; output validation and serialization belong to the callback:
 
 ```dart
+import 'dart:convert';
+
 import 'package:ack_mcp_dart/ack_mcp_dart.dart';
 import 'package:mcp_dart/mcp_dart.dart';
 
 import 'weather_models.dart';
 
 void registerWeatherTools(McpServer server) {
-  server.registerAckTool<WeatherQuery, WeatherReport>(
+  server.registerAckTool<WeatherQuery>(
     'get_weather',
     description: 'Fetch the current weather for a city.',
-    inputSchema: WeatherQuery.schema,
-    outputSchema: WeatherReport.schema,
-    callback: (query, extra) async {
-      // `query` is already validated and decoded into a `WeatherQuery`
-      return WeatherReport(
+    input: WeatherQuery.schema,
+    callback: (query, extra) {
+      final report = WeatherReport(
         city: query.city,
         temperatureC: 21.5,
+      );
+      // Generated toJson validates and encodes the report.
+      final json = report.toJson();
+      return CallToolResult(
+        content: [TextContent(text: jsonEncode(json))],
+        structuredContent: json,
       );
     },
   );
 }
 ```
 
-Other registration and client helpers:
-- `server.registerAckInputTool(name, inputSchema: ..., callback: ...)` — validates input only and returns a `CallToolResult`.
-- `server.registerAckOutputTool(name, outputSchema: ..., callback: ...)` — takes no input arguments and validates structured output.
-- `callToolResult.decodeAckOutput(WeatherReport.schema)` — validates and decodes `structuredContent` on the client side into a `SchemaResult<WeatherReport>`.
+For manual registration, use `schema.toMcpToolInputSchema()`,
+`parseMcpToolArguments(schema, args)`, and
+`ackValidationErrorToCallToolResult(error, toolName: name)`. On the client,
+validate structured output explicitly with
+`WeatherReport.schema.safeParse(result.structuredContent)`.
+The adapter does not register or advertise output schemas; use `mcp_dart`
+directly when those are required.
 
 ---
 
 ## 3. Firebase AI / Gemini Structured Outputs (`ack_firebase_ai`)
 
-`ack_firebase_ai` converts any `AckSchema` into a `firebase_ai` `Schema` for Gemini structured JSON output or function calling, then lets you parse the model's response back through the same Ack schema.
+`ack_firebase_ai` renders an Ack schema as the JSON-compatible map accepted by
+`GenerationConfig.responseJsonSchema`. Use a model that supports that field,
+initialize Firebase in your app, and validate the response with the same Ack
+schema. This is not a converter to Firebase's native `Schema` type or a function
+declaration helper.
 
 ### Install
 
@@ -111,25 +124,30 @@ import 'package:firebase_ai/firebase_ai.dart';
 
 import 'weather_models.dart';
 
-Future<WeatherReport> askGeminiWeather(String prompt) async {
+Future<WeatherReport> askGeminiWeather(
+  String prompt, {
+  required String modelName,
+}) async {
   final model = FirebaseAI.googleAI().generativeModel(
-    model: 'gemini-2.5-flash',
+    model: modelName,
     generationConfig: GenerationConfig(
       responseMimeType: 'application/json',
-      // Convert the Ack schema to a Firebase AI Schema
-      responseSchema: WeatherReport.schema.toFirebaseAiSchema(),
+      responseJsonSchema: WeatherReport.schema.toFirebaseAiResponseJsonSchema(),
     ),
   );
 
   final response = await model.generateContent([Content.text(prompt)]);
-  final jsonMap = jsonDecode(response.text!);
+  final jsonMap = jsonDecode(response.text ?? 'null');
 
   // Validate and decode Gemini's response into WeatherReport
-  return WeatherReport.schema.parse(jsonMap);
+  return WeatherReportSchema.fromJson(jsonMap);
 }
 ```
 
-> **Note:** Gemini's OpenAPI-based schema subset does not enforce every keyword (such as regex `pattern` or custom `.refine()` callbacks) during generation. `toFirebaseAiSchema()` appends human-readable constraint descriptions so the model has full context, and `WeatherReport.schema.parse(...)` enforces the full Ack contract on the response.
+The adapter returns `schema.toJsonSchema()` unchanged. It does not append
+constraint descriptions or adapt keywords to a provider-specific subset.
+Response schemas guide generation; Ack validation remains authoritative for
+constraints and refinements that the provider does not enforce.
 
 ---
 
@@ -153,7 +171,7 @@ import 'package:json_schema_builder/json_schema_builder.dart' as jsb;
 import 'weather_models.dart';
 
 void main() {
-  // 1. AckSchema -> json_schema_builder Schema (preserves Draft 2020-12 by default)
+  // Native Ack schemas render as Draft-7; imported 2020-12 resources are preserved.
   final jsb.Schema builderSchema = WeatherQuery.schema.toJsonSchemaBuilder();
 
   // Need legacy Draft-7 definitions lowering instead?
@@ -165,6 +183,8 @@ void main() {
     required: ['city'],
   ).toAckSchema(assertFormats: true);
 
+  print(builderSchema.value);
+  print(draft7Schema.value);
   final valid = importedValidator.parse({'city': 'Lisbon'});
   print(valid);
 }

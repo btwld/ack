@@ -37,8 +37,8 @@ version: 1.0.0-beta.1
 repository: https://github.com/btwld/ack
 
 environment:
-  sdk: '>=3.9.0 <4.0.0'
-  # flutter: '>=3.35.0'  # Uncomment if needed
+  sdk: '>=3.11.0 <4.0.0'
+  # flutter: '>=3.41.2'  # Uncomment if needed
 
 dependencies:
   ack: ^2.0.0-alpha.1
@@ -57,8 +57,6 @@ dev_dependencies:
 ```dart
 /// <Target> schema converter for Ack validation library.
 library;
-
-import 'package:ack/ack.dart';
 
 export 'src/extension.dart';
 ```
@@ -100,7 +98,7 @@ class <Target>SchemaConverter {
 
   static Map<String, Object?> _convertSchema(AckSchemaModel schema) {
     return switch (schema) {
-      AckStringSchemaModel(allowedStringValues: final values)
+      AckStringSchemaModel(enumValues: final values)
           when values != null =>
         _convertEnum(schema),
       AckStringSchemaModel() => _convertString(schema),
@@ -113,9 +111,12 @@ class <Target>SchemaConverter {
       AckOneOfSchemaModel() => _convertOneOf(schema),
       AckAllOfSchemaModel() => _convertAllOf(schema),
       AckNullSchemaModel() => {'type': 'null'},
-      AckRefSchemaModel(refName: final name) => {
-        r'$ref': '#/definitions/$name',
-      },
+      AckRefSchemaModel() => throw UnsupportedError(
+        'References need target-specific definition resolution.',
+      ),
+      AckRawSchemaModel() => throw UnsupportedError(
+        'Imported JSON Schema resources need target-specific support.',
+      ),
     };
   }
 
@@ -175,7 +176,8 @@ class <Target>SchemaConverter {
     return <String, Object?>{
       'type': 'object',
       'properties': {
-        for (final entry in s.properties?.entries ?? const [])
+        for (final entry in
+            s.properties?.entries ?? const <MapEntry<String, AckSchemaModel>>[])
           entry.key: _convertSchema(entry.value),
       },
       if (s.required != null && s.required!.isNotEmpty) 'required': s.required,
@@ -202,7 +204,7 @@ class <Target>SchemaConverter {
       'type': 'string',
       if (s.description != null) 'description': s.description,
       if (s.nullable) 'nullable': true,
-      'enum': s.allowedStringValues,
+      'enum': s.enumValues,
     };
   }
 
@@ -242,6 +244,11 @@ class <Target>SchemaConverter {
   }
 }
 ```
+
+This non-JSON target scaffold deliberately rejects references and imported raw
+resources rather than emitting unresolved references or discarding their
+dialect semantics. If your target accepts JSON Schema maps directly, forward
+`schema.toJsonSchema()` instead; that path preserves definitions and resources.
 
 ## 6. Basic Tests (15 minutes)
 

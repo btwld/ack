@@ -1,3 +1,10 @@
+## Unreleased
+
+### Documentation
+
+* Clarify that the adapter forwards `toJsonSchema()` unchanged to the map-based
+  `responseJsonSchema` field, preserving imported resource dialects.
+
 ## 2.0.0-alpha.1
 
 ### Breaking

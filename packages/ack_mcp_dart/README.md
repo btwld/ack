@@ -140,9 +140,9 @@ New emitted keywords require revisiting this dialect assumption.
 
 | Component | Supported / exercised |
 | --- | --- |
-| Dart | `>=3.9.0 <4.0.0` |
+| Dart | `>=3.11.0 <4.0.0` |
 | ACK | `^2.0.0-alpha.1` |
-| mcp_dart | `^2.4.2` (tests resolved against 2.4.2) |
+| mcp_dart | `^2.4.2` |
 | MCP stable discovery | `2026-07-28` |
 | MCP initialization | `2025-11-25`, `2025-06-18` |
 
