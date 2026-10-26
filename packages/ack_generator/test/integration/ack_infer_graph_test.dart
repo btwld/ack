@@ -21,6 +21,7 @@ Future<void> _expectFailure(String source, List<String> messages) async {
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   final seen = <String>{};
+  final logs = <String>[];
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
@@ -28,13 +29,14 @@ Future<void> _expectFailure(String source, List<String> messages) async {
     readerWriter: readerWriter,
     outputs: const {},
     onLog: (LogRecord log) {
+      logs.add('${log.level}: ${log.message}');
       if (log.level.name != 'SEVERE') return;
       for (final message in messages) {
         if (log.message.contains(message)) seen.add(message);
       }
     },
   );
-  expect(seen, containsAll(messages));
+  expect(seen, containsAll(messages), reason: logs.join('\n'));
 }
 
 const _head = '''
@@ -458,6 +460,61 @@ final payloadSchema = ${unsupported.key};
       );
     });
   }
+
+  for (final boundary in [
+    'Ack.instance<Object>()',
+    'Ack.anyOf([Ack.string(), Ack.instance<Object>()])',
+    'Ack.codec(input: Ack.instance<Object>(), decode: (value) => value, encode: (value) => value)',
+  ]) {
+    test('rejects opaque JSON boundary inference for $boundary', () async {
+      await _expectFailure(
+        '''
+$_head
+@Schemable()
+final boundaryRecordSchema = Ack.object({
+  'value': Ack.preserveBoundary($boundary),
+});
+''',
+        ['boundaryRecordSchema.value', 'cannot prove a native JSON boundary'],
+      );
+    });
+  }
+
+  test(
+    'preserves native codec boundary types instead of decoded types',
+    () async {
+      await _expectOutput(
+        '''
+$_head
+enum Status { active, archived }
+
+@Schemable()
+final nativeBoundarySchema = Ack.object({
+  'day': Ack.preserveBoundary(Ack.date()),
+  'instant': Ack.preserveBoundary(Ack.datetime()),
+  'url': Ack.preserveBoundary(Ack.uri()),
+  'milliseconds': Ack.preserveBoundary(Ack.duration()),
+  'status': Ack.preserveBoundary(Ack.enumValues(Status.values)),
+  'boxed': Ack.preserveBoundary(Ack.codec(
+    input: Ack.string(),
+    decode: DateTime.parse,
+    encode: (DateTime value) => value.toIso8601String(),
+  )),
+  'later': Ack.preserveBoundary(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+});
+''',
+        allOf([
+          contains('final String day;'),
+          contains('final String instant;'),
+          contains('final String url;'),
+          contains('final int milliseconds;'),
+          contains('final String status;'),
+          contains('final String boxed;'),
+          contains('final int later;'),
+        ]),
+      );
+    },
+  );
 
   test('rejects a .transform() field with the declaration path', () async {
     await _expectFailure(
