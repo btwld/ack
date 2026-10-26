@@ -46,6 +46,12 @@ final class _SchemaMetadata {
   final bool innerOptional;
   final bool innerNullable;
 
+  AckSchemaFieldPresence get presence {
+    if (defaulted) return AckSchemaFieldPresence.defaulted;
+    if (optional) return AckSchemaFieldPresence.optional;
+    return AckSchemaFieldPresence.required;
+  }
+
   _SchemaMetadata copyWith({bool? optional, bool? nullable}) => _SchemaMetadata(
     optional: (optional ?? this.optional) || innerOptional,
     nullable: (nullable ?? this.nullable) || innerNullable,
@@ -411,7 +417,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         AckFieldNode(
           dartName: jsonKey,
           jsonKey: jsonKey,
-          presence: _fieldPresence(fieldMetadata),
+          presence: fieldMetadata.presence,
           nullable: fieldMetadata.nullable,
           runtimeRef: await _runtimeRefForSchema(
             entry.value,
@@ -545,7 +551,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     required String path,
     required Element context,
     required bool throughLazy,
-    Set<Element>? visited,
+    Set<Element> visited = const {},
     int depth = 0,
     String? followedName,
     bool collectionElement = false,
@@ -701,7 +707,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           path: path,
           context: context,
           throughLazy: throughLazy,
-          visited: visited ?? {},
+          visited: visited,
           depth: depth,
         );
         if (followed != null) return followed;
@@ -948,12 +954,6 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           defaultExpression: 'const {}',
         ),
     ];
-  }
-
-  AckSchemaFieldPresence _fieldPresence(_SchemaMetadata metadata) {
-    if (metadata.defaulted) return AckSchemaFieldPresence.defaulted;
-    if (metadata.optional) return AckSchemaFieldPresence.optional;
-    return AckSchemaFieldPresence.required;
   }
 
   String _className(
@@ -1255,7 +1255,10 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         for (final argument in current.argumentList.arguments) {
           final entry = namedArgument(argument);
           if (entry?.name != 'additionalProperties') continue;
-          if (entry!.expression is NullLiteral && name == 'copyWith') continue;
+          if (entry!.expression.unParenthesized is NullLiteral &&
+              name == 'copyWith') {
+            continue;
+          }
           final value = constantBool(entry.expression);
           if (value != null) return value;
           throw InvalidGenerationSource(
@@ -1376,10 +1379,12 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
             final nullable = named('isNullable');
             final optional = named('isOptional');
             return inner.copyWith(
-              nullable: nullable == null || nullable is NullLiteral
+              nullable:
+                  nullable == null || nullable.unParenthesized is NullLiteral
                   ? null
                   : flag(nullable, '$name isNullable'),
-              optional: optional == null || optional is NullLiteral
+              optional:
+                  optional == null || optional.unParenthesized is NullLiteral
                   ? null
                   : flag(optional, '$name isOptional'),
             );

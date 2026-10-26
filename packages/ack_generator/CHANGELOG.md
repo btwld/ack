@@ -7,6 +7,8 @@
 
 ### Fixed
 
+* Preserve schema flags and object policies when `copyWith` no-op `null`
+  arguments are parenthesized.
 * Preserve schema-first presence, nullability, and default-wrapper behavior
   through aliases and explicit constant flag overrides. Apply the outermost
   strict/passthrough policy to object models and aliases.

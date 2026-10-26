@@ -155,14 +155,11 @@ abstract base class ModelGraphBuilderBase {
 
   /// Returns the `@Schemable` top-level declaration behind [element], if any.
   Element? schemableDeclaration(Element element) {
-    final declaration = switch (element) {
-      GetterElement(isOriginVariable: true) => element.variable.baseElement,
-      GetterElement() => element.baseElement,
-      TopLevelVariableElement() => element.baseElement,
-      _ => null,
-    };
-    return declaration != null &&
-            schemableChecker.hasAnnotationOfExact(declaration)
+    if (element is! GetterElement && element is! TopLevelVariableElement) {
+      return null;
+    }
+    final declaration = propertyDeclaration(element);
+    return schemableChecker.hasAnnotationOfExact(declaration)
         ? declaration
         : null;
   }
@@ -847,9 +844,7 @@ abstract base class ModelGraphBuilderBase {
       : null;
 
   bool? constantBool(Expression expression) {
-    while (expression is ParenthesizedExpression) {
-      expression = expression.expression;
-    }
+    expression = expression.unParenthesized;
     if (expression is BooleanLiteral) return expression.value;
 
     final element = switch (expression) {

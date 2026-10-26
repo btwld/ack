@@ -17,6 +17,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   unrelated annotation data untouched.
 * Preserve schema-first alias metadata and strict/passthrough precedence;
   diagnose unsupported shape transformations instead of emitting wrong fields.
+* Accept parenthesized no-op `null` overrides in generated schema metadata.
 * Resolve same-build value-model and getter references, nullable nested Sets,
   generated-name collisions, and application-generic nullability correctly.
 * Substitute nested and recursive type bounds when resolving type-owned schemas.
