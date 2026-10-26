@@ -1,3 +1,11 @@
+## Unreleased
+
+### Fixed
+
+* Honor explicit boundary-wrapper nullability consistently during parse and
+  encode. Preserve non-null restrictions on wrappers and lazy references when
+  exporting nullable primitives, unions, and imported JSON Schema resources.
+
 ## 2.0.0-alpha.1
 
 ### Breaking

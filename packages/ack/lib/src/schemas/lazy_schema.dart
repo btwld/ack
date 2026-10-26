@@ -61,6 +61,10 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
   @internal
   AckSchema<Boundary, Runtime> get target => _target;
 
+  /// Whether the lazy reference's own null policy narrows its target.
+  @internal
+  bool get excludesTargetNull => !acceptsNull && _target.acceptsNull;
+
   /// Count of runtime-only constraints, including the always-present
   /// max-depth check that every `Ack.lazy` schema enforces.
   @internal
