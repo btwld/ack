@@ -215,6 +215,26 @@ final keywordFieldsSchema = Ack.object({
   'yield': Ack.string(),
 });
 
+final choiceOptionSchema = Ack.anyOf([
+  Ack.string(),
+  Ack.object({'label': Ack.string(), 'value': Ack.string()}),
+]);
+final choiceOptionsSchema = Ack.list(choiceOptionSchema).codec<List<Object?>>(
+  decode: List<Object?>.unmodifiable,
+  encode: List<Object>.from,
+);
+
+@Schemable()
+final choiceFieldSchema = Ack.object({'options': choiceOptionsSchema.optional()});
+
+final opaqueValueSchema = Ack.string().codec<Object>(
+  decode: DateTime.parse,
+  encode: (value) => (value as DateTime).toIso8601String(),
+);
+
+@Schemable()
+final opaqueRecordSchema = Ack.object({'value': opaqueValueSchema});
+
 @Schemable()
 final keywordBranchSchema = Ack.object({'answer': Ack.string()});
 
@@ -353,6 +373,62 @@ void main() {
     expect(fields.toJson(), json);
     expect(fields.copyWith(required: false).toJson(), {...json, 'required': false});
     expect(KeywordFields.parse({...json}..remove('required')).required, isFalse);
+  });
+
+  test('constructor snapshots Object-valued option maps without validating them', () {
+    final option = <String, Object?>{'label': 'Keep', 'value': 'keep'};
+    final options = <Object?>['skip', option];
+    final field = ChoiceField(options: options);
+    option['value'] = 'changed';
+    options.clear();
+    final expected = ChoiceField.parse({
+      'options': ['skip', {'label': 'Keep', 'value': 'keep'}],
+    });
+    expect(field, expected);
+    expect(field.hashCode, expected.hashCode);
+    expect(field.toJson(), expected.toJson());
+    expect(() => field.options!.clear(), throwsUnsupportedError);
+    expect(() => (field.options!.last! as Map)['value'] = 'changed',
+        throwsUnsupportedError);
+    expect(ChoiceField(options: [false]).safeToJson().isFail, isTrue);
+    expect(ChoiceField(options: [Object()]).safeToJson().isFail, isTrue);
+    expect(ChoiceField(options: [<Object?, Object?>{1: 'invalid'}])
+        .safeToJson().isFail, isTrue);
+  });
+
+  test('direct Object fields and typed collections snapshot nested aliases', () {
+    final items = <Object?>['original'];
+    final nested = <String, Object?>{'items': items};
+    final optional = <Object?>[nested];
+    final record = Envelope(
+      kind: nested,
+      payload: optional,
+      items: [nested],
+      values: {'key': nested},
+      metadata: {'key': nested, 'absent': null},
+      labels: const {},
+    );
+    items.add('changed');
+    nested.clear();
+    optional.clear();
+    const expected = {'items': ['original']};
+    expect(record.kind, expected);
+    expect(record.payload, [expected]);
+    expect(record.items, [expected]);
+    expect(record.values, {'key': expected});
+    expect(record.metadata, {'key': expected, 'absent': null});
+    expect(() => (record.kind as Map).clear(), throwsUnsupportedError);
+    expect(() => ((record.kind as Map)['items'] as List).clear(), throwsUnsupportedError);
+    expect(() => (record.payload as List).clear(), throwsUnsupportedError);
+    expect(() => (record.values['key']! as Map).clear(), throwsUnsupportedError);
+    expect(() => (record.metadata['key']! as Map).clear(), throwsUnsupportedError);
+  });
+
+  test('Object-valued codecs preserve opaque constructor values', () {
+    final value = DateTime.utc(2026, 10, 26);
+    final record = OpaqueRecord(value: value);
+    expect(record.value, same(value));
+    expect(record.toJson(), {'value': value.toIso8601String()});
   });
 
   test('contextual discriminator and capture members retain their wire shape', () {

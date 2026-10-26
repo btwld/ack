@@ -8,6 +8,10 @@
   follows the analyzer's keyword classification rather than a fixed word list.
   `dynamic` remains rejected because it shadows the type in generated JSON
   methods, not because it is a reserved Dart word.
+* Snapshot nested collections held as `Object` or `Object?` in schema-first
+  model constructors and `copyWith`, including heterogeneous codec lists.
+  Reuse Ack's shared deep copier; constructors still do not validate data and
+  opaque noncollection values retain their identity.
 
 ## 2.0.0-alpha.1
 
