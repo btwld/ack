@@ -558,6 +558,33 @@ final payloadSchema = ${unsupported.key};
     });
   }
 
+  for (final change in [
+    "extend({'payload': Ack.instance<List<int>>()})",
+    "copyWith(properties: {'payload': Ack.instance<List<int>>()})",
+  ]) {
+    for (final conversion in [
+      '',
+      '.codec<Object>(decode: (value) => value, encode: (value) => value as Map<String, Object?>)',
+    ]) {
+      test(
+        'rejects unproven boundary shape changes: $change$conversion',
+        () async {
+          await _expectFailure(
+            '''
+$_head
+final alteredBoundary = (Ack.object({}).$change)$conversion;
+@Schemable()
+final boundaryRecordSchema = Ack.object({
+  'value': Ack.preserveBoundary(alteredBoundary),
+});
+''',
+            ['boundaryRecordSchema.value', change.split('(').first, 'shape'],
+          );
+        },
+      );
+    }
+  }
+
   for (final boundary in [
     'Ack.instance<Object>()',
     'Ack.anyOf([Ack.string(), Ack.instance<Object>()])',

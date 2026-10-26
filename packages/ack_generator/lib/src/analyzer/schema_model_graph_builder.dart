@@ -804,6 +804,12 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         element: context,
       );
     }
+    await _rejectObjectShapeChanges(
+      expression,
+      path: path,
+      context: context,
+      throughCodecs: true,
+    );
     final chain = parseSchemaChain(expression);
     _rejectTransform(chain, path, context);
     final base = chain.base;
@@ -1390,6 +1396,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     required String path,
     required Element context,
     Set<Element> visited = const {},
+    bool throughCodecs = false,
   }) async {
     Expression? current = expression;
     while (current is ParenthesizedExpression) {
@@ -1397,9 +1404,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     }
     while (current is MethodInvocation) {
       final name = current.methodName.name;
-      // A value codec owns its runtime shape, so its input need not expose
-      // statically generated object fields.
-      if (name == 'codec') return;
+      // Runtime models can stop at a value codec. Boundary inference still
+      // needs to prove the input shape underneath that codec.
+      if (name == 'codec' && !throughCodecs) return;
       if (const {'extend', 'partial', 'merge', 'pick', 'omit'}.contains(name) ||
           (name == 'copyWith' &&
               current.argumentList.arguments.any(
@@ -1421,7 +1428,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           isTypeOwnedSchema(current.methodName.element)) {
         break;
       }
-      current = current.target;
+      current = current.target?.unParenthesized;
     }
     if (current == null) return;
     final target = await resolveReferencedTopLevelExpression(
@@ -1434,6 +1441,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       path: '$path(→ ${target.declaration.name})',
       context: context,
       visited: {...visited, target.declaration.baseElement},
+      throughCodecs: throughCodecs,
     );
   }
 

@@ -7,6 +7,8 @@
 
 ### Fixed
 
+* Reject unproven object-shape changes inside preserved boundaries, including
+  aliases and fluent codecs, rather than copying opaque values as JSON.
 * Preserve native codec boundary types when inferring `Ack.preserveBoundary`
   fields, including dates, datetimes, URIs, durations, enums, explicit codec
   inputs and statically resolvable nonrecursive lazy schemas.
