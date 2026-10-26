@@ -8,6 +8,8 @@
 * Validate discriminated codec output against its selected map branch or a
   matching typed runtime branch, including required fields and refinements,
   without decoding runtime values again or adding encode callback passes.
+* Reject duration millisecond inputs that overflow the platform's `Duration`
+  representation instead of silently decoding to a different duration.
 
 ## 2.0.0-alpha.1
 
