@@ -10,10 +10,10 @@ environment:
 
 
 dependencies:
-  ack: ^2.0.0-alpha.1
+  ack: ^2.0.0-alpha.2
 
 dev_dependencies:
-  ack_generator: ^2.0.0-alpha.1
+  ack_generator: ^2.0.0-alpha.2
   build_runner: ^2.4.0
   dart_code_metrics_presets: ^2.22.0
   lints: ^5.0.0
