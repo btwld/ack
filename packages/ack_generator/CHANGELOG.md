@@ -9,6 +9,9 @@
   instead of generating fields that disagree with the authored schema.
 * Resolve same-build scalar, list, and codec model references using their
   actual runtime types, and generate valid codecs for nullable nested Sets.
+* Diagnose value-model helper collisions, class/member name conflicts, and
+  duplicate schema-first keys before emission. Resolve same-build models
+  declared with annotated getters.
 
 * Allow built-in and contextual Dart keywords such as `required` as generated
   field, discriminator, and capture-member names without changing their JSON

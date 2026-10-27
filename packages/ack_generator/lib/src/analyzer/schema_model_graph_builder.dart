@@ -125,7 +125,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         path: declaration.id.declarationName,
       );
     }
-    _validateDelegatedHelperNames();
+    _validateGeneratedNames();
     return graph;
   }
 
@@ -367,6 +367,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       context: declaration.element,
     );
     final fields = <AckFieldNode>[];
+    final declaredKeys = <String>{};
     for (final entry in literal.elements) {
       if (entry is! MapLiteralEntry || entry.key is! SimpleStringLiteral) {
         throw InvalidGenerationSource(
@@ -375,6 +376,12 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         );
       }
       final jsonKey = (entry.key as SimpleStringLiteral).value;
+      if (!declaredKeys.add(jsonKey)) {
+        throw InvalidGenerationSource(
+          '$path.$jsonKey is a duplicate object field. Declare each key once.',
+          element: declaration.element,
+        );
+      }
       final problem = ackSchemaFirstFieldNameProblem(
         jsonKey,
         capturesExtras: additionalProperties,
@@ -1198,27 +1205,45 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     }
   }
 
-  void _validateDelegatedHelperNames() {
+  void _validateGeneratedNames() {
     final localNames = localDeclarationNames();
     for (final node in graph.nodes) {
       final declaration = _declarationsById[node.id];
       if (declaration == null) continue;
-      switch (node) {
-        case AckUnionModelNode():
-        case AckValueModelNode():
-          continue;
-        case AckObjectModelNode():
-          validateCopyWithHelperNames(
-            className: node.className,
-            needsCopyWithSentinel: node.fields.any(
+
+      void checkMember(String name) {
+        if (name != node.className) return;
+        throw InvalidGenerationSource(
+          '${node.id.declarationName}.$name conflicts with the generated '
+          'class name "${node.className}".',
+          element: declaration.element,
+        );
+      }
+
+      if (node is AckUnionModelNode) {
+        checkMember(node.discriminatorKey);
+        continue;
+      }
+      if (node is AckObjectModelNode) {
+        for (final field in node.fields) {
+          checkMember(field.dartName);
+        }
+        if (node.discriminatorKey case final discriminator?) {
+          checkMember(discriminator);
+        }
+      }
+      validateCopyWithHelperNames(
+        className: node.className,
+        needsCopyWithSentinel:
+            node is AckObjectModelNode &&
+            node.fields.any(
               (field) =>
                   field.jsonKey != node.discriminatorKey &&
                   (field.nullable || !field.isRequired),
             ),
-            element: declaration.element,
-            localNames: localNames,
-          );
-      }
+        element: declaration.element,
+        localNames: localNames,
+      );
     }
   }
 

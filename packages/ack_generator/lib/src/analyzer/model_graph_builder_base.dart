@@ -157,6 +157,7 @@ abstract base class ModelGraphBuilderBase {
   Element? schemableDeclaration(Element element) {
     final declaration = switch (element) {
       GetterElement(isOriginVariable: true) => element.variable.baseElement,
+      GetterElement() => element.baseElement,
       TopLevelVariableElement() => element.baseElement,
       _ => null,
     };
