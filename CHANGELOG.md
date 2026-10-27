@@ -6,6 +6,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 2.0.0-alpha.2
 
+### Breaking
+
+* Restrict `Ack.preserveBoundary` to JSON-object schemas and return detached,
+  unmodifiable copies of the input map. Generated preserved map fields infer
+  JSON numbers as `num`.
+
 ### Fixed
 
 * Reject generator aliases whose final passthrough policy makes an inherited
@@ -29,6 +35,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * Resolve same-build value-model and getter references, nullable nested Sets,
   generated-name collisions, and application-generic nullability correctly.
 * Substitute nested and recursive type bounds when resolving type-owned schemas.
+* Infer native JSON `Ack.anyOf(...)` fields without a wire-view wrapper, and
+  validate wire views with parse semantics and no encoders.
 
 ### Documentation and release preparation
 
