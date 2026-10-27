@@ -136,13 +136,19 @@ final policySchema = Ack.object({}, additionalProperties: true).copyWith(
   }
 
   test('preserved JSON boundaries honor an outer nullable clear', () async {
-    await _expectOutput('''
+    await _expectOutput(
+      '''
 $_head
 @Schemable()
 final boundaryFlagsSchema = Ack.object({
-  'value': Ack.preserveBoundary(Ack.string().nullable()).nullable(value: false),
+  'value': Ack.preserveBoundary(Ack.map(Ack.string()).nullable()).nullable(value: false),
 });
-''', allOf([contains('final String value;'), contains('required this.value')]));
+''',
+      allOf([
+        contains('final Map<String, String> value;'),
+        contains('required Map<String, String> value'),
+      ]),
+    );
   });
 
   test('preserved JSON boundaries use effective nested flags', () async {
@@ -156,7 +162,7 @@ final boundaryFlagsSchema = Ack.object({
   'copiedValues': Ack.preserveBoundary(Ack.map(Ack.string().copyWith(isNullable: true))),
   'configuredValues': Ack.preserveBoundary(Ack.map(Ack.string().withRuntimeConfig(isNullable: true))),
   'clearedValues': Ack.preserveBoundary(Ack.map(nullableAlias.nullable(value: false))),
-  'items': Ack.preserveBoundary(Ack.list(nullableAlias.nullable(value: false))),
+  'items': Ack.preserveBoundary(Ack.map(Ack.list(nullableAlias.nullable(value: false)))),
   'outerMap': Ack.preserveBoundary(Ack.map(nullableValue).nullable()).nullable(value: false),
 });
 ''',
@@ -164,7 +170,7 @@ final boundaryFlagsSchema = Ack.object({
         contains('final Map<String, String?> copiedValues;'),
         contains('final Map<String, String?> configuredValues;'),
         contains('final Map<String, String> clearedValues;'),
-        contains('final List<String> items;'),
+        contains('final Map<String, List<String>> items;'),
         contains('final Map<String, String?> outerMap;'),
       ]),
     );
@@ -174,20 +180,22 @@ final boundaryFlagsSchema = Ack.object({
     await _expectOutput(
       '''
 $_head
-final nullableText = Ack.preserveBoundary(Ack.string().nullable());
-final textAlias = nullableText;
+final nullableProfile = Ack.preserveBoundary(
+  Ack.object({'name': Ack.string()}).nullable(),
+);
+final profileAlias = nullableProfile;
 final nullableMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
 final mapAlias = nullableMap;
 @Schemable()
 final boundaryAliasesSchema = Ack.object({
-  'text': textAlias.nullable(value: false),
+  'profile': profileAlias.nullable(value: false),
   'values': mapAlias.nullable(value: false),
   'groups': Ack.list(mapAlias.nullable(value: false)),
   'byName': Ack.map(mapAlias.nullable(value: false)),
 });
 ''',
       allOf([
-        contains('final String text;'),
+        contains('final Map<String, Object?> profile;'),
         contains('final Map<String, String?> values;'),
         contains('final List<Map<String, String?>> groups;'),
         contains('final Map<String, Map<String, String?>> byName;'),
@@ -201,7 +209,7 @@ final boundaryAliasesSchema = Ack.object({
 $_head
 @Schemable()
 final boundaryFlagsSchema = Ack.object({
-  'items': Ack.preserveBoundary(Ack.list(Ack.string().nullable())),
+  'items': Ack.preserveBoundary(Ack.map(Ack.list(Ack.string().nullable()))),
 });
 ''',
       ['boundaryFlagsSchema.items', 'cannot prove a native JSON boundary'],
@@ -685,7 +693,7 @@ final boundaryRecordSchema = Ack.object({
 $_head
 @Schemable()
 final boundaryRecordSchema = Ack.object({
-  'value': Ack.preserveBoundary($boundary),
+  'value': Ack.preserveBoundary(Ack.map($boundary)),
 });
 ''',
         ['boundaryRecordSchema.value', 'cannot prove a native JSON boundary'],
@@ -703,27 +711,29 @@ enum Status { active, archived }
 
 @Schemable()
 final nativeBoundarySchema = Ack.object({
-  'day': Ack.preserveBoundary(Ack.date()),
-  'instant': Ack.preserveBoundary(Ack.datetime()),
-  'url': Ack.preserveBoundary(Ack.uri()),
-  'milliseconds': Ack.preserveBoundary(Ack.duration()),
-  'status': Ack.preserveBoundary(Ack.enumValues(Status.values)),
-  'boxed': Ack.preserveBoundary(Ack.codec(
+  'day': Ack.preserveBoundary(Ack.map(Ack.date())),
+  'instant': Ack.preserveBoundary(Ack.map(Ack.datetime())),
+  'url': Ack.preserveBoundary(Ack.map(Ack.uri())),
+  'milliseconds': Ack.preserveBoundary(Ack.map(Ack.duration())),
+  'status': Ack.preserveBoundary(Ack.map(Ack.enumValues(Status.values))),
+  'boxed': Ack.preserveBoundary(Ack.map(Ack.codec(
     input: Ack.string(),
     decode: DateTime.parse,
     encode: (DateTime value) => value.toIso8601String(),
-  )),
-  'later': Ack.preserveBoundary(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+  ))),
+  'later': Ack.preserveBoundary(
+    Ack.map(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+  ),
 });
 ''',
         allOf([
-          contains('final String day;'),
-          contains('final String instant;'),
-          contains('final String url;'),
-          contains('final int milliseconds;'),
-          contains('final String status;'),
-          contains('final String boxed;'),
-          contains('final int later;'),
+          contains('final Map<String, String> day;'),
+          contains('final Map<String, String> instant;'),
+          contains('final Map<String, String> url;'),
+          contains('final Map<String, int> milliseconds;'),
+          contains('final Map<String, String> status;'),
+          contains('final Map<String, String> boxed;'),
+          contains('final Map<String, int> later;'),
         ]),
       );
     },
