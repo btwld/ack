@@ -7,7 +7,9 @@ part of 'schema.dart';
 /// (nested models, codecs, defaults, and refinements), never an encoder. Each
 /// returns a detached, recursively unmodifiable copy of the validated input
 /// map, so the result never depends on the input's container type and never
-/// aliases the caller's map.
+/// aliases the caller's map. Each wire view copies its whole subtree, so
+/// compose wire views inside a plain `Ack.object(...)` rather than inside
+/// another wire view.
 ///
 /// The wrapper's own nullability decides whether `null` is accepted; `null`
 /// never reaches [inner]. A default inside [inner] therefore does not apply.
