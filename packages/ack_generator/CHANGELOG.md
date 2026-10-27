@@ -1,4 +1,4 @@
-## 2.0.0-alpha.2
+## 2.0.0-beta.1
 
 ### Breaking
 
@@ -8,7 +8,7 @@
 
 ### Changed
 
-* Require `ack: ^2.0.0-alpha.2` so consumers receive the corrected runtime
+* Require `ack: ^2.0.0-beta.1` so consumers receive the corrected runtime
   nullability, discriminated validation, and imported JSON Schema contracts.
 
 ### Fixed

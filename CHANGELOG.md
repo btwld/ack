@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
 
-## 2.0.0-alpha.2
+## 2.0.0-beta.1
 
 ### Breaking
 
@@ -43,8 +43,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * Correct integration examples, converter templates, migration guidance, and
   SDK floors; include new cross-platform contract regressions in CI.
-* Coordinate all five packages at alpha.2 and require the corrected alpha.2
-  core in dependent packages. Published alpha.1 release notes remain unchanged.
+* Coordinate all five packages at 2.0.0-beta.1 and require that version of
+  the core in dependent packages. Published alpha.1 release notes remain unchanged.
 
 ## 2.0.0-alpha.1
 

@@ -1,6 +1,6 @@
 name: ack_mcp_dart
 description: MCP tool schemas and typed argument validation for Ack and mcp_dart
-version: 2.0.0-alpha.2
+version: 2.0.0-beta.1
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
 resolution: workspace
@@ -14,7 +14,7 @@ environment:
 
 
 dependencies:
-  ack: ^2.0.0-alpha.2
+  ack: ^2.0.0-beta.1
   mcp_dart: ^2.4.2
 
 dev_dependencies:
