@@ -54,8 +54,9 @@ final class BoundarySchema extends AckSchema<JsonMap, JsonMap>
     final result = inner.parseWithContext(value, parseContext);
     if (result.isFail) return SchemaResult.fail(result.getError());
 
-    final map = jsonMapOrNull(value);
-    if (map == null) {
+    // Copying also canonicalizes any string-keyed map to a JsonMap.
+    final copy = deepUnmodifiableCopy(value);
+    if (copy is! JsonMap) {
       return SchemaResult.fail(
         _buildTypeMismatch(
           expectedType: schemaType,
@@ -65,10 +66,7 @@ final class BoundarySchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
-    return applyConstraintsAndRefinements(
-      deepUnmodifiableJsonMap(map),
-      context,
-    );
+    return applyConstraintsAndRefinements(copy, context);
   }
 
   @override
