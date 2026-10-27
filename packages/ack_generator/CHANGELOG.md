@@ -1,5 +1,11 @@
 ## 2.0.0-alpha.2
 
+### Breaking
+
+* Infer JSON numbers in `Ack.preserveBoundary(Ack.map(...))` field values,
+  including duration milliseconds, as `num`. A wire value keeps each number as
+  decoded, and numeric schemas accept both `1` and `1.0`.
+
 ### Changed
 
 * Require `ack: ^2.0.0-alpha.2` so consumers receive the corrected runtime
@@ -11,17 +17,16 @@
   generation, rejecting collisions with the additional-properties member.
 * Reject unproven object-shape changes inside preserved boundaries, including
   aliases and fluent codecs, rather than copying opaque values as JSON.
-* Preserve native codec boundary types when inferring `Ack.preserveBoundary`
-  fields, including dates, datetimes, URIs, durations, enums, explicit codec
-  inputs and statically resolvable nonrecursive lazy schemas.
+* Preserve native codec boundary types when inferring the values of
+  `Ack.preserveBoundary(Ack.map(...))` fields, including dates, datetimes,
+  URIs, enums, explicit codec inputs and statically resolvable nonrecursive
+  lazy schemas.
 * Resolve preserved JSON boundary nullability through the same effective
   metadata as ordinary fields, including aliases and explicit flag overrides.
 * Snapshot nested JSON collections held as `Object` or `Object?` in
   schema-first model constructors and `copyWith`. Reuse Ack's shared deep
   copier; constructors still do not validate data. Opaque codec runtime values
-  retain their identity and container types. Use `Ack.preserveBoundary(...)`
-  for heterogeneous JSON fields; native JSON unions are inferred only within
-  that explicit wire view.
+  retain their identity and container types.
 * Allow built-in and contextual Dart keywords such as `required` as generated
   field, discriminator, and capture-member names without changing their JSON
   keys. Reserved words such as `class` remain rejected. Member validation now
@@ -30,6 +35,17 @@
   methods, not because it is a reserved Dart word.
 * Preserve schema flags and object policies when `copyWith` no-op `null`
   arguments are parenthesized.
+* Infer `Ack.anyOf(...)` fields whose branches are all native JSON as JSON
+  `Object` values, including list items and map values, without an
+  `Ack.preserveBoundary(...)` wrapper. A branch may itself be an explicit
+  `Ack.preserveBoundary(...)` wire view.
+* Reject an `Ack.anyOf(...)` field with a codec, `Ack.instance<T>()`, model
+  schema, or nullable branch, naming the field and the offending branch.
+  `Ack.any()` and `Ack.anyOf(...)` model roots remain unsupported, including
+  through type-erased aliases. Branches are proven from their static schema
+  types and statically resolvable initializers. A custom method whose declared
+  runtime type is `Object` or a JSON collection but that returns a codec cannot
+  be detected.
 * Preserve schema-first presence, nullability, and default-wrapper behavior
   through aliases and explicit constant flag overrides. Apply the outermost
   strict/passthrough policy to object models and aliases.

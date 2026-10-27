@@ -1,5 +1,16 @@
 ## 2.0.0-alpha.2
 
+### Breaking
+
+* Restrict `Ack.preserveBoundary` to JSON-object schemas
+  (`AckSchema<JsonMap, R>`), such as objects, maps, discriminated unions, and
+  lazy, default, or codec wrappers over them. `BoundarySchema` no longer takes
+  a type argument. Compose list wire views as `Ack.list(X.wireSchema)`, and use
+  a codec's input schema, such as `Ack.string().datetime()`, for a scalar.
+* Return a detached, recursively unmodifiable copy of the input map from
+  `BoundarySchema` parse, runtime validation, and encode instead of the
+  caller's map instance.
+
 ### Fixed
 
 * Accept union-owned discriminators in strict map-backed codec outputs while
@@ -25,6 +36,16 @@
 * Discover selected custom dialects bundled beneath their own active schema
   keywords, without interpreting inactive keyword payloads or annotation data
   as schemas.
+* Return the same JSON from `BoundarySchema` for every string-keyed map
+  container, including `jsonDecode` output, without running an encoder. Nested
+  codec values keep their wire form, one-way transforms no longer reject valid
+  input, and wrapped defaults are not injected.
+* Validate `BoundarySchema` values with parse semantics during encode and
+  runtime validation, so encode no longer accepts a value that parse rejects.
+* Return a schema that is already a wire view from `Ack.preserveBoundary`
+  unchanged instead of validating its values twice.
+* Export a wrapper's non-null restriction as `allOf: [{not: {type: null}}]`
+  only when the narrowed schema can still accept `null`.
 
 ## 2.0.0-alpha.1
 

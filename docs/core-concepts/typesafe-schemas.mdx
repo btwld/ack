@@ -197,7 +197,8 @@ Ack generates a library-private `_profileSchema` codec variable and a public
 - `ProfileSchema.toJsonSchema()` exports the boundary JSON Schema;
 - `ProfileSchema.toSchemaModel()` exports Ack's canonical schema model;
 - `ProfileSchema.schema` is the typed model codec (`_profileSchema`) used for composition;
-- `ProfileSchema.wireSchema` is the raw structural `Map` schema.
+- `ProfileSchema.wireSchema` validates like `schema` and returns the JSON map
+  instead of the model.
 
 Every instantiable `@Schemable` class and implicit sealed-union branch must
 be declared `final class`, initialize its fields through an unnamed generative

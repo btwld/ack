@@ -134,20 +134,25 @@ void main() {
   });
 
   group('effective nullability — BoundarySchema', () {
-    test('preserveBoundary over a nullable union encodes null at the root', () {
-      final schema = Ack.preserveBoundary(_nullableUnion());
+    test(
+      'preserveBoundary over a nullable object encodes null at the root',
+      () {
+        final schema = Ack.preserveBoundary(Ack.object({}).nullable());
 
-      final encoded = schema.safeEncode(null);
-      expect(
-        encoded.isOk,
-        isTrue,
-        reason: encoded.isFail ? encoded.getError().toString() : null,
-      );
-      expect(encoded.getOrNull(), isNull);
-    });
+        final encoded = schema.safeEncode(null);
+        expect(
+          encoded.isOk,
+          isTrue,
+          reason: encoded.isFail ? encoded.getError().toString() : null,
+        );
+        expect(encoded.getOrNull(), isNull);
+      },
+    );
 
-    test('preserveBoundary over a nullable union encodes null as a field', () {
-      final schema = Ack.object({'v': Ack.preserveBoundary(_nullableUnion())});
+    test('preserveBoundary over a nullable object encodes null as a field', () {
+      final schema = Ack.object({
+        'v': Ack.preserveBoundary(Ack.object({}).nullable()),
+      });
 
       final encoded = schema.safeEncode({'v': null});
       expect(
@@ -296,9 +301,9 @@ void main() {
       );
     });
 
-    test('Ack.list rejects preserveBoundary over a nullable union', () {
+    test('Ack.list rejects preserveBoundary over a nullable object', () {
       expect(
-        () => Ack.list(Ack.preserveBoundary(_nullableUnion())),
+        () => Ack.list(Ack.preserveBoundary(Ack.object({}).nullable())),
         throwsA(
           isA<ArgumentError>().having(
             (e) => e.message,

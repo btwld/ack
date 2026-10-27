@@ -109,16 +109,21 @@ final class Ack {
   /// snapshot of the input.
   static AnySchema any() => const AnySchema();
 
-  /// Validates with [schema] while returning the original boundary value.
+  /// Creates a wire view of a JSON object [schema]: it validates like
+  /// [schema] and returns the JSON map instead of the runtime value.
   ///
-  /// Nested codecs still run for validation, but their decoded runtime values
-  /// are discarded. This keeps wire data composable with a later typed parse.
-  static BoundarySchema<Boundary> preserveBoundary<
-    Boundary extends Object,
-    Runtime extends Object
-  >(AckSchema<Boundary, Runtime> schema) {
-    return BoundarySchema<Boundary>(schema);
-  }
+  /// Nested models, codecs, defaults, and refinements still run for
+  /// validation, but their decoded runtime values are discarded and no encoder
+  /// runs. Parse and encode return a detached, recursively unmodifiable copy
+  /// of the input map. This keeps wire data composable with a later typed
+  /// parse. Put `withDefault` outside the wire view; a default inside it does
+  /// not apply. A [schema] that is already a wire view is returned unchanged.
+  static BoundarySchema preserveBoundary<Runtime extends Object>(
+    AckSchema<JsonMap, Runtime> schema,
+  ) => switch (schema) {
+    final BoundarySchema wire => wire,
+    _ => BoundarySchema(schema),
+  };
 
   /// Creates a schema reference that is resolved lazily on first use.
   ///

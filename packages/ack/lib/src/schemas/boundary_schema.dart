@@ -1,18 +1,26 @@
 part of 'schema.dart';
 
-/// Schema wrapper that validates with [inner] while preserving the original
-/// boundary value.
+/// Wire view of a JSON object schema: validates with [inner] and returns the
+/// JSON instead of the runtime value.
 ///
-/// This is useful when callers need a composable schema for validating wire
-/// data without retaining any runtime values produced by nested codecs.
+/// Parse, runtime validation, and encode all run the full parse of [inner]
+/// (nested models, codecs, defaults, and refinements), never an encoder. Each
+/// returns a detached, recursively unmodifiable copy of the validated input
+/// map, so the result never depends on the input's container type and never
+/// aliases the caller's map. Each wire view copies its whole subtree, so
+/// compose wire views inside a plain `Ack.object(...)` rather than inside
+/// another wire view.
+///
+/// The wrapper's own nullability decides whether `null` is accepted; `null`
+/// never reaches [inner]. A default inside [inner] therefore does not apply.
+/// Put `withDefault` outside the wrapper instead.
 @immutable
-final class BoundarySchema<Boundary extends Object>
-    extends AckSchema<Boundary, Boundary>
+final class BoundarySchema extends AckSchema<JsonMap, JsonMap>
     with
-        FluentSchema<Boundary, Boundary, BoundarySchema<Boundary>>,
-        WrapperSchema<Boundary, Boundary, BoundarySchema<Boundary>> {
+        FluentSchema<JsonMap, JsonMap, BoundarySchema>,
+        WrapperSchema<JsonMap, JsonMap, BoundarySchema> {
   @override
-  final AckSchema<Boundary, Object> inner;
+  final AckSchema<JsonMap, Object> inner;
 
   BoundarySchema(
     this.inner, {
@@ -27,64 +35,67 @@ final class BoundarySchema<Boundary extends Object>
          description: description ?? inner.description,
        );
 
-  SchemaResult<Boundary> _validateBoundary(
+  SchemaResult<JsonMap> _validateBoundary(
     Object? value,
     SchemaContext context,
   ) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    final result = inner.parseWithContext(value, context);
+    // Encode leniency (for example, omitted defaults) must not let the wire
+    // view accept a value that its parse would reject.
+    final parseContext = context.operation == SchemaOperation.parse
+        ? context
+        : context.createChild(
+            name: context.name,
+            schema: inner,
+            value: value,
+            pathSegment: '',
+            operation: SchemaOperation.parse,
+          );
+    final result = inner.parseWithContext(value, parseContext);
     if (result.isFail) return SchemaResult.fail(result.getError());
 
-    final Boundary boundary;
-    final normalizedMap = jsonMapOrNull(value);
-    if (value is Boundary) {
-      boundary = value;
-    } else if (normalizedMap is Boundary) {
-      boundary = normalizedMap as Boundary;
-    } else {
-      final runtime = result.getOrNull()!;
-      final encodeContext = context.createChild(
-        name: context.name,
-        schema: inner,
-        value: runtime,
-        pathSegment: '',
-        operation: SchemaOperation.encode,
+    // Copying also canonicalizes any string-keyed map to a JsonMap.
+    final copy = deepUnmodifiableCopy(value);
+    if (copy is! JsonMap) {
+      return SchemaResult.fail(
+        _buildTypeMismatch(
+          expectedType: schemaType,
+          actualValue: value,
+          context: context,
+        ),
       );
-      final encoded = inner.encodeWithContext(runtime, encodeContext);
-      if (encoded.isFail) return SchemaResult.fail(encoded.getError());
-      boundary = encoded.getOrNull()!;
     }
 
-    return applyConstraintsAndRefinements(boundary, context);
+    return applyConstraintsAndRefinements(copy, context);
   }
 
   @override
   @protected
-  SchemaResult<Boundary> parseWithContext(
+  SchemaResult<JsonMap> parseWithContext(
     Object? value,
     SchemaContext context,
   ) => _validateBoundary(value, context);
 
   @override
   @protected
-  SchemaResult<Boundary> validateRuntimeWithContext(
+  SchemaResult<JsonMap> validateRuntimeWithContext(
     Object? value,
     SchemaContext context,
   ) => _validateBoundary(value, context);
 
   @override
   @protected
-  SchemaResult<Boundary> encodeWithContext(
-    Boundary value,
+  SchemaResult<JsonMap> encodeWithContext(
+    JsonMap value,
     SchemaContext context,
   ) => _validateBoundary(value, context);
 
   @override
-  BoundarySchema<Boundary> copyWithInner(AnyAckSchema newInner) {
-    return BoundarySchema<Boundary>(
-      newInner as AckSchema<Boundary, Object>,
+  BoundarySchema copyWithInner(AnyAckSchema newInner) {
+    return BoundarySchema(
+      newInner as AckSchema<JsonMap, Object>,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -94,14 +105,14 @@ final class BoundarySchema<Boundary extends Object>
   }
 
   @override
-  BoundarySchema<Boundary> copyWith({
+  BoundarySchema copyWith({
     bool? isNullable,
     bool? isOptional,
     String? description,
-    List<Constraint<Boundary>>? constraints,
-    List<Refinement<Boundary>>? refinements,
+    List<Constraint<JsonMap>>? constraints,
+    List<Refinement<JsonMap>>? refinements,
   }) {
-    return BoundarySchema<Boundary>(
+    return BoundarySchema(
       inner,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
@@ -114,7 +125,7 @@ final class BoundarySchema<Boundary extends Object>
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! BoundarySchema<Boundary>) return false;
+    if (other is! BoundarySchema) return false;
 
     return baseFieldsEqual(other) && inner == other.inner;
   }

@@ -249,14 +249,16 @@ final keywordFieldsSchema = Ack.object({
   'yield': Ack.string(),
 });
 
+final nonEmptyText = Ack.string().minLength(1);
 final choiceOptionSchema = Ack.anyOf([
-  Ack.string(),
-  Ack.object({'label': Ack.string(), 'value': Ack.string()}),
+  nonEmptyText,
+  Ack.object({'label': Ack.string(), 'value': nonEmptyText}),
 ]);
-final choiceOptionsSchema = Ack.preserveBoundary(Ack.list(choiceOptionSchema));
 
 @Schemable()
-final choiceFieldSchema = Ack.object({'options': choiceOptionsSchema.optional()});
+final choiceFieldSchema = Ack.object({
+  'options': Ack.list(choiceOptionSchema).minLength(1).optional(),
+});
 
 final opaqueValueSchema = Ack.string().codec<Object>(
   decode: DateTime.parse,
@@ -286,13 +288,14 @@ final opaqueCollectionsSchema = Ack.object({
 final answerValueSchema = Ack.anyOf([
   Ack.string(), Ack.number(), Ack.list(Ack.string()),
 ]);
-final answerValuesSchema = Ack.preserveBoundary(Ack.map(answerValueSchema));
 
 @Schemable()
 final answerRecordSchema = Ack.object({
-  'values': answerValuesSchema,
-  'ratio': Ack.preserveBoundary(Ack.double()),
+  'values': Ack.map(answerValueSchema).optional(),
 });
+
+@Schemable()
+final answerSheetSchema = Ack.object({'values': Ack.map(answerValueSchema)});
 
 final nullableBoundaryValue = Ack.string().nullable();
 final nullableBoundaryAlias = nullableBoundaryValue;
@@ -302,19 +305,19 @@ final boundaryFlagsSchema = Ack.object({
   'copiedValues': Ack.preserveBoundary(Ack.map(Ack.string().copyWith(isNullable: true))),
   'configuredValues': Ack.preserveBoundary(Ack.map(Ack.string().withRuntimeConfig(isNullable: true))),
   'clearedValues': Ack.preserveBoundary(Ack.map(nullableBoundaryAlias.nullable(value: false))),
-  'items': Ack.preserveBoundary(Ack.list(nullableBoundaryAlias.nullable(value: false))),
-  'outer': Ack.preserveBoundary(nullableBoundaryValue).nullable(value: false),
+  'items': Ack.preserveBoundary(Ack.map(Ack.list(nullableBoundaryAlias.nullable(value: false)))),
+  'outer': Ack.preserveBoundary(Ack.object({'text': nullableBoundaryValue}).nullable()).nullable(value: false),
   'outerMap': Ack.preserveBoundary(Ack.map(nullableBoundaryValue).nullable()).nullable(value: false),
 });
 
-final nullableBoundaryText = Ack.preserveBoundary(Ack.string().nullable());
-final boundaryTextAlias = nullableBoundaryText;
+final nullableBoundaryProfile = Ack.preserveBoundary(Ack.object({'name': Ack.string()}).nullable());
+final boundaryProfileAlias = nullableBoundaryProfile;
 final nullableBoundaryMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
 final boundaryMapAlias = nullableBoundaryMap;
 
 @Schemable()
 final boundaryAliasesSchema = Ack.object({
-  'text': boundaryTextAlias.nullable(value: false),
+  'profile': boundaryProfileAlias.nullable(value: false),
   'values': boundaryMapAlias.nullable(value: false),
   'groups': Ack.list(boundaryMapAlias.nullable(value: false)),
   'byName': Ack.map(boundaryMapAlias.nullable(value: false)),
@@ -324,17 +327,18 @@ enum WireStatus { active, archived }
 
 @Schemable()
 final nativeBoundarySchema = Ack.object({
-  'day': Ack.preserveBoundary(Ack.date()),
-  'instant': Ack.preserveBoundary(Ack.datetime()),
-  'url': Ack.preserveBoundary(Ack.uri()),
-  'milliseconds': Ack.preserveBoundary(Ack.duration()),
-  'status': Ack.preserveBoundary(Ack.enumValues(WireStatus.values)),
-  'boxed': Ack.preserveBoundary(Ack.codec(
+  'day': Ack.preserveBoundary(Ack.map(Ack.date())),
+  'instant': Ack.preserveBoundary(Ack.map(Ack.datetime())),
+  'url': Ack.preserveBoundary(Ack.map(Ack.uri())),
+  'milliseconds': Ack.preserveBoundary(Ack.map(Ack.duration())),
+  'status': Ack.preserveBoundary(Ack.map(Ack.enumValues(WireStatus.values))),
+  'boxed': Ack.preserveBoundary(Ack.map(Ack.codec(
     input: Ack.string(),
     decode: DateTime.parse,
     encode: (DateTime value) => value.toIso8601String(),
-  )),
-  'later': Ack.preserveBoundary(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+  ))),
+  'later': Ack.preserveBoundary(Ack.map(Ack.lazy('later', () => Ack.integer(), maxDepth: 4))),
+  'ratio': Ack.preserveBoundary(Ack.map(Ack.double())),
   'payload': Ack.preserveBoundary(Ack.object({
     'createdAt': Ack.datetime(),
     'statuses': Ack.list(Ack.enumValues(WireStatus.values)),
@@ -456,6 +460,8 @@ final personSchema = Ack.object({
         File(
           p.join(temporary.path, 'test', 'runtime_test.dart'),
         ).writeAsStringSync(r'''
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:ack_ack_infer_runtime/models.dart';
 import 'package:ack_ack_infer_runtime/person.dart';
@@ -567,21 +573,69 @@ void main() {
     expect(parsed.toJson(), record.toJson());
   });
 
-  test('explicit JSON boundary unions encode normalized nested string lists', () {
+  test('native JSON union maps encode snapshotted nested string lists', () {
     final tags = <String>['a', 'b'];
     final values = <String, Object>{'tags': tags, 'title': 'Review', 'count': 2};
-    final record = AnswerRecord(values: values, ratio: 0.5);
+    final record = AnswerRecord(values: values);
     tags.add('changed');
     values.clear();
     final expected = <String, Object>{'tags': ['a', 'b'], 'title': 'Review', 'count': 2};
     expect(record.values, expected);
-    expect(record.toJson(), {'values': expected, 'ratio': 0.5});
-    final double ratio = record.ratio;
-    expect(ratio, 0.5);
-    expect(AnswerRecord.parse({'values': expected, 'ratio': 0.5}).toJson(),
-        {'values': expected, 'ratio': 0.5});
-    expect(() => (record.values['tags'] as List).clear(), throwsUnsupportedError);
-    expect(AnswerRecord(values: {'invalid': false}, ratio: 0.5).safeToJson().isFail, isTrue);
+    expect(record.toJson(), {'values': expected});
+    expect(AnswerRecord.parse({'values': expected}).toJson(), {'values': expected});
+    expect(() => (record.values!['tags'] as List).clear(), throwsUnsupportedError);
+    expect(AnswerRecord(values: {'invalid': false}).safeToJson().isFail, isTrue);
+  });
+
+  test('a required native JSON union map field round-trips JSON', () {
+    final json = jsonDecode(
+      '{"values": {"tags": ["a"], "count": 2, "title": "Review"}}',
+    ) as Map<String, Object?>;
+    final sheet = AnswerSheet.parse(json);
+    final Map<String, Object> values = sheet.values;
+    expect(values, json['values']);
+    expect(sheet.toJson(), json);
+    expect(AnswerSheet.parse(sheet.toJson()), sheet);
+    expect(() => (values['tags'] as List).add('b'), throwsUnsupportedError);
+    expect(AnswerSheet.safeParse(<String, Object?>{}).isFail, isTrue);
+    expect(AnswerSheet.safeParse({'values': null}).isFail, isTrue);
+    expect(AnswerSheet.safeParse({'values': {'flag': true}}).isFail, isTrue);
+  });
+
+  test('native JSON union fields round-trip JSON like their former wrappers', () {
+    final optionsJson = jsonDecode(
+      '{"options": ["skip", {"label": "Keep", "value": "keep"}]}',
+    ) as Map<String, Object?>;
+    final field = ChoiceField.parse(optionsJson);
+    final List<Object>? options = field.options;
+    expect(options, optionsJson['options']);
+    expect(field.toJson(), optionsJson);
+    expect(ChoiceField.parse(field.toJson()), field);
+    expect(() => (options!.last as Map)['value'] = 'changed', throwsUnsupportedError);
+    expect(ChoiceField.parse(<String, Object?>{}).options, isNull);
+    expect(ChoiceField.safeParse({'options': <Object>[]}).isFail, isTrue);
+    expect(ChoiceField.safeParse({'options': ['']}).isFail, isTrue);
+    expect(ChoiceField.safeParse({
+      'options': [{'label': 'Keep', 'value': ''}],
+    }).isFail, isTrue);
+
+    final answersJson = jsonDecode(
+      '{"values": {"tags": ["a"], "count": 2.5, "title": "Review"}}',
+    ) as Map<String, Object?>;
+    final record = AnswerRecord.parse(answersJson);
+    final Map<String, Object>? values = record.values;
+    expect(values, answersJson['values']);
+    expect(record.toJson(), answersJson);
+    expect(() => (values!['tags'] as List).add('b'), throwsUnsupportedError);
+    expect(AnswerRecord.parse(<String, Object?>{}).values, isNull);
+    expect(AnswerRecord.safeParse({
+      ...answersJson,
+      'values': {'flag': true},
+    }).isFail, isTrue);
+    expect(
+      (AnswerRecord.schema.toJsonSchema()['properties'] as Map)['values'],
+      Ack.preserveBoundary(Ack.map(answerValueSchema)).toJsonSchema(),
+    );
   });
 
   test('preserved boundary metadata agrees with generated runtime fields', () {
@@ -589,22 +643,22 @@ void main() {
       'copiedValues': {'a': null},
       'configuredValues': {'b': null},
       'clearedValues': {'c': 'present'},
-      'items': ['present'],
-      'outer': 'present',
+      'items': {'e': ['present']},
+      'outer': {'text': null},
       'outerMap': {'d': null},
     };
     final record = BoundaryFlags.parse(json);
     final Map<String, String?> copied = record.copiedValues;
     final Map<String, String?> configured = record.configuredValues;
     final Map<String, String> cleared = record.clearedValues;
-    final List<String> items = record.items;
-    final String outer = record.outer;
+    final Map<String, List<String>> items = record.items;
+    final Map<String, Object?> outer = record.outer;
     final Map<String, String?> outerMap = record.outerMap;
     expect(copied['a'], isNull);
     expect(configured['b'], isNull);
     expect(cleared['c'], 'present');
-    expect(items, ['present']);
-    expect(outer, 'present');
+    expect(items, {'e': ['present']});
+    expect(outer, {'text': null});
     expect(outerMap['d'], isNull);
     expect(record.toJson(), json);
     expect(BoundaryFlags.parse(record.toJson()), record);
@@ -616,23 +670,23 @@ void main() {
 
   test('preserved boundary aliases clear only their outer nullable type', () {
     final json = <String, Object?>{
-      'text': 'present',
+      'profile': {'name': 'present'},
       'values': {'a': null},
       'groups': [{'b': null}],
       'byName': {'first': {'c': null}},
     };
     final record = BoundaryAliases.parse(json);
-    final String text = record.text;
+    final Map<String, Object?> profile = record.profile;
     final Map<String, String?> values = record.values;
     final List<Map<String, String?>> groups = record.groups;
     final Map<String, Map<String, String?>> byName = record.byName;
-    expect(text, 'present');
+    expect(profile, {'name': 'present'});
     expect(values['a'], isNull);
     expect(groups.single['b'], isNull);
     expect(byName['first']!['c'], isNull);
     expect(record.toJson(), json);
     expect(BoundaryAliases.parse(record.toJson()), record);
-    expect(BoundaryAliases.safeParse({...json, 'text': null}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'profile': null}).isFail, isTrue);
     expect(BoundaryAliases.safeParse({...json, 'values': null}).isFail, isTrue);
     expect(BoundaryAliases.safeParse({...json, 'groups': [null]}).isFail, isTrue);
     expect(BoundaryAliases.safeParse({...json, 'byName': {'first': null}}).isFail, isTrue);
@@ -640,36 +694,46 @@ void main() {
 
   test('preserved native codecs keep JSON boundary types and validation', () {
     final json = <String, Object?>{
-      'day': '2026-10-26',
-      'instant': '2026-10-26T12:00:00Z',
-      'url': 'https://example.invalid/review',
-      'milliseconds': 1500,
-      'status': 'active',
-      'boxed': '2026-10-26T12:00:00Z',
-      'later': 7,
+      'day': {'a': '2026-10-26'},
+      'instant': {'a': '2026-10-26T12:00:00Z'},
+      'url': {'a': 'https://example.invalid/review'},
+      'milliseconds': {'a': 1500},
+      'status': {'a': 'active'},
+      'boxed': {'a': '2026-10-26T12:00:00Z'},
+      'later': {'a': 7},
+      'ratio': {'a': 0.5},
       'payload': {
         'createdAt': '2026-10-26T12:00:00Z',
         'statuses': ['active'],
       },
     };
     final record = NativeBoundary.parse(json);
-    final String instant = record.instant;
-    final String status = record.status;
-    final int milliseconds = record.milliseconds;
-    final int later = record.later;
+    final Map<String, String> instant = record.instant;
+    final Map<String, String> status = record.status;
+    final Map<String, num> milliseconds = record.milliseconds;
+    final Map<String, num> later = record.later;
+    final Map<String, num> ratio = record.ratio;
     expect(instant, json['instant']);
-    expect(status, 'active');
-    expect(milliseconds, 1500);
-    expect(later, 7);
+    expect(status, {'a': 'active'});
+    expect(milliseconds, {'a': 1500});
+    expect(later, {'a': 7});
+    expect(ratio, {'a': 0.5});
     expect(record.toJson(), json);
-    expect(record.copyWith(milliseconds: 2500).toJson(), {
+    expect(record.copyWith(milliseconds: {'a': 2500}).toJson(), {
       ...json,
-      'milliseconds': 2500,
+      'milliseconds': {'a': 2500},
     });
-    expect(NativeBoundary.safeParse({...json, 'instant': 'bad'}).isFail, isTrue);
-    expect(NativeBoundary.safeParse({...json, 'status': 'unknown'}).isFail, isTrue);
-    expect(NativeBoundary.safeParse({...json, 'milliseconds': 1.5}).isFail, isTrue);
-    expect(NativeBoundary.safeParse({...json, 'boxed': 'bad'}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'instant': {'a': 'bad'}}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'status': {'a': 'unknown'}}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'milliseconds': {'a': 1.5}}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'boxed': {'a': 'bad'}}).isFail, isTrue);
+    final otherNumbers = <String, Object?>{
+      ...json,
+      'milliseconds': {'a': 1500.0},
+      'later': {'a': 7.0},
+      'ratio': {'a': 1},
+    };
+    expect(NativeBoundary.parse(otherNumbers).toJson(), otherNumbers);
   });
 
   test('contextual discriminator and capture members retain their wire shape', () {

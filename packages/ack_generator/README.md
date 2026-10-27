@@ -175,23 +175,41 @@ void main() {
 
 ### Heterogeneous JSON fields
 
-Use `Ack.preserveBoundary(...)` for a generated field that stores wire JSON
-rather than a codec's decoded runtime values. For example:
+A field whose values are native JSON needs no wrapper. `Ack.any()` and an
+`Ack.anyOf(...)` whose branches are all native JSON (strings, numbers,
+booleans, `Ack.any()`, inline objects, and lists, maps, unions, or lazy schemas
+of those) become `Object` fields, including as list items and map values:
 
 ```dart
-final answerValues = Ack.preserveBoundary(Ack.map(Ack.anyOf([
+final answerValue = Ack.anyOf([
   Ack.string(), Ack.number(), Ack.list(Ack.string()),
-])));
+]);
 
 @Schemable()
-final answerSchema = Ack.object({'values': answerValues});
+final answerSchema = Ack.object({'values': Ack.map(answerValue)});
+// Generates `final Map<String, Object> values;`.
 ```
+
+A union branch must not decode its value. Codec branches such as
+`Ack.datetime()`, `Ack.enumValues(...)`, and `.codec(...)`, `Ack.instance<T>()`,
+model schemas, and nullable branches are rejected; mark the union itself
+`.nullable()` instead. Use `Ack.discriminated(...)` for a union of models.
+`Ack.anyOf(...)` model roots remain unsupported. Branches are proven from their
+static schema types and statically resolvable initializers. A custom method
+whose declared runtime type is `Object` or a JSON collection but that returns a
+codec cannot be detected.
+
+`Ack.preserveBoundary(...)` stores the JSON of a codec-bearing object, map, or
+discriminated union. It validates with the full typed schema and keeps the
+wire value, so a field over a preserved object is a `Map<String, Object?>`, and
+a field over a preserved `Ack.map(...)` keeps each value's wire type (a JSON
+number is a `num`). A preserved object can also be a union branch. Put
+`withDefault(...)` outside the wire view; a default inside it does not apply.
 
 The constructor snapshots nested JSON collections without validating them.
 Parsing and encoding still enforce the original schema. Opaque codec runtime
 values retain their identity and runtime container types. Statically
-unresolvable or opaque JSON input schemas are rejected instead of inferred.
-`Ack.anyOf(...)` model roots remain unsupported.
+unresolvable or opaque JSON schemas are rejected instead of inferred.
 
 ### Custom schema resolution
 
@@ -332,7 +350,8 @@ means a JSON-safe value, not an arbitrary Dart instance:
 For a hand-written `Account`, class-first generation exposes an
 `AccountSchema` facade backed by a private `_accountSchema` codec. The facade
 provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
-typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
+typed `schema`, and a `wireSchema` that validates like `schema` but returns the
+JSON map. Instantiable models apply the generated
 `_$AccountAck` mixin, which supplies `toJson`, `safeToJson`, a typed `copyWith`,
 and deep collection-aware equality. Add `static final schema = _accountSchema;`
 and `static final fromJson = AccountSchema.fromJson;` when the class should

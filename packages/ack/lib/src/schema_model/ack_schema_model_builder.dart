@@ -113,7 +113,9 @@ final class _SchemaModelBuilder {
       var layered = base
           .withDescription(schema.description ?? base.description)
           .withNullable(schema.isNullable);
-      if (schema.excludesInnerNull) layered = _excludeNull(layered);
+      if (schema.excludesInnerNull && _admitsNull(layered)) {
+        layered = _excludeNull(layered);
+      }
       // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
       // which `_build(schema.inner)` already applied. Re-running them here
       // would emit duplicate warnings (e.g. datetime range under a default).
@@ -615,6 +617,21 @@ final class _SchemaModelBuilder {
         'definitions': _mergeRootDefinitions(root.extensions['definitions']),
     });
   }
+}
+
+/// Whether [model] can still accept `null` after its own nullable flag.
+///
+/// References, imported resources, and extension keywords are opaque here, so
+/// they count as accepting `null`.
+bool _admitsNull(AckSchemaModel model) {
+  if (model.nullable || model.extensions.isNotEmpty) return true;
+  return switch (model) {
+    AckRefSchemaModel() || AckRawSchemaModel() || AckNullSchemaModel() => true,
+    AckAnyOfSchemaModel(:final schemas) ||
+    AckOneOfSchemaModel(:final schemas) => schemas.any(_admitsNull),
+    AckAllOfSchemaModel(:final schemas) => schemas.every(_admitsNull),
+    _ => false,
+  };
 }
 
 AckSchemaModel _excludeNull(AckSchemaModel model) => model.withExtensions({

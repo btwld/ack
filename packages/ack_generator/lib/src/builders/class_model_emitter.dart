@@ -210,7 +210,7 @@ abstract final class ${metadata.facadeName} {
   static ${_ack('AckSchema')}<Map<String, Object?>, $className> get schema =>
       ${metadata.backingName};
 
-  /// The structural JSON map schema behind [schema].
+  /// Validates like [schema] and returns the JSON map instead of the model.
   static ${_ack('AckSchema')}<Map<String, Object?>, Map<String, Object?>>
       get wireSchema => $wireName;
 

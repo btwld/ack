@@ -136,13 +136,19 @@ final policySchema = Ack.object({}, additionalProperties: true).copyWith(
   }
 
   test('preserved JSON boundaries honor an outer nullable clear', () async {
-    await _expectOutput('''
+    await _expectOutput(
+      '''
 $_head
 @Schemable()
 final boundaryFlagsSchema = Ack.object({
-  'value': Ack.preserveBoundary(Ack.string().nullable()).nullable(value: false),
+  'value': Ack.preserveBoundary(Ack.map(Ack.string()).nullable()).nullable(value: false),
 });
-''', allOf([contains('final String value;'), contains('required this.value')]));
+''',
+      allOf([
+        contains('final Map<String, String> value;'),
+        contains('required Map<String, String> value'),
+      ]),
+    );
   });
 
   test('preserved JSON boundaries use effective nested flags', () async {
@@ -156,7 +162,7 @@ final boundaryFlagsSchema = Ack.object({
   'copiedValues': Ack.preserveBoundary(Ack.map(Ack.string().copyWith(isNullable: true))),
   'configuredValues': Ack.preserveBoundary(Ack.map(Ack.string().withRuntimeConfig(isNullable: true))),
   'clearedValues': Ack.preserveBoundary(Ack.map(nullableAlias.nullable(value: false))),
-  'items': Ack.preserveBoundary(Ack.list(nullableAlias.nullable(value: false))),
+  'items': Ack.preserveBoundary(Ack.map(Ack.list(nullableAlias.nullable(value: false)))),
   'outerMap': Ack.preserveBoundary(Ack.map(nullableValue).nullable()).nullable(value: false),
 });
 ''',
@@ -164,7 +170,7 @@ final boundaryFlagsSchema = Ack.object({
         contains('final Map<String, String?> copiedValues;'),
         contains('final Map<String, String?> configuredValues;'),
         contains('final Map<String, String> clearedValues;'),
-        contains('final List<String> items;'),
+        contains('final Map<String, List<String>> items;'),
         contains('final Map<String, String?> outerMap;'),
       ]),
     );
@@ -174,20 +180,22 @@ final boundaryFlagsSchema = Ack.object({
     await _expectOutput(
       '''
 $_head
-final nullableText = Ack.preserveBoundary(Ack.string().nullable());
-final textAlias = nullableText;
+final nullableProfile = Ack.preserveBoundary(
+  Ack.object({'name': Ack.string()}).nullable(),
+);
+final profileAlias = nullableProfile;
 final nullableMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
 final mapAlias = nullableMap;
 @Schemable()
 final boundaryAliasesSchema = Ack.object({
-  'text': textAlias.nullable(value: false),
+  'profile': profileAlias.nullable(value: false),
   'values': mapAlias.nullable(value: false),
   'groups': Ack.list(mapAlias.nullable(value: false)),
   'byName': Ack.map(mapAlias.nullable(value: false)),
 });
 ''',
       allOf([
-        contains('final String text;'),
+        contains('final Map<String, Object?> profile;'),
         contains('final Map<String, String?> values;'),
         contains('final List<Map<String, String?>> groups;'),
         contains('final Map<String, Map<String, String?>> byName;'),
@@ -201,7 +209,7 @@ final boundaryAliasesSchema = Ack.object({
 $_head
 @Schemable()
 final boundaryFlagsSchema = Ack.object({
-  'items': Ack.preserveBoundary(Ack.list(Ack.string().nullable())),
+  'items': Ack.preserveBoundary(Ack.map(Ack.list(Ack.string().nullable()))),
 });
 ''',
       ['boundaryFlagsSchema.items', 'cannot prove a native JSON boundary'],
@@ -558,6 +566,138 @@ final payloadSchema = ${unsupported.key};
     });
   }
 
+  test('rejects a native union root reached through an alias', () async {
+    await _expectFailure(
+      '''
+$_head
+final payloadUnion = Ack.anyOf([Ack.string(), Ack.integer()]);
+@Schemable()
+final payloadSchema = payloadUnion;
+''',
+      ['payloadSchema', 'Ack.anyOf()'],
+    );
+  });
+
+  for (final erased in {
+    'Ack.anyOf([Ack.string(), Ack.integer()])': 'Ack.anyOf()',
+    'Ack.any()': 'Ack.any()',
+  }.entries) {
+    test('rejects a ${erased.value} root behind a type-erased alias', () async {
+      await _expectFailure(
+        '''
+$_head
+final AckSchema<Object, Object> payloadValue = ${erased.key};
+@Schemable()
+final payloadSchema = payloadValue;
+''',
+        ['payloadSchema', erased.value],
+      );
+    });
+  }
+
+  test('infers native JSON union fields as JSON values', () async {
+    await _expectOutput(
+      '''
+$_head
+final nonEmpty = Ack.string().minLength(1);
+final option = Ack.anyOf([
+  nonEmpty,
+  Ack.object({'label': Ack.string(), 'value': nonEmpty}),
+]);
+final answer = Ack.anyOf([Ack.string(), Ack.number(), Ack.list(Ack.string())]);
+
+@Schemable()
+final interactionSchema = Ack.object({
+  'value': Ack.anyOf([Ack.string(), Ack.integer(), Ack.boolean()]),
+  'maybe': Ack.anyOf([Ack.literal('none'), Ack.any()]).nullable(),
+  'options': Ack.list(option).minLength(1).optional(),
+  'values': Ack.map(answer).optional(),
+  'nested': Ack.anyOf([
+    Ack.lazy('word', () => Ack.enumString(['a', 'b'])),
+    Ack.anyOf([Ack.double(), Ack.map(Ack.any().nullable())]),
+  ]),
+});
+''',
+      allOf([
+        contains('final Object value;'),
+        contains('final Object? maybe;'),
+        contains('final List<Object>? options;'),
+        contains('final Map<String, Object>? values;'),
+        contains('final Object nested;'),
+      ]),
+    );
+  });
+
+  test('infers a union branch that is an explicit wire view', () async {
+    await _expectOutput('''
+$_head
+final stamped = Ack.preserveBoundary(Ack.object({'at': Ack.datetime()}));
+
+@Schemable()
+final eventSchema = Ack.object({
+  'detail': Ack.anyOf([Ack.string(), stamped]),
+});
+''', contains('final Object detail;'));
+  });
+
+  test('infers a union branch built by a native schema extension', () async {
+    await _expectOutput('''
+$_head
+extension SlugSchemas on StringSchema {
+  StringSchema slug() => this.matches(r'^[a-z-]+\$');
+}
+
+@Schemable()
+final pageSchema = Ack.object({
+  'value': Ack.anyOf([Ack.integer(), Ack.string().slug()]),
+});
+''', contains('final Object value;'));
+  });
+
+  for (final branch in [
+    'Ack.datetime()',
+    'Ack.enumValues(Status.values)',
+    "Ack.string().codec<int>(decode: int.parse, encode: (value) => '\$value')",
+    'Ack.codec(input: Ack.string(), decode: (value) => value, encode: (value) => value)',
+    "Ack.object({'at': Ack.date()})",
+    'tagSchema',
+    'Ack.instance<Object>()',
+    'Ack.string().nullable()',
+    'Ack.string().asLink()',
+    "Ack.string().asLink().withDefault(Uri.parse('https://example.invalid'))",
+    'Ack.string().asDeclaredLink()',
+    'Ack.string().dates()',
+  ]) {
+    test('rejects a non-native union field branch $branch', () async {
+      await _expectFailure(
+        '''
+$_head
+enum Status { active, archived }
+
+extension LinkSchemas on StringSchema {
+  CodecSchema<String, Uri> asLink() =>
+      this.codec<Uri>(decode: Uri.parse, encode: (value) => value.toString());
+  AckSchema<String, Uri> asDeclaredLink() => asLink();
+  ListSchema<String, DateTime> dates() => Ack.list(Ack.datetime());
+}
+
+@Schemable()
+final tagSchema = Ack.object({'name': Ack.string()});
+
+@Schemable()
+final unionRecordSchema = Ack.object({
+  'value': Ack.list(Ack.anyOf([Ack.string(), $branch])),
+});
+''',
+        [
+          'unionRecordSchema.value[] Ack.anyOf() branch '
+              'unionRecordSchema.value[].anyOf[1]',
+          'is not native JSON',
+        ],
+      );
+    });
+  }
+
   for (final change in [
     "extend({'payload': Ack.instance<List<int>>()})",
     "copyWith(properties: {'payload': Ack.instance<List<int>>()})",
@@ -596,7 +736,7 @@ final boundaryRecordSchema = Ack.object({
 $_head
 @Schemable()
 final boundaryRecordSchema = Ack.object({
-  'value': Ack.preserveBoundary($boundary),
+  'value': Ack.preserveBoundary(Ack.map($boundary)),
 });
 ''',
         ['boundaryRecordSchema.value', 'cannot prove a native JSON boundary'],
@@ -614,27 +754,33 @@ enum Status { active, archived }
 
 @Schemable()
 final nativeBoundarySchema = Ack.object({
-  'day': Ack.preserveBoundary(Ack.date()),
-  'instant': Ack.preserveBoundary(Ack.datetime()),
-  'url': Ack.preserveBoundary(Ack.uri()),
-  'milliseconds': Ack.preserveBoundary(Ack.duration()),
-  'status': Ack.preserveBoundary(Ack.enumValues(Status.values)),
-  'boxed': Ack.preserveBoundary(Ack.codec(
+  'day': Ack.preserveBoundary(Ack.map(Ack.date())),
+  'instant': Ack.preserveBoundary(Ack.map(Ack.datetime())),
+  'url': Ack.preserveBoundary(Ack.map(Ack.uri())),
+  'milliseconds': Ack.preserveBoundary(Ack.map(Ack.duration())),
+  'status': Ack.preserveBoundary(Ack.map(Ack.enumValues(Status.values))),
+  'boxed': Ack.preserveBoundary(Ack.map(Ack.codec(
     input: Ack.string(),
     decode: DateTime.parse,
     encode: (DateTime value) => value.toIso8601String(),
-  )),
-  'later': Ack.preserveBoundary(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+  ))),
+  'later': Ack.preserveBoundary(
+    Ack.map(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
+  ),
+  'ratio': Ack.preserveBoundary(Ack.map(Ack.double())),
+  'label': Ack.preserveBoundary(Ack.map(Ack.string())),
 });
 ''',
         allOf([
-          contains('final String day;'),
-          contains('final String instant;'),
-          contains('final String url;'),
-          contains('final int milliseconds;'),
-          contains('final String status;'),
-          contains('final String boxed;'),
-          contains('final int later;'),
+          contains('final Map<String, String> day;'),
+          contains('final Map<String, String> instant;'),
+          contains('final Map<String, String> url;'),
+          contains('final Map<String, num> milliseconds;'),
+          contains('final Map<String, String> status;'),
+          contains('final Map<String, String> boxed;'),
+          contains('final Map<String, num> later;'),
+          contains('final Map<String, num> ratio;'),
+          contains('final Map<String, String> label;'),
         ]),
       );
     },
@@ -832,18 +978,23 @@ final scoresSchema = $source;
     });
   }
 
-  test('rejects an Ack.map() root reached through a variable', () async {
-    await _expectFailure(
-      '''
+  for (final declaration in [
+    'final scoresMap = Ack.map(Ack.integer());',
+    'final AckSchema<Object, Object> scoresMap = Ack.map(Ack.integer());',
+  ]) {
+    test('rejects an Ack.map() root reached through $declaration', () async {
+      await _expectFailure(
+        '''
 $_head
-final scoresMap = Ack.map(Ack.integer());
+$declaration
 
 @Schemable()
 final scoresSchema = scoresMap;
 ''',
-      ['scoresSchema', 'Ack.map() root'],
-    );
-  });
+        ['scoresSchema', 'Ack.map() root'],
+      );
+    });
+  }
 
   test('rejects an unannotated named Ack.object field', () async {
     await _expectFailure(

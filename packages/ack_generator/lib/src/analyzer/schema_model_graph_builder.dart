@@ -1,5 +1,5 @@
 import 'package:ack/ack.dart'
-    show AnyOfSchema, AnySchema, InstanceSchema, MapSchema;
+    show AnyOfSchema, CodecSchema, EnumSchema, InstanceSchema;
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -70,10 +70,6 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
 
   static const _reservedMembers = ackSchemaFirstReservedMembers;
 
-  static const _anySchemaChecker = TypeChecker.typeNamed(
-    AnySchema,
-    inPackage: 'ack',
-  );
   static const _anyOfSchemaChecker = TypeChecker.typeNamed(
     AnyOfSchema,
     inPackage: 'ack',
@@ -82,10 +78,11 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     InstanceSchema,
     inPackage: 'ack',
   );
-  static const _mapSchemaChecker = TypeChecker.typeNamed(
-    MapSchema,
-    inPackage: 'ack',
-  );
+  static const _decodingSchemaChecker = TypeChecker.any([
+    TypeChecker.typeNamed(CodecSchema, inPackage: 'ack'),
+    TypeChecker.typeNamed(EnumSchema, inPackage: 'ack'),
+    _instanceSchemaChecker,
+  ]);
 
   final Map<Element, _Declaration> _declarationsByElement = {};
   final Map<AckSchemaId, _Declaration> _declarationsById = {};
@@ -252,22 +249,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         'codec',
         'lazy',
       };
-      // Ack.any() and Ack.map() are valid fields but never model roots,
-      // whether written inline or reached through an unannotated variable.
-      final rootType = declaration.expression.staticType;
-      if (rootType != null &&
-          _anySchemaChecker.isAssignableFromType(rootType)) {
-        _rejectUnsupportedRoot('any', path, declaration.element);
-      }
-      if (rootType != null &&
-          _mapSchemaChecker.isAssignableFromType(rootType)) {
-        throw InvalidGenerationSource(
-          '$path uses an Ack.map() root. Generated models need an object or '
-          'value root.',
-          element: declaration.element,
-          todo: 'Use Ack.map(...) as a field of an Ack.object(...) model.',
-        );
-      }
+      // Aliased Ack.map() roots are rejected while following the alias.
+      if (baseName == 'map') _rejectMapRoot(path, declaration.element);
       if (baseName != null && !supportedValueRoots.contains(baseName)) {
         _rejectUnsupportedRoot(baseName, path, declaration.element);
       }
@@ -291,6 +274,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         path: path,
         context: declaration.element,
         throughLazy: false,
+        root: true,
       ),
       description: descriptionFromExpression(expression),
     );
@@ -546,6 +530,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     int depth = 0,
     String? followedName,
     bool collectionElement = false,
+    // A model root, or an unannotated alias that a root follows.
+    bool root = false,
   }) async {
     final chain = parseSchemaChain(expression);
     _rejectTransform(chain, path, context);
@@ -589,7 +575,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           element: context,
         );
       case 'any':
-        // A JSON-safe value field. Ack.any() roots are rejected in _resolve.
+        // A JSON-safe value field, never a model root.
+        if (root) _rejectUnsupportedRoot('any', path, context);
         return const AckScalarTypeRef('Object', isJsonValue: true);
       case 'preserveBoundary':
         final arguments = argumentExpressions(chain.base!.argumentList);
@@ -598,9 +585,19 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         }
         return _jsonBoundaryRef(expression, path: path, context: context);
       case 'anyOf':
+        // A JSON value field when every branch is native JSON, like Ack.any(),
+        // never a model root.
+        if (root) _rejectUnsupportedRoot('anyOf', path, context);
+        return _jsonBoundaryRef(
+          expression,
+          path: path,
+          context: context,
+          nativeUnionPath: path,
+        );
       case 'instance':
         _rejectUnsupportedRoot(baseName, path, context);
       case 'map':
+        if (root) _rejectMapRoot(path, context);
         final arguments = argumentExpressions(chain.base!.argumentList);
         if (arguments.isEmpty) {
           throw InvalidGenerationSource(
@@ -706,6 +703,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           throughLazy: throughLazy,
           visited: visited,
           depth: depth,
+          root: root,
         );
         if (followed != null) {
           if (followed is AckNullableTypeRef &&
@@ -735,6 +733,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     required bool throughLazy,
     required Set<Element> visited,
     required int depth,
+    required bool root,
   }) async {
     final element = referencedElement(reference);
     if (element == null) return null;
@@ -776,17 +775,26 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       visited: {...visited, canonical},
       depth: depth + 1,
       followedName: element.name,
+      root: root,
     );
   }
 
-  /// Infers an explicitly preserved JSON boundary without inferring opaque
-  /// codec runtime values. Reuses the normal source/reference machinery.
+  /// Infers a field that holds JSON without inferring opaque codec runtime
+  /// values. Reuses the normal source/reference machinery.
+  ///
+  /// By default this proves an explicit `Ack.preserveBoundary(...)` wire
+  /// value, so codecs count by their JSON input side. When [nativeUnionPath]
+  /// is set, it instead proves the runtime values of the `Ack.anyOf(...)`
+  /// field at that path: codecs, codec factories and model schemas are
+  /// rejected, and an explicit `Ack.preserveBoundary(...)` branch is proven as
+  /// a wire value again.
   Future<AckInferRef> _jsonBoundaryRef(
     Expression expression, {
     required String path,
     required Element context,
     Set<Element> visited = const {},
     int depth = 0,
+    String? nativeUnionPath,
   }) async {
     if (depth >= ModelGraphBuilderBase.maxReferenceDepth) {
       throw InvalidGenerationSource(
@@ -802,6 +810,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     );
     final chain = parseSchemaChain(expression);
     _rejectTransform(chain, path, context);
+    if (nativeUnionPath != null && _decodesInChain(expression)) {
+      return _unsupportedJsonBoundary(path, context, nativeUnionPath);
+    }
     final base = chain.base;
     AckInferRef result;
     switch (base?.methodName.name) {
@@ -819,7 +830,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           'enumValues':
         // Native factories own their boundary types; decoded codec types do
         // not belong in a preserved wire field.
-        result = _schemaTypes(base!, path, context).boundary;
+        result = _jsonScalarType(base!, path, context);
       case 'any':
         result = const AckScalarTypeRef('Object', isJsonValue: true);
       case 'codec':
@@ -831,7 +842,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
             break;
           }
         }
-        if (input == null) return _unsupportedJsonBoundary(path, context);
+        if (input == null) {
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
+        }
         result = await _jsonBoundaryRef(
           input,
           path: '$path.input',
@@ -842,23 +855,26 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       case 'lazy':
         final arguments = argumentExpressions(base!.argumentList);
         if (arguments.length < 2 || arguments[1] is! FunctionExpression) {
-          return _unsupportedJsonBoundary(path, context);
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
         }
         final target = functionBodyExpression(
           (arguments[1] as FunctionExpression).body,
         );
-        if (target == null) return _unsupportedJsonBoundary(path, context);
+        if (target == null) {
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
+        }
         result = await _jsonBoundaryRef(
           target,
           path: '$path.lazy',
           context: context,
           visited: visited,
           depth: depth + 1,
+          nativeUnionPath: nativeUnionPath,
         );
       case 'list' || 'map' || 'preserveBoundary':
         final arguments = argumentExpressions(base!.argumentList);
         if (arguments.length != 1) {
-          return _unsupportedJsonBoundary(path, context);
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
         }
         final inner = await _jsonBoundaryRef(
           arguments.single,
@@ -866,10 +882,14 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           context: context,
           visited: visited,
           depth: depth + 1,
+          // An explicit wire view stores JSON even inside a native union.
+          nativeUnionPath: base.methodName.name == 'preserveBoundary'
+              ? null
+              : nativeUnionPath,
         );
         if (base.methodName.name == 'list') {
           if (inner is AckNullableTypeRef) {
-            return _unsupportedJsonBoundary(path, context);
+            return _unsupportedJsonBoundary(path, context, nativeUnionPath);
           }
           result = AckListTypeRef(inner);
         } else if (base.methodName.name == 'map') {
@@ -882,7 +902,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         if (arguments.firstOrNull case SetOrMapLiteral(:final elements)) {
           for (final entry in elements) {
             if (entry is! MapLiteralEntry) {
-              return _unsupportedJsonBoundary(path, context);
+              return _unsupportedJsonBoundary(path, context, nativeUnionPath);
             }
             await _jsonBoundaryRef(
               entry.value,
@@ -890,39 +910,50 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
               context: context,
               visited: visited,
               depth: depth + 1,
+              nativeUnionPath: nativeUnionPath,
             );
           }
           result = const AckMapTypeRef(
             AckNullableTypeRef(AckScalarTypeRef('Object', isJsonValue: true)),
           );
         } else {
-          return _unsupportedJsonBoundary(path, context);
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
         }
       case 'anyOf':
         final arguments = argumentExpressions(base!.argumentList);
         if (arguments.firstOrNull case ListLiteral(
           :final elements,
         ) when elements.isNotEmpty) {
-          for (final branch in elements) {
+          for (final (index, branch) in elements.indexed) {
+            final branchPath = '$path.anyOf[$index]';
             if (branch is! Expression) {
-              return _unsupportedJsonBoundary(path, context);
+              return _unsupportedJsonBoundary(
+                branchPath,
+                context,
+                nativeUnionPath,
+              );
             }
             final inner = await _jsonBoundaryRef(
               branch,
-              path: '$path.anyOf',
+              path: branchPath,
               context: context,
               visited: visited,
               depth: depth + 1,
+              nativeUnionPath: nativeUnionPath,
             );
             // Nullable alternatives require an explicit union .nullable() so
             // the field's storage/constructor nullability remains unambiguous.
             if (inner is AckNullableTypeRef) {
-              return _unsupportedJsonBoundary(path, context);
+              return _unsupportedJsonBoundary(
+                branchPath,
+                context,
+                nativeUnionPath,
+              );
             }
           }
           result = const AckScalarTypeRef('Object', isJsonValue: true);
         } else {
-          return _unsupportedJsonBoundary(path, context);
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
         }
       default:
         final reference = chain.reference;
@@ -930,24 +961,29 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         if (element == null ||
             (element is! TopLevelVariableElement &&
                 element is! GetterElement) ||
-            visited.contains(element.baseElement)) {
-          return _unsupportedJsonBoundary(path, context);
+            visited.contains(element.baseElement) ||
+            // A model schema's runtime value is its model, not JSON.
+            (nativeUnionPath != null && hasSchemable(element))) {
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
         }
         final target = await resolveReferencedTopLevelExpression(
           element,
           visited: visited,
         );
-        if (target == null) return _unsupportedJsonBoundary(path, context);
+        if (target == null) {
+          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
+        }
         result = await _jsonBoundaryRef(
           target.expression,
           path: '$path(→ ${element.name})',
           context: context,
           visited: {...visited, target.declaration.baseElement},
           depth: depth + 1,
+          nativeUnionPath: nativeUnionPath,
         );
     }
-    // Codec outputs are intentionally ignored here: preserveBoundary stores
-    // and validates the original input-side JSON, not decoded runtime objects.
+    // Codec outputs are intentionally ignored here: a wire value stores and
+    // validates the original input-side JSON, not decoded runtime objects.
     final metadata = await _schemaMetadata(
       expression,
       path: path,
@@ -959,13 +995,79 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     return metadata.nullable ? AckNullableTypeRef(nonNullable) : nonNullable;
   }
 
-  Never _unsupportedJsonBoundary(String path, Element context) =>
-      throw InvalidGenerationSource(
-        '$path cannot prove a native JSON boundary. Use Ack.preserveBoundary '
-        'with statically resolvable JSON schemas; opaque instance/codec input '
-        'types and nullable union alternatives are not inferred.',
-        element: context,
-      );
+  /// Whether a schema in [expression]'s fluent chain decodes JSON into a
+  /// runtime object, judged by static type so that extension methods and
+  /// wrappers such as `withDefault` cannot hide a codec.
+  ///
+  /// A node decodes when it is a codec, enum, or instance schema, or when its
+  /// `AckSchema<Boundary, Runtime>` view declares a non-JSON runtime type.
+  bool _decodesInChain(Expression expression) {
+    for (
+      Expression? node = expression.unParenthesized;
+      node != null;
+      node = node is MethodInvocation ? node.target?.unParenthesized : null
+    ) {
+      final type = node.staticType;
+      if (type == null) continue;
+      if (_decodingSchemaChecker.isAssignableFromType(type)) return true;
+      final runtime = ackSchemaRuntimeType(type);
+      if (runtime != null && !_isJsonType(runtime)) return true;
+    }
+    return false;
+  }
+
+  /// Whether [type] holds only JSON: a nullable or non-null `String`, `int`,
+  /// `double`, `num`, `bool` or `Object`, `dynamic`, or a `List` or
+  /// string-keyed `Map` of JSON.
+  bool _isJsonType(DartType type) => switch (type) {
+    DynamicType() => true,
+    InterfaceType(isDartCoreList: true, :final typeArguments) => _isJsonType(
+      typeArguments.single,
+    ),
+    InterfaceType(isDartCoreMap: true, :final typeArguments) =>
+      typeArguments.first.isDartCoreString && _isJsonType(typeArguments.last),
+    InterfaceType() =>
+      type.isDartCoreString ||
+          type.isDartCoreInt ||
+          type.isDartCoreDouble ||
+          type.isDartCoreNum ||
+          type.isDartCoreBool ||
+          type.isDartCoreObject,
+    _ => false,
+  };
+
+  /// The Dart type of a JSON scalar that a wire value keeps as decoded.
+  ///
+  /// Numeric schemas accept both `1` and `1.0`, and a wire value is never
+  /// normalized, so a JSON number stays a `num`.
+  AckInferRef _jsonScalarType(
+    MethodInvocation base,
+    String path,
+    Element context,
+  ) => switch (_schemaTypes(base, path, context).boundary) {
+    AckScalarTypeRef(dartType: 'int' || 'double') => const AckScalarTypeRef(
+      'num',
+    ),
+    final boundary => boundary,
+  };
+
+  Never _unsupportedJsonBoundary(
+    String path,
+    Element context,
+    String? nativeUnionPath,
+  ) => throw InvalidGenerationSource(
+    nativeUnionPath == null
+        ? '$path cannot prove a native JSON boundary. Use '
+              'Ack.preserveBoundary with statically resolvable JSON schemas; '
+              'opaque instance/codec input types and nullable union '
+              'alternatives are not inferred.'
+        : '$nativeUnionPath Ack.anyOf() branch $path is not native JSON: '
+              'it must be a statically resolvable, non-null JSON schema '
+              'without codecs or models. Wrap a codec-bearing object branch in '
+              'Ack.preserveBoundary(...), use Ack.discriminated(...) for a '
+              'model union, and mark the union itself .nullable().',
+    element: context,
+  );
 
   Future<AckInferRef> _lazyType(
     MethodInvocation invocation,
@@ -1390,6 +1492,14 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       element: element,
     );
   }
+
+  Never _rejectMapRoot(String path, Element element) =>
+      throw InvalidGenerationSource(
+        '$path uses an Ack.map() root. Generated models need an object or '
+        'value root.',
+        element: element,
+        todo: 'Use Ack.map(...) as a field of an Ack.object(...) model.',
+      );
 
   Future<void> _rejectObjectShapeChanges(
     Expression expression, {
