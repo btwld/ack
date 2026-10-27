@@ -152,6 +152,63 @@ void main() {
     }
   });
 
+  group('non-null restrictions add allOf only while null stays reachable', () {
+    Object same(Object value) => value;
+    final cases = <(String, AckSchema<Object, Object>, bool)>[
+      (
+        'a codec over a nullable primitive',
+        Ack.string()
+            .nullable()
+            .codec<String>(decode: (value) => value, encode: (value) => value)
+            .nullable(value: false),
+        false,
+      ),
+      (
+        'a boundary over a nullable object',
+        Ack.preserveBoundary(_record.nullable()).nullable(value: false),
+        false,
+      ),
+      (
+        'a codec over a nested nullable union',
+        _nullableUnion()
+            .codec<Object>(decode: same, encode: same)
+            .nullable(value: false),
+        true,
+      ),
+      (
+        'a codec over imported source nullability',
+        _nullableImport()
+            .codec<Object>(decode: same, encode: same)
+            .nullable(value: false),
+        true,
+      ),
+      (
+        'a codec over a nullable lazy reference',
+        Ack.lazy('NullableUnion', _nullableUnion)
+            .nullable()
+            .codec<Object>(decode: same, encode: same)
+            .nullable(value: false),
+        true,
+      ),
+    ];
+
+    for (final (name, schema, needsAllOf) in cases) {
+      test(name, () {
+        for (final exported in [
+          schema.toJsonSchema(),
+          schema.toJsonSchemaDraft7(),
+        ]) {
+          expect(
+            exported.containsKey('allOf'),
+            needsAllOf,
+            reason: '$exported',
+          );
+          expect(Ack.fromJsonSchema(exported).safeParse(null).isFail, isTrue);
+        }
+      });
+    }
+  });
+
   group('default null semantics', () {
     test('nullable defaults still substitute only on parse', () {
       final schema = Ack.string().nullable().withDefault('fallback');
