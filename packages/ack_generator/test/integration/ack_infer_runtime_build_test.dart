@@ -692,9 +692,9 @@ void main() {
     final record = NativeBoundary.parse(json);
     final Map<String, String> instant = record.instant;
     final Map<String, String> status = record.status;
-    final Map<String, int> milliseconds = record.milliseconds;
-    final Map<String, int> later = record.later;
-    final Map<String, double> ratio = record.ratio;
+    final Map<String, num> milliseconds = record.milliseconds;
+    final Map<String, num> later = record.later;
+    final Map<String, num> ratio = record.ratio;
     expect(instant, json['instant']);
     expect(status, {'a': 'active'});
     expect(milliseconds, {'a': 1500});
@@ -709,6 +709,13 @@ void main() {
     expect(NativeBoundary.safeParse({...json, 'status': {'a': 'unknown'}}).isFail, isTrue);
     expect(NativeBoundary.safeParse({...json, 'milliseconds': {'a': 1.5}}).isFail, isTrue);
     expect(NativeBoundary.safeParse({...json, 'boxed': {'a': 'bad'}}).isFail, isTrue);
+    final otherNumbers = <String, Object?>{
+      ...json,
+      'milliseconds': {'a': 1500.0},
+      'later': {'a': 7.0},
+      'ratio': {'a': 1},
+    };
+    expect(NativeBoundary.parse(otherNumbers).toJson(), otherNumbers);
   });
 
   test('contextual discriminator and capture members retain their wire shape', () {

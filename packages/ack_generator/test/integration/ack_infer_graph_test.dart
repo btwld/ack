@@ -724,16 +724,20 @@ final nativeBoundarySchema = Ack.object({
   'later': Ack.preserveBoundary(
     Ack.map(Ack.lazy('later', () => Ack.integer(), maxDepth: 4)),
   ),
+  'ratio': Ack.preserveBoundary(Ack.map(Ack.double())),
+  'label': Ack.preserveBoundary(Ack.map(Ack.string())),
 });
 ''',
         allOf([
           contains('final Map<String, String> day;'),
           contains('final Map<String, String> instant;'),
           contains('final Map<String, String> url;'),
-          contains('final Map<String, int> milliseconds;'),
+          contains('final Map<String, num> milliseconds;'),
           contains('final Map<String, String> status;'),
           contains('final Map<String, String> boxed;'),
-          contains('final Map<String, int> later;'),
+          contains('final Map<String, num> later;'),
+          contains('final Map<String, num> ratio;'),
+          contains('final Map<String, String> label;'),
         ]),
       );
     },

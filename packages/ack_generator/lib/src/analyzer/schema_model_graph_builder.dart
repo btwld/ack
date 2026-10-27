@@ -836,14 +836,14 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           'number' ||
           'double' ||
           'boolean':
-        result = _schemaTypes(base!, path, context).boundary;
+        result = _jsonScalarType(base!, path, context);
       case 'date' || 'datetime' || 'uri' || 'duration' || 'enumValues':
         // These factories decode to runtime objects. Only a wire value keeps
         // their native boundary type; decoded types never belong here.
         if (nativeUnionPath != null) {
           return _unsupportedJsonBoundary(path, context, nativeUnionPath);
         }
-        result = _schemaTypes(base!, path, context).boundary;
+        result = _jsonScalarType(base!, path, context);
       case 'any':
         result = const AckScalarTypeRef('Object', isJsonValue: true);
       case 'codec':
@@ -1007,6 +1007,21 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     final nonNullable = result is AckNullableTypeRef ? result.inner : result;
     return metadata.nullable ? AckNullableTypeRef(nonNullable) : nonNullable;
   }
+
+  /// The Dart type of a JSON scalar that a wire value keeps as decoded.
+  ///
+  /// Numeric schemas accept both `1` and `1.0`, and a wire value is never
+  /// normalized, so a JSON number stays a `num`.
+  AckInferRef _jsonScalarType(
+    MethodInvocation base,
+    String path,
+    Element context,
+  ) => switch (_schemaTypes(base, path, context).boundary) {
+    AckScalarTypeRef(dartType: 'int' || 'double') => const AckScalarTypeRef(
+      'num',
+    ),
+    final boundary => boundary,
+  };
 
   Never _unsupportedJsonBoundary(
     String path,
