@@ -47,6 +47,196 @@ part 'schema.g.dart';
 ''';
 
 void main() {
+  test(
+    'follows field presence and nullability through schema aliases',
+    () async {
+      await _expectOutput(
+        '''
+$_head
+final optionalName = Ack.string().optional();
+final optionalAlias = optionalName;
+StringSchema get nullableName => Ack.string().nullable();
+final defaultName = Ack.string().withDefault('member');
+
+@Schemable()
+final profileSchema = Ack.object({
+  'name': optionalAlias,
+  'nickname': nullableName,
+  'role': defaultName,
+});
+''',
+        allOf([
+          contains('final String? name;'),
+          contains('this.name'),
+          isNot(contains('required this.name')),
+          contains('final String? nickname;'),
+          contains('required this.nickname'),
+          contains('final String role;'),
+          contains('required this.role'),
+        ]),
+      );
+    },
+  );
+
+  test('honors explicit false and outermost schema flag overrides', () async {
+    await _expectOutput(
+      '''
+$_head
+const disabled = false;
+final optionalName = Ack.string().optional();
+final nullableName = Ack.string().nullable();
+
+@Schemable()
+final flagsSchema = Ack.object({
+  'name': optionalName.optional(value: disabled),
+  'nickname': nullableName.nullable(value: false),
+  'labels': Ack.map(nullableName.nullable(value: false)),
+  'items': Ack.list(Ack.string().nullable().nullable(value: false)),
+  'otherItems': Ack.list(nullableName.nullable(value: false)),
+});
+
+@Schemable()
+final titleSchema = Ack.string().nullable().nullable(value: false);
+''',
+      allOf([
+        contains('required this.name'),
+        contains('final String name;'),
+        contains('required this.nickname'),
+        contains('final String nickname;'),
+        contains('final Map<String, String> labels;'),
+        contains('final List<String> items;'),
+        contains('final List<String> otherItems;'),
+        contains('final class Title'),
+      ]),
+    );
+  });
+
+  test('preserves wrapper flag and outer default semantics', () async {
+    await _expectOutput(
+      '''
+$_head
+final optionalDefault = Ack.string().optional().withDefault('member');
+final codec = optionalDefault.codec<String>(
+  decode: (value) => value,
+  encode: (value) => value,
+);
+final nullableDefault = Ack.string().nullable().withDefault('member');
+
+@Schemable()
+final wrappersSchema = Ack.object({
+  'name': codec,
+  'nickname': nullableDefault.nullable(value: false),
+});
+''',
+      allOf([
+        contains('final String? name;'),
+        isNot(contains('required this.name')),
+        contains('required this.nickname'),
+        contains('final String? nickname;'),
+      ]),
+    );
+  });
+
+  test('rejects nullable roots reached through unannotated aliases', () async {
+    await _expectFailure(
+      '''
+$_head
+final nullableName = Ack.string().nullable();
+@Schemable()
+final titleSchema = nullableName;
+''',
+      ['titleSchema', 'nullable root'],
+    );
+  });
+
+  test('rejects schema flags that are not statically constant', () async {
+    await _expectFailure(
+      '''
+$_head
+bool get enabled => true;
+@Schemable()
+final flagsSchema = Ack.object({'name': Ack.string().optional(value: enabled)});
+''',
+      ['flagsSchema.name', 'optional', 'bool literal or const'],
+    );
+  });
+
+  for (final modifier in [
+    "extend({'age': Ack.integer()})",
+    'partial()',
+    "merge(Ack.object({'age': Ack.integer()}))",
+    "pick(['name'])",
+    "omit(['name'])",
+    'copyWith(properties: {})',
+  ]) {
+    test('rejects unsupported object shape operation $modifier', () async {
+      await _expectFailure(
+        '''
+$_head
+@Schemable()
+final userSchema = Ack.object({'name': Ack.string()}).$modifier;
+''',
+        ['userSchema', modifier.split('(').first, 'shape', 'literal'],
+      );
+    });
+  }
+
+  test('strict and passthrough use the outermost object policy', () async {
+    await _expectOutput(
+      '''
+$_head
+bool get extras => true;
+@Schemable()
+final strictSchema = Ack.object({}, additionalProperties: extras).passthrough().strict();
+@Schemable()
+final aliasSchema = strictSchema.passthrough();
+''',
+      allOf([
+        contains('Strict()'),
+        isNot(contains('Strict({')),
+        contains('Alias({Map<String, Object?> additionalProperties'),
+      ]),
+    );
+  });
+
+  test('rejects shape-changing discriminated copyWith arguments', () async {
+    await _expectFailure(
+      '''
+$_head
+@Schemable()
+final catSchema = Ack.object({'name': Ack.string()});
+@Schemable()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind', schemas: {'cat': catSchema},
+).copyWith(discriminatorKey: 'type');
+''',
+      ['petSchema', 'copyWith', 'shape', 'literal'],
+    );
+  });
+
+  test('rejects annotated object results that are no longer schemas', () async {
+    await _expectFailure(
+      '''
+$_head
+@Schemable()
+final userSchema = Ack.object({'name': Ack.string()}).toJsonSchema();
+''',
+      ['userSchema', 'does not resolve to AckSchema'],
+    );
+  });
+
+  test('permits shape operations behind an outer value codec', () async {
+    await _expectOutput('''
+$_head
+bool get extras => true;
+@Schemable()
+final titleSchema = Ack.object({}, additionalProperties: extras).extend({'title': Ack.string()}).codec<String>(
+  decode: (value) => value['title'] as String,
+  encode: (value) => {'title': value},
+);
+''', allOf([contains('final class Title'), contains('final String value;')]));
+  });
+
   test('rejects a codec type the library cannot name', () async {
     final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
     await readerWriter.testing.loadIsolateSources();

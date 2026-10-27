@@ -2,6 +2,12 @@
 
 ### Fixed
 
+* Preserve schema-first presence, nullability, and default-wrapper behavior
+  through aliases and explicit constant flag overrides. Apply the outermost
+  strict/passthrough policy to object models and aliases.
+* Reject object shape-changing methods that cannot be modeled statically,
+  instead of generating fields that disagree with the authored schema.
+
 * Allow built-in and contextual Dart keywords such as `required` as generated
   field, discriminator, and capture-member names without changing their JSON
   keys. Reserved words such as `class` remain rejected. Member validation now

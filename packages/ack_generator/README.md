@@ -263,6 +263,15 @@ Named model references work through direct imports, prefixes, and re-exports.
 Nested conversion uses each model's public `$ack` adapter so codec runtime
 values aren't parsed twice.
 
+Schema-first fields retain optional, nullable, and default behavior through
+named schema variables and getters. Explicit constant flag overrides such as
+`.optional(value: false)` are honored, as is the outermost `.strict()` or
+`.passthrough()` object policy. Shape-changing object methods (`extend`,
+`partial`, `merge`, `pick`, `omit`, or `copyWith(properties: ...)`) are rejected
+when generating an object model; write its final properties in an
+`Ack.object({...})` map literal instead. An outer bidirectional codec can still
+wrap such a schema as a value model.
+
 ## Generated part
 
 Every annotated library declares a single `.g.dart` part:
