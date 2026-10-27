@@ -578,6 +578,23 @@ final payloadSchema = payloadUnion;
     );
   });
 
+  for (final erased in {
+    'Ack.anyOf([Ack.string(), Ack.integer()])': 'Ack.anyOf()',
+    'Ack.any()': 'Ack.any()',
+  }.entries) {
+    test('rejects a ${erased.value} root behind a type-erased alias', () async {
+      await _expectFailure(
+        '''
+$_head
+final AckSchema<Object, Object> payloadValue = ${erased.key};
+@Schemable()
+final payloadSchema = payloadValue;
+''',
+        ['payloadSchema', erased.value],
+      );
+    });
+  }
+
   test('infers native JSON union fields as JSON values', () async {
     await _expectOutput(
       '''

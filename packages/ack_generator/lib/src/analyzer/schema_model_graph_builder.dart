@@ -263,17 +263,12 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         'codec',
         'lazy',
       };
-      // Ack.any(), Ack.anyOf() and Ack.map() are valid fields but never model
-      // roots, whether written inline or reached through an unannotated
-      // variable.
+      // Ack.any() and Ack.map() are valid fields but never model roots,
+      // whether written inline or reached through an unannotated variable.
       final rootType = declaration.expression.staticType;
       if (rootType != null &&
           _anySchemaChecker.isAssignableFromType(rootType)) {
         _rejectUnsupportedRoot('any', path, declaration.element);
-      }
-      if (rootType != null &&
-          _anyOfSchemaChecker.isAssignableFromType(rootType)) {
-        _rejectUnsupportedRoot('anyOf', path, declaration.element);
       }
       if (rootType != null &&
           _mapSchemaChecker.isAssignableFromType(rootType)) {
@@ -307,6 +302,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         path: path,
         context: declaration.element,
         throughLazy: false,
+        root: true,
       ),
       description: descriptionFromExpression(expression),
     );
@@ -562,6 +558,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     int depth = 0,
     String? followedName,
     bool collectionElement = false,
+    // A model root, or an unannotated alias that a root follows.
+    bool root = false,
   }) async {
     final chain = parseSchemaChain(expression);
     _rejectTransform(chain, path, context);
@@ -605,7 +603,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           element: context,
         );
       case 'any':
-        // A JSON-safe value field. Ack.any() roots are rejected in _resolve.
+        // A JSON-safe value field, never a model root.
+        if (root) _rejectUnsupportedRoot('any', path, context);
         return const AckScalarTypeRef('Object', isJsonValue: true);
       case 'preserveBoundary':
         final arguments = argumentExpressions(chain.base!.argumentList);
@@ -614,8 +613,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         }
         return _jsonBoundaryRef(expression, path: path, context: context);
       case 'anyOf':
-        // A JSON value field when every branch is native JSON, like Ack.any().
-        // Ack.anyOf() roots are rejected in _resolve.
+        // A JSON value field when every branch is native JSON, like Ack.any(),
+        // never a model root.
+        if (root) _rejectUnsupportedRoot('anyOf', path, context);
         return _jsonBoundaryRef(
           expression,
           path: path,
@@ -730,6 +730,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           throughLazy: throughLazy,
           visited: visited,
           depth: depth,
+          root: root,
         );
         if (followed != null) {
           if (followed is AckNullableTypeRef &&
@@ -759,6 +760,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     required bool throughLazy,
     required Set<Element> visited,
     required int depth,
+    required bool root,
   }) async {
     final element = referencedElement(reference);
     if (element == null) return null;
@@ -800,6 +802,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       visited: {...visited, canonical},
       depth: depth + 1,
       followedName: element.name,
+      root: root,
     );
   }
 

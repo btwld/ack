@@ -41,7 +41,8 @@
   `Ack.preserveBoundary(...)` wire view.
 * Reject an `Ack.anyOf(...)` field with a codec, `Ack.instance<T>()`, model
   schema, or nullable branch, naming the field and the offending branch.
-  `Ack.anyOf(...)` model roots remain unsupported, including through aliases.
+  `Ack.any()` and `Ack.anyOf(...)` model roots remain unsupported, including
+  through type-erased aliases.
 * Preserve schema-first presence, nullability, and default-wrapper behavior
   through aliases and explicit constant flag overrides. Apply the outermost
   strict/passthrough policy to object models and aliases.
