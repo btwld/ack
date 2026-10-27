@@ -295,6 +295,11 @@ final class DiscriminatedObjectSchema<T extends Object>
         optionalDiscriminator: true,
       );
     }
+    if (schema is LazySchema) {
+      return schema._mapTarget(
+        (target) => _withRuntimeDiscriminator(target, discriminatorValue),
+      );
+    }
     if (schema is CodecSchema) {
       final input = _withRuntimeDiscriminator(
         schema.inputSchema,

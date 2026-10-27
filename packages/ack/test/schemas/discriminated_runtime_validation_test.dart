@@ -228,16 +228,107 @@ void main() {
       expect(union.encode(union.parse(wire)!), wire);
     });
 
-    for (final unionOutput in [false, true]) {
-      test('preserves permissive intermediate codec outputs '
-          '${unionOutput ? 'inside anyOf' : 'directly'}', () {
+    test('round-trips lazy object outputs without eagerly resolving them', () {
+      var builds = 0;
+      var refinements = 0;
+      final output =
+          Ack.lazy<JsonMap, JsonMap>('CatOutput', () {
+            builds++;
+            return Ack.object({'name': Ack.string()});
+          }).refine((map) {
+            refinements++;
+            return map['name'] == 'Mittens';
+          });
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) => {'name': map['name']},
+            encode: (map) => {'name': map['name']},
+            output: output,
+          ),
+        },
+      );
+      union.effectiveBranch('cat');
+      expect(builds, 0);
+
+      final wire = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+      final parsed = union.parse(wire)!;
+      expect(parsed, wire);
+      expect(union.encode(parsed), wire);
+      final codec = _codecWithOutput(union, parsed);
+      expect(codec.parse('wire'), same(parsed));
+      expect(codec.encode(parsed), 'wire');
+      expect(builds, 1);
+      expect(refinements, 4);
+      expect(union.safeEncode({...wire, 'extra': true}).isFail, isTrue);
+      expect(_codecWithOutput(output, wire).safeParse('wire').isFail, isTrue);
+    });
+
+    test('retains recursion limits in lazy codec outputs', () {
+      late final LazySchema<JsonMap, JsonMap> output;
+      output = Ack.lazy<JsonMap, JsonMap>(
+        'RecursiveOutput',
+        () => output,
+        maxDepth: 2,
+      );
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) => {'name': map['name']},
+            encode: (map) => {'name': map['name']},
+            output: output,
+          ),
+        },
+      );
+      final result = union.safeParse({'kind': 'cat', 'name': 'Mittens'});
+      expect(result.isFail, isTrue);
+      expect(
+        result.getError().toString(),
+        contains('Maximum recursion depth (2)'),
+      );
+    });
+
+    test('preserves a lazy output codec boundary type without converting', () {
+      final output = Ack.lazy<String, JsonMap>(
+        'CatOutput',
+        () => Ack.string().codec<JsonMap>(
+          decode: (_) => throw StateError('Output decoder must not run'),
+          encode: (_) => throw StateError('Output encoder must not run'),
+          output: Ack.object({'name': Ack.string()}),
+        ),
+      );
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) => {'name': map['name']},
+            encode: (map) => {'name': map['name']},
+            output: output,
+          ),
+        },
+      );
+      final wire = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+      expect(union.encode(union.parse(wire)!), wire);
+    });
+
+    for (final outputShape in ['directly', 'inside anyOf', 'inside lazy']) {
+      test('preserves permissive intermediate codec outputs $outputShape', () {
         final output = Ack.object({
           'name': Ack.string(),
         }).passthrough().refine((map) => map['kind'] == 'internal');
         final inner = Ack.object({'name': Ack.string()}).codec<Object>(
           decode: (map) => {'name': map['name'], 'kind': 'internal'},
           encode: (value) => {'name': (value as JsonMap)['name']},
-          output: unionOutput ? Ack.anyOf([output]) : output,
+          output: switch (outputShape) {
+            'inside anyOf' => Ack.anyOf([output]),
+            'inside lazy' => Ack.lazy<JsonMap, JsonMap>(
+              'CatOutput',
+              () => output,
+            ),
+            _ => output,
+          },
         );
         final union = Ack.discriminated<String>(
           discriminatorKey: 'kind',
