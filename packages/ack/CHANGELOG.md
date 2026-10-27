@@ -16,6 +16,7 @@
 * Accept union-owned discriminators in strict map-backed codec outputs while
   preserving declared discriminator rules and rejecting unrelated extra keys.
   Already-permissive intermediate outputs retain their policies and values.
+  Lazy outputs preserve round trips, deferred resolution and recursion limits.
 * Expose the shared `deepUnmodifiableCopy` helper for generated immutable
   constructors. It snapshots nested collections without validating data or
   changing opaque noncollection objects.
