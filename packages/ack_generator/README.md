@@ -194,7 +194,10 @@ A union branch must not decode its value. Codec branches such as
 `Ack.datetime()`, `Ack.enumValues(...)`, and `.codec(...)`, `Ack.instance<T>()`,
 model schemas, and nullable branches are rejected; mark the union itself
 `.nullable()` instead. Use `Ack.discriminated(...)` for a union of models.
-`Ack.anyOf(...)` model roots remain unsupported.
+`Ack.anyOf(...)` model roots remain unsupported. Branches are proven from their
+static schema types and statically resolvable initializers. A custom method
+whose declared runtime type is `Object` or a JSON collection but that returns a
+codec cannot be detected.
 
 `Ack.preserveBoundary(...)` stores the JSON of a codec-bearing object, map, or
 discriminated union. It validates with the full typed schema and keeps the

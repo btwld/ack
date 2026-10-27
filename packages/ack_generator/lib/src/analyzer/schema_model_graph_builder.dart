@@ -1025,6 +1025,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
   /// Whether a schema in [expression]'s fluent chain decodes JSON into a
   /// runtime object, judged by static type so that extension methods and
   /// wrappers such as `withDefault` cannot hide a codec.
+  ///
+  /// A node decodes when it is a codec, enum, or instance schema, or when its
+  /// `AckSchema<Boundary, Runtime>` view declares a non-JSON runtime type.
   bool _decodesInChain(Expression expression) {
     for (
       Expression? node = expression.unParenthesized;
@@ -1032,12 +1035,33 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       node = node is MethodInvocation ? node.target?.unParenthesized : null
     ) {
       final type = node.staticType;
-      if (type != null && _decodingSchemaChecker.isAssignableFromType(type)) {
-        return true;
-      }
+      if (type == null) continue;
+      if (_decodingSchemaChecker.isAssignableFromType(type)) return true;
+      final runtime = ackSchemaRuntimeType(type);
+      if (runtime != null && !_isJsonType(runtime)) return true;
     }
     return false;
   }
+
+  /// Whether [type] holds only JSON: a nullable or non-null `String`, `int`,
+  /// `double`, `num`, `bool` or `Object`, `dynamic`, or a `List` or
+  /// string-keyed `Map` of JSON.
+  bool _isJsonType(DartType type) => switch (type) {
+    DynamicType() => true,
+    InterfaceType(isDartCoreList: true, :final typeArguments) => _isJsonType(
+      typeArguments.single,
+    ),
+    InterfaceType(isDartCoreMap: true, :final typeArguments) =>
+      typeArguments.first.isDartCoreString && _isJsonType(typeArguments.last),
+    InterfaceType() =>
+      type.isDartCoreString ||
+          type.isDartCoreInt ||
+          type.isDartCoreDouble ||
+          type.isDartCoreNum ||
+          type.isDartCoreBool ||
+          type.isDartCoreObject,
+    _ => false,
+  };
 
   /// The Dart type of a JSON scalar that a wire value keeps as decoded.
   ///

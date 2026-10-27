@@ -42,7 +42,10 @@
 * Reject an `Ack.anyOf(...)` field with a codec, `Ack.instance<T>()`, model
   schema, or nullable branch, naming the field and the offending branch.
   `Ack.any()` and `Ack.anyOf(...)` model roots remain unsupported, including
-  through type-erased aliases.
+  through type-erased aliases. Branches are proven from their static schema
+  types and statically resolvable initializers. A custom method whose declared
+  runtime type is `Object` or a JSON collection but that returns a codec cannot
+  be detected.
 * Preserve schema-first presence, nullability, and default-wrapper behavior
   through aliases and explicit constant flag overrides. Apply the outermost
   strict/passthrough policy to object models and aliases.

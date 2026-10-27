@@ -640,6 +640,20 @@ final eventSchema = Ack.object({
 ''', contains('final Object detail;'));
   });
 
+  test('infers a union branch built by a native schema extension', () async {
+    await _expectOutput('''
+$_head
+extension SlugSchemas on StringSchema {
+  StringSchema slug() => this.matches(r'^[a-z-]+\$');
+}
+
+@Schemable()
+final pageSchema = Ack.object({
+  'value': Ack.anyOf([Ack.integer(), Ack.string().slug()]),
+});
+''', contains('final Object value;'));
+  });
+
   for (final branch in [
     'Ack.datetime()',
     'Ack.enumValues(Status.values)',
@@ -651,6 +665,8 @@ final eventSchema = Ack.object({
     'Ack.string().nullable()',
     'Ack.string().asLink()',
     "Ack.string().asLink().withDefault(Uri.parse('https://example.invalid'))",
+    'Ack.string().asDeclaredLink()',
+    'Ack.string().dates()',
   ]) {
     test('rejects a non-native union field branch $branch', () async {
       await _expectFailure(
@@ -661,6 +677,8 @@ enum Status { active, archived }
 extension LinkSchemas on StringSchema {
   CodecSchema<String, Uri> asLink() =>
       this.codec<Uri>(decode: Uri.parse, encode: (value) => value.toString());
+  AckSchema<String, Uri> asDeclaredLink() => asLink();
+  ListSchema<String, DateTime> dates() => Ack.list(Ack.datetime());
 }
 
 @Schemable()
