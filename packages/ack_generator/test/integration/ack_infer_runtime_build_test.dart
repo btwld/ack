@@ -294,6 +294,9 @@ final answerRecordSchema = Ack.object({
   'values': Ack.map(answerValueSchema).optional(),
 });
 
+@Schemable()
+final answerSheetSchema = Ack.object({'values': Ack.map(answerValueSchema)});
+
 final nullableBoundaryValue = Ack.string().nullable();
 final nullableBoundaryAlias = nullableBoundaryValue;
 
@@ -582,6 +585,21 @@ void main() {
     expect(AnswerRecord.parse({'values': expected}).toJson(), {'values': expected});
     expect(() => (record.values!['tags'] as List).clear(), throwsUnsupportedError);
     expect(AnswerRecord(values: {'invalid': false}).safeToJson().isFail, isTrue);
+  });
+
+  test('a required native JSON union map field round-trips JSON', () {
+    final json = jsonDecode(
+      '{"values": {"tags": ["a"], "count": 2, "title": "Review"}}',
+    ) as Map<String, Object?>;
+    final sheet = AnswerSheet.parse(json);
+    final Map<String, Object> values = sheet.values;
+    expect(values, json['values']);
+    expect(sheet.toJson(), json);
+    expect(AnswerSheet.parse(sheet.toJson()), sheet);
+    expect(() => (values['tags'] as List).add('b'), throwsUnsupportedError);
+    expect(AnswerSheet.safeParse(<String, Object?>{}).isFail, isTrue);
+    expect(AnswerSheet.safeParse({'values': null}).isFail, isTrue);
+    expect(AnswerSheet.safeParse({'values': {'flag': true}}).isFail, isTrue);
   });
 
   test('native JSON union fields round-trip JSON like their former wrappers', () {
