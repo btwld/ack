@@ -1,11 +1,5 @@
 import 'package:ack/ack.dart'
-    show
-        AnyOfSchema,
-        AnySchema,
-        CodecSchema,
-        EnumSchema,
-        InstanceSchema,
-        MapSchema;
+    show AnyOfSchema, CodecSchema, EnumSchema, InstanceSchema, MapSchema;
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -76,10 +70,6 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
 
   static const _reservedMembers = ackSchemaFirstReservedMembers;
 
-  static const _anySchemaChecker = TypeChecker.typeNamed(
-    AnySchema,
-    inPackage: 'ack',
-  );
   static const _anyOfSchemaChecker = TypeChecker.typeNamed(
     AnyOfSchema,
     inPackage: 'ack',
@@ -263,13 +253,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         'codec',
         'lazy',
       };
-      // Ack.any() and Ack.map() are valid fields but never model roots,
-      // whether written inline or reached through an unannotated variable.
+      // Ack.map() is a valid field but never a model root, whether written
+      // inline or reached through an unannotated variable.
       final rootType = declaration.expression.staticType;
-      if (rootType != null &&
-          _anySchemaChecker.isAssignableFromType(rootType)) {
-        _rejectUnsupportedRoot('any', path, declaration.element);
-      }
       if (rootType != null &&
           _mapSchemaChecker.isAssignableFromType(rootType)) {
         throw InvalidGenerationSource(
