@@ -232,6 +232,9 @@ final class Ack {
   /// Creates a bidirectional duration codec between integer milliseconds and
   /// `Duration` values.
   ///
+  /// Inputs that cannot be represented by `Duration` on the current platform
+  /// without changing their millisecond value are rejected.
+  ///
   /// Runtime invariant: the `Duration` must be a whole number of
   /// milliseconds (sub-millisecond precision is rejected to avoid silent
   /// truncation on encode).
@@ -271,7 +274,13 @@ bool _isWholeMillisecondDuration(Duration value) {
 }
 
 Duration _decodeDuration(int milliseconds) {
-  return Duration(milliseconds: milliseconds);
+  final duration = Duration(milliseconds: milliseconds);
+  if (duration.inMilliseconds != milliseconds) {
+    throw const FormatException(
+      'Milliseconds cannot be represented by Duration without loss.',
+    );
+  }
+  return duration;
 }
 
 int _encodeDuration(Duration value) => value.inMilliseconds;
