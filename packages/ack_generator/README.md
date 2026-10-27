@@ -332,7 +332,8 @@ means a JSON-safe value, not an arbitrary Dart instance:
 For a hand-written `Account`, class-first generation exposes an
 `AccountSchema` facade backed by a private `_accountSchema` codec. The facade
 provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
-typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
+typed `schema`, and a `wireSchema` that validates like `schema` but returns the
+JSON map. Instantiable models apply the generated
 `_$AccountAck` mixin, which supplies `toJson`, `safeToJson`, a typed `copyWith`,
 and deep collection-aware equality. Add `static final schema = _accountSchema;`
 and `static final fromJson = AccountSchema.fromJson;` when the class should

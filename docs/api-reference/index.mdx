@@ -382,10 +382,10 @@ constructors remain responsible for defensively copying direct inputs.
 
 **Target**: Public, constructable classes
 
-**Generates**: A public `<ClassName>Schema` facade backed by a private raw
-`wireSchema` and typed codec (`_<className>Schema`), plus the `_$ClassAck` mixin
-for `toJson`, `safeToJson`, `copyWith`, and deep collection-aware `==` /
-`hashCode` / `toString`
+**Generates**: A public `<ClassName>Schema` facade backed by a private typed
+codec (`_<className>Schema`) and a `wireSchema` that validates like it but
+returns the JSON map, plus the `_$ClassAck` mixin for `toJson`, `safeToJson`,
+`copyWith`, and deep collection-aware `==` / `hashCode` / `toString`
 
 Ack infers schema fields from constructor-backed fields (including Dart 3.12+
 primary constructors). Required parameters, nullable types, optional parameters,

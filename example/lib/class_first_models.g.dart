@@ -26,7 +26,7 @@ abstract final class CatSchema {
   /// The typed schema, for composing [Cat] into other schemas.
   static AckSchema<Map<String, Object?>, Cat> get schema => _catSchema;
 
-  /// The structural JSON map schema behind [schema].
+  /// Validates like [schema] and returns the JSON map instead of the model.
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _catWireSchema;
 
@@ -154,7 +154,7 @@ abstract final class DogSchema {
   /// The typed schema, for composing [Dog] into other schemas.
   static AckSchema<Map<String, Object?>, Dog> get schema => _dogSchema;
 
-  /// The structural JSON map schema behind [schema].
+  /// Validates like [schema] and returns the JSON map instead of the model.
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _dogWireSchema;
 
@@ -290,7 +290,7 @@ abstract final class PetSchema {
   /// The typed schema, for composing [Pet] into other schemas.
   static AckSchema<Map<String, Object?>, Pet> get schema => _petSchema;
 
-  /// The structural JSON map schema behind [schema].
+  /// Validates like [schema] and returns the JSON map instead of the model.
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _petWireSchema;
 
@@ -362,7 +362,7 @@ abstract final class AccountSchema {
   /// The typed schema, for composing [Account] into other schemas.
   static AckSchema<Map<String, Object?>, Account> get schema => _accountSchema;
 
-  /// The structural JSON map schema behind [schema].
+  /// Validates like [schema] and returns the JSON map instead of the model.
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
       _accountWireSchema;
 
