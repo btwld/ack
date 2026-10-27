@@ -68,6 +68,61 @@ final aliasSchema = originalSchema;
     );
   });
 
+  for (final alias in [
+    'final openSchema = baseSchema.passthrough();',
+    'final openSchema = baseSchema.copyWith(additionalProperties: true);',
+    'ObjectSchema get openSchema => baseSchema.passthrough();',
+    '''final middleSchema = baseSchema;
+@Schemable()
+final openSchema = middleSchema.passthrough();''',
+  ]) {
+    test('rejects inherited capture-member collisions: $alias', () async {
+      await _expectFailure(
+        '''
+$_head
+@Schemable()
+final baseSchema = Ack.object({'additionalProperties': Ack.string()});
+@Schemable()
+$alias
+''',
+        ['openSchema.additionalProperties', 'additional-properties member'],
+      );
+    });
+  }
+
+  for (final overrides in [
+    '.passthrough().strict()',
+    '.copyWith(additionalProperties: true).copyWith(additionalProperties: false)',
+  ]) {
+    test('permits inherited additionalProperties after $overrides', () async {
+      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+      await readerWriter.testing.loadIsolateSources();
+      await testBuilder(
+        ackModelBuilder(BuilderOptions.empty),
+        {
+          'test_pkg|lib/models.dart':
+              '''
+$_head
+@Schemable()
+final baseSchema = Ack.object({'additionalProperties': Ack.string()});
+@Schemable()
+final aliasSchema = baseSchema$overrides;
+''',
+        },
+        readerWriter: readerWriter,
+        outputs: {
+          'test_pkg|lib/models.g.dart': decodedMatches(
+            allOf(
+              contains('class Alias'),
+              contains('final String additionalProperties;'),
+              isNot(contains('Map<String, Object?> additionalProperties')),
+            ),
+          ),
+        },
+      );
+    });
+  }
+
   for (final discriminator in ['Pet', 'Cat']) {
     test('rejects discriminator matching class $discriminator', () async {
       await _expectFailure(

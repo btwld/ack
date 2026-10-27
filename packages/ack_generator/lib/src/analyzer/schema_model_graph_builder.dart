@@ -388,16 +388,6 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           element: declaration.element,
         );
       }
-      final problem = ackSchemaFirstFieldNameProblem(
-        jsonKey,
-        capturesExtras: additionalProperties,
-      );
-      if (problem != null) {
-        throw InvalidGenerationSource(
-          '$path.$jsonKey $problem',
-          element: declaration.element,
-        );
-      }
       final fieldPath = '$path.$jsonKey';
       final fieldChain = parseSchemaChain(entry.value);
       final fieldMetadata = await _schemaMetadata(
@@ -1239,6 +1229,16 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       }
       if (node is AckObjectModelNode) {
         for (final field in node.fields) {
+          final problem = ackSchemaFirstFieldNameProblem(
+            field.dartName,
+            capturesExtras: node.additionalProperties,
+          );
+          if (problem != null) {
+            throw InvalidGenerationSource(
+              '${node.id.declarationName}.${field.dartName} $problem',
+              element: declaration.element,
+            );
+          }
           checkMember(field.dartName);
         }
         if (node.discriminatorKey case final discriminator?) {
