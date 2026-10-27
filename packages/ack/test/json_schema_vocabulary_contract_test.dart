@@ -260,9 +260,9 @@ void main() {
   test('fluent null policies use operators from an active dialect', () {
     final widened = _import({'type': 'string'}).nullable();
     final narrowed = _import({}, vocabularies: []).nullable(value: false);
-    final wrapped = Ack.preserveBoundary(
-      _import({}, vocabularies: []),
-    ).nullable(value: false);
+    final wrapped = _import({}, vocabularies: [])
+        .codec<Object>(decode: (value) => value, encode: (value) => value)
+        .nullable(value: false);
     final defaulted = _import({
       'type': ['string', 'null'],
     }).withDefault('fallback');

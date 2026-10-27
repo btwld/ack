@@ -453,7 +453,7 @@ void main() {
           .withDefault('ack')
           .toSchemaModel();
       final boundary = Ack.preserveBoundary(
-        Ack.string().minLength(2),
+        Ack.object({'name': Ack.string().minLength(2)}),
       ).toSchemaModel();
 
       expect(withDefault.toJsonSchema(), {
@@ -461,7 +461,14 @@ void main() {
         'minLength': 2,
         'default': 'ack',
       });
-      expect(boundary.toJsonSchema(), {'type': 'string', 'minLength': 2});
+      expect(boundary.toJsonSchema(), {
+        'type': 'object',
+        'properties': {
+          'name': {'type': 'string', 'minLength': 2},
+        },
+        'required': ['name'],
+        'additionalProperties': false,
+      });
       expect(withDefault.warnings, isEmpty);
       expect(boundary.warnings, isEmpty);
     });
