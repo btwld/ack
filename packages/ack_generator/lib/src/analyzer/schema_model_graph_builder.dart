@@ -1,5 +1,11 @@
 import 'package:ack/ack.dart'
-    show AnyOfSchema, AnySchema, InstanceSchema, MapSchema;
+    show
+        AnyOfSchema,
+        AnySchema,
+        CodecSchema,
+        EnumSchema,
+        InstanceSchema,
+        MapSchema;
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -82,6 +88,11 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     InstanceSchema,
     inPackage: 'ack',
   );
+  static const _decodingSchemaChecker = TypeChecker.any([
+    TypeChecker.typeNamed(CodecSchema, inPackage: 'ack'),
+    TypeChecker.typeNamed(EnumSchema, inPackage: 'ack'),
+    _instanceSchemaChecker,
+  ]);
   static const _mapSchemaChecker = TypeChecker.typeNamed(
     MapSchema,
     inPackage: 'ack',
@@ -823,7 +834,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     );
     final chain = parseSchemaChain(expression);
     _rejectTransform(chain, path, context);
-    if (nativeUnionPath != null && chain.hasCodec) {
+    if (nativeUnionPath != null && _decodesInChain(expression)) {
       return _unsupportedJsonBoundary(path, context, nativeUnionPath);
     }
     final base = chain.base;
@@ -835,14 +846,14 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           'integer' ||
           'number' ||
           'double' ||
-          'boolean':
-        result = _jsonScalarType(base!, path, context);
-      case 'date' || 'datetime' || 'uri' || 'duration' || 'enumValues':
-        // These factories decode to runtime objects. Only a wire value keeps
-        // their native boundary type; decoded types never belong here.
-        if (nativeUnionPath != null) {
-          return _unsupportedJsonBoundary(path, context, nativeUnionPath);
-        }
+          'boolean' ||
+          'date' ||
+          'datetime' ||
+          'uri' ||
+          'duration' ||
+          'enumValues':
+        // Native factories own their boundary types; decoded codec types do
+        // not belong in a preserved wire field.
         result = _jsonScalarType(base!, path, context);
       case 'any':
         result = const AckScalarTypeRef('Object', isJsonValue: true);
@@ -1006,6 +1017,23 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     // nullability of its nested collection values.
     final nonNullable = result is AckNullableTypeRef ? result.inner : result;
     return metadata.nullable ? AckNullableTypeRef(nonNullable) : nonNullable;
+  }
+
+  /// Whether a schema in [expression]'s fluent chain decodes JSON into a
+  /// runtime object, judged by static type so that extension methods and
+  /// wrappers such as `withDefault` cannot hide a codec.
+  bool _decodesInChain(Expression expression) {
+    for (
+      Expression? node = expression.unParenthesized;
+      node != null;
+      node = node is MethodInvocation ? node.target?.unParenthesized : null
+    ) {
+      final type = node.staticType;
+      if (type != null && _decodingSchemaChecker.isAssignableFromType(type)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// The Dart type of a JSON scalar that a wire value keeps as decoded.

@@ -632,12 +632,19 @@ final eventSchema = Ack.object({
     'tagSchema',
     'Ack.instance<Object>()',
     'Ack.string().nullable()',
+    'Ack.string().asLink()',
+    "Ack.string().asLink().withDefault(Uri.parse('https://example.invalid'))",
   ]) {
     test('rejects a non-native union field branch $branch', () async {
       await _expectFailure(
         '''
 $_head
 enum Status { active, archived }
+
+extension LinkSchemas on StringSchema {
+  CodecSchema<String, Uri> asLink() =>
+      this.codec<Uri>(decode: Uri.parse, encode: (value) => value.toString());
+}
 
 @Schemable()
 final tagSchema = Ack.object({'name': Ack.string()});
