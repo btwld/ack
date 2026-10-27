@@ -694,7 +694,7 @@ final valuesSchema = Ack.string().codec<Map<int, String>>(
           'other.dart': '''
 import 'package:ack/ack.dart';
 
-final payloadUnion = Ack.anyOf([Ack.string(), Ack.integer()]);
+final payloadUnion = Ack.anyOf([Ack.datetime(), Ack.integer()]);
 ''',
           'user.dart':
               '''
@@ -716,6 +716,37 @@ final userSchema = Ack.object({
       expect(messages.single, contains('userSchema.payload'));
       expect(messages.single, contains('payloadUnion'));
       expect(messages.single, contains('Ack.anyOf()'));
+    },
+  );
+
+  test(
+    'follows a cross-library native union variable to an Object field',
+    () async {
+      await _build(
+        {
+          'other.dart': '''
+import 'package:ack/ack.dart';
+
+final payloadUnion = Ack.anyOf([Ack.string(), Ack.integer()]);
+''',
+          'user.dart':
+              '''
+$_imports
+import 'other.dart';
+part 'user.g.dart';
+
+@Schemable()
+final userSchema = Ack.object({
+  'payload': payloadUnion,
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/user.g.dart': decodedMatches(
+            contains('final Object payload;'),
+          ),
+        },
+      );
     },
   );
 

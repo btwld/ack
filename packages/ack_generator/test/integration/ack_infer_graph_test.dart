@@ -558,6 +558,95 @@ final payloadSchema = ${unsupported.key};
     });
   }
 
+  test('rejects a native union root reached through an alias', () async {
+    await _expectFailure(
+      '''
+$_head
+final payloadUnion = Ack.anyOf([Ack.string(), Ack.integer()]);
+@Schemable()
+final payloadSchema = payloadUnion;
+''',
+      ['payloadSchema', 'Ack.anyOf()'],
+    );
+  });
+
+  test('infers native JSON union fields as JSON values', () async {
+    await _expectOutput(
+      '''
+$_head
+final nonEmpty = Ack.string().minLength(1);
+final option = Ack.anyOf([
+  nonEmpty,
+  Ack.object({'label': Ack.string(), 'value': nonEmpty}),
+]);
+final answer = Ack.anyOf([Ack.string(), Ack.number(), Ack.list(Ack.string())]);
+
+@Schemable()
+final interactionSchema = Ack.object({
+  'value': Ack.anyOf([Ack.string(), Ack.integer(), Ack.boolean()]),
+  'maybe': Ack.anyOf([Ack.literal('none'), Ack.any()]).nullable(),
+  'options': Ack.list(option).minLength(1).optional(),
+  'values': Ack.map(answer).optional(),
+  'nested': Ack.anyOf([
+    Ack.lazy('word', () => Ack.enumString(['a', 'b'])),
+    Ack.anyOf([Ack.double(), Ack.map(Ack.any().nullable())]),
+  ]),
+});
+''',
+      allOf([
+        contains('final Object value;'),
+        contains('final Object? maybe;'),
+        contains('final List<Object>? options;'),
+        contains('final Map<String, Object>? values;'),
+        contains('final Object nested;'),
+      ]),
+    );
+  });
+
+  test('infers a union branch that is an explicit wire view', () async {
+    await _expectOutput('''
+$_head
+final stamped = Ack.preserveBoundary(Ack.object({'at': Ack.datetime()}));
+
+@Schemable()
+final eventSchema = Ack.object({
+  'detail': Ack.anyOf([Ack.string(), stamped]),
+});
+''', contains('final Object detail;'));
+  });
+
+  for (final branch in [
+    'Ack.datetime()',
+    'Ack.enumValues(Status.values)',
+    "Ack.string().codec<int>(decode: int.parse, encode: (value) => '\$value')",
+    'Ack.codec(input: Ack.string(), decode: (value) => value, encode: (value) => value)',
+    "Ack.object({'at': Ack.date()})",
+    'tagSchema',
+    'Ack.instance<Object>()',
+    'Ack.string().nullable()',
+  ]) {
+    test('rejects a non-native union field branch $branch', () async {
+      await _expectFailure(
+        '''
+$_head
+enum Status { active, archived }
+
+@Schemable()
+final tagSchema = Ack.object({'name': Ack.string()});
+
+@Schemable()
+final unionRecordSchema = Ack.object({
+  'value': Ack.list(Ack.anyOf([Ack.string(), $branch])),
+});
+''',
+        [
+          'unionRecordSchema.value[] uses unsupported Ack.anyOf()',
+          'unionRecordSchema.value[].anyOf[1]',
+        ],
+      );
+    });
+  }
+
   for (final change in [
     "extend({'payload': Ack.instance<List<int>>()})",
     "copyWith(properties: {'payload': Ack.instance<List<int>>()})",

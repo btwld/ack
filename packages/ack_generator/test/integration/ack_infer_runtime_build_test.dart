@@ -249,14 +249,16 @@ final keywordFieldsSchema = Ack.object({
   'yield': Ack.string(),
 });
 
+final nonEmptyText = Ack.string().minLength(1);
 final choiceOptionSchema = Ack.anyOf([
-  Ack.string(),
-  Ack.object({'label': Ack.string(), 'value': Ack.string()}),
+  nonEmptyText,
+  Ack.object({'label': Ack.string(), 'value': nonEmptyText}),
 ]);
-final choiceOptionsSchema = Ack.preserveBoundary(Ack.list(choiceOptionSchema));
 
 @Schemable()
-final choiceFieldSchema = Ack.object({'options': choiceOptionsSchema.optional()});
+final choiceFieldSchema = Ack.object({
+  'options': Ack.list(choiceOptionSchema).minLength(1).optional(),
+});
 
 final opaqueValueSchema = Ack.string().codec<Object>(
   decode: DateTime.parse,
@@ -286,11 +288,10 @@ final opaqueCollectionsSchema = Ack.object({
 final answerValueSchema = Ack.anyOf([
   Ack.string(), Ack.number(), Ack.list(Ack.string()),
 ]);
-final answerValuesSchema = Ack.preserveBoundary(Ack.map(answerValueSchema));
 
 @Schemable()
 final answerRecordSchema = Ack.object({
-  'values': answerValuesSchema,
+  'values': Ack.map(answerValueSchema).optional(),
   'ratio': Ack.preserveBoundary(Ack.double()),
 });
 
@@ -456,6 +457,8 @@ final personSchema = Ack.object({
         File(
           p.join(temporary.path, 'test', 'runtime_test.dart'),
         ).writeAsStringSync(r'''
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:ack_ack_infer_runtime/models.dart';
 import 'package:ack_ack_infer_runtime/person.dart';
@@ -567,7 +570,7 @@ void main() {
     expect(parsed.toJson(), record.toJson());
   });
 
-  test('explicit JSON boundary unions encode normalized nested string lists', () {
+  test('native JSON union maps encode snapshotted nested string lists', () {
     final tags = <String>['a', 'b'];
     final values = <String, Object>{'tags': tags, 'title': 'Review', 'count': 2};
     final record = AnswerRecord(values: values, ratio: 0.5);
@@ -580,8 +583,44 @@ void main() {
     expect(ratio, 0.5);
     expect(AnswerRecord.parse({'values': expected, 'ratio': 0.5}).toJson(),
         {'values': expected, 'ratio': 0.5});
-    expect(() => (record.values['tags'] as List).clear(), throwsUnsupportedError);
+    expect(() => (record.values!['tags'] as List).clear(), throwsUnsupportedError);
     expect(AnswerRecord(values: {'invalid': false}, ratio: 0.5).safeToJson().isFail, isTrue);
+  });
+
+  test('native JSON union fields round-trip JSON like their former wrappers', () {
+    final optionsJson = jsonDecode(
+      '{"options": ["skip", {"label": "Keep", "value": "keep"}]}',
+    ) as Map<String, Object?>;
+    final field = ChoiceField.parse(optionsJson);
+    final List<Object>? options = field.options;
+    expect(options, optionsJson['options']);
+    expect(field.toJson(), optionsJson);
+    expect(ChoiceField.parse(field.toJson()), field);
+    expect(() => (options!.last as Map)['value'] = 'changed', throwsUnsupportedError);
+    expect(ChoiceField.parse(<String, Object?>{}).options, isNull);
+    expect(ChoiceField.safeParse({'options': <Object>[]}).isFail, isTrue);
+    expect(ChoiceField.safeParse({'options': ['']}).isFail, isTrue);
+    expect(ChoiceField.safeParse({
+      'options': [{'label': 'Keep', 'value': ''}],
+    }).isFail, isTrue);
+
+    final answersJson = jsonDecode(
+      '{"values": {"tags": ["a"], "count": 2.5, "title": "Review"}, "ratio": 0.5}',
+    ) as Map<String, Object?>;
+    final record = AnswerRecord.parse(answersJson);
+    final Map<String, Object>? values = record.values;
+    expect(values, answersJson['values']);
+    expect(record.toJson(), answersJson);
+    expect(() => (values!['tags'] as List).add('b'), throwsUnsupportedError);
+    expect(AnswerRecord.parse({'ratio': 0.5}).values, isNull);
+    expect(AnswerRecord.safeParse({
+      ...answersJson,
+      'values': {'flag': true},
+    }).isFail, isTrue);
+    expect(
+      (AnswerRecord.schema.toJsonSchema()['properties'] as Map)['values'],
+      Ack.preserveBoundary(Ack.map(answerValueSchema)).toJsonSchema(),
+    );
   });
 
   test('preserved boundary metadata agrees with generated runtime fields', () {
