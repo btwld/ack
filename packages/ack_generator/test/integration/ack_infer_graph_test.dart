@@ -111,6 +111,30 @@ final titleSchema = Ack.string().nullable().nullable(value: false);
     );
   });
 
+  for (final omitted in ['null', '(null)', '((null))']) {
+    test('treats copyWith null arguments as no-ops: $omitted', () async {
+      await _expectOutput(
+        '''
+$_head
+final name = Ack.string().nullable().optional().copyWith(
+  isNullable: $omitted, isOptional: $omitted,
+);
+@Schemable()
+final flagsSchema = Ack.object({'name': name});
+@Schemable()
+final policySchema = Ack.object({}, additionalProperties: true).copyWith(
+  additionalProperties: $omitted,
+);
+''',
+        allOf([
+          contains('final String? name;'),
+          isNot(contains('required this.name')),
+          contains('Policy({Map<String, Object?> additionalProperties'),
+        ]),
+      );
+    });
+  }
+
   test('preserves wrapper flag and outer default semantics', () async {
     await _expectOutput(
       '''

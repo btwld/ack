@@ -2,11 +2,14 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
+// Analyzer 13 has no public API for substituting supplied method arguments
+// into nested or F-bounded types. Keep its complete substituter for these bounds.
+// ignore: implementation_imports
+import 'package:analyzer/src/dart/element/type_algebra.dart' show Substitution;
 import 'package:source_gen/source_gen.dart';
 
 import '../models/schema_model_graph.dart';
 import '../utils/string_literal.dart';
-import '../utils/type_parameter_bounds.dart';
 import 'generated_companion_visibility.dart';
 import 'model_graph_builder_base.dart';
 
@@ -594,14 +597,15 @@ final class CustomSchemaResolver {
           element: field,
         );
       }
-      final bounds = instantiateTypeParameterBounds(
+      final substitution = Substitution.fromPairs2(
         method.typeParameters,
         type.typeArguments,
       );
       for (var i = 0; i < method.typeParameters.length; i++) {
         final typeParam = method.typeParameters[i];
-        final bound = bounds[i];
-        if (bound == null) continue;
+        final rawBound = typeParam.bound;
+        if (rawBound == null) continue;
+        final bound = substitution.substituteType(rawBound);
         final argument = type.typeArguments[i];
         if (!_library.element.typeSystem.isSubtypeOf(argument, bound)) {
           throw InvalidGenerationSource(

@@ -6,7 +6,6 @@ import 'package:collection/collection.dart';
 import '../constraints/constraint.dart';
 import '../constraints/datetime_constraint.dart';
 import '../context.dart';
-import '../json_schema/json_schema_utils.dart';
 import '../schemas/schema.dart';
 import '../utils/json_utils.dart';
 import 'ack_schema_model.dart';
@@ -153,17 +152,22 @@ final class _SchemaModelBuilder {
     }
 
     final model = switch (schema) {
-      StringSchema() => _string(schema),
-      IntegerSchema() => _integer(schema),
-      DoubleSchema() => _number(
+      StringSchema() => AckStringSchemaModel(
         description: schema.description,
         nullable: schema.isNullable,
       ),
-      NumberSchema() => _number(
+      IntegerSchema() => AckIntegerSchemaModel(
         description: schema.description,
         nullable: schema.isNullable,
       ),
-      BooleanSchema() => _boolean(schema),
+      DoubleSchema() || NumberSchema() => AckNumberSchemaModel(
+        description: schema.description,
+        nullable: schema.isNullable,
+      ),
+      BooleanSchema() => AckBooleanSchemaModel(
+        description: schema.description,
+        nullable: schema.isNullable,
+      ),
       EnumSchema() => _enum(schema),
       ListSchema() => _array(schema),
       MapSchema() => _map(schema),
@@ -393,31 +397,6 @@ final class _SchemaModelBuilder {
     return share(normalize(document, base))! as Map<String, Object?>;
   }
 
-  AckSchemaModel _string(StringSchema schema) {
-    return AckStringSchemaModel(
-      description: schema.description,
-      nullable: schema.isNullable,
-    );
-  }
-
-  AckSchemaModel _integer(IntegerSchema schema) {
-    return AckIntegerSchemaModel(
-      description: schema.description,
-      nullable: schema.isNullable,
-    );
-  }
-
-  AckSchemaModel _number({String? description, required bool nullable}) {
-    return AckNumberSchemaModel(description: description, nullable: nullable);
-  }
-
-  AckSchemaModel _boolean(BooleanSchema schema) {
-    return AckBooleanSchemaModel(
-      description: schema.description,
-      nullable: schema.isNullable,
-    );
-  }
-
   AckSchemaModel _enum(EnumSchema schema) {
     return AckStringSchemaModel(
       description: schema.description,
@@ -451,7 +430,7 @@ final class _SchemaModelBuilder {
 
     for (final entry in schema.properties.entries) {
       ordering.add(entry.key);
-      properties[entry.key] = wrapPropertyConversion(
+      properties[entry.key] = _wrapPropertyConversion(
         entry.key,
         () => _build(entry.value),
       );
@@ -599,9 +578,6 @@ final class _SchemaModelBuilder {
     if (schema.excludesTargetNull) model = _excludeNull(model);
     final constraintCount = schema.runtimeConstraintCount;
     final refinementCount = schema.runtimeRefinementCount;
-    if (constraintCount == 0 && refinementCount == 0) {
-      return model;
-    }
 
     return model.withWarnings([
       ...model.warnings,
@@ -810,8 +786,26 @@ Object? _jsonRoundTripOrNull(Object? value) {
   }
 }
 
-// Only schema-bearing keywords contain resource identities. Values of const,
-// default, examples, and unknown annotations remain ordinary instance data.
+/// Adds the property name to supported conversion errors without losing stacks.
+T _wrapPropertyConversion<T>(String key, T Function() fn) {
+  try {
+    return fn();
+  } catch (e, st) {
+    final msg =
+        'Error converting property "$key": ${e is Error ? e.toString() : e}';
+    if (e is UnsupportedError) {
+      Error.throwWithStackTrace(UnsupportedError(msg), st);
+    } else if (e is ArgumentError) {
+      Error.throwWithStackTrace(ArgumentError(msg), st);
+    } else if (e is StateError) {
+      Error.throwWithStackTrace(StateError(msg), st);
+    }
+    rethrow;
+  }
+}
+
+// Rewrite identities only at compiler-indexed schema locations. Annotation
+// payloads stay ordinary data unless explicitly referenced as schemas.
 Map<String, Object?> _mapImportedChildren(
   Map<String, Object?> schema,
   Object? Function(Object?, List<String>) visit,

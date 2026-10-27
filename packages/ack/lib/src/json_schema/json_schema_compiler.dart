@@ -474,7 +474,6 @@ final class _JsonSchemaCompiler {
 
   bool _discoverBundledDialect(_ImportedNode node) {
     final wanted = node.dialectUri;
-    if (resources.containsKey(wanted)) return true;
 
     bool visit(_ImportedNode parent, List<(_ImportedNode, String)> path) {
       final source = parent.source;

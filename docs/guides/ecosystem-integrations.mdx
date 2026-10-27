@@ -137,10 +137,10 @@ Future<WeatherReport> askGeminiWeather(
   );
 
   final response = await model.generateContent([Content.text(prompt)]);
-  final jsonMap = jsonDecode(response.text ?? 'null');
+  final decoded = jsonDecode(response.text ?? 'null');
 
   // Validate and decode Gemini's response into WeatherReport
-  return WeatherReportSchema.fromJson(jsonMap);
+  return WeatherReportSchema.parse(decoded);
 }
 ```
 
