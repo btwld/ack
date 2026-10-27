@@ -8,6 +8,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Fixed
 
+* Preserve round trips for discriminated map codecs with strict output schemas,
+  including values used as another codec's output, without narrowing permissive
+  intermediate output policies.
 * Accept contextual Dart member names and deeply snapshot JSON-owned generated
   fields without changing opaque codec values. Preserve effective nullable
   overrides when inferring explicit JSON boundaries.

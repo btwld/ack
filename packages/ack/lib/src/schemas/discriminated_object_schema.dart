@@ -246,6 +246,8 @@ final class DiscriminatedObjectSchema<T extends Object>
   /// The effective schema includes this union's discriminator property as an
   /// exact branch literal, even when the authored branch omitted it. Wrappers
   /// around the branch (codecs, defaults) are preserved.
+  /// Object-backed codec outputs that omit the key accept its optional literal,
+  /// so decoded maps remain valid after union normalization adds the key.
   ///
   /// When [optionalDiscriminator] is true the injected literal is optional.
   /// This is used only on the encode path, where a branch encoder may legally
@@ -265,13 +267,74 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    return effectiveDiscriminatedBranch(
-          discriminatorKey: discriminatorKey,
-          discriminatorValue: discriminatorValue,
-          branchSchema: branchSchema,
-          optionalDiscriminator: optionalDiscriminator,
-        )
+    final effective = effectiveDiscriminatedBranch(
+      discriminatorKey: discriminatorKey,
+      discriminatorValue: discriminatorValue,
+      branchSchema: branchSchema,
+      optionalDiscriminator: optionalDiscriminator,
+    );
+    return _withRuntimeDiscriminator(effective, discriminatorValue)
         as AckSchema<JsonMap, T>;
+  }
+
+  AnyAckSchema _withRuntimeDiscriminator(
+    AnyAckSchema schema,
+    String discriminatorValue,
+  ) {
+    if (schema is ObjectSchema) {
+      if (schema.additionalProperties ||
+          schema.properties.containsKey(discriminatorKey)) {
+        return schema;
+      }
+      // A decoder may omit the union-owned key; normalization adds it later.
+      // Its output must also accept that normalized value on subsequent use.
+      return effectiveDiscriminatedObjectBranch(
+        discriminatorKey: discriminatorKey,
+        discriminatorValue: discriminatorValue,
+        objectSchema: schema,
+        optionalDiscriminator: true,
+      );
+    }
+    if (schema is CodecSchema) {
+      final input = _withRuntimeDiscriminator(
+        schema.inputSchema,
+        discriminatorValue,
+      );
+      final output = _withRuntimeDiscriminator(
+        schema.outputSchema as AnyAckSchema,
+        discriminatorValue,
+      );
+      return identical(input, schema.inputSchema) &&
+              identical(output, schema.outputSchema)
+          ? schema
+          : schema._copyWithSchemas(input: input, output: output);
+    }
+    if (schema is AnyOfSchema) {
+      final branches = [
+        for (final branch in schema.schemas)
+          _withRuntimeDiscriminator(branch, discriminatorValue),
+      ];
+      if (const ListEquality<AnyAckSchema>(
+        IdentityEquality(),
+      ).equals(branches, schema.schemas)) {
+        return schema;
+      }
+      return AnyOfSchema(
+        List.unmodifiable(branches),
+        isNullable: schema.isNullable,
+        isOptional: schema.isOptional,
+        description: schema.description,
+        constraints: schema.constraints,
+        refinements: schema.refinements,
+      );
+    }
+    if (schema is WrapperSchema) {
+      final inner = _withRuntimeDiscriminator(schema.inner, discriminatorValue);
+      return identical(inner, schema.inner)
+          ? schema
+          : schema.copyWithInner(inner);
+    }
+    return schema;
   }
 
   @override
