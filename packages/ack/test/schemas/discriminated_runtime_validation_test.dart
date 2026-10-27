@@ -171,6 +171,214 @@ void main() {
     });
   });
 
+  group('map codec outputs with union-owned discriminators', () {
+    for (final wrapped in [false, true]) {
+      for (final emitsDiscriminator in [false, true]) {
+        test('round-trips strict ${wrapped ? 'wrapped' : 'plain'} outputs '
+            '${emitsDiscriminator ? 'with' : 'without'} a discriminator', () {
+          final output = Ack.object({'name': Ack.string()});
+          final branch = Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) => {
+              if (emitsDiscriminator) 'kind': 'cat',
+              'name': map['name'],
+            },
+            encode: (map) => {'name': map['name']},
+            output: wrapped ? output.withDefault({'name': 'Mittens'}) : output,
+          );
+          final union = Ack.discriminated<JsonMap>(
+            discriminatorKey: 'kind',
+            schemas: {
+              'cat': wrapped ? branch.withDefault({'name': 'Mittens'}) : branch,
+            },
+          );
+          final wire = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+          final parsed = union.parse(wire)!;
+          expect(parsed, wire);
+          expect(() => parsed['kind'] = 'dog', throwsUnsupportedError);
+          expect(union.encode(parsed), wire);
+          final codec = _codecWithOutput(union, parsed);
+          expect(codec.parse('wire'), same(parsed));
+          expect(codec.encode(parsed), 'wire');
+          // Adapting a branch must not widen the original output schema.
+          expect(
+            _codecWithOutput(output, wire).safeParse('wire').isFail,
+            isTrue,
+          );
+        });
+      }
+    }
+
+    test('round-trips through chained map codecs', () {
+      final inner = Ack.object({'name': Ack.string()}).codec<JsonMap>(
+        decode: (map) => {'name': map['name']},
+        encode: (map) => {'name': map['name']},
+        output: Ack.object({'name': Ack.string()}),
+      );
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': inner.codec<JsonMap>(
+            decode: (map) => map,
+            encode: (map) => map,
+            output: Ack.object({'name': Ack.string()}),
+          ),
+        },
+      );
+      final wire = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+      expect(union.encode(union.parse(wire)!), wire);
+    });
+
+    test('adapts a nested codec output without running its conversions', () {
+      final output = Ack.object({'name': Ack.string()}).codec<JsonMap>(
+        decode: (_) => throw StateError('Output decoder must not run'),
+        encode: (_) => throw StateError('Output encoder must not run'),
+        output: Ack.object({'name': Ack.string()}),
+      );
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) => {'name': map['name']},
+            encode: (map) => {'name': map['name']},
+            output: output,
+          ),
+        },
+      );
+      final wire = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+      final parsed = union.parse(wire)!;
+      expect(union.encode(parsed), wire);
+      final codec = _codecWithOutput(union, parsed);
+      expect(codec.parse('wire'), same(parsed));
+      expect(codec.encode(parsed), 'wire');
+    });
+
+    test('round-trips strict object outputs inside a union', () {
+      final union = Ack.discriminated<Object>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<Object>(
+            decode: (map) => {'name': map['name']},
+            encode: (value) => value as JsonMap,
+            output: Ack.anyOf([
+              Ack.object({'name': Ack.string()}),
+              Ack.instance<int>(),
+            ]),
+          ),
+        },
+      );
+      final wire = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+      final parsed = union.parse(wire)!;
+      expect(union.encode(parsed), wire);
+      final codec = _codecWithOutput(union, parsed);
+      expect(codec.parse('wire'), same(parsed));
+      expect(codec.encode(parsed), 'wire');
+      expect(codec.safeEncode({...wire, 'extra': true}).isFail, isTrue);
+    });
+
+    final union = Ack.discriminated<JsonMap>(
+      discriminatorKey: 'kind',
+      schemas: {
+        'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+          decode: (map) => {'name': map['name']},
+          encode: (map) => {'name': map['name']},
+          output: Ack.object({
+            'name': Ack.string(),
+            'details': Ack.object({'age': Ack.integer()}).optional(),
+          }),
+        ),
+      },
+    );
+    final invalidCases = <({String name, JsonMap value, String path})>[
+      (name: 'missing name', value: {'kind': 'cat'}, path: '#/name'),
+      (
+        name: 'wrong name type',
+        value: {'kind': 'cat', 'name': 42},
+        path: '#/name',
+      ),
+      (
+        name: 'unrelated extra property',
+        value: {'kind': 'cat', 'name': 'Mittens', 'extra': true},
+        path: '#/extra',
+      ),
+      (
+        name: 'nested discriminator property',
+        value: {
+          'kind': 'cat',
+          'name': 'Mittens',
+          'details': {'age': 1, 'kind': 'cat'},
+        },
+        path: '#/details/kind',
+      ),
+    ];
+    for (final testCase in invalidCases) {
+      test('still rejects ${testCase.name}', () {
+        final codec = _codecWithOutput(union, testCase.value);
+        for (final result in [
+          codec.safeParse('wire'),
+          codec.safeEncode(testCase.value),
+          union.safeEncode(testCase.value),
+        ]) {
+          expect(result.isFail, isTrue);
+          expect(_errorPaths(result.getError()), contains(testCase.path));
+        }
+      });
+    }
+
+    test('preserves an explicitly authored output discriminator', () {
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) => {'kind': 'dog', 'name': map['name']},
+            encode: (map) => {'name': map['name']},
+            output: Ack.object({
+              'kind': Ack.literal('dog'),
+              'name': Ack.string(),
+            }),
+          ),
+        },
+      );
+      final runtime = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+      final codec = _codecWithOutput(union, runtime);
+      expect(codec.safeParse('wire').isFail, isTrue);
+      expect(codec.safeEncode(runtime).isFail, isTrue);
+      expect(union.safeEncode(runtime).isFail, isTrue);
+    });
+
+    test('membership never reruns branch conversions or refinements', () {
+      var decodes = 0;
+      var encodes = 0;
+      var refinements = 0;
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) {
+              decodes++;
+              return {'name': map['name']};
+            },
+            encode: (map) {
+              encodes++;
+              return {'name': map['name']};
+            },
+            output: Ack.object({'name': Ack.string()}).refine((_) {
+              refinements++;
+              return true;
+            }),
+          ),
+        },
+      );
+      final runtime = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+      final codec = _codecWithOutput(union, runtime);
+      expect(codec.parse('wire'), same(runtime));
+      expect(refinements, 1);
+      expect(codec.encode(runtime), 'wire');
+      expect(refinements, 2);
+      expect(decodes, 0);
+      expect(encodes, 0);
+    });
+  });
+
   group('direct discriminated encoding callback counts', () {
     test('map branches do not acquire an extra runtime refinement pass', () {
       var refinements = 0;
