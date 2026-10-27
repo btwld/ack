@@ -672,8 +672,9 @@ final unionRecordSchema = Ack.object({
 });
 ''',
         [
-          'unionRecordSchema.value[] uses unsupported Ack.anyOf()',
-          'unionRecordSchema.value[].anyOf[1]',
+          'unionRecordSchema.value[] Ack.anyOf() branch '
+              'unionRecordSchema.value[].anyOf[1]',
+          'is not native JSON',
         ],
       );
     });

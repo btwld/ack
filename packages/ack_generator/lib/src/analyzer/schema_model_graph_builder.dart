@@ -1064,12 +1064,11 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
               'Ack.preserveBoundary with statically resolvable JSON schemas; '
               'opaque instance/codec input types and nullable union '
               'alternatives are not inferred.'
-        : '$nativeUnionPath uses unsupported Ack.anyOf(); it cannot provide a '
-              'static model shape. $path is not a statically resolvable, '
-              'non-null JSON schema without codecs or models. Wrap a '
-              'codec-bearing object branch in Ack.preserveBoundary(...), use '
-              'Ack.discriminated(...) for a model union, and mark the union '
-              'itself .nullable().',
+        : '$nativeUnionPath Ack.anyOf() branch $path is not native JSON: '
+              'it must be a statically resolvable, non-null JSON schema '
+              'without codecs or models. Wrap a codec-bearing object branch in '
+              'Ack.preserveBoundary(...), use Ack.discriminated(...) for a '
+              'model union, and mark the union itself .nullable().',
     element: context,
   );
 
