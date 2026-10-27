@@ -52,6 +52,7 @@ jobs:
             test/schemas/extensions/list_schema_extensions_test.dart \
             test/utils/collection_utils_test.dart \
             test/json_schema_import_test.dart \
+            test/json_schema_bundled_dialect_test.dart \
             test/json_schema_vocabulary_contract_test.dart \
             test/json_schema_import_api_test.dart
 

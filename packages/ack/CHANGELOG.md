@@ -15,6 +15,9 @@
   assertions, and apply fluent nullability under an active assertion dialect.
   Identical caller-supplied standard meta-schemas can replace offline fallbacks
   without relaxing duplicate-ID checks between caller resources.
+* Discover selected custom dialects bundled beneath their own active schema
+  keywords, without interpreting inactive keyword payloads or annotation data
+  as schemas.
 * Expose the shared `deepUnmodifiableCopy` helper for generated immutable
   constructors. It snapshots nested collections without validating data or
   changing opaque noncollection objects.

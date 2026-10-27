@@ -460,10 +460,115 @@ final class _JsonSchemaCompiler {
         _indexChildren(node, coreOnly: false);
         progressed = true;
       }
-      // Other documents may have supplied a nested dialect during this pass.
-      // If none could be indexed, report the unresolved dialect as before.
-      if (!progressed) _configureDialect(_pendingChildren.first);
+      // A selected dialect can be bundled beneath its own applicator keywords.
+      // Discover that resource before reporting an unresolved dependency, but
+      // only when its vocabulary makes the containing locations schemas.
+      if (!progressed &&
+          !_pendingChildren
+              .toList(growable: false)
+              .any(_discoverBundledDialect)) {
+        _configureDialect(_pendingChildren.first);
+      }
     }
+  }
+
+  bool _discoverBundledDialect(_ImportedNode node) {
+    final wanted = node.dialectUri;
+    if (resources.containsKey(wanted)) return true;
+
+    bool visit(_ImportedNode parent, List<(_ImportedNode, String)> path) {
+      final source = parent.source;
+      if (source is! Map<String, Object?>) return false;
+
+      bool visitChild(Object? value, String keyword, String suffix) {
+        if (value is! Map<String, Object?>) return false;
+        var base = parent.baseUri;
+        var dialect = parent.dialectUri;
+        try {
+          if (value.containsKey(r'$id')) {
+            final id = value[r'$id'];
+            if (id is! String) return false;
+            base = base.resolve(id);
+            if (base.fragment.isNotEmpty) return false;
+            base = base.removeFragment();
+          }
+          if (value.containsKey(r'$schema')) {
+            final declared = value[r'$schema'];
+            if (declared is! String) return false;
+            dialect = base.resolve(declared);
+            if (dialect.fragment.isNotEmpty) return false;
+            dialect = dialect.removeFragment();
+          }
+        } on FormatException {
+          // Probing must not validate unrelated, potentially inert payloads.
+          return false;
+        }
+        final child = _ImportedNode(
+          value,
+          parent.documentUri,
+          '${parent.pointer}/$suffix',
+          base,
+          dialect,
+        );
+        final childPath = [...path, (parent, keyword)];
+        if (value.containsKey(r'$id') && base == wanted) {
+          if (value[r'$vocabulary'] is! Map<String, Object?>) return false;
+          for (final (scope, key) in childPath) {
+            if (scope.dialectUri != wanted &&
+                !resources.containsKey(scope.dialectUri) &&
+                !draft7Dialects.contains(scope.dialectUri)) {
+              return false;
+            }
+            _configureDialect(scope, bundledDialect: child);
+            if (!scope.isKeywordActive(key)) return false;
+          }
+          _index(
+            value,
+            child.documentUri,
+            child.pointer,
+            parent.baseUri,
+            dialect: parent.dialectUri,
+          );
+          return true;
+        }
+        return visit(child, childPath);
+      }
+
+      for (final entry in source.entries) {
+        final key = entry.key;
+        final value = entry.value;
+        if (mapKeywords.contains(key) && value is Map<String, Object?>) {
+          for (final child in value.entries) {
+            if (visitChild(
+              child.value,
+              key,
+              '$key/${escapeJsonPointerToken(child.key)}',
+            )) {
+              return true;
+            }
+          }
+        } else if (listKeywords.contains(key) && value is List) {
+          for (final (index, child) in value.indexed) {
+            if (visitChild(child, key, '$key/$index')) return true;
+          }
+        } else if (childKeywords.contains(key) && visitChild(value, key, key)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Probe detached nodes so unsuccessful candidates cannot alter compilation.
+    return visit(
+      _ImportedNode(
+        node.source,
+        node.documentUri,
+        node.pointer,
+        node.baseUri,
+        node.dialectUri,
+      ),
+      [],
+    );
   }
 
   Never _invalidSchema(_ImportedNode node, String key) =>
@@ -546,8 +651,10 @@ final class _JsonSchemaCompiler {
     _checkProductiveCycles(nodes);
   }
 
-  void _configureDialect(_ImportedNode node) {
-    final dialect = resources[node.dialectUri];
+  void _configureDialect(_ImportedNode node, {_ImportedNode? bundledDialect}) {
+    final dialect = bundledDialect?.baseUri == node.dialectUri
+        ? bundledDialect
+        : resources[node.dialectUri];
     if (dialect == null) {
       if (draft7Dialects.contains(node.dialectUri)) {
         node.applicatorVocabulary = true;
@@ -575,7 +682,12 @@ final class _JsonSchemaCompiler {
         code: 'unsupported_dialect',
       );
     }
-    _checkRequiredVocabularies(node, r'$schema', vocabulary);
+    // A discovery candidate may live in an inactive keyword's annotation data.
+    // Check its requirements only after discovery proves it is a schema and
+    // normal indexing registers it as a resource.
+    if (bundledDialect == null) {
+      _checkRequiredVocabularies(node, r'$schema', vocabulary);
+    }
     node.applicatorVocabulary = vocabulary.containsKey(applicatorVocabularyUri);
     node.unevaluatedVocabulary = vocabulary.containsKey(
       unevaluatedVocabularyUri,
