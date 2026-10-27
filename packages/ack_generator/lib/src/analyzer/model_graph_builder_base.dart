@@ -241,8 +241,9 @@ abstract base class ModelGraphBuilderBase {
 
   /// Whether a schema producing [left] can back a field of type [right].
   ///
-  /// The types must match apart from nullability: collection schemas such as
-  /// `Ack.map` type their values as nullable.
+  /// Outer nullability and converted core collection elements may differ:
+  /// `Ack.map` types its values as nullable. Application type arguments must
+  /// remain exact because generated code does not convert inside those values.
   bool sameTypeIgnoringNullability(DartType left, DartType right) {
     final typeSystem = library.element.typeSystem;
     final a = typeSystem.promoteToNonNull(left);
@@ -251,6 +252,9 @@ abstract base class ModelGraphBuilderBase {
       if (a.element.baseElement != b.element.baseElement ||
           a.typeArguments.length != b.typeArguments.length) {
         return false;
+      }
+      if (!a.isDartCoreList && !a.isDartCoreSet && !a.isDartCoreMap) {
+        return typeSystem.isSubtypeOf(a, b) && typeSystem.isSubtypeOf(b, a);
       }
       for (var i = 0; i < a.typeArguments.length; i++) {
         if (!sameTypeIgnoringNullability(

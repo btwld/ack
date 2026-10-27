@@ -12,6 +12,9 @@
 * Diagnose value-model helper collisions, class/member name conflicts, and
   duplicate schema-first keys before emission. Resolve same-build models
   declared with annotated getters.
+* Preserve application-generic argument nullability when selecting custom
+  schemas, and substitute nested generic bounds before validating type-owned
+  schema methods.
 
 * Allow built-in and contextual Dart keywords such as `required` as generated
   field, discriminator, and capture-member names without changing their JSON

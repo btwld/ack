@@ -6,6 +6,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../models/schema_model_graph.dart';
 import '../utils/string_literal.dart';
+import '../utils/type_parameter_bounds.dart';
 import 'generated_companion_visibility.dart';
 import 'model_graph_builder_base.dart';
 
@@ -593,17 +594,14 @@ final class CustomSchemaResolver {
           element: field,
         );
       }
+      final bounds = instantiateTypeParameterBounds(
+        method.typeParameters,
+        type.typeArguments,
+      );
       for (var i = 0; i < method.typeParameters.length; i++) {
         final typeParam = method.typeParameters[i];
-        final rawBound = typeParam.bound;
-        if (rawBound == null) continue;
-        final bound =
-            rawBound is TypeParameterType &&
-                method.typeParameters.contains(rawBound.element)
-            ? type.typeArguments[method.typeParameters.indexOf(
-                rawBound.element,
-              )]
-            : rawBound;
+        final bound = bounds[i];
+        if (bound == null) continue;
         final argument = type.typeArguments[i];
         if (!_library.element.typeSystem.isSubtypeOf(argument, bound)) {
           throw InvalidGenerationSource(
