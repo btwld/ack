@@ -228,6 +228,56 @@ void main() {
       expect(union.encode(union.parse(wire)!), wire);
     });
 
+    for (final unionOutput in [false, true]) {
+      test('preserves permissive intermediate codec outputs '
+          '${unionOutput ? 'inside anyOf' : 'directly'}', () {
+        final output = Ack.object({
+          'name': Ack.string(),
+        }).passthrough().refine((map) => map['kind'] == 'internal');
+        final inner = Ack.object({'name': Ack.string()}).codec<Object>(
+          decode: (map) => {'name': map['name'], 'kind': 'internal'},
+          encode: (value) => {'name': (value as JsonMap)['name']},
+          output: unionOutput ? Ack.anyOf([output]) : output,
+        );
+        final union = Ack.discriminated<String>(
+          discriminatorKey: 'kind',
+          schemas: {
+            'cat': inner.codec<String>(
+              decode: (value) => (value as JsonMap)['name']! as String,
+              encode: (name) => {'name': name, 'kind': 'internal'},
+            ),
+          },
+        );
+        final wire = <String, Object?>{'kind': 'cat', 'name': 'Mittens'};
+        expect(union.parse(wire), 'Mittens');
+        expect(union.encode('Mittens'), wire);
+        final codec = _codecWithOutput(union, 'Mittens');
+        expect(codec.parse('wire'), 'Mittens');
+        expect(codec.encode('Mittens'), 'wire');
+      });
+    }
+
+    test('still rejects conflicts in permissive final map outputs', () {
+      final union = Ack.discriminated<JsonMap>(
+        discriminatorKey: 'kind',
+        schemas: {
+          'cat': Ack.object({'name': Ack.string()}).codec<JsonMap>(
+            decode: (map) => {'name': map['name'], 'kind': 'internal'},
+            encode: (map) => {'name': map['name']},
+            output: Ack.object({'name': Ack.string()}).passthrough(),
+          ),
+        },
+      );
+      expect(
+        union.safeParse({'kind': 'cat', 'name': 'Mittens'}).isFail,
+        isTrue,
+      );
+      expect(
+        union.safeEncode({'kind': 'internal', 'name': 'Mittens'}).isFail,
+        isTrue,
+      );
+    });
+
     test('adapts a nested codec output without running its conversions', () {
       final output = Ack.object({'name': Ack.string()}).codec<JsonMap>(
         decode: (_) => throw StateError('Output decoder must not run'),

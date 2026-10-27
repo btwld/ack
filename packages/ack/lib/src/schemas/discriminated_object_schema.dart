@@ -282,7 +282,10 @@ final class DiscriminatedObjectSchema<T extends Object>
     String discriminatorValue,
   ) {
     if (schema is ObjectSchema) {
-      if (schema.properties.containsKey(discriminatorKey)) return schema;
+      if (schema.additionalProperties ||
+          schema.properties.containsKey(discriminatorKey)) {
+        return schema;
+      }
       // A decoder may omit the union-owned key; normalization adds it later.
       // Its output must also accept that normalized value on subsequent use.
       return effectiveDiscriminatedObjectBranch(
