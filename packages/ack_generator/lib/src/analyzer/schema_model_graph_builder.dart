@@ -1,5 +1,5 @@
 import 'package:ack/ack.dart'
-    show AnyOfSchema, CodecSchema, EnumSchema, InstanceSchema, MapSchema;
+    show AnyOfSchema, CodecSchema, EnumSchema, InstanceSchema;
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -83,10 +83,6 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     TypeChecker.typeNamed(EnumSchema, inPackage: 'ack'),
     _instanceSchemaChecker,
   ]);
-  static const _mapSchemaChecker = TypeChecker.typeNamed(
-    MapSchema,
-    inPackage: 'ack',
-  );
 
   final Map<Element, _Declaration> _declarationsByElement = {};
   final Map<AckSchemaId, _Declaration> _declarationsById = {};
@@ -253,18 +249,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         'codec',
         'lazy',
       };
-      // Ack.map() is a valid field but never a model root, whether written
-      // inline or reached through an unannotated variable.
-      final rootType = declaration.expression.staticType;
-      if (rootType != null &&
-          _mapSchemaChecker.isAssignableFromType(rootType)) {
-        throw InvalidGenerationSource(
-          '$path uses an Ack.map() root. Generated models need an object or '
-          'value root.',
-          element: declaration.element,
-          todo: 'Use Ack.map(...) as a field of an Ack.object(...) model.',
-        );
-      }
+      // Aliased Ack.map() roots are rejected while following the alias.
+      if (baseName == 'map') _rejectMapRoot(path, declaration.element);
       if (baseName != null && !supportedValueRoots.contains(baseName)) {
         _rejectUnsupportedRoot(baseName, path, declaration.element);
       }
@@ -611,6 +597,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       case 'instance':
         _rejectUnsupportedRoot(baseName, path, context);
       case 'map':
+        if (root) _rejectMapRoot(path, context);
         final arguments = argumentExpressions(chain.base!.argumentList);
         if (arguments.isEmpty) {
           throw InvalidGenerationSource(
@@ -1505,6 +1492,14 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       element: element,
     );
   }
+
+  Never _rejectMapRoot(String path, Element element) =>
+      throw InvalidGenerationSource(
+        '$path uses an Ack.map() root. Generated models need an object or '
+        'value root.',
+        element: element,
+        todo: 'Use Ack.map(...) as a field of an Ack.object(...) model.',
+      );
 
   Future<void> _rejectObjectShapeChanges(
     Expression expression, {

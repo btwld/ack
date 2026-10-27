@@ -978,18 +978,23 @@ final scoresSchema = $source;
     });
   }
 
-  test('rejects an Ack.map() root reached through a variable', () async {
-    await _expectFailure(
-      '''
+  for (final declaration in [
+    'final scoresMap = Ack.map(Ack.integer());',
+    'final AckSchema<Object, Object> scoresMap = Ack.map(Ack.integer());',
+  ]) {
+    test('rejects an Ack.map() root reached through $declaration', () async {
+      await _expectFailure(
+        '''
 $_head
-final scoresMap = Ack.map(Ack.integer());
+$declaration
 
 @Schemable()
 final scoresSchema = scoresMap;
 ''',
-      ['scoresSchema', 'Ack.map() root'],
-    );
-  });
+        ['scoresSchema', 'Ack.map() root'],
+      );
+    });
+  }
 
   test('rejects an unannotated named Ack.object field', () async {
     await _expectFailure(
