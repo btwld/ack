@@ -8,6 +8,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Fixed
 
+* Reject generator aliases whose final passthrough policy makes an inherited
+  field collide with the generated additional-properties member.
 * Preserve round trips for discriminated map codecs with strict output schemas,
   including values used as another codec's output.
 * Accept contextual Dart member names and deeply snapshot JSON-owned generated

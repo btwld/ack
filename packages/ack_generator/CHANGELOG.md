@@ -7,6 +7,8 @@
 
 ### Fixed
 
+* Validate inherited field names against an alias's final capture policy before
+  generation, rejecting collisions with the additional-properties member.
 * Reject unproven object-shape changes inside preserved boundaries, including
   aliases and fluent codecs, rather than copying opaque values as JSON.
 * Preserve native codec boundary types when inferring `Ack.preserveBoundary`
