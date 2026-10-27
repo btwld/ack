@@ -61,6 +61,22 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
   @internal
   AckSchema<Boundary, Runtime> get target => _target;
 
+  // Preserve deferred resolution, generic types and recursion identity when
+  // adapting a lazy codec output for a union-owned discriminator.
+  LazySchema<Boundary, Runtime> _mapTarget(
+    AnyAckSchema Function(AnyAckSchema) transform,
+  ) => LazySchema<Boundary, Runtime>._copy(
+    name,
+    () => transform(_target) as AckSchema<Boundary, Runtime>,
+    _recursionToken,
+    maxDepth: maxDepth,
+    isNullable: isNullable,
+    isOptional: isOptional,
+    description: description,
+    constraints: constraints,
+    refinements: refinements,
+  );
+
   /// Whether the lazy reference's own null policy narrows its target.
   @internal
   bool get excludesTargetNull => !acceptsNull && _target.acceptsNull;
