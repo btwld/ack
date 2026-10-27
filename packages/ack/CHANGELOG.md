@@ -2,6 +2,9 @@
 
 ### Fixed
 
+* Expose the shared `deepUnmodifiableCopy` helper for generated immutable
+  constructors. It snapshots nested collections without validating data or
+  changing opaque noncollection objects.
 * Honor explicit boundary-wrapper nullability consistently during parse and
   encode. Preserve non-null restrictions on wrappers and lazy references when
   exporting nullable primitives, unions, and imported JSON Schema resources.
@@ -18,9 +21,6 @@
 * Discover selected custom dialects bundled beneath their own active schema
   keywords, without interpreting inactive keyword payloads or annotation data
   as schemas.
-* Expose the shared `deepUnmodifiableCopy` helper for generated immutable
-  constructors. It snapshots nested collections without validating data or
-  changing opaque noncollection objects.
 
 ## 2.0.0-alpha.1
 

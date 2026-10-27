@@ -7,6 +7,25 @@
 
 ### Fixed
 
+* Reject unproven object-shape changes inside preserved boundaries, including
+  aliases and fluent codecs, rather than copying opaque values as JSON.
+* Preserve native codec boundary types when inferring `Ack.preserveBoundary`
+  fields, including dates, datetimes, URIs, durations, enums, explicit codec
+  inputs and statically resolvable nonrecursive lazy schemas.
+* Resolve preserved JSON boundary nullability through the same effective
+  metadata as ordinary fields, including aliases and explicit flag overrides.
+* Snapshot nested JSON collections held as `Object` or `Object?` in
+  schema-first model constructors and `copyWith`. Reuse Ack's shared deep
+  copier; constructors still do not validate data. Opaque codec runtime values
+  retain their identity and container types. Use `Ack.preserveBoundary(...)`
+  for heterogeneous JSON fields; native JSON unions are inferred only within
+  that explicit wire view.
+* Allow built-in and contextual Dart keywords such as `required` as generated
+  field, discriminator, and capture-member names without changing their JSON
+  keys. Reserved words such as `class` remain rejected. Member validation now
+  follows the analyzer's keyword classification rather than a fixed word list.
+  `dynamic` remains rejected because it shadows the type in generated JSON
+  methods, not because it is a reserved Dart word.
 * Preserve schema flags and object policies when `copyWith` no-op `null`
   arguments are parenthesized.
 * Preserve schema-first presence, nullability, and default-wrapper behavior
@@ -22,22 +41,6 @@
 * Preserve application-generic argument nullability when selecting custom
   schemas, and substitute nested generic bounds before validating type-owned
   schema methods.
-
-* Allow built-in and contextual Dart keywords such as `required` as generated
-  field, discriminator, and capture-member names without changing their JSON
-  keys. Reserved words such as `class` remain rejected. Member validation now
-  follows the analyzer's keyword classification rather than a fixed word list.
-  `dynamic` remains rejected because it shadows the type in generated JSON
-  methods, not because it is a reserved Dart word.
-* Snapshot nested JSON collections held as `Object` or `Object?` in
-  schema-first model constructors and `copyWith`. Reuse Ack's shared deep
-  copier; constructors still do not validate data. Opaque codec runtime values
-  retain their identity and container types. Use `Ack.preserveBoundary(...)`
-  for heterogeneous JSON fields; native JSON unions are inferred only within
-  that explicit wire view.
-* Preserve native codec boundary types when inferring `Ack.preserveBoundary`
-  fields, including dates, datetimes, URIs, durations, enums, explicit codec
-  inputs and statically resolvable nonrecursive lazy schemas.
 
 ## 2.0.0-alpha.1
 

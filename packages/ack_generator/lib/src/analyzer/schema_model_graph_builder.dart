@@ -606,7 +606,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         if (arguments.length != 1) {
           _rejectUnsupportedRoot('preserveBoundary', path, context);
         }
-        return _jsonBoundaryRef(arguments.single, path: path, context: context);
+        return _jsonBoundaryRef(expression, path: path, context: context);
       case 'anyOf':
       case 'instance':
         _rejectUnsupportedRoot(baseName, path, context);
@@ -717,7 +717,17 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           visited: visited,
           depth: depth,
         );
-        if (followed != null) return followed;
+        if (followed != null) {
+          if (followed is AckNullableTypeRef &&
+              !(await _schemaMetadata(
+                expression,
+                path: path,
+                context: context,
+              )).nullable) {
+            return followed.inner;
+          }
+          return followed;
+        }
       }
     }
 
@@ -794,6 +804,12 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         element: context,
       );
     }
+    await _rejectObjectShapeChanges(
+      expression,
+      path: path,
+      context: context,
+      throughCodecs: true,
+    );
     final chain = parseSchemaChain(expression);
     _rejectTransform(chain, path, context);
     final base = chain.base;
@@ -854,7 +870,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         if (arguments.length != 1) {
           return _unsupportedJsonBoundary(path, context);
         }
-        var inner = await _jsonBoundaryRef(
+        final inner = await _jsonBoundaryRef(
           arguments.single,
           path: '$path[]',
           context: context,
@@ -927,21 +943,16 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
             visited.contains(element.baseElement)) {
           return _unsupportedJsonBoundary(path, context);
         }
-        final declaration = propertyDeclaration(element);
-        final owningLibrary = declaration.library;
-        if (owningLibrary == null) {
-          return _unsupportedJsonBoundary(path, context);
-        }
-        final initializer = declarationExpression(
-          await resolvedLibraryFor(owningLibrary),
-          declaration,
+        final target = await resolveReferencedTopLevelExpression(
+          element,
+          visited: visited,
         );
-        if (initializer == null) return _unsupportedJsonBoundary(path, context);
+        if (target == null) return _unsupportedJsonBoundary(path, context);
         result = await _jsonBoundaryRef(
-          initializer,
+          target.expression,
           path: '$path(→ ${element.name})',
           context: context,
-          visited: {...visited, element.baseElement},
+          visited: {...visited, target.declaration.baseElement},
           depth: depth + 1,
         );
     }
@@ -952,6 +963,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       path: path,
       context: context,
     );
+    // An outer flag can clear an alias's nullable type without changing the
+    // nullability of its nested collection values.
     final nonNullable = result is AckNullableTypeRef ? result.inner : result;
     return metadata.nullable ? AckNullableTypeRef(nonNullable) : nonNullable;
   }
@@ -1383,6 +1396,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     required String path,
     required Element context,
     Set<Element> visited = const {},
+    bool throughCodecs = false,
   }) async {
     Expression? current = expression;
     while (current is ParenthesizedExpression) {
@@ -1390,9 +1404,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     }
     while (current is MethodInvocation) {
       final name = current.methodName.name;
-      // A value codec owns its runtime shape, so its input need not expose
-      // statically generated object fields.
-      if (name == 'codec') return;
+      // Runtime models can stop at a value codec. Boundary inference still
+      // needs to prove the input shape underneath that codec.
+      if (name == 'codec' && !throughCodecs) return;
       if (const {'extend', 'partial', 'merge', 'pick', 'omit'}.contains(name) ||
           (name == 'copyWith' &&
               current.argumentList.arguments.any(
@@ -1414,7 +1428,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
           isTypeOwnedSchema(current.methodName.element)) {
         break;
       }
-      current = current.target;
+      current = current.target?.unParenthesized;
     }
     if (current == null) return;
     final target = await resolveReferencedTopLevelExpression(
@@ -1427,6 +1441,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
       path: '$path(→ ${target.declaration.name})',
       context: context,
       visited: {...visited, target.declaration.baseElement},
+      throughCodecs: throughCodecs,
     );
   }
 

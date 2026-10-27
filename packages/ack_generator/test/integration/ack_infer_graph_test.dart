@@ -135,6 +135,79 @@ final policySchema = Ack.object({}, additionalProperties: true).copyWith(
     });
   }
 
+  test('preserved JSON boundaries honor an outer nullable clear', () async {
+    await _expectOutput('''
+$_head
+@Schemable()
+final boundaryFlagsSchema = Ack.object({
+  'value': Ack.preserveBoundary(Ack.string().nullable()).nullable(value: false),
+});
+''', allOf([contains('final String value;'), contains('required this.value')]));
+  });
+
+  test('preserved JSON boundaries use effective nested flags', () async {
+    await _expectOutput(
+      '''
+$_head
+final nullableValue = Ack.string().nullable();
+final nullableAlias = nullableValue;
+@Schemable()
+final boundaryFlagsSchema = Ack.object({
+  'copiedValues': Ack.preserveBoundary(Ack.map(Ack.string().copyWith(isNullable: true))),
+  'configuredValues': Ack.preserveBoundary(Ack.map(Ack.string().withRuntimeConfig(isNullable: true))),
+  'clearedValues': Ack.preserveBoundary(Ack.map(nullableAlias.nullable(value: false))),
+  'items': Ack.preserveBoundary(Ack.list(nullableAlias.nullable(value: false))),
+  'outerMap': Ack.preserveBoundary(Ack.map(nullableValue).nullable()).nullable(value: false),
+});
+''',
+      allOf([
+        contains('final Map<String, String?> copiedValues;'),
+        contains('final Map<String, String?> configuredValues;'),
+        contains('final Map<String, String> clearedValues;'),
+        contains('final List<String> items;'),
+        contains('final Map<String, String?> outerMap;'),
+      ]),
+    );
+  });
+
+  test('preserved boundary aliases honor consuming flag overrides', () async {
+    await _expectOutput(
+      '''
+$_head
+final nullableText = Ack.preserveBoundary(Ack.string().nullable());
+final textAlias = nullableText;
+final nullableMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
+final mapAlias = nullableMap;
+@Schemable()
+final boundaryAliasesSchema = Ack.object({
+  'text': textAlias.nullable(value: false),
+  'values': mapAlias.nullable(value: false),
+  'groups': Ack.list(mapAlias.nullable(value: false)),
+  'byName': Ack.map(mapAlias.nullable(value: false)),
+});
+''',
+      allOf([
+        contains('final String text;'),
+        contains('final Map<String, String?> values;'),
+        contains('final List<Map<String, String?>> groups;'),
+        contains('final Map<String, Map<String, String?>> byName;'),
+      ]),
+    );
+  });
+
+  test('rejects actually nullable preserved boundary list items', () async {
+    await _expectFailure(
+      '''
+$_head
+@Schemable()
+final boundaryFlagsSchema = Ack.object({
+  'items': Ack.preserveBoundary(Ack.list(Ack.string().nullable())),
+});
+''',
+      ['boundaryFlagsSchema.items', 'cannot prove a native JSON boundary'],
+    );
+  });
+
   test('preserves wrapper flag and outer default semantics', () async {
     await _expectOutput(
       '''
@@ -483,6 +556,33 @@ final payloadSchema = ${unsupported.key};
         ['payloadSchema', unsupported.value],
       );
     });
+  }
+
+  for (final change in [
+    "extend({'payload': Ack.instance<List<int>>()})",
+    "copyWith(properties: {'payload': Ack.instance<List<int>>()})",
+  ]) {
+    for (final conversion in [
+      '',
+      '.codec<Object>(decode: (value) => value, encode: (value) => value as Map<String, Object?>)',
+    ]) {
+      test(
+        'rejects unproven boundary shape changes: $change$conversion',
+        () async {
+          await _expectFailure(
+            '''
+$_head
+final alteredBoundary = (Ack.object({}).$change)$conversion;
+@Schemable()
+final boundaryRecordSchema = Ack.object({
+  'value': Ack.preserveBoundary(alteredBoundary),
+});
+''',
+            ['boundaryRecordSchema.value', change.split('(').first, 'shape'],
+          );
+        },
+      );
+    }
   }
 
   for (final boundary in [

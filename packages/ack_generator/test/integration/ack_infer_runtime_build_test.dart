@@ -294,6 +294,32 @@ final answerRecordSchema = Ack.object({
   'ratio': Ack.preserveBoundary(Ack.double()),
 });
 
+final nullableBoundaryValue = Ack.string().nullable();
+final nullableBoundaryAlias = nullableBoundaryValue;
+
+@Schemable()
+final boundaryFlagsSchema = Ack.object({
+  'copiedValues': Ack.preserveBoundary(Ack.map(Ack.string().copyWith(isNullable: true))),
+  'configuredValues': Ack.preserveBoundary(Ack.map(Ack.string().withRuntimeConfig(isNullable: true))),
+  'clearedValues': Ack.preserveBoundary(Ack.map(nullableBoundaryAlias.nullable(value: false))),
+  'items': Ack.preserveBoundary(Ack.list(nullableBoundaryAlias.nullable(value: false))),
+  'outer': Ack.preserveBoundary(nullableBoundaryValue).nullable(value: false),
+  'outerMap': Ack.preserveBoundary(Ack.map(nullableBoundaryValue).nullable()).nullable(value: false),
+});
+
+final nullableBoundaryText = Ack.preserveBoundary(Ack.string().nullable());
+final boundaryTextAlias = nullableBoundaryText;
+final nullableBoundaryMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
+final boundaryMapAlias = nullableBoundaryMap;
+
+@Schemable()
+final boundaryAliasesSchema = Ack.object({
+  'text': boundaryTextAlias.nullable(value: false),
+  'values': boundaryMapAlias.nullable(value: false),
+  'groups': Ack.list(boundaryMapAlias.nullable(value: false)),
+  'byName': Ack.map(boundaryMapAlias.nullable(value: false)),
+});
+
 enum WireStatus { active, archived }
 
 @Schemable()
@@ -556,6 +582,60 @@ void main() {
         {'values': expected, 'ratio': 0.5});
     expect(() => (record.values['tags'] as List).clear(), throwsUnsupportedError);
     expect(AnswerRecord(values: {'invalid': false}, ratio: 0.5).safeToJson().isFail, isTrue);
+  });
+
+  test('preserved boundary metadata agrees with generated runtime fields', () {
+    final json = <String, Object?>{
+      'copiedValues': {'a': null},
+      'configuredValues': {'b': null},
+      'clearedValues': {'c': 'present'},
+      'items': ['present'],
+      'outer': 'present',
+      'outerMap': {'d': null},
+    };
+    final record = BoundaryFlags.parse(json);
+    final Map<String, String?> copied = record.copiedValues;
+    final Map<String, String?> configured = record.configuredValues;
+    final Map<String, String> cleared = record.clearedValues;
+    final List<String> items = record.items;
+    final String outer = record.outer;
+    final Map<String, String?> outerMap = record.outerMap;
+    expect(copied['a'], isNull);
+    expect(configured['b'], isNull);
+    expect(cleared['c'], 'present');
+    expect(items, ['present']);
+    expect(outer, 'present');
+    expect(outerMap['d'], isNull);
+    expect(record.toJson(), json);
+    expect(BoundaryFlags.parse(record.toJson()), record);
+    expect(BoundaryFlags.safeParse({...json, 'outer': null}).isFail, isTrue);
+    expect(BoundaryFlags.safeParse({...json, 'outerMap': null}).isFail, isTrue);
+    expect(BoundaryFlags.safeParse({...json, 'clearedValues': {'c': null}}).isFail, isTrue);
+    expect(() => record.copiedValues['a'] = 'changed', throwsUnsupportedError);
+  });
+
+  test('preserved boundary aliases clear only their outer nullable type', () {
+    final json = <String, Object?>{
+      'text': 'present',
+      'values': {'a': null},
+      'groups': [{'b': null}],
+      'byName': {'first': {'c': null}},
+    };
+    final record = BoundaryAliases.parse(json);
+    final String text = record.text;
+    final Map<String, String?> values = record.values;
+    final List<Map<String, String?>> groups = record.groups;
+    final Map<String, Map<String, String?>> byName = record.byName;
+    expect(text, 'present');
+    expect(values['a'], isNull);
+    expect(groups.single['b'], isNull);
+    expect(byName['first']!['c'], isNull);
+    expect(record.toJson(), json);
+    expect(BoundaryAliases.parse(record.toJson()), record);
+    expect(BoundaryAliases.safeParse({...json, 'text': null}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'values': null}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'groups': [null]}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'byName': {'first': null}}).isFail, isTrue);
   });
 
   test('preserved native codecs keep JSON boundary types and validation', () {
