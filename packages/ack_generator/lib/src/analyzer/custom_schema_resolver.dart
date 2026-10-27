@@ -826,6 +826,22 @@ final class CustomSchemaResolver {
         field: field,
       );
       if (target == null) return null;
+      final schemaType = switch (target) {
+        TopLevelVariableElement(:final type) => type,
+        GetterElement(:final returnType) => returnType,
+        _ => null,
+      };
+      final runtime = schemaType == null
+          ? null
+          : _base.ackSchemaRuntimeType(schemaType);
+      if (runtime == null || _base.containsInvalidType(runtime)) {
+        throw InvalidGenerationSource(
+          '${_fieldPath(field)} resolves to generated model "$name", but '
+          '${target.name} has no resolvable AckSchema runtime type. Declare '
+          'the schema type explicitly.',
+          element: field,
+        );
+      }
       final visibleName = qualifySymbol(prefix, name);
       result = (
         schemaExpression: '$visibleName.\$ack.schema',
@@ -835,7 +851,11 @@ final class CustomSchemaResolver {
             declarationName: target.name!,
           ),
           className: name,
-          runtimeRef: ModelGraphBuilderBase.jsonMapRef,
+          runtimeRef: _base.inferTypeRef(
+            runtime,
+            path: _fieldPath(field),
+            context: field,
+          ),
           importPrefix: prefix,
         ),
         setListSchema: null,

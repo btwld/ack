@@ -253,6 +253,76 @@ final class Holder with _$HolderAck {
 ''',
         );
         File(
+          p.join(temporary.path, 'lib', 'value_models.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack/ack.dart';
+
+part 'value_models.g.dart';
+
+final class Token {
+  const Token(this.value);
+  final String value;
+  static int decodes = 0;
+  static int encodes = 0;
+
+  static Token decode(String value) {
+    decodes++;
+    return Token(value);
+  }
+
+  static String encode(Token token) {
+    encodes++;
+    return token.value;
+  }
+
+  @override
+  bool operator ==(Object other) => other is Token && other.value == value;
+  @override
+  int get hashCode => value.hashCode;
+}
+
+@Schemable()
+final scalarSchema = Ack.integer();
+@Schemable()
+final stringsSchema = Ack.list(Ack.string());
+@Schemable()
+final encodedSchema = Ack.string().codec<Token>(
+  decode: Token.decode,
+  encode: Token.encode,
+);
+''');
+        File(
+          p.join(temporary.path, 'lib', 'value_holder.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack/ack.dart';
+import 'value_models.dart' as values;
+
+part 'value_holder.g.dart';
+
+@Schemable()
+final class ValueHolder with _$ValueHolderAck {
+  const ValueHolder({
+    required this.scalar,
+    required this.strings,
+    required this.encoded,
+    required this.history,
+    required this.unique,
+    this.patch = const JsonMaybe.absent(),
+    required this.sets,
+    required this.nestedSets,
+  });
+
+  final values.Scalar scalar;
+  final values.Strings strings;
+  final values.Encoded encoded;
+  final List<values.Scalar> history;
+  final Set<values.Scalar> unique;
+  final JsonMaybe<values.Encoded> patch;
+  final Map<String, Set<int>?> sets;
+  final Map<String, Map<String, Set<String>?>?> nestedSets;
+}
+''');
+        File(
           p.join(temporary.path, 'lib', 'address_envelope.dart'),
         ).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
@@ -284,9 +354,55 @@ import 'package:ack_class_first_nested/itinerary.dart';
 import 'package:ack_class_first_nested/order.dart';
 import 'package:ack_class_first_nested/parcel.dart';
 import 'package:ack_class_first_nested/pet.dart';
+import 'package:ack_class_first_nested/value_holder.dart';
+import 'package:ack_class_first_nested/value_models.dart' as values;
+import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('same-build value models and nullable nested Sets round-trip', () {
+    values.Token.decodes = 0;
+    values.Token.encodes = 0;
+    final json = <String, Object?>{
+      'scalar': 7,
+      'strings': ['one', 'two'],
+      'encoded': 'token',
+      'history': [1, 2],
+      'unique': [3, 4],
+      'sets': {'present': [1, 2], 'none': null},
+      'nestedSets': {
+        'present': {'items': ['a', 'b'], 'none': null},
+        'none': null,
+      },
+    };
+    final holder = ValueHolderSchema.parse(json);
+    expect(holder.scalar.value, 7);
+    expect(holder.strings.value, ['one', 'two']);
+    expect(holder.encoded.value.value, 'token');
+    expect(holder.history.map((model) => model.value), [1, 2]);
+    expect(holder.unique.map((model) => model.value), [3, 4]);
+    expect(holder.patch, const JsonMaybe<values.Encoded>.absent());
+    expect(holder.sets['present'], {1, 2});
+    expect(holder.sets['none'], isNull);
+    expect(holder.nestedSets['present']!['items'], {'a', 'b'});
+    expect(holder.nestedSets['present']!['none'], isNull);
+    expect(holder.nestedSets['none'], isNull);
+    expect(values.Token.decodes, 1);
+    expect(holder.toJson(), json);
+    expect(values.Token.encodes, 1);
+    expect(ValueHolderSchema.parse(holder.toJson()), holder);
+    expect(() => holder.strings.value.add('three'), throwsUnsupportedError);
+    expect(() => holder.sets['present']!.add(3), throwsUnsupportedError);
+    expect(
+      () => holder.nestedSets['present']!['items']!.add('c'),
+      throwsUnsupportedError,
+    );
+
+    final patched = ValueHolderSchema.parse({...json, 'patch': 'changed'});
+    expect(patched.patch.valueOrNull!.value.value, 'changed');
+    expect(patched.toJson()['patch'], 'changed');
+  });
+
   test('nested models parse, encode, and export through facades', () {
     final order = OrderSchema.parse({
       'shipping': {'city': 'Amsterdam'},

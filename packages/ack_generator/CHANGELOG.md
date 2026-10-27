@@ -7,6 +7,8 @@
   strict/passthrough policy to object models and aliases.
 * Reject object shape-changing methods that cannot be modeled statically,
   instead of generating fields that disagree with the authored schema.
+* Resolve same-build scalar, list, and codec model references using their
+  actual runtime types, and generate valid codecs for nullable nested Sets.
 
 * Allow built-in and contextual Dart keywords such as `required` as generated
   field, discriminator, and capture-member names without changing their JSON

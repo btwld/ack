@@ -70,7 +70,11 @@ final class AckSchemaInference {
         rejectNullableCollectionElement: rejectNullableCollectionElement,
         validateMapKey: validateMapKey,
       );
-      return '${_ack('Ack')}.list($itemSchema).codec<${renderType(type)}>(decode: (list) => list.toSet(), encode: (set) => set.toList(growable: false),)';
+      final runtimeType = type.element.instantiate(
+        typeArguments: type.typeArguments,
+        nullabilitySuffix: NullabilitySuffix.none,
+      );
+      return '${_ack('Ack')}.list($itemSchema).codec<${renderType(runtimeType)}>(decode: (list) => list.toSet(), encode: (set) => set.toList(growable: false),)';
     }
     if (type.isDartCoreMap) {
       validateMapKey(type);
