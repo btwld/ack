@@ -26,6 +26,9 @@ final class _ImportedNode {
   bool applicatorVocabulary = true;
   bool unevaluatedVocabulary = true;
   bool validationVocabulary = true;
+  bool metadataVocabulary = true;
+  bool contentVocabulary = true;
+  bool formatAnnotationVocabulary = true;
   bool formatAssertion = false;
   final keywords = <String, Object?>{};
   final children = <String, _ImportedNode>{};
@@ -80,6 +83,36 @@ final class _ImportedNode {
   List<_ImportedNode>? oneOf;
   List<_ImportedNode>? prefixItems;
 
+  /// Keywords outside the selected dialect retain only annotation semantics.
+  bool isKeywordActive(String keyword) {
+    if (keyword == r'$defs' || keyword == 'definitions') return true;
+    if (keyword == 'unevaluatedProperties' || keyword == 'unevaluatedItems') {
+      return unevaluatedVocabulary;
+    }
+    if (_JsonSchemaCompiler.mapKeywords.contains(keyword) ||
+        _JsonSchemaCompiler.childKeywords.contains(keyword) ||
+        _JsonSchemaCompiler.listKeywords.contains(keyword)) {
+      return applicatorVocabulary;
+    }
+    if (_JsonSchemaCompiler.validationKeywords.contains(keyword)) {
+      return validationVocabulary;
+    }
+    return switch (keyword) {
+      'title' ||
+      'description' ||
+      'default' ||
+      'examples' ||
+      'readOnly' ||
+      'writeOnly' ||
+      'deprecated' => metadataVocabulary,
+      'contentEncoding' ||
+      'contentMediaType' ||
+      'contentSchema' => contentVocabulary,
+      'format' => formatAnnotationVocabulary || formatAssertion,
+      _ => true,
+    };
+  }
+
   List<_ImportedNode> get dependencies => [
     ?reference,
     ?dynamicReference,
@@ -122,7 +155,7 @@ final class _ImportedNode {
     };
     if (source case final Map<String, Object?> document) {
       for (final keyword in unsupportedKeywords) {
-        if (document.containsKey(keyword)) {
+        if (isKeywordActive(keyword) && document.containsKey(keyword)) {
           throw UnsupportedError(
             'Cannot lower "$keyword" at ${_keywordPointer(this, keyword)} '
             'with toJsonSchemaDraft7(); use toJsonSchema() for 2020-12 semantics.',
@@ -132,7 +165,8 @@ final class _ImportedNode {
     }
     if (dynamicReference != null ||
         dynamicAnchorName != null ||
-        (source is Map<String, Object?> &&
+        (isKeywordActive('format') &&
+            source is Map<String, Object?> &&
             (source as Map<String, Object?>).containsKey('format'))) {
       throw UnsupportedError(
         'This imported schema needs 2020-12 semantics and cannot be lowered '
@@ -183,6 +217,8 @@ final class _JsonSchemaCompiler {
   final resources = <Uri, _ImportedNode>{};
   final anchors = <Uri, _ImportedNode>{};
   final dynamicAnchors = <Uri, _ImportedNode>{};
+  final _pendingChildren = Queue<_ImportedNode>();
+  final _fallbackDocumentUris = <Uri>{};
 
   static const mapKeywords = {
     r'$defs',
@@ -242,8 +278,26 @@ final class _JsonSchemaCompiler {
     'exclusiveMinimum',
     'exclusiveMaximum',
   };
+  static const validationKeywords = {
+    ...counts,
+    ...bounds,
+    'type',
+    'const',
+    'enum',
+    'multipleOf',
+    'minContains',
+    'maxContains',
+    'uniqueItems',
+    'pattern',
+    'required',
+    'dependentRequired',
+  };
 
-  _ImportedNode addDocument(Object document, Uri uri) {
+  _ImportedNode addDocument(
+    Object document,
+    Uri uri, {
+    bool isFallback = false,
+  }) {
     if (uri.hasFragment && uri.fragment.isNotEmpty) {
       throw ArgumentError.value(uri, 'baseUri', 'Must not contain a fragment.');
     }
@@ -268,6 +322,7 @@ final class _JsonSchemaCompiler {
         'Conflicting schema documents for retrieval URI: ${uri.removeFragment()}.',
       );
     }
+    if (isFallback) _fallbackDocumentUris.add(uri.removeFragment());
     return _index(
       copy!,
       uri.removeFragment(),
@@ -336,10 +391,22 @@ final class _JsonSchemaCompiler {
       _register(dynamicAnchors, uri, node, r'$dynamicAnchor');
       _register(anchors, uri, node, r'$dynamicAnchor');
     }
+    // Core definition locations cannot be disabled. Register them now so a
+    // bundled dialect can be found before interpreting optional keywords.
+    _indexChildren(node, coreOnly: true);
+    _pendingChildren.add(node);
+    return node;
+  }
+
+  void _indexChildren(_ImportedNode node, {required bool coreOnly}) {
+    final source = node.source;
+    if (source is! Map<String, Object?>) return;
     for (final entry in source.entries) {
       final key = entry.key;
+      final coreLocation = key == r'$defs' || key == 'definitions';
+      if (coreLocation != coreOnly || !node.isKeywordActive(key)) continue;
       final value = entry.value;
-      final path = '$pointer/${escapeJsonPointerToken(key)}';
+      final path = '${node.pointer}/${escapeJsonPointerToken(key)}';
       if (mapKeywords.contains(key)) {
         if (value is! Map<String, Object?>) {
           _fail(node, key, 'Expected a map of schemas.');
@@ -347,19 +414,19 @@ final class _JsonSchemaCompiler {
         for (final child in value.entries) {
           _index(
             child.value ?? _invalidSchema(node, key),
-            document,
+            node.documentUri,
             '$path/${escapeJsonPointerToken(child.key)}',
-            base,
-            dialect: dialect,
+            node.baseUri,
+            dialect: node.dialectUri,
           );
         }
       } else if (childKeywords.contains(key)) {
         _index(
           value ?? _invalidSchema(node, key),
-          document,
+          node.documentUri,
           path,
-          base,
-          dialect: dialect,
+          node.baseUri,
+          dialect: node.dialectUri,
         );
       } else if (listKeywords.contains(key)) {
         if (value is! List || value.isEmpty) {
@@ -368,15 +435,35 @@ final class _JsonSchemaCompiler {
         for (final (i, child) in value.indexed) {
           _index(
             child ?? _invalidSchema(node, key),
-            document,
+            node.documentUri,
             '$path/$i',
-            base,
-            dialect: dialect,
+            node.baseUri,
+            dialect: node.dialectUri,
           );
         }
       }
     }
-    return node;
+  }
+
+  void _indexPendingChildren() {
+    while (_pendingChildren.isNotEmpty) {
+      final count = _pendingChildren.length;
+      var progressed = false;
+      for (var i = 0; i < count; i++) {
+        final node = _pendingChildren.removeFirst();
+        if (!resources.containsKey(node.dialectUri) &&
+            !draft7Dialects.contains(node.dialectUri)) {
+          _pendingChildren.add(node);
+          continue;
+        }
+        _configureDialect(node);
+        _indexChildren(node, coreOnly: false);
+        progressed = true;
+      }
+      // Other documents may have supplied a nested dialect during this pass.
+      // If none could be indexed, report the unresolved dialect as before.
+      if (!progressed) _configureDialect(_pendingChildren.first);
+    }
   }
 
   Never _invalidSchema(_ImportedNode node, String key) =>
@@ -390,7 +477,16 @@ final class _JsonSchemaCompiler {
   ) {
     if (registry[uri] case final prior?) {
       if (!identical(prior, node)) {
-        _fail(node, keyword, 'Duplicate schema identifier: $uri.');
+        // Delayed optional-keyword indexing can discover an explicitly supplied
+        // copy after the offline fallback was registered. Only an identical
+        // fallback may be replaced; two caller-owned identifiers still conflict.
+        final replacesFallback =
+            _fallbackDocumentUris.contains(prior.documentUri) &&
+            !_fallbackDocumentUris.contains(node.documentUri) &&
+            deepEquals(prior.source, node.source);
+        if (!replacesFallback) {
+          _fail(node, keyword, 'Duplicate schema identifier: $uri.');
+        }
       }
     }
     registry[uri] = node;
@@ -436,9 +532,7 @@ final class _JsonSchemaCompiler {
   }
 
   void compile(_ImportedNode root) {
-    for (final node in locations.values) {
-      _configureDialect(node);
-    }
+    _indexPendingChildren();
     final nodes = _compileReachable(root);
     for (final node in locations.values) {
       node.resourceRoot = resources[node.baseUri]!;
@@ -487,6 +581,15 @@ final class _JsonSchemaCompiler {
       unevaluatedVocabularyUri,
     );
     node.validationVocabulary = vocabulary.containsKey(validationVocabularyUri);
+    node.metadataVocabulary = vocabulary.containsKey(
+      'https://json-schema.org/draft/2020-12/vocab/meta-data',
+    );
+    node.contentVocabulary = vocabulary.containsKey(
+      'https://json-schema.org/draft/2020-12/vocab/content',
+    );
+    node.formatAnnotationVocabulary = vocabulary.containsKey(
+      'https://json-schema.org/draft/2020-12/vocab/format-annotation',
+    );
     node.formatAssertion =
         assertFormats || vocabulary.containsKey(formatAssertionVocabularyUri);
   }
@@ -578,7 +681,7 @@ final class _JsonSchemaCompiler {
       base,
       dialect: resource.dialectUri,
     );
-    _configureDialect(indexed);
+    _indexPendingChildren();
     return indexed;
   }
 
@@ -588,6 +691,7 @@ final class _JsonSchemaCompiler {
     for (final entry in source.entries) {
       final key = entry.key;
       final value = entry.value;
+      if (!node.isKeywordActive(key)) continue;
       if (const {
         r'$id',
         r'$schema',

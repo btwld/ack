@@ -103,9 +103,14 @@ final class _SchemaModelBuilder {
     return merged;
   }
 
-  AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {
+  AckSchemaModel _build(
+    AckSchema<dynamic, dynamic> schema, {
+    bool requireStandardDialect = false,
+  }) {
     if (schema is WrapperSchema) {
-      final base = _build(schema.inner);
+      // Wrappers can add null operators or projected constraints. Keep those
+      // outside a source dialect that may have disabled their vocabularies.
+      final base = _build(schema.inner, requireStandardDialect: true);
       var layered = base
           .withDescription(schema.description ?? base.description)
           .withNullable(schema.isNullable);
@@ -168,7 +173,10 @@ final class _SchemaModelBuilder {
       InstanceSchema() => _instance(schema),
       DiscriminatedObjectSchema() => _discriminated(schema),
       LazySchema<dynamic, dynamic>() => _lazy(schema),
-      ImportedJsonSchema() => _imported(schema),
+      ImportedJsonSchema() => _imported(
+        schema,
+        requireStandardDialect: requireStandardDialect,
+      ),
       _ => throw UnsupportedError(
         'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
       ),
@@ -177,11 +185,19 @@ final class _SchemaModelBuilder {
     return schema is LazySchema ? model : _applyConstraints(model, schema);
   }
 
-  AckSchemaModel _imported(ImportedJsonSchema schema) {
+  AckSchemaModel _imported(
+    ImportedJsonSchema schema, {
+    required bool requireStandardDialect,
+  }) {
     final importIndex = _importCount++;
     if (preserveImportedDialect) {
       final indexedSchemas = HashSet<Map<String, Object?>>.identity();
-      if (_composingImports) {
+      final needsAssertionEnvelope =
+          schema.needsStandardAssertionEnvelope &&
+          (requireStandardDialect ||
+              schema.isNullable != schema.sourceAllowsNull ||
+              schema.constraints.isNotEmpty);
+      if (_composingImports || needsAssertionEnvelope) {
         final document = schema.export2020Document(
           importIndex: importIndex,
           includeFluentNullability: false,
@@ -279,6 +295,27 @@ final class _SchemaModelBuilder {
 
     final base = Uri.parse(document[r'$id']! as String);
     index(document, base, []);
+
+    Uri canonicalLocation(Uri reference) {
+      if (locations[reference] case final exact?) return exact;
+      // Boolean schemas have no map identity to index. Their pointer still
+      // follows the canonical resource of the nearest indexed ancestor.
+      var prefix = reference.fragment;
+      while (prefix.startsWith('/')) {
+        prefix = prefix.substring(0, prefix.lastIndexOf('/'));
+        final ancestor = prefix.isEmpty
+            ? reference.removeFragment()
+            : reference.replace(fragment: prefix);
+        if (locations[ancestor] case final canonical?) {
+          return canonical.replace(
+            fragment:
+                '${canonical.fragment}${reference.fragment.substring(prefix.length)}',
+          );
+        }
+      }
+      return reference;
+    }
+
     Object? normalize(Object? value, Uri base) {
       if (value is! Map<String, Object?>) return value;
       final id = value[r'$id'];
@@ -308,7 +345,7 @@ final class _SchemaModelBuilder {
             // Dormant malformed references are not evaluated by the importer.
             continue;
           }
-          final canonical = locations[resolved] ?? resolved;
+          final canonical = canonicalLocation(resolved);
           final address = _resourceLocations[canonical.removeFragment()];
           if (address != null &&
               (canonical.fragment.isEmpty ||
@@ -797,41 +834,8 @@ Map<String, Object?> _mapImportedChildren(
     return value;
   }
 
-  const maps = {
-    r'$defs',
-    'definitions',
-    'properties',
-    'patternProperties',
-    'dependentSchemas',
-  };
-  const children = {
-    'items',
-    'additionalProperties',
-    'not',
-    'contains',
-    'propertyNames',
-    'if',
-    'then',
-    'else',
-    'unevaluatedProperties',
-    'unevaluatedItems',
-  };
-  const lists = {'allOf', 'anyOf', 'oneOf', 'prefixItems'};
   return {
     for (final entry in schema.entries)
-      entry.key: maps.contains(entry.key) && entry.value is Map<String, Object?>
-          ? <String, Object?>{
-              for (final child
-                  in (entry.value! as Map<String, Object?>).entries)
-                child.key: visit(child.value, [entry.key, child.key]),
-            }
-          : children.contains(entry.key)
-          ? visit(entry.value, [entry.key])
-          : lists.contains(entry.key) && entry.value is List
-          ? [
-              for (final (index, child) in (entry.value! as List).indexed)
-                visit(child, [entry.key, '$index']),
-            ]
-          : visitIndexed(entry.value, [entry.key]),
+      entry.key: visitIndexed(entry.value, [entry.key]),
   };
 }

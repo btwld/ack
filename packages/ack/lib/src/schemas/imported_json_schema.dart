@@ -31,7 +31,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     }
     for (final entry in _standardMetaSchemaDocuments.entries) {
       if (!compiler.resources.containsKey(entry.key)) {
-        compiler.addDocument(entry.value, entry.key);
+        compiler.addDocument(entry.value, entry.key, isFallback: true);
       }
     }
     compiler.compile(root);
@@ -112,6 +112,44 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
       _ => value,
     };
 
+    final dialectResources = <Uri, _ImportedNode>{
+      for (final node in _indexedNodes)
+        if (identical(node, node.resourceRoot)) node.baseUri: node,
+      for (final node in _indexedNodes)
+        if (node.pointer == '#') node.documentUri: node,
+    };
+    final customAssertionDialects =
+        <Uri, ({Uri id, Map<String, Object?> vocabulary})>{};
+
+    Uri? assertionDialectFor(_ImportedNode node) {
+      if (!assertFormats) return null;
+      if (node.dialectUri == _JsonSchemaCompiler.standardDialect ||
+          _JsonSchemaCompiler.draft7Dialects.contains(node.dialectUri)) {
+        return _assertionDialect;
+      }
+      final dialect = dialectResources[node.dialectUri]!;
+      final vocabulary =
+          (dialect.source as Map<String, Object?>)[r'$vocabulary']!
+              as Map<String, Object?>;
+      if (vocabulary.containsKey(
+        _JsonSchemaCompiler.formatAssertionVocabularyUri,
+      )) {
+        return null;
+      }
+      return customAssertionDialects.putIfAbsent(dialect.baseUri, () {
+        final token = base64Url
+            .encode(utf8.encode(dialect.baseUri.toString()))
+            .replaceAll('=', '');
+        return (
+          id: Uri.parse('$_assertionDialect:$token'),
+          vocabulary: {
+            ...vocabulary,
+            _JsonSchemaCompiler.formatAssertionVocabularyUri: true,
+          },
+        );
+      }).id;
+    }
+
     Map<String, Object?> resource(_ImportedNode node, {Uri? syntheticId}) {
       final source = copyJson(node.source);
       // Edit only indexed schema locations, never annotation payloads. This
@@ -129,13 +167,10 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         }
         if (exported is! Map<String, Object?>) continue;
         onSchema?.call(exported);
-        if (assertFormats &&
-            (indexed.dialectUri == _JsonSchemaCompiler.standardDialect ||
-                _JsonSchemaCompiler.draft7Dialects.contains(
-                  indexed.dialectUri,
-                )) &&
-            (identical(indexed, node) || exported.containsKey(r'$schema'))) {
-          exported[r'$schema'] = _assertionDialect.toString();
+        if (identical(indexed, node) || exported.containsKey(r'$schema')) {
+          if (assertionDialectFor(indexed) case final dialect?) {
+            exported[r'$schema'] = dialect.toString();
+          }
         }
         // A retrieval URI is an address for the original document, not a
         // resource that can be replaced by a $ref-only alias. Resolve it to
@@ -164,15 +199,15 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
           }
         }
       }
-      return {
+      final exportedResource = <String, Object?>{
         if (source is Map<String, Object?>) ...source,
         r'$id': (syntheticId ?? node.baseUri).toString(),
-        if (assertFormats &&
-            (node.dialectUri == _JsonSchemaCompiler.standardDialect ||
-                _JsonSchemaCompiler.draft7Dialects.contains(node.dialectUri)))
-          r'$schema': _assertionDialect.toString(),
+        if (assertionDialectFor(node) case final dialect?)
+          r'$schema': dialect.toString(),
         if (source is bool) 'allOf': [source],
       };
+      onSchema?.call(exportedResource);
+      return exportedResource;
     }
 
     final syntheticId =
@@ -203,7 +238,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         while (definitions.containsKey(name)) {
           name = '${name}_';
         }
-        definitions[name] = {
+        final standardAssertionDialect = <String, Object?>{
           r'$id': _assertionDialect.toString(),
           r'$schema': _JsonSchemaCompiler.standardDialect.toString(),
           r'$vocabulary': {
@@ -224,6 +259,29 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
               {r'$ref': 'https://json-schema.org/draft/2020-12/meta/$name'},
           ],
         };
+        onSchema?.call(standardAssertionDialect);
+        definitions[name] = standardAssertionDialect;
+        var customIndex = 0;
+        for (final entry in customAssertionDialects.entries) {
+          var name = '_ack_format_assertion_custom_${customIndex++}';
+          while (definitions.containsKey(name)) {
+            name = '${name}_';
+          }
+          // Dialect vocabularies are not inherited through $ref. Repeat the
+          // original map, adding only the requested format assertion, while
+          // retaining the original meta-schema's constraints and identity.
+          final customAssertionDialect = <String, Object?>{
+            r'$id': entry.value.id.toString(),
+            r'$schema': _JsonSchemaCompiler.standardDialect.toString(),
+            r'$vocabulary': entry.value.vocabulary,
+            r'$dynamicAnchor': 'meta',
+            'allOf': [
+              {r'$ref': entry.key.toString()},
+            ],
+          };
+          onSchema?.call(customAssertionDialect);
+          definitions[name] = customAssertionDialect;
+        }
       }
       root[r'$defs'] = definitions;
     }
@@ -242,6 +300,11 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   /// nullability overrides are applied.
   @internal
   bool get sourceAllowsNull => _checkImportedNode(_root, null) == null;
+
+  /// Whether generated applicator/validation assertions need an outer dialect.
+  @internal
+  bool get needsStandardAssertionEnvelope =>
+      !_root.applicatorVocabulary || !_root.validationVocabulary;
 
   @override
   @protected
