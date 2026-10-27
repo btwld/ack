@@ -1,3 +1,10 @@
+## Unreleased
+
+### Documentation
+
+* Correct the Dart SDK floor and document the current typed-input registration
+  API and callback-owned output validation in the ecosystem guide.
+
 ## 2.0.0-alpha.1
 
 ### Breaking

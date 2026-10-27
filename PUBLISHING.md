@@ -36,8 +36,9 @@ For example, packages at 1.3.0 can still declare `ack: ^1.2.0` when they use onl
 Pub workspaces manage one local dependency resolution, not package versions.
 Keep hosted version constraints on sibling dependencies and `resolution:
 workspace` in members; do not add local path overrides to publishable manifests.
-Keep explicit workspace paths because glob patterns require Dart 3.11 and this
-repository supports Dart 3.9. The root and `ack_example` are private and are not
+Keep the explicit workspace paths aligned with the package list. The supported
+floor is Dart 3.11.0 (Flutter 3.41.2 for the Firebase adapter); preflight checks
+those versions separately. The root and `ack_example` are private and are not
 part of the five-package release.
 
 References: [Melos versioning](https://melos.invertase.dev/commands/version),

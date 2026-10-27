@@ -46,10 +46,13 @@ jobs:
         run: |
           dart test --platform chrome \
             test/schemas/numeric_platform_parity_test.dart \
+            test/schemas/duration_range_test.dart \
+            test/schemas/nullability_export_contract_test.dart \
             test/schemas/extensions/numeric_extensions_test.dart \
             test/schemas/extensions/list_schema_extensions_test.dart \
             test/utils/collection_utils_test.dart \
             test/json_schema_import_test.dart \
+            test/json_schema_vocabulary_contract_test.dart \
             test/json_schema_import_api_test.dart
 
       - name: Test JSON Schema import bridge in Chrome

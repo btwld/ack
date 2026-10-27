@@ -80,9 +80,10 @@ Future<void> main() async {
 
 ## Schema Mapping
 
-The adapter returns ACK's generic Draft-7 JSON Schema renderer output. That
-means adapter behavior matches `AckSchema.toJsonSchema()`, which renders
-`AckSchema.toSchemaModel().toJsonSchema()`.
+The adapter returns `AckSchema.toJsonSchema()` unchanged. Native Ack schemas
+use the Draft-7 representation; imported Draft 2020-12 schemas preserve their
+resources and dialect. The adapter does not lower or filter provider-specific
+keywords.
 
 | ACK schema | JSON Schema output |
 | --- | --- |
