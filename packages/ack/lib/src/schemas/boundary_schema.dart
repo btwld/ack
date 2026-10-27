@@ -31,9 +31,11 @@ final class BoundarySchema<Boundary extends Object>
     Object? value,
     SchemaContext context,
   ) {
+    final nullResult = handleNullInput(value, context);
+    if (nullResult != null) return nullResult;
+
     final result = inner.parseWithContext(value, context);
     if (result.isFail) return SchemaResult.fail(result.getError());
-    if (value == null) return SchemaResult.ok(null);
 
     final Boundary boundary;
     final normalizedMap = jsonMapOrNull(value);

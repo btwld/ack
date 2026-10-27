@@ -106,9 +106,10 @@ final class _SchemaModelBuilder {
   AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {
     if (schema is WrapperSchema) {
       final base = _build(schema.inner);
-      final layered = base
+      var layered = base
           .withDescription(schema.description ?? base.description)
-          .withNullable(schema.isNullable || base.nullable);
+          .withNullable(schema.isNullable);
+      if (schema.excludesInnerNull) layered = _excludeNull(layered);
       // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
       // which `_build(schema.inner)` already applied. Re-running them here
       // would emit duplicate warnings (e.g. datetime range under a default).
@@ -553,11 +554,12 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel _lazyRef(LazySchema<dynamic, dynamic> schema) {
-    var model = AckRefSchemaModel(
+    AckSchemaModel model = AckRefSchemaModel(
       refName: schema.name,
       description: schema.description,
       nullable: schema.isNullable,
     );
+    if (schema.excludesTargetNull) model = _excludeNull(model);
     final constraintCount = schema.runtimeConstraintCount;
     final refinementCount = schema.runtimeRefinementCount;
     if (constraintCount == 0 && refinementCount == 0) {
@@ -601,6 +603,16 @@ final class _SchemaModelBuilder {
     });
   }
 }
+
+AckSchemaModel _excludeNull(AckSchemaModel model) => model.withExtensions({
+  ...model.extensions,
+  'allOf': [
+    ...?model.extensions['allOf'] as List<Object?>?,
+    const {
+      'not': {'type': 'null'},
+    },
+  ],
+});
 
 AckSchemaModel _applyConstraints(
   AckSchemaModel model,
