@@ -35,7 +35,7 @@ final class AnySchema extends AckSchema<Object, Object>
   ) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
-    if (_jsonSafeOrNull(value) == null) {
+    if (!_isJsonSafe(value)) {
       return SchemaResult.fail(
         SchemaValidationError(
           message:

@@ -6,7 +6,7 @@ import 'constraint.dart';
 /// Uses JSON instance equality to properly detect duplicates in collections
 /// and nested structures. In particular, numerically equal JSON numbers such
 /// as `1` and `1.0` are duplicates.
-class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
+final class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
     with Validator<List<T>>, JsonSchemaSpec<List<T>> {
   const ListUniqueItemsConstraint()
     : super(
@@ -175,7 +175,7 @@ int _jsonInstanceHashCode(Object? value) {
   return deepHashCode(value);
 }
 
-class _DuplicateGroup<T> {
+final class _DuplicateGroup<T> {
   final T value;
 
   int count = 1;

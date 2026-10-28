@@ -573,7 +573,7 @@ SchemaError _buildTypeMismatch({
   );
 }
 
-class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
+final class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
     with Validator<T>, JsonSchemaSpec<T> {
   _ConstraintMessageOverride(this.inner, this.customMessage)
     : super(constraintKey: inner.constraintKey, description: inner.description);
@@ -614,44 +614,28 @@ class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
   int get hashCode => Object.hash(runtimeType, inner, customMessage);
 }
 
-/// Returns [value] if it is composed entirely of JSON-safe primitives
+/// Returns `true` if [value] is composed entirely of JSON-safe primitives
 /// (`null`, finite `num`, `bool`, `String`, `List`, string-keyed `Map`),
-/// recursively.
-/// Returns `null` if any nested value is not JSON-safe. Used by
-/// [DefaultSchema] to avoid emitting runtime-only objects (e.g. raw
-/// `DateTime` instances) as JSON Schema defaults.
-Object? _jsonSafeOrNull(Object? value) {
-  if (value == null) return null;
-  if (value is num) return value.isFinite ? value : null;
-  if (value is bool || value is String) return value;
+/// recursively without allocating intermediate collections.
+bool _isJsonSafe(Object? value) {
+  if (value == null) return true;
+  if (value is num) return value.isFinite;
+  if (value is bool || value is String) return true;
   if (value is List) {
-    final result = <Object?>[];
     for (final item in value) {
-      if (item == null) {
-        result.add(null);
-        continue;
-      }
-      final converted = _jsonSafeOrNull(item);
-      if (converted == null) return null;
-      result.add(converted);
+      if (!_isJsonSafe(item)) return false;
     }
-    return result;
+    return true;
   }
   if (value is Map) {
-    final result = <String, Object?>{};
     for (final entry in value.entries) {
-      if (entry.key is! String) return null;
-      if (entry.value == null) {
-        result[entry.key as String] = null;
-        continue;
+      if (entry.key is! String || !_isJsonSafe(entry.value)) {
+        return false;
       }
-      final converted = _jsonSafeOrNull(entry.value);
-      if (converted == null) return null;
-      result[entry.key as String] = converted;
     }
-    return result;
+    return true;
   }
-  return null;
+  return false;
 }
 
 /// Safely converts a value into a [JsonMap]. Returns `null` if the value is

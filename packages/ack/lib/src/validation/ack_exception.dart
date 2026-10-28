@@ -8,7 +8,7 @@ import 'schema_error.dart';
 /// It wraps a [SchemaError] instance, providing detailed information
 /// about the validation failure.
 @immutable
-class AckException implements Exception {
+final class AckException implements Exception {
   final List<SchemaError> errors;
 
   const AckException(this.errors);

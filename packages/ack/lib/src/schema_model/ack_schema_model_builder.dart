@@ -461,52 +461,39 @@ final class _SchemaModelBuilder {
     );
   }
 
-  AckSchemaModel _instance(InstanceSchema schema) {
-    // InstanceSchema accepts arbitrary Dart instances of a runtime type with no
-    // direct JSON representation. Adapters that flow through a codec see the
-    // boundary schema instead; this is the fallback for a bare instance.
+  AckSchemaModel _instance(InstanceSchema schema) => _jsonBoundaryAnyOf(
+    schema,
+    warningCode: 'ack_instance_json_boundary',
+    warningMessage:
+        'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
+  );
+
+  AckSchemaModel _any(AnySchema schema) => _jsonBoundaryAnyOf(
+    schema,
+    warningCode: 'ack_any_json_boundary',
+    warningMessage:
+        'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
+  );
+
+  AckSchemaModel _jsonBoundaryAnyOf(
+    AckSchema<Object, Object> schema, {
+    required String warningCode,
+    required String warningMessage,
+  }) {
+    final description = schema.description;
     return AckAnyOfSchemaModel(
       schemas: [
-        AckStringSchemaModel(description: schema.description),
-        AckNumberSchemaModel(description: schema.description),
-        AckIntegerSchemaModel(description: schema.description),
-        AckBooleanSchemaModel(description: schema.description),
-        AckObjectSchemaModel(description: schema.description),
-        AckArraySchemaModel(description: schema.description),
+        AckStringSchemaModel(description: description),
+        AckNumberSchemaModel(description: description),
+        AckIntegerSchemaModel(description: description),
+        AckBooleanSchemaModel(description: description),
+        AckObjectSchemaModel(description: description),
+        AckArraySchemaModel(description: description),
       ],
-      nullable: schema.isNullable,
-      description: schema.description,
-      warnings: const [
-        AckSchemaModelWarning(
-          code: 'ack_instance_json_boundary',
-          message:
-              'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
-        ),
-      ],
-    );
-  }
-
-  AckSchemaModel _any(AnySchema schema) {
-    final description = schema.description;
-    final primitiveBranches = [
-      AckStringSchemaModel(description: description),
-      AckNumberSchemaModel(description: description),
-      AckIntegerSchemaModel(description: description),
-      AckBooleanSchemaModel(description: description),
-      AckObjectSchemaModel(description: description),
-      AckArraySchemaModel(description: description),
-    ];
-
-    return AckAnyOfSchemaModel(
-      schemas: primitiveBranches,
       nullable: schema.isNullable,
       description: description,
-      warnings: const [
-        AckSchemaModelWarning(
-          code: 'ack_any_json_boundary',
-          message:
-              'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
-        ),
+      warnings: [
+        AckSchemaModelWarning(code: warningCode, message: warningMessage),
       ],
     );
   }
@@ -808,8 +795,7 @@ T _wrapPropertyConversion<T>(String key, T Function() fn) {
   try {
     return fn();
   } catch (e, st) {
-    final msg =
-        'Error converting property "$key": ${e is Error ? e.toString() : e}';
+    final msg = 'Error converting property "$key": $e';
     if (e is UnsupportedError) {
       Error.throwWithStackTrace(UnsupportedError(msg), st);
     } else if (e is ArgumentError) {

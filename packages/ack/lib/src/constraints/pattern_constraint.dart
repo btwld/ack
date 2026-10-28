@@ -11,7 +11,7 @@ enum PatternType { regex, enumString, format }
 /// Handles regex matching, checking against a list of allowed enum strings,
 /// and validating against predefined formats (like date, email) using either regex
 /// or custom validation functions.
-class PatternConstraint extends Constraint<String>
+final class PatternConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
   final PatternType type;
   final RegExp? pattern; // For PatternType.regex

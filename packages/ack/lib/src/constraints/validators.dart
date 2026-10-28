@@ -3,7 +3,7 @@ import 'constraint.dart';
 
 /// Constraint for validating that a value is not null.
 /// Typically used internally by `AckSchema` when `isNullable` is false.
-class NonNullableConstraint extends Constraint<Object?>
+final class NonNullableConstraint extends Constraint<Object?>
     with Validator<Object?> {
   const NonNullableConstraint()
     : super(
@@ -21,7 +21,7 @@ class NonNullableConstraint extends Constraint<Object?>
 /// Constraint for validating that a value is of an expected Dart type.
 ///
 /// Used internally by [AckSchema] during parse and encode type checking.
-class InvalidTypeConstraint extends Constraint<Object?>
+final class InvalidTypeConstraint extends Constraint<Object?>
     with Validator<Object?> {
   final Type expectedType;
   final Type? actualType;
@@ -88,7 +88,7 @@ class InvalidTypeConstraint extends Constraint<Object?>
 
 /// Placeholder: Constraint for when an object has properties not defined in its schema
 /// and `allowAdditionalProperties` is false.
-class ObjectNoAdditionalPropertiesConstraint extends Constraint<JsonMap>
+final class ObjectNoAdditionalPropertiesConstraint extends Constraint<JsonMap>
     with Validator<JsonMap> {
   final String unexpectedPropertyKey;
   ObjectNoAdditionalPropertiesConstraint({required this.unexpectedPropertyKey})
@@ -132,7 +132,7 @@ class ObjectNoAdditionalPropertiesConstraint extends Constraint<JsonMap>
 
 /// Placeholder: Constraint for when an object is missing a required property.
 /// Logic is in ObjectSchema.
-class ObjectRequiredPropertiesConstraint extends Constraint<JsonMap>
+final class ObjectRequiredPropertiesConstraint extends Constraint<JsonMap>
     with Validator<JsonMap> {
   final String missingPropertyKey;
   ObjectRequiredPropertiesConstraint({required this.missingPropertyKey})

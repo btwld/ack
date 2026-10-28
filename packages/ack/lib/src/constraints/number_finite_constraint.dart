@@ -1,7 +1,7 @@
 import 'constraint.dart';
 
 /// Constraint to validate if a number is finite.
-class NumberFiniteConstraint<N extends num> extends Constraint<N>
+final class NumberFiniteConstraint<N extends num> extends Constraint<N>
     with Validator<N> {
   const NumberFiniteConstraint()
     : super(
