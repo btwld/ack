@@ -20,7 +20,7 @@ final class AckClassModelEmitter {
         case AckObjectModelNode(:final unionId) when unionId != null:
           continue;
         case AckObjectModelNode():
-          _emitObject(output, graph, node);
+          _emitConcrete(output, graph, node);
         case AckValueModelNode():
           throw StateError('Class-first graphs cannot contain value roots.');
         case AckUnionModelNode():
@@ -31,7 +31,7 @@ final class AckClassModelEmitter {
                 'Class-first union branch $branchId is not an object.',
               );
             }
-            _emitBranch(output, graph, branch);
+            _emitConcrete(output, graph, branch);
           }
           _emitUnion(output, graph, node, nodes);
       }
@@ -39,28 +39,11 @@ final class AckClassModelEmitter {
     return output.toString();
   }
 
-  void _emitObject(
-    StringBuffer output,
-    AckModelGraph graph,
-    AckObjectModelNode node,
-  ) {
-    _emitConcrete(output, graph, node, includeValueMembers: true);
-  }
-
-  void _emitBranch(
-    StringBuffer output,
-    AckModelGraph graph,
-    AckObjectModelNode node,
-  ) {
-    _emitConcrete(output, graph, node, includeValueMembers: true);
-  }
-
   void _emitConcrete(
     StringBuffer output,
     AckModelGraph graph,
-    AckObjectModelNode node, {
-    required bool includeValueMembers,
-  }) {
+    AckObjectModelNode node,
+  ) {
     final metadata = _metadata(graph, node);
     final rawName = ackClassRawObjectName(node.className);
     final wireName = ackClassWireSchemaName(node.className);
@@ -85,7 +68,7 @@ final class AckClassModelEmitter {
           facadeName: metadata.facadeName,
           fields: node.fields,
           constructorParameters: node.constructorParameters,
-          includeValueMembers: includeValueMembers,
+          includeValueMembers: true,
           captureFieldName: node.captureFieldName,
           copyWithSupertypes: metadata.copyWithSupertypes,
         ),
@@ -181,15 +164,13 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
   String _codecSchema(
     AckObjectModelNode node, {
     required String backingName,
-    String? input,
-  }) {
-    final expression = input ?? _objectSchema(node);
-    return '''
-final $backingName = $expression.codec<${node.className}>(
+    required String input,
+  }) =>
+      '''
+final $backingName = $input.codec<${node.className}>(
   decode: ${ackClassFromRuntimeName(node.className)},
   encode: ${ackClassToRuntimeName(node.className)},
 )${_describe(node.description)};''';
-  }
 
   /// Explicit class descriptions describe the wire object and model codec.
   ///

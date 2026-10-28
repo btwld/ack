@@ -142,7 +142,7 @@ ${includeValueMembers ? '${copyWithContract(className: className, parameters: co
         ..annotations.add(refer('override'))
         ..returns = refer('String')
         ..lambda = true
-        ..body = literalString(_toStringPreview(className, fields)).code,
+        ..body = Code("'${_toStringPreview(className, fields)}'"),
     ),
   ];
 

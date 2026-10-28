@@ -934,7 +934,7 @@ Object? _deepCopy(Object? value) => switch (value) {
   _ => value,
 };
 
-bool _jsonEquals(Object? a, Object? b) => jsonEncode(a) == jsonEncode(b);
+bool _jsonEquals(Object? a, Object? b) => deepEquals(a, b);
 
 bool _listEquals(Object? a, List<Object?> b) =>
-    a is List<Object?> && _jsonEquals(a, b);
+    a is List<Object?> && deepEquals(a, b);

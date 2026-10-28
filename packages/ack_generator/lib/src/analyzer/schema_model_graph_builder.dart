@@ -1452,10 +1452,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     Set<Element> visited = const {},
   }) async {
     if (reference == null) return;
-    var directExpression = reference;
-    while (directExpression is ParenthesizedExpression) {
-      directExpression = directExpression.expression;
-    }
+    final directExpression = reference.unParenthesized;
     final directChain = parseSchemaChain(directExpression);
     _rejectTransform(directChain, path, context);
 
@@ -1508,10 +1505,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     Set<Element> visited = const {},
     bool throughCodecs = false,
   }) async {
-    Expression? current = expression;
-    while (current is ParenthesizedExpression) {
-      current = current.expression;
-    }
+    Expression? current = expression.unParenthesized;
     while (current is MethodInvocation) {
       final name = current.methodName.name;
       // Runtime models can stop at a value codec. Boundary inference still
@@ -1561,7 +1555,7 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
     required Element context,
     Set<Element> visited = const {},
   }) async {
-    Expression? current = expression;
+    Expression? current = expression.unParenthesized;
     while (current is MethodInvocation) {
       final name = current.methodName.name;
       // The outermost policy wins; an earlier dynamic value is irrelevant
@@ -1586,17 +1580,9 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         }
       }
       if (isAckTarget(current.target)) return false;
-      current = current.target;
+      current = current.target?.unParenthesized;
     }
     if (current == null) return false;
-    if (current is ParenthesizedExpression) {
-      return _additionalProperties(
-        current.expression,
-        path: path,
-        context: context,
-        visited: visited,
-      );
-    }
     final referenced = referencedElement(current);
     final target = await resolveReferencedTopLevelExpression(
       referenced,

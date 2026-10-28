@@ -722,8 +722,7 @@ abstract base class ModelGraphBuilderBase {
   /// Whether [element] is a static `schema` member that a type declares.
   bool isTypeOwnedSchema(Element? element) =>
       (element is GetterElement || element is MethodElement) &&
-      element is ExecutableElement &&
-      element.isStatic &&
+      (element as ExecutableElement).isStatic &&
       element.name == 'schema' &&
       element.enclosingElement is InterfaceElement;
 
@@ -734,11 +733,17 @@ abstract base class ModelGraphBuilderBase {
     _ => null,
   };
 
+  Element? _identifierOrPropertyElement(Expression? expression) =>
+      switch (expression) {
+        SimpleIdentifier() => expression.element,
+        PrefixedIdentifier() => expression.identifier.element,
+        PropertyAccess() => expression.propertyName.element,
+        _ => null,
+      };
+
   /// Resolves the top-level declaration referenced by [expression], if any.
   Element? referencedElement(Expression expression) {
-    if (expression is ParenthesizedExpression) {
-      return referencedElement(expression.expression);
-    }
+    expression = expression.unParenthesized;
     if (expression is SimpleIdentifier) {
       final element = expression.element;
       return element == null ? null : propertyDeclaration(element);
@@ -799,10 +804,7 @@ abstract base class ModelGraphBuilderBase {
     Expression expression, {
     Set<Element> visited = const {},
   }) async {
-    Expression? current = expression;
-    while (current is ParenthesizedExpression) {
-      current = current.expression;
-    }
+    Expression? current = expression.unParenthesized;
     Element? referenced;
     while (current is MethodInvocation) {
       if (oneWayTransformMethods.contains(current.methodName.name)) {
@@ -810,14 +812,9 @@ abstract base class ModelGraphBuilderBase {
       }
       final method = current.methodName.element;
       if (method is TopLevelFunctionElement) referenced = method;
-      current = current.target;
+      current = current.target?.unParenthesized;
     }
-    referenced ??= switch (current) {
-      SimpleIdentifier() => current.element,
-      PrefixedIdentifier() => current.identifier.element,
-      PropertyAccess() => current.propertyName.element,
-      _ => null,
-    };
+    referenced ??= _identifierOrPropertyElement(current);
     final target = await resolveReferencedTopLevelExpression(
       referenced,
       visited: visited,
@@ -847,12 +844,7 @@ abstract base class ModelGraphBuilderBase {
     expression = expression.unParenthesized;
     if (expression is BooleanLiteral) return expression.value;
 
-    final element = switch (expression) {
-      SimpleIdentifier() => expression.element,
-      PrefixedIdentifier() => expression.identifier.element,
-      PropertyAccess() => expression.propertyName.element,
-      _ => null,
-    };
+    final element = _identifierOrPropertyElement(expression);
     final declaration = element == null ? null : propertyDeclaration(element);
     return declaration is VariableElement
         ? declaration.computeConstantValue()?.toBoolValue()

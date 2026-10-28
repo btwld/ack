@@ -184,10 +184,9 @@ final class AckModelGenerator extends Generator {
       'SchemaResult': _schemaResultChecker,
     },
     requiredElements: const {
-      'AckSchemaModelExtension':
-          'package:ack/src/schema_model/ack_schema_model_builder.dart',
-      'deepEquals': 'package:ack/src/utils/collection_utils.dart',
-      'deepHashCode': 'package:ack/src/utils/collection_utils.dart',
+      'AckSchemaModelExtension': 'ack',
+      'deepEquals': 'ack',
+      'deepHashCode': 'ack',
     },
     message:
         'Generated class-first schemas require visible exact Ack, AckSchema, '
@@ -281,10 +280,7 @@ final class AckModelGenerator extends Generator {
       'AckModelAdapter': _ackModelAdapterChecker,
       'SchemaResult': _schemaResultChecker,
     },
-    requiredElements: const {
-      'deepEquals': 'package:ack/src/utils/collection_utils.dart',
-      'deepHashCode': 'package:ack/src/utils/collection_utils.dart',
-    },
+    requiredElements: const {'deepEquals': 'ack', 'deepHashCode': 'ack'},
     message:
         'Generated Ack models require visible exact AckModelAdapter, '
         'SchemaResult, deepEquals, and deepHashCode imports in this library.',
@@ -319,7 +315,10 @@ final class AckModelGenerator extends Generator {
         final candidate = prefix == null
             ? import.namespace.get2(entry.key)
             : import.namespace.getPrefixed2(prefix, entry.key);
-        return candidate?.library?.uri.toString() == entry.value;
+        final uri = candidate?.library?.uri;
+        return uri != null &&
+            uri.isScheme('package') &&
+            uri.pathSegments.firstOrNull == entry.value;
       });
       if (!exposesRequiredTypes || !exposesRequiredElements) continue;
       if (prefix != null && prefix.isNotEmpty) {

@@ -243,7 +243,7 @@ final userSchema = Ack.object({
             contains('User call({'),
             contains('deepEquals(name, other.name)'),
             contains('deepHashCode(tags)'),
-            contains("toString() => 'User("),
+            contains(r"toString() => 'User(name: $name, tags: $tags)'"),
             isNot(contains('class UserType')),
           ]),
         ),

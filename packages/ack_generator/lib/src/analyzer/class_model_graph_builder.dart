@@ -17,7 +17,7 @@ import 'model_graph_builder_base.dart';
 typedef _ModelOptions = ({
   String? schemaName,
   String? description,
-  String caseStyle,
+  annotations.AckCaseStyle caseStyle,
   String? discriminatorKey,
   String? discriminatorValue,
   annotations.AckUnknownPropertyPolicy unknownProperties,
@@ -1278,11 +1278,10 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     final reader = ConstantReader(annotation);
     final caseStyle = reader.read('caseStyle').objectValue;
     final caseIndex = caseStyle.getField('index')!.toIntValue()!;
-    const styles = ['none', 'snake', 'kebab', 'pascal', 'screamingSnake'];
     return (
       schemaName: _nullableString(reader, 'schemaName'),
       description: _nullableString(reader, 'description'),
-      caseStyle: styles[caseIndex],
+      caseStyle: annotations.AckCaseStyle.values[caseIndex],
       discriminatorKey: _nullableString(reader, 'discriminatorKey'),
       discriminatorValue: _nullableString(reader, 'discriminatorValue'),
       unknownProperties:
@@ -1361,15 +1360,18 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     );
   }
 
-  String _rename(String name, String style) => switch (style) {
-    'none' => name,
-    'snake' => _separated(name, '_'),
-    'kebab' => _separated(name, '-'),
-    'pascal' =>
-      name.isEmpty ? name : '${name[0].toUpperCase()}${name.substring(1)}',
-    'screamingSnake' => _separated(name, '_').toUpperCase(),
-    _ => throw StateError('Unknown Ack case style $style.'),
-  };
+  String _rename(String name, annotations.AckCaseStyle style) =>
+      switch (style) {
+        annotations.AckCaseStyle.none => name,
+        annotations.AckCaseStyle.snake => _separated(name, '_'),
+        annotations.AckCaseStyle.kebab => _separated(name, '-'),
+        annotations.AckCaseStyle.pascal =>
+          name.isEmpty ? name : '${name[0].toUpperCase()}${name.substring(1)}',
+        annotations.AckCaseStyle.screamingSnake => _separated(
+          name,
+          '_',
+        ).toUpperCase(),
+      };
 
   String _separated(String value, String separator) => value.replaceAllMapped(
     RegExp('[A-Z]'),
