@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+* Keep the generator's JSON dependencies compatible with the supported Dart 3.9
+  SDK, including clean builds in consumer packages.
+
 ## 1.7.0
 
 * Remove `ack_annotations`; annotations now ship in `ack` (`package:ack/ack.dart`,
