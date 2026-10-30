@@ -1,5 +1,16 @@
 part of 'json_schema_library.dart';
 
+// Typed lowering assumes the standard assertion vocabularies. Custom dialects
+// use validated value models so inactive keywords retain annotation semantics.
+const _typedDialects = {
+  'https://json-schema.org/draft/2020-12/schema',
+  'https://json-schema.org/draft/2020-12/schema#',
+  'http://json-schema.org/draft-07/schema',
+  'http://json-schema.org/draft-07/schema#',
+  'https://json-schema.org/draft-07/schema',
+  'https://json-schema.org/draft-07/schema#',
+};
+
 const _annotations = {
   'title',
   'description',
@@ -103,6 +114,11 @@ final class _Translator {
   Map<String, Object?>? prepare(Object? document) {
     if (document is! Map<String, Object?>) {
       _fail('#', 'Expected a JSON object with a "\$defs" map.');
+      return null;
+    }
+    if (document[r'$schema'] case final String dialect
+        when !_typedDialects.contains(dialect)) {
+      _fail(r'#/$schema', 'Custom dialects require source-schema validation.');
       return null;
     }
     const rootKeys = {

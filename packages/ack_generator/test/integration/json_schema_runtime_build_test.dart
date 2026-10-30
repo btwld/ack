@@ -60,6 +60,83 @@ targets:
           assert_formats: true
           documents:
             "https://example.test/flag.json": "lib/flag.json"
+            "https://example.test/meta/validation": "lib/validation_meta.json"
+            "https://example.test/meta/applicator": "lib/applicator_meta.json"
+''');
+        for (final vocabulary in ['validation', 'applicator']) {
+          final dialectUri = 'https://example.test/meta/$vocabulary';
+          File(
+            p.join(project.path, 'lib', '${vocabulary}_meta.json'),
+          ).writeAsStringSync(
+            jsonEncode({
+              r'$id': dialectUri,
+              r'$schema': 'https://json-schema.org/draft/2020-12/schema',
+              r'$vocabulary': {
+                'https://json-schema.org/draft/2020-12/vocab/core': true,
+                'https://json-schema.org/draft/2020-12/vocab/$vocabulary': true,
+              },
+            }),
+          );
+          File(
+            p.join(project.path, 'lib', '$vocabulary.schema.json'),
+          ).writeAsStringSync(
+            jsonEncode({
+              r'$schema': dialectUri,
+              r'$defs': {
+                'Model': {
+                  'type': 'object',
+                  'properties': {
+                    'name': {'type': 'string'},
+                  },
+                  'required': ['name'],
+                },
+              },
+            }),
+          );
+        }
+        File(
+          p.join(project.path, 'test', 'dialects_test.dart'),
+        ).writeAsStringSync(r'''
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:ack/ack.dart';
+import 'package:ack_json_schema_runtime/validation.schema.dart' as validation;
+import 'package:ack_json_schema_runtime/applicator.schema.dart' as applicator;
+import 'package:test/test.dart';
+
+void main() {
+  for (final (vocabulary, accepts, encode) in [
+    ('validation',
+      (Object? value) => validation.Model.safeParse(value).isOk,
+      (Object? value) => validation.Model.parse(value).toJson()),
+    ('applicator',
+      (Object? value) => applicator.Model.safeParse(value).isOk,
+      (Object? value) => applicator.Model.parse(value).toJson()),
+  ]) {
+    test('generated model honors the $vocabulary-only dialect', () {
+      final documentUri = Uri.parse('https://example.test/model.schema.json');
+      final dialectUri = Uri.parse('https://example.test/meta/$vocabulary');
+      final oracle = Ack.fromJsonSchema(
+        {r'$ref': documentUri.replace(fragment: r'/$defs/Model').toString()},
+        documents: {
+          documentUri: jsonDecode(File('lib/$vocabulary.schema.json')
+              .readAsStringSync()) as Object,
+          dialectUri: jsonDecode(File('lib/${vocabulary}_meta.json')
+              .readAsStringSync()) as Object,
+        },
+      );
+      for (final value in [
+        {'name': 42}, {'name': null}, {'name': 'ok'},
+        {}, null, true, 42, 'text', <Object?>[],
+      ]) {
+        final expected = oracle.safeParse(value).isOk;
+        expect(accepts(value), expected, reason: '$value');
+        if (expected) expect(encode(value), value);
+      }
+    });
+  }
+}
 ''');
         File(p.join(project.path, 'lib', 'flag.json')).writeAsStringSync(
           '{"type":"object","properties":{"flag":{"type":"boolean"}},'
