@@ -492,7 +492,7 @@ bool _isUri(
     return false;
   }
   if (!absolute &&
-      RegExp(r'^[^/?.#][^/]*:').hasMatch(value) &&
+      RegExp(r'^[^/?#]*:').hasMatch(value) &&
       !RegExp(r'^[A-Za-z][A-Za-z0-9+.-]*:').hasMatch(value)) {
     return false;
   }

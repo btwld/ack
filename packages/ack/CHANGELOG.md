@@ -1,5 +1,7 @@
 ## Unreleased
 
+* Accept colons in relative URI and IRI queries, fragments, and later path
+  segments while rejecting them in a relative first path segment.
 * Enforce RFC 3987 Unicode ranges for IRI format assertions, allowing private-use
   code points only in queries and rejecting forbidden code points.
 * Accept line terminators in relative JSON pointer reference tokens.
