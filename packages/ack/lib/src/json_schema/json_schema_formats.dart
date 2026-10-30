@@ -198,7 +198,10 @@ bool _isJsonPointer(String value) {
 }
 
 bool _isRelativeJsonPointer(String value) {
-  final match = RegExp(r'^(0|[1-9][0-9]*)(#|(?:/.*)?)$').firstMatch(value);
+  final match = RegExp(
+    r'^(0|[1-9][0-9]*)(#|(?:/.*)?)$',
+    dotAll: true,
+  ).firstMatch(value);
   if (match == null) return false;
   final suffix = match[2]!;
   return suffix == '#' || _isJsonPointer(suffix);

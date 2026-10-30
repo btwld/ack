@@ -1,5 +1,6 @@
 ## Unreleased
 
+* Accept line terminators in relative JSON pointer reference tokens.
 * Validate plain ASCII hostname labels under RFC 1123, allowing internal
   double hyphens while retaining IDNA checks for internationalized labels.
 

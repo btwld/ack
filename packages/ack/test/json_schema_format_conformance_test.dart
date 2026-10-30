@@ -28,6 +28,28 @@ void main() {
     }
   });
 
+  test('relative JSON pointers allow line terminators in tokens', () {
+    final schema = Ack.fromJsonSchema({
+      'type': 'string',
+      'format': 'relative-json-pointer',
+    }, assertFormats: true);
+    final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
+    for (final token in [
+      'foo\nbar',
+      'foo\rbar',
+      'foo\r\nbar',
+      'foo\u2028bar',
+    ]) {
+      final pointer = '0/$token';
+      expect(schema.safeParse(pointer).isOk, isTrue, reason: pointer);
+      expect(roundTrip.safeParse(pointer).isOk, isTrue, reason: pointer);
+    }
+    for (final pointer in ['01/foo\nbar', '0/foo\n~2bar', '0\n#']) {
+      expect(schema.safeParse(pointer).isFail, isTrue, reason: pointer);
+      expect(roundTrip.safeParse(pointer).isFail, isTrue, reason: pointer);
+    }
+  });
+
   const root = 'test/fixtures/json_schema_2020_12_full/draft2020-12';
   final formatDirectory = Directory('$root/optional/format');
 
