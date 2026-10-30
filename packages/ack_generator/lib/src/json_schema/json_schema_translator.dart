@@ -160,6 +160,24 @@ final class _Translator {
       _widen(effective, '#');
     }
     _gate(effective, defs.keys);
+    if (diagnostics.isEmpty) {
+      final dialect = Uri.parse(
+        document[r'$schema'] as String? ??
+            'https://json-schema.org/draft/2020-12/schema',
+      ).removeFragment();
+      if (documents.entries.any(
+        (entry) => _maySupplyDialect(
+          entry.value,
+          documentUri.resolveUri(entry.key).removeFragment(),
+          dialect,
+        ),
+      )) {
+        _fail(
+          r'#/$schema',
+          'Supplied dialects require source-schema validation.',
+        );
+      }
+    }
     return diagnostics.isEmpty ? effective : null;
   }
 
@@ -939,6 +957,23 @@ String _num(num value) {
 }
 
 String _token(String key) => key.replaceAll('~', '~0').replaceAll('/', '~1');
+
+// Conservatively find supplied dialect resources, including bundled resources
+// and relative IDs. The importer remains responsible for deciding which
+// locations are schemas and which vocabularies they activate.
+bool _maySupplyDialect(Object? node, Uri base, Uri dialect) {
+  if (base == dialect) return true;
+  if (node is Map<String, Object?>) {
+    if (node[r'$id'] case final String id) {
+      final parsed = Uri.tryParse(id);
+      if (parsed != null) base = base.resolveUri(parsed).removeFragment();
+    }
+    return base == dialect ||
+        node.values.any((child) => _maySupplyDialect(child, base, dialect));
+  }
+  return node is List<Object?> &&
+      node.any((child) => _maySupplyDialect(child, base, dialect));
+}
 
 Object? _deepCopy(Object? value) => switch (value) {
   final Map<String, Object?> map => {
