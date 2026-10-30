@@ -127,8 +127,9 @@ decimal digits of the number, as the JSON Schema Test Suite requires, so `0.3`
 and `0.6` are multiples of `0.1`, `1e308` is a multiple of `0.5`, and an
 unrounded binary-float sum such as `0.1 + 0.2` (`0.30000000000000004`) is not.
 
-Custom non-standard `$vocabulary` URIs that require assertion semantics and
-non-`x-*` unknown keywords fail import with `unsupported_keyword`.
+Unknown keywords, including non-`x-*` keywords, are accepted as annotations.
+An unsupported vocabulary marked as required (`true`) in `$vocabulary` fails
+import with `unsupported_vocabulary`; unsupported optional vocabularies do not.
 
 ### References, default Draft 2020-12 export, and Draft-7 lowering
 
