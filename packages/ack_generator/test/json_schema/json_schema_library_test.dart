@@ -90,6 +90,17 @@ void main() {
         {'type': 'number', 'maximum': 1e20},
         'ack.Ack.number().max(100000000000000000000.0)',
       ),
+      for (final (keyword, method) in [
+        ('minimum', 'min'),
+        ('maximum', 'max'),
+        ('exclusiveMinimum', 'greaterThan'),
+        ('exclusiveMaximum', 'lessThan'),
+      ])
+        for (final bound in [9007199254740993, -9007199254740993])
+          'a number with an exact integer $keyword of $bound': (
+            {'type': 'number', keyword: bound},
+            'ack.Ack.number().$method($bound)',
+          ),
       'a boolean': ({'type': 'boolean'}, 'ack.Ack.boolean()'),
       'a deduped enum with null': (
         {

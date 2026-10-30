@@ -913,9 +913,7 @@ final class _Translator {
 }
 
 String _num(num value) {
-  if (value is int) {
-    return value.abs() <= 9007199254740992 ? '$value' : '${value.toDouble()}';
-  }
+  if (value is int) return '$value';
   if (value.isFinite &&
       value.abs() <= 9007199254740992.0 &&
       value == value.truncate()) {

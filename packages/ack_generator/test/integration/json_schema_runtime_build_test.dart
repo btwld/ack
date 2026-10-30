@@ -180,6 +180,16 @@ void main() {
 ''');
 
         final regressions = <String, Map<String, Object?>>{
+          'precision': {
+            'Precise': {
+              'type': 'object',
+              'properties': {
+                'lower': {'type': 'number', 'minimum': 9007199254740993},
+                'upper': {'type': 'number', 'maximum': -9007199254740993},
+              },
+              'required': ['lower', 'upper'],
+            },
+          },
           'bounds': {
             'Bounded': {
               'type': 'object',
@@ -222,12 +232,27 @@ void main() {
           p.join(project.path, 'test', 'regressions_test.dart'),
         ).writeAsStringSync(r'''
 import 'package:ack_json_schema_runtime/bounds.schema.dart';
+import 'package:ack_json_schema_runtime/precision.schema.dart';
 import 'package:ack_json_schema_runtime/patterns.schema.dart';
 import 'package:ack_json_schema_runtime/types.schema.dart' as types;
 import 'package:ack_json_schema_runtime/anyof.schema.dart' as anyof;
 import 'package:test/test.dart';
 
 void main() {
+  test('integer number bounds retain precision beyond 2^53', () {
+    expect(Precise.safeParse({
+      'lower': 9007199254740993,
+      'upper': -9007199254740993,
+    }).isOk, isTrue);
+    expect(Precise.safeParse({
+      'lower': 9007199254740992,
+      'upper': -9007199254740993,
+    }).isFail, isTrue);
+    expect(Precise.safeParse({
+      'lower': 9007199254740993,
+      'upper': -9007199254740992,
+    }).isFail, isTrue);
+  });
   test('integral decimal bounds preserve validation', () {
     expect(Bounded.safeParse({'name': 'ab', 'items': ['x']}).isOk, isTrue);
     for (final name in ['a', 'abcd']) {
