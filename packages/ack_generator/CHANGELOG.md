@@ -2,6 +2,8 @@
 
 * Use runtime-validated value models for custom dialects so inactive vocabulary
   keywords retain annotation semantics instead of adding generated constraints.
+* Honor supplied dialect resources under alias URIs even when their JSON maps
+  use dynamic or object key types, including bundled resources.
 * Preserve exact integer bounds on generated number schemas beyond 2^53.
 * Bound `source_helper` below 1.4 so `json_serializable` 6.14 compiles on the
   minimum supported Dart 3.11 SDK. Newer SDKs can still select

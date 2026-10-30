@@ -959,11 +959,12 @@ String _num(num value) {
 String _token(String key) => key.replaceAll('~', '~0').replaceAll('/', '~1');
 
 // Conservatively find supplied dialect resources, including bundled resources
-// and relative IDs. The importer remains responsible for deciding which
-// locations are schemas and which vocabularies they activate.
+// and relative IDs. Accept the same map types as the importer's JSON copier.
+// The importer remains responsible for deciding which locations are schemas
+// and which vocabularies they activate.
 bool _maySupplyDialect(Object? node, Uri base, Uri dialect) {
   if (base == dialect) return true;
-  if (node is Map<String, Object?>) {
+  if (node is Map<Object?, Object?>) {
     if (node[r'$id'] case final String id) {
       final parsed = Uri.tryParse(id);
       if (parsed != null) base = base.resolveUri(parsed).removeFragment();
