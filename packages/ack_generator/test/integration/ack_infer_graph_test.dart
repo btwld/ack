@@ -5,9 +5,10 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<void> _expectOutput(String source, Matcher matcher) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
@@ -18,8 +19,7 @@ Future<void> _expectOutput(String source, Matcher matcher) async {
 }
 
 Future<void> _expectFailure(String source, List<String> messages) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   final seen = <String>{};
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
@@ -47,8 +47,7 @@ part 'schema.ack.g.dart';
 
 void main() {
   test('rejects a codec type the library cannot name', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     final errors = <String>[];
     await testBuilder(
       ackModelBuilder(BuilderOptions.empty),
