@@ -12,27 +12,9 @@ new compatible features/packages, and major when any stable public API breaks.
 For 1.7.0, the imported-pattern Unicode behavior change is a deliberately
 accepted exception to this major-version policy.
 
-The next candidate is **2.0.0-beta.1**. 2.0.0-alpha.2 was prepared on this
-branch but is not published; its notes are folded into beta.1. It corrects
-runtime nullability and discriminated validation, duration overflow, custom
-JSON Schema vocabulary preservation, generator metadata, naming, and
-generic-type contracts, and makes `preserveBoundary` a detached JSON-object
-wire view. Published alpha.1 notes remain unchanged.
-
-The 2.0 release line introduces single-pass `.g.dart`
-code generation without a runtime `json_serializable` delegation step, the
-unified `@Validate.*` constraint annotation namespace, custom schema resolution
-via `@Schemable(schemas: [...])` and automatic same-library detection,
-`JsonMaybe<T>` PATCH presence semantics, two-way `StringSchema` normalizers
-(`.trim()`, `.toLowerCase()`, `.toUpperCase()`), sealed `SchemaError` and
-`AckSchema` hierarchies, full JSON Schema Draft 2020-12 runtime validation and
-`.schema.json` model generation with default Draft 2020-12 preservation on
-`toJsonSchema()`, and removal of deprecated 1.x compatibility shims
-(`StandardSchemaV1`, `@AckType`, `@AckInfer`, `@AckModel`, and `.ack.dart` /
-`.ack.g.dart` dual-part generation).
-
-The shared API baseline for this release is 1.7.0. Confirm that all five
-packages have published 1.7.0 versions before preparing the release.
+Current features and migrations belong in the package changelogs and
+[the migration guide](docs/getting-started/migration-guide.mdx). The 2.0 release
+preflight compares against the published 1.7.0 API baseline.
 
 Melos **8.x** is configured with `mode: fixed` and `workspaceTag: true`, matching
 this repository's release-tag verifier. `smartDependents: true` preserves
@@ -108,39 +90,17 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
    staged hosted-dependency analysis; all must pass on the release merge commit.
 8. Review and merge the release PR before creating the tag.
 
-## Historical first publication of ack_mcp_dart
+## First publication of a new package
 
-[pub.dev requires the first version of a new package to be published manually](https://dart.dev/tools/pub/automated-publishing).
-OIDC cannot create a new package. The steps below applied only to the first
-`ack_mcp_dart` release, v1.3.0; do not repeat them for later releases.
-
-After the release PR merges and all checks pass, but **before pushing v1.3.0**:
-
-1. Check out the reviewed release commit and stage the new package outside the
-   workspace so its hosted dependencies are verified:
-
-   ```sh
-   dart scripts/stage_package.dart ack_mcp_dart /tmp/ack-mcp-first-release
-   cd /tmp/ack-mcp-first-release/packages/ack_mcp_dart
-   dart pub get
-   dart analyze --fatal-infos
-   dart test
-   dart pub publish --dry-run
-   dart pub publish
-   ```
-
-   It declares `ack: ^1.2.0`, so the first upload can resolve the already-published
-   core package. Follow pub's authentication prompt using an authorized uploader
-   account; for a supported token-based flow use `dart pub token add https://pub.dev`.
-2. In the package's pub.dev Admin tab, enable GitHub Actions publication for
-   repository `btwld/ack`, tag pattern `v{{version}}`, and required
-   environment `Production`. Associate the package with the intended publisher.
-3. Verify version 1.3.0 is visible on pub.dev before starting the coordinated tag
-   release. Keep the same reviewed source for the manual upload and release tag.
-
-Later releases need no manual package bootstrap. Existing package Admin settings
-must likewise permit the repository/tag/environment used by the workflow; the
-repository cannot configure pub.dev Admin settings on behalf of its owner.
+[pub.dev requires a manual first upload](https://dart.dev/tools/pub/automated-publishing)
+before OIDC can publish a new package. After its integration PR is reviewed and
+merged, stage and validate the package against hosted dependencies as described
+above, then follow pub's authentication prompt using an authorized uploader.
+A supported token-based alternative is `dart pub token add https://pub.dev`.
+Enable automated publishing for `btwld/ack`, `v{{version}}`, and `Production`
+before the coordinated tag release. Existing packages need no manual bootstrap;
+see [the historical MCP bootstrap](https://github.com/btwld/ack/blob/0adeb31d39ceb64dd71db07eae88dc18c8254439/PUBLISHING.md#historical-first-publication-of-ack_mcp_dart)
+for the original procedure.
 
 ## Publish the coordinated release
 
