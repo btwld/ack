@@ -84,11 +84,12 @@ The model describes boundary values. A DateTime codec exports its string wire
 shape; runtime constraints are projected only when their meaning survives that
 mapping. One-way transforms do not give an adapter a reverse conversion.
 
-Inspect `warnings` on model nodes, including nested nodes. For example, runtime
-refinements may be omitted with a `refinement_omitted` warning, and a default
-that cannot be exported safely produces a warning. Decide which warnings the
-adapter can return to callers and which require an explicit failure. Do not
-promise that exporting a schema preserves arbitrary runtime validation.
+Inspect `warnings` on model nodes, including nested nodes. For example, a default
+that cannot be exported safely produces a warning. Runtime refinements are not
+represented in the exported schema; a refinement on `Ack.string()` is omitted
+without emitting a warning. Decide which warnings the adapter can return to
+callers and which require an explicit failure. Do not promise that exporting a
+schema preserves arbitrary runtime validation.
 
 Keep descriptions, export-safe defaults, and discriminator metadata when the
 target supports them. A strict conversion mode can reject unsupported metadata
