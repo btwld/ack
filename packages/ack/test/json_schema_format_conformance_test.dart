@@ -6,6 +6,28 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
+  test('ASCII hostname labels follow RFC 1123', () {
+    for (final format in ['hostname', 'idn-hostname']) {
+      final schema = Ack.fromJsonSchema({
+        'type': 'string',
+        'format': format,
+      }, assertFormats: true);
+      final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
+      for (final hostname in ['ab--cd.example', 'AB--CD.EXAMPLE']) {
+        expect(schema.safeParse(hostname).isOk, isTrue, reason: format);
+        expect(roundTrip.safeParse(hostname).isOk, isTrue, reason: format);
+      }
+      for (final hostname in [
+        '-host.example',
+        'host-.example',
+        'a_b.example',
+      ]) {
+        expect(schema.safeParse(hostname).isFail, isTrue, reason: format);
+        expect(roundTrip.safeParse(hostname).isFail, isTrue, reason: format);
+      }
+    }
+  });
+
   const root = 'test/fixtures/json_schema_2020_12_full/draft2020-12';
   final formatDirectory = Directory('$root/optional/format');
 

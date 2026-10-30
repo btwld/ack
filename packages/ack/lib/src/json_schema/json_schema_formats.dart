@@ -249,13 +249,14 @@ bool _isHostname(String value, {required bool international}) {
           rawLabel.substring(4)) {
         return false;
       }
-    } else if (rawLabel.length >= 4 &&
-        rawLabel[2] == '-' &&
-        rawLabel[3] == '-') {
+    }
+    final isAscii = label.runes.every((rune) => rune < 128);
+    if (isAscii
+        ? !RegExp(r'^[a-z0-9-]+$').hasMatch(label)
+        : !_isIdnaLabel(label)) {
       return false;
     }
-    if (!_isIdnaLabel(label)) return false;
-    final ascii = label.runes.every((rune) => rune < 128)
+    final ascii = isAscii
         ? label
         : 'xn--${punycoder.punycode.encode(label).toLowerCase()}';
     if (ascii.length > 63) return false;

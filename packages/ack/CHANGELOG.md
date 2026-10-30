@@ -1,3 +1,8 @@
+## Unreleased
+
+* Validate plain ASCII hostname labels under RFC 1123, allowing internal
+  double hyphens while retaining IDNA checks for internationalized labels.
+
 ## 2.0.0-beta.1
 
 ### Breaking
