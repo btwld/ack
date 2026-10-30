@@ -2,7 +2,7 @@
 
 This directory contains Draft-7 compatibility tooling:
 
-- `jsonschema-validator.js` validates schemas and fixture instances with Ajv.
+- `jsonschema-validator.js` validates and compiles schemas with Ajv.
 - `generate_reference_fixtures.js` generates the reference fixture set.
 - `test-fixtures/` contains schemas and the batch configuration.
 
@@ -20,8 +20,8 @@ node jsonschema-validator.js validate-schema --schema schema.json --output resul
 node jsonschema-validator.js validate-batch --input test-fixtures/reference-config.json --output results.json
 ```
 
-The validator returns structured JSON, including schema validity and batch
-instance results. It exits with status 0 when validation succeeds and 1 when
+The validator returns structured JSON, including schema validity and per-schema
+batch results. It exits with status 0 when validation succeeds and 1 when
 validation fails or an error occurs. Use `--help` on a command for its options.
 
 From the repository root, the corresponding Melos commands are:
