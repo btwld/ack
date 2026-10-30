@@ -1,9 +1,9 @@
 ---
 name: dart-modern-features
 description: |-
-  Guidelines for using modern Dart features (v3.0 - v3.10) such as Records, 
-  Pattern Matching, Switch Expressions, Extension Types, Class Modifiers, 
-  Wildcards, Null-Aware Elements, and Dot Shorthands.
+  Guidelines for using modern Dart features (v3.0 - v3.10) such as Records,
+  Pattern Matching, Switch Expressions, Extension Types, Class Modifiers,
+  Wildcards, Null-Aware Elements, and Dot Shorthand.
 ---
 
 # Dart Modern Features
@@ -14,6 +14,9 @@ Use this skill when:
 - Refactoring legacy Dart code to use modern, concise, and safe features.
 - Looking for idiomatic ways to handle multiple return values, deep data
   extraction, or exhaustive checking.
+
+Read the edited package's `pubspec.yaml` SDK lower bound before selecting
+syntax; a newer local or CI SDK does not raise that bound.
 
 ## 2. Features
 
@@ -218,21 +221,11 @@ Using the `?` prefix inline.
 var names = ['Alice', ?optionalName, 'Charlie'];
 ```
 
-### Dot Shorthands
-Use dot shorthands to omit the explicit type name when it can be confidently
-inferred from context, such as with enums or static fields.
+### Dot shorthand (Dart 3.10+)
 
-**Avoid:**
-Fully qualifying type names when the type is obvious from the context.
-```dart
-LogLevel currentLevel = LogLevel.info;
-```
-
-**Prefer:**
-Reducing visual noise with inferred shorthand.
-```dart
-LogLevel currentLevel = .info;
-```
+Prefer dot shorthand for obvious enum or static qualifiers only when the edited
+package's `pubspec.yaml` SDK lower bound is **>=3.10**. It is unavailable below
+3.10, even if CI runs a newer Dart.
 
 ## Related Skills
 
