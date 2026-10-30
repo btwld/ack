@@ -447,6 +447,36 @@ bool _hasValidPercents(String value) {
   return true;
 }
 
+bool _hasValidIriCharacters(String value) {
+  var inQuery = false;
+  var inFragment = false;
+  for (final rune in value.runes) {
+    if (rune == 0x23) {
+      inFragment = true;
+      inQuery = false;
+    } else if (rune == 0x3f && !inFragment) {
+      inQuery = true;
+    }
+    if (rune < 0x80) continue;
+
+    // RFC 3987 section 2.2: ucschar excludes surrogates, noncharacters,
+    // and private-use ranges; only iquery additionally permits iprivate.
+    final isUcsChar =
+        (rune >= 0xa0 && rune <= 0xd7ff) ||
+        (rune >= 0xf900 && rune <= 0xfdcf) ||
+        (rune >= 0xfdf0 && rune <= 0xffef) ||
+        (((rune >= 0x10000 && rune <= 0xdfffd) ||
+                (rune >= 0xe1000 && rune <= 0xefffd)) &&
+            (rune & 0xffff) <= 0xfffd);
+    final isPrivate =
+        (rune >= 0xe000 && rune <= 0xf8ff) ||
+        (rune >= 0xf0000 && rune <= 0xffffd) ||
+        (rune >= 0x100000 && rune <= 0x10fffd);
+    if (!isUcsChar && !(inQuery && isPrivate)) return false;
+  }
+  return true;
+}
+
 bool _isUri(
   String value, {
   required bool absolute,
@@ -457,6 +487,7 @@ bool _isUri(
     return false;
   }
   if (!international && value.runes.any((rune) => rune > 127)) return false;
+  if (international && !_hasValidIriCharacters(value)) return false;
   if (absolute && !RegExp(r'^[A-Za-z][A-Za-z0-9+.-]*:').hasMatch(value)) {
     return false;
   }

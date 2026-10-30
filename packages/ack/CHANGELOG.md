@@ -1,5 +1,7 @@
 ## Unreleased
 
+* Enforce RFC 3987 Unicode ranges for IRI format assertions, allowing private-use
+  code points only in queries and rejecting forbidden code points.
 * Accept line terminators in relative JSON pointer reference tokens.
 * Validate plain ASCII hostname labels under RFC 1123, allowing internal
   double hyphens while retaining IDNA checks for internationalized labels.
