@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+* Keep the generator's JSON dependencies compatible with the supported Dart 3.9
+  SDK, including clean builds in consumer packages.
 
 ## 2.0.0-beta.1
 
