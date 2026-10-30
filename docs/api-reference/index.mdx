@@ -559,6 +559,22 @@ In class-first `@Schemable()` models, use `sealed class JsonMaybe<T>` (`JsonAbse
 ### `.schema.json` code generation (`ack_generator:ack_json_schema`)
 
 - **Builder (`build.yaml`)**: Enable `ack_generator|ack_json_schema` on `lib/**/*.schema.json` to emit `<name>.schema.dart` (with `part '<name>.schema.g.dart';`), which `ack_generator|ack_generator` compiles into typed `@Schemable()` models or validated value models.
-- **Programmatic API (`package:ack_generator/ack_generator.dart`)**: `generateAckSchemaLibrary(schema, {schemaFileName, rootName, baseUri, documents, assertFormats})` returns a `GeneratedAckSchemaFile`.
+- **Programmatic API (`package:ack_generator/ack_generator.dart`)**:
+  `generateAckSchemaLibrary` returns an `AckJsonSchemaLibrary` containing
+  `source`, `effectiveDocument`, and `widenedPointers`. All parameters are named:
+
+  ```dart
+  AckJsonSchemaLibrary generateAckSchemaLibrary({
+    required Object? document,
+    required Uri documentUri,
+    required String partStem,
+    AckJsonSchemaLibraryOptions options = const AckJsonSchemaLibraryOptions(),
+    Map<Uri, Object> documents = const {},
+    bool includeParts = true,
+    Version? languageVersion,
+  })
+  ```
+
+  Set format assertion through `AckJsonSchemaLibraryOptions(assertFormats: true)`.
 
 *See the [Schema types](../core-concepts/schemas.mdx) and [What's New & Migration Guide](../getting-started/migration-guide.mdx) for detailed usage and migration tables.*

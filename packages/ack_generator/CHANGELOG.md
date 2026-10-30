@@ -1,8 +1,9 @@
 ## Unreleased
 
 * Preserve exact integer bounds on generated number schemas beyond 2^53.
-* Bound `source_helper` below 1.4 so `json_serializable` 6.14 compiles on Dart 3.9
-  through 3.11. Newer SDKs can still select `json_serializable` 6.15.
+* Bound `source_helper` below 1.4 so `json_serializable` 6.14 compiles on the
+  minimum supported Dart 3.11 SDK. Newer SDKs can still select
+  `json_serializable` 6.15.
 
 ## 2.0.0-beta.1
 

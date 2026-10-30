@@ -5,8 +5,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## Unreleased
 
-* Keep the generator's JSON dependencies compatible with the supported Dart 3.9
-  SDK, including clean builds in consumer packages.
+* Keep the generator's JSON dependencies compatible with the minimum supported
+  Dart 3.11 SDK, including clean builds in consumer packages.
 
 ## 2.0.0-beta.1
 
