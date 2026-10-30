@@ -483,6 +483,10 @@ bool _isUri(
   required bool international,
 }) {
   if (!_hasValidPercents(value)) return false;
+  final fragmentStart = value.indexOf('#');
+  if (fragmentStart >= 0 && value.indexOf('#', fragmentStart + 1) >= 0) {
+    return false;
+  }
   if (RegExp(r'[\u0000-\u0020\u007f<>"{}|\\^`]').hasMatch(value)) {
     return false;
   }
