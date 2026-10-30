@@ -6,18 +6,20 @@
 Ack validates data in Dart and Flutter. This branch documents **2.0.0-beta.1**;
 see the [migration guide](docs/getting-started/migration-guide.mdx) for 1.x changes.
 
-- **Schemas** define accepted boundary data and the Dart values it becomes.
-- **Parsing** validates input; `safeParse` returns a result. Codecs also encode
+## Core concepts
+
+- Schemas define accepted boundary data and the Dart values it becomes.
+- Parsing validates input; `safeParse` returns a result. Codecs also encode
   runtime values back to the boundary.
-- **Presence and null differ:** `optional` permits omission, `nullable` permits
+- Presence and null differ: `optional` permits omission, `nullable` permits
   null, and `JsonMaybe` preserves both states.
-- **Generation is optional:** `@Schemable` turns schemas into models or
+- Generation is optional: `@Schemable` turns schemas into models or
   hand-written classes into schemas, using one `.g.dart` part.
-- **Constructors are unchecked:** use parsing for untrusted input; generated
-  JSON encoding validates output.
-- **Export preserves meaning:** native schemas emit Draft-7; imported 2020-12
-  resources stay 2020-12 unless explicitly lowered.
-- **Adapters reuse schemas** for Firebase AI, MCP inputs, and
+- Generated model constructors are unchecked; use parsing for untrusted input
+  and JSON encoding for validated output.
+- Native schemas export Draft-7; imported 2020-12 resources retain their
+  dialect unless explicitly lowered.
+- Adapters reuse schemas for Firebase AI, MCP inputs, and
   `json_schema_builder`; Ack still validates the data.
 
 ## Start here
