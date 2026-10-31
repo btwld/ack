@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Validate internationalized hostname and email labels against the complete
+  IANA IDNA2008 repertoire pinned to Unicode 12.0.0, rejecting disallowed and
+  unassigned code points with matching Unicode contextual and Bidi data.
+
 * Enforce RFC 5892 ContextJ using Unicode joining types and Virama data,
   including transparent marks in internationalized hostname and email labels.
 

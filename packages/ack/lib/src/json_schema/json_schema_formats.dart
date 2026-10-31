@@ -335,8 +335,8 @@ bool _isValidBidiLabel(List<_UnicodeBidiClass> label) {
 bool _isIdnaLabel(String label) {
   final runes = label.runes.toList();
   if (runes.isEmpty ||
-      RegExp(r'^\p{M}', unicode: true).hasMatch(label) ||
-      (label.length >= 4 && label[2] == '-' && label[3] == '-') ||
+      _isIdnaMark(runes.first) ||
+      (runes.length >= 4 && runes[2] == 0x2d && runes[3] == 0x2d) ||
       label.startsWith('-') ||
       label.endsWith('-')) {
     return false;
@@ -346,41 +346,7 @@ bool _isIdnaLabel(String label) {
   var hasJapanese = false;
   for (var i = 0; i < runes.length; i++) {
     final rune = runes[i];
-    if (rune < 128 &&
-        !((rune >= 0x61 && rune <= 0x7a) ||
-            (rune >= 0x30 && rune <= 0x39) ||
-            rune == 0x2d)) {
-      return false;
-    }
-    if (rune >= 128 &&
-        !RegExp(
-          r'^[\p{L}\p{M}\p{N}]$',
-          unicode: true,
-        ).hasMatch(String.fromCharCode(rune)) &&
-        !const {
-          0x00b7,
-          0x0375,
-          0x05f3,
-          0x05f4,
-          0x06fd,
-          0x06fe,
-          0x0f0b,
-          0x200c,
-          0x200d,
-          0x30fb,
-        }.contains(rune)) {
-      return false;
-    }
-    if (rune <= 0x20 ||
-        (rune >= 0x7f && rune <= 0x9f) ||
-        rune == 0x302e ||
-        rune == 0x302f ||
-        (rune >= 0x3031 && rune <= 0x3035) ||
-        rune == 0x303b ||
-        rune == 0x0640 ||
-        rune == 0x07fa) {
-      return false;
-    }
+    if (_idnaProperty(rune) == _IdnaProperty.disallowed) return false;
     if (rune >= 0x0660 && rune <= 0x0669) hasArabicIndic = true;
     if (rune >= 0x06f0 && rune <= 0x06f9) hasExtendedArabicIndic = true;
     if (rune != 0x30fb && _isJapaneseRune(rune)) hasJapanese = true;

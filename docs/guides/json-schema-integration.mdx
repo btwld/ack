@@ -92,6 +92,12 @@ Ack releases when IERS announces new leap seconds; validation never fetches
 data at runtime. Parsing preserves the original string, including its
 fractional precision and offset. It does not convert it to a Dart `DateTime`.
 
+Hostname and email domain assertions use the complete IANA IDNA2008
+derived-property registry pinned to Unicode 12.0.0, with contextual and Bidi
+checks using matching Unicode data. Disallowed and unassigned code points,
+including characters assigned after Unicode 12, are rejected after hostname
+input mapping. The data is bundled; validation does not fetch it at runtime.
+
 Export retains `format` in imported schemas. External JSON Schema validators may
 treat `format` as an annotation unless configured to assert it.
 
