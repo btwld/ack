@@ -19,7 +19,10 @@ consumer language floor.
 | Wildcard variables | 3.7 | Declaring intentionally unused bindings |
 | Null-aware collection elements | 3.8 | Including a value only when non-null |
 | Dot shorthand | 3.10 | Omitting an obvious enum/static qualifier |
-| Primary constructors | 3.12 | Working on explicitly supported newer-language declarations |
+
+Use explicit enum and static qualifiers in packages whose SDK lower bound is
+Dart 3.9. Dot shorthand requires an SDK lower bound of **>=3.10**, even when
+the local or CI SDK is newer.
 
 Use a named type when its identity or API matters; records are not a blanket
 replacement for classes. An extension type is not an immutable model class.
