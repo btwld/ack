@@ -1,5 +1,8 @@
 ## Unreleased
 
+* Enforce RFC 5892 ContextJ using Unicode joining types and Virama data,
+  including transparent marks in internationalized hostname and email labels.
+
 * Enforce RFC 5893 Bidi rules using Unicode classes for internationalized
   hostnames and email domains, including decoded punycode labels.
 

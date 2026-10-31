@@ -399,15 +399,8 @@ bool _isIdnaLabel(String label) {
         (i == 0 || !_isHebrewRune(runes[i - 1]))) {
       return false;
     }
-    if ((rune == 0x200c || rune == 0x200d) &&
-        (i == 0 || !_isVirama(runes[i - 1]))) {
-      if (rune == 0x200d ||
-          i == 0 ||
-          i == runes.length - 1 ||
-          !_isArabicRune(runes[i - 1]) ||
-          !_isArabicRune(runes[i + 1])) {
-        return false;
-      }
+    if ((rune == 0x200c || rune == 0x200d) && !_isValidContextJ(runes, i)) {
+      return false;
     }
   }
   if (hasArabicIndic && hasExtendedArabicIndic) return false;
@@ -415,32 +408,38 @@ bool _isIdnaLabel(String label) {
   return true;
 }
 
+// RFC 5892 Appendix A.1/A.2: either join control may immediately follow a
+// Virama. Otherwise only ZWNJ is permitted, in the joining context
+// (L|D) T* ZWNJ T* (R|D). Join-causing (C) characters are not transparent.
+bool _isValidContextJ(List<int> runes, int index) {
+  if (index == 0) return false;
+  if (_isVirama(runes[index - 1])) return true;
+  if (runes[index] == 0x200d) return false;
+  var before = index - 1;
+  while (before >= 0 &&
+      _unicodeJoiningType(runes[before]) == _UnicodeJoiningType.t) {
+    before--;
+  }
+  if (before < 0) return false;
+  final left = _unicodeJoiningType(runes[before]);
+  if (left != _UnicodeJoiningType.l && left != _UnicodeJoiningType.d) {
+    return false;
+  }
+  var after = index + 1;
+  while (after < runes.length &&
+      _unicodeJoiningType(runes[after]) == _UnicodeJoiningType.t) {
+    after++;
+  }
+  if (after == runes.length) return false;
+  final right = _unicodeJoiningType(runes[after]);
+  return right == _UnicodeJoiningType.r || right == _UnicodeJoiningType.d;
+}
+
 bool _isHebrewRune(int rune) => rune >= 0x0590 && rune <= 0x05ff;
-bool _isArabicRune(int rune) =>
-    rune >= 0x0600 &&
-    rune <= 0x08ff &&
-    !(rune >= 0x0660 && rune <= 0x0669) &&
-    !(rune >= 0x06f0 && rune <= 0x06f9);
 bool _isGreekRune(int rune) =>
     (rune >= 0x0370 && rune <= 0x03ff) || (rune >= 0x1f00 && rune <= 0x1fff);
 bool _isJapaneseRune(int rune) =>
     (rune >= 0x3040 && rune <= 0x30ff) || (rune >= 0x3400 && rune <= 0x9fff);
-bool _isVirama(int rune) => const {
-  0x094d,
-  0x09cd,
-  0x0a4d,
-  0x0acd,
-  0x0b4d,
-  0x0bcd,
-  0x0c4d,
-  0x0ccd,
-  0x0d4d,
-  0x0dca,
-  0x0e3a,
-  0x0f84,
-  0x1039,
-  0x1714,
-}.contains(rune);
 
 bool _isEmail(String value, {required bool international}) {
   final match = RegExp(

@@ -25,6 +25,7 @@ part '../json_schema/json_schema_formats.dart';
 part '../json_schema/json_schema_import_error.dart';
 part '../json_schema/standard_meta_schemas.dart';
 part '../json_schema/unicode_bidi.dart';
+part '../json_schema/unicode_contextj.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boundary_schema.dart';
