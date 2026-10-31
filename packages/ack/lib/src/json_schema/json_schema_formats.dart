@@ -267,11 +267,67 @@ bool _isHostname(String value, {required bool international}) {
     unicodeLabels.add(label);
   }
   if (asciiLabels.join('.').length > 253) return false;
-  if (unicodeLabels.any((label) => label.runes.any(_isRtlRune))) {
-    for (final label in unicodeLabels) {
-      if (label.runes.any(_isRtlRune)) continue;
-      if (!RegExp(r'^[a-z]').hasMatch(label)) return false;
+  final bidiLabels = [
+    for (final label in unicodeLabels)
+      label.runes.map(_unicodeBidiClass).toList(),
+  ];
+  // RFC 5893 applies to every label in a domain containing R, AL or AN,
+  // including decoded A-labels and otherwise plain ASCII labels.
+  if (bidiLabels.any(
+    (label) => label.any(
+      (type) => const {
+        _UnicodeBidiClass.r,
+        _UnicodeBidiClass.al,
+        _UnicodeBidiClass.an,
+      }.contains(type),
+    ),
+  )) {
+    if (!bidiLabels.every(_isValidBidiLabel)) return false;
+  }
+  return true;
+}
+
+// RFC 5893 section 2, rules 1-6. The last character's class ignores any
+// trailing nonspacing marks; spacing marks can have class L and must retain it.
+bool _isValidBidiLabel(List<_UnicodeBidiClass> label) {
+  final rtl =
+      label.first == _UnicodeBidiClass.r || label.first == _UnicodeBidiClass.al;
+  if (!rtl && label.first != _UnicodeBidiClass.l) return false;
+  const common = {
+    _UnicodeBidiClass.en,
+    _UnicodeBidiClass.es,
+    _UnicodeBidiClass.cs,
+    _UnicodeBidiClass.et,
+    _UnicodeBidiClass.on,
+    _UnicodeBidiClass.bn,
+    _UnicodeBidiClass.nsm,
+  };
+  for (final type in label) {
+    if (common.contains(type)) continue;
+    if (rtl
+        ? type != _UnicodeBidiClass.r &&
+              type != _UnicodeBidiClass.al &&
+              type != _UnicodeBidiClass.an
+        : type != _UnicodeBidiClass.l) {
+      return false;
     }
+  }
+  final last = label.lastWhere((type) => type != _UnicodeBidiClass.nsm);
+  if (rtl) {
+    if (!const {
+      _UnicodeBidiClass.r,
+      _UnicodeBidiClass.al,
+      _UnicodeBidiClass.en,
+      _UnicodeBidiClass.an,
+    }.contains(last)) {
+      return false;
+    }
+    if (label.contains(_UnicodeBidiClass.en) &&
+        label.contains(_UnicodeBidiClass.an)) {
+      return false;
+    }
+  } else if (last != _UnicodeBidiClass.l && last != _UnicodeBidiClass.en) {
+    return false;
   }
   return true;
 }
@@ -288,9 +344,6 @@ bool _isIdnaLabel(String label) {
   var hasArabicIndic = false;
   var hasExtendedArabicIndic = false;
   var hasJapanese = false;
-  var hasRtl = false;
-  var hasLatin = false;
-  var hasEuropeanDigit = false;
   for (var i = 0; i < runes.length; i++) {
     final rune = runes[i];
     if (rune < 128 &&
@@ -328,11 +381,8 @@ bool _isIdnaLabel(String label) {
         rune == 0x07fa) {
       return false;
     }
-    if (rune >= 0x61 && rune <= 0x7a) hasLatin = true;
-    if (rune >= 0x30 && rune <= 0x39) hasEuropeanDigit = true;
     if (rune >= 0x0660 && rune <= 0x0669) hasArabicIndic = true;
     if (rune >= 0x06f0 && rune <= 0x06f9) hasExtendedArabicIndic = true;
-    if (_isRtlRune(rune)) hasRtl = true;
     if (rune != 0x30fb && _isJapaneseRune(rune)) hasJapanese = true;
     if (rune == 0x00b7 &&
         (i == 0 ||
@@ -361,15 +411,7 @@ bool _isIdnaLabel(String label) {
     }
   }
   if (hasArabicIndic && hasExtendedArabicIndic) return false;
-  if (hasArabicIndic && !hasRtl && !hasLatin) return false;
   if (runes.contains(0x30fb) && !hasJapanese) return false;
-  if (hasRtl) {
-    if (!_isRtlRune(runes.first) ||
-        hasLatin ||
-        (hasEuropeanDigit && (hasArabicIndic || hasExtendedArabicIndic))) {
-      return false;
-    }
-  }
   return true;
 }
 
@@ -379,7 +421,6 @@ bool _isArabicRune(int rune) =>
     rune <= 0x08ff &&
     !(rune >= 0x0660 && rune <= 0x0669) &&
     !(rune >= 0x06f0 && rune <= 0x06f9);
-bool _isRtlRune(int rune) => _isHebrewRune(rune) || _isArabicRune(rune);
 bool _isGreekRune(int rune) =>
     (rune >= 0x0370 && rune <= 0x03ff) || (rune >= 0x1f00 && rune <= 0x1fff);
 bool _isJapaneseRune(int rune) =>

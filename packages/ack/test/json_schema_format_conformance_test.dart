@@ -3,9 +3,79 @@ import 'dart:io';
 
 import 'package:ack/ack.dart';
 import 'package:path/path.dart' as p;
+import 'package:punycoder/punycoder.dart' as punycoder;
 import 'package:test/test.dart';
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 void main() {
+  for (final format in ['idn-hostname', 'idn-email', 'hostname', 'email']) {
+    for (final operation in ['parse', 'encode']) {
+      test('$format enforces Unicode Bidi rules during $operation', () {
+        final schema = Ack.fromJsonSchema({
+          'type': 'string',
+          'format': format,
+        }, assertFormats: true);
+        final restored = Ack.fromJsonSchema(schema.toJsonSchema());
+        final international = format.startsWith('idn-');
+        final email = format.endsWith('email');
+        for (final example in [
+          // RTL labels cannot contain any L character (rule 2).
+          (domain: '\u05d0\u03b1.example', valid: false),
+          (domain: '\u05d0\u0430.example', valid: false),
+          (domain: '\u05d0中.example', valid: false),
+          (domain: '\u05d0\u{10428}.example', valid: false),
+          (domain: '\u{1e922}\u03b1.example', valid: false),
+          (domain: '\u05d0\u0903.example', valid: false),
+          // LTR labels cannot contain R/AL or AN characters (rule 5).
+          (domain: '\u03b1\u05d0.example', valid: false),
+          (domain: '\u03b1\u0660.\u05d0', valid: false),
+          // Each label in a Bidi domain must start with L, R or AL (rule 1).
+          (domain: '1\u03b1.\u05d0', valid: false),
+          (domain: '\u0660\u0661.example', valid: false),
+          // Endings ignore trailing NSMs, but cannot be ON (rules 3 and 6).
+          (domain: '\u05d0\u02b9.example', valid: false),
+          (domain: '\u05d0\u02b9\u0301.example', valid: false),
+          (domain: '\u03b1\u02b9.\u05d0', valid: false),
+          // RTL labels cannot mix EN and AN digits (rule 4).
+          (domain: '\u05d00\u0660.example', valid: false),
+          (domain: '\u05d0\u06f0\u0660.example', valid: false),
+          (domain: '\u05d0\u05d1.example', valid: true),
+          (domain: '\u{1e922}\u{1e923}.example', valid: true),
+          (domain: '\u05d0\u05b0.example', valid: true),
+          (domain: '\u05d01\u05b0.example', valid: true),
+          (domain: '\u05d0\u0660.example', valid: true),
+          // Extended Arabic-Indic digits have class EN, like ASCII digits.
+          (domain: '\u05d00\u06f0.example', valid: true),
+          (domain: '\u03b1.\u05d0', valid: true),
+          (domain: '中.\u05d0', valid: true),
+          (domain: '\u03b1\u0301.\u05d0', valid: true),
+          (domain: '123.example', valid: true),
+        ]) {
+          final asciiDomain = example.domain
+              .split('.')
+              .map((label) {
+                return label.runes.every((rune) => rune < 128)
+                    ? label
+                    : 'xn--${punycoder.punycode.encode(unorm.nfkc(label))}';
+              })
+              .join('.');
+          for (final domain in [
+            if (international) example.domain,
+            asciiDomain,
+          ]) {
+            final value = email ? 'user@$domain' : domain;
+            for (final candidate in [schema, restored]) {
+              final result = operation == 'parse'
+                  ? candidate.safeParse(value)
+                  : candidate.safeEncode(value);
+              expect(result.isOk, example.valid, reason: value);
+            }
+          }
+        }
+      });
+    }
+  }
+
   test('ASCII hostname labels follow RFC 1123', () {
     for (final format in ['hostname', 'idn-hostname']) {
       final schema = Ack.fromJsonSchema({

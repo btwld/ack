@@ -1,5 +1,8 @@
 ## Unreleased
 
+* Enforce RFC 5893 Bidi rules using Unicode classes for internationalized
+  hostnames and email domains, including decoded punycode labels.
+
 * Preserve nested resource dialects for JSON pointers targeting schemas in
   extension containers, matching resource URI references during parse and encode.
 
