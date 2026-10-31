@@ -977,9 +977,13 @@ bool _maySupplyDialect(Object? node, Uri base, Uri dialect) {
 }
 
 Object? _deepCopy(Object? value) => switch (value) {
-  final Map<String, Object?> map => {
-    for (final MapEntry(:key, :value) in map.entries) key: _deepCopy(value),
-  },
+  // The importer accepts string-keyed JSON maps regardless of their declared
+  // key type. Normalize them before widening, without mutating the originals.
+  final Map<Object?, Object?> map when map.keys.every((key) => key is String) =>
+    <String, Object?>{
+      for (final MapEntry(:key, :value) in map.entries)
+        key as String: _deepCopy(value),
+    },
   final List<Object?> list => [for (final item in list) _deepCopy(item)],
   _ => value,
 };
