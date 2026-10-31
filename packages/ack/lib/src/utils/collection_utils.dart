@@ -5,31 +5,34 @@ import '../common_types.dart';
 /// Nested maps, lists, and sets are copied without validating their contents.
 JsonMap deepUnmodifiableJsonMap(JsonMap value) =>
     Map<String, Object?>.unmodifiable(
-      value.map((key, item) => MapEntry(key, _deepUnmodifiableCopy(item))),
+      value.map((key, item) => MapEntry(key, deepUnmodifiableCopy(item))),
     );
 
-/// Deeply snapshots a schema default without exposing it from ACK's public API.
-Object? cloneDefault(Object? value) => _deepUnmodifiableCopy(value);
-
-Object? _deepUnmodifiableCopy(Object? value) {
+/// Returns a detached, recursively unmodifiable snapshot of [value].
+///
+/// Maps retain their keys while their values are copied. Lists and sets are
+/// copied recursively. Other objects, including opaque codec values, retain
+/// their identity. This does not validate data; schemas still validate it at
+/// parse and encode boundaries. Inputs must be acyclic.
+Object? deepUnmodifiableCopy(Object? value) {
   if (value is Map) {
     if (value.keys.every((key) => key is String)) {
       return Map<String, Object?>.unmodifiable(
         value.map(
-          (key, item) => MapEntry(key as String, _deepUnmodifiableCopy(item)),
+          (key, item) => MapEntry(key as String, deepUnmodifiableCopy(item)),
         ),
       );
     }
 
     return Map<Object?, Object?>.unmodifiable(
-      value.map((key, item) => MapEntry(key, _deepUnmodifiableCopy(item))),
+      value.map((key, item) => MapEntry(key, deepUnmodifiableCopy(item))),
     );
   }
   if (value is List) {
-    return List<Object?>.unmodifiable(value.map(_deepUnmodifiableCopy));
+    return List<Object?>.unmodifiable(value.map(deepUnmodifiableCopy));
   }
   if (value is Set) {
-    return Set<Object?>.unmodifiable(value.map(_deepUnmodifiableCopy));
+    return Set<Object?>.unmodifiable(value.map(deepUnmodifiableCopy));
   }
 
   return value;
@@ -186,33 +189,4 @@ int deepHashCode(Object? value) {
   }
 
   return Object.hash(value.runtimeType, value.hashCode);
-}
-
-extension IterableExtensions<T> on Iterable<T> {
-  /// Returns duplicate elements in this iterable.
-  /// The order of duplicates in the returned iterable is based on their second appearance.
-  Iterable<T> get duplicates {
-    final seen = <T>{};
-    final duplicatesFound = <T>[];
-    for (final element in this) {
-      if (!seen.add(element)) {
-        // .add returns false if element was already present
-        duplicatesFound.add(element);
-      }
-    }
-
-    return duplicatesFound;
-  }
-
-  /// Checks if there are any duplicate elements in this iterable.
-  bool get hasDuplicates => duplicates.isNotEmpty;
-
-  /// Returns the first element matching [test], or `null` if none found.
-  T? firstWhereOrNull(bool Function(T element) test) {
-    for (final element in this) {
-      if (test(element)) return element;
-    }
-
-    return null;
-  }
 }

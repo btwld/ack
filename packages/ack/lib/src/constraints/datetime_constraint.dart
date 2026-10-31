@@ -7,7 +7,7 @@ import 'constraint.dart';
 ///
 /// Used internally by [Ack.date()] and [Ack.datetime()] schemas when applying
 /// [.min()] or [.max()] constraints.
-class DateTimeConstraint extends Constraint<DateTime>
+final class DateTimeConstraint extends Constraint<DateTime>
     with Validator<DateTime>, JsonSchemaSpec<DateTime> {
   final DateTime reference;
 

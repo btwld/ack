@@ -34,41 +34,19 @@ Future<void> _expectFailure(
   expect(seen, containsAll(messages));
 }
 
-Future<void> _expectWarning(String body, List<String> messages) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
-  final seen = <String>{};
-  await testBuilder(
-    ackModelBuilder(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': '$_head\n$body'},
-    generateFor: const {'test_pkg|lib/model.dart'},
-    readerWriter: readerWriter,
-    outputs: {'test_pkg|lib/model.ack.dart': decodedMatches(contains('mixin'))},
-    onLog: (LogRecord log) {
-      if (log.level.name != 'WARNING') return;
-      for (final message in messages) {
-        if (log.message.contains(message)) seen.add(message);
-      }
-    },
-  );
-  expect(seen, containsAll(messages));
-}
-
 const _head = '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 const _aliasHead = '''
 import 'package:ack/ack.dart';
 import 'aliases.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 void main() {
@@ -96,7 +74,7 @@ final class Link with _\$LinkAck {
       [
         'Link.target uses the JsonConverter UriText, which would bypass Ack '
             'validation in the JSON part. Give the type a static schema or '
-            'use @AckField(schema: ...) instead.',
+            'register one in @Schemable(schemas: [...]) instead.',
       ],
     );
     await _expectFailure(
@@ -113,7 +91,7 @@ final class Link with _\$LinkAck {
       [
         'Link uses the JsonConverter UriText, which would bypass Ack '
             'validation in the JSON part. Give the type a static schema or '
-            'use @AckField(schema: ...) instead.',
+            'register one in @Schemable(schemas: [...]) instead.',
       ],
     );
   });
@@ -125,11 +103,13 @@ final class Link with _\$LinkAck {
 final class Range with _\$RangeAck {
   const Range({required this.limit});
 
-  @Max(double.infinity)
+  @Validate.max(double.infinity)
   final double limit;
 }
 ''',
-      ['Range.limit has @Max(Infinity); the value must be a finite number.'],
+      [
+        'Range.limit has @Validate.max(Infinity); the value must be a finite number.',
+      ],
     );
     await _expectFailure(
       '''
@@ -137,11 +117,13 @@ final class Range with _\$RangeAck {
 final class Range with _\$RangeAck {
   const Range({required this.step});
 
-  @MultipleOf(double.nan)
+  @Validate.multipleOf(double.nan)
   final double step;
 }
 ''',
-      ['Range.step has @MultipleOf(NaN); the value must be a finite number.'],
+      [
+        'Range.step has @Validate.multipleOf(NaN); the value must be a finite number.',
+      ],
     );
   });
 
@@ -160,9 +142,7 @@ final class Person with _\$PersonAck {
             'Import package:test_pkg/address.dart.',
       ],
       head: _aliasHead,
-      allowedOutputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
-      },
+      allowedOutputs: {'test_pkg|lib/address.g.dart': decodedMatches(anything)},
       extraSources: {
         'aliases.dart': '''
 import 'address.dart';
@@ -174,8 +154,7 @@ typedef Shade = Color;
         'address.dart': '''
 import 'package:ack/ack.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -256,17 +235,6 @@ final class Item with _\$ItemAck {
 ''',
       ['Item @Schemable.description must not be blank.'],
     );
-    await _expectFailure(
-      '''
-@Schemable()
-final class Item with _\$ItemAck {
-  const Item({required this.value});
-  @AckField(description: '')
-  final String value;
-}
-''',
-      ['value @AckField.description must not be blank.'],
-    );
   });
 
   test('rejects duplicate class description tags at the class', () async {
@@ -305,11 +273,11 @@ final class Item with _\$ItemAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Min(1)
+  @Validate.min(1)
   final String name;
 }
 ''',
-      ['@Min', 'String', '@MinLength'],
+      ['@Validate.min', 'String', '@Validate.minLength'],
     );
   });
 
@@ -320,11 +288,11 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.age});
 
-  @MinLength(1)
+  @Validate.minLength(1)
   final int age;
 }
 ''',
-      ['@MinLength', 'int', '@Min'],
+      ['@Validate.minLength', 'int', '@Validate.min'],
     );
   });
 
@@ -335,11 +303,11 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @UniqueItems()
+  @Validate.uniqueItems()
   final String name;
 }
 ''',
-      ['@UniqueItems', 'String', 'List or Set'],
+      ['@Validate.uniqueItems', 'String', 'List or Set'],
     );
   });
 
@@ -376,129 +344,6 @@ final class User with _\$UserAck {
       );
     },
   );
-
-  test('rejects a static-method AckField escape hatch', () async {
-    await _expectFailure(
-      '''
-final class Schemas {
-  static AckSchema<String, String> name() => Ack.string();
-}
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: Schemas.name)
-  final String name;
-}
-''',
-      ['@AckField', 'top-level', 'name'],
-    );
-  });
-
-  test(
-    'rejects an AckField schema whose runtime type is not the field type',
-    () async {
-      await _expectFailure(
-        '''
-AckSchema<int, int> countSchema() => Ack.integer();
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: countSchema)
-  final String name;
-}
-''',
-        [
-          'User.name @AckField schema function countSchema produces int, but '
-              'the field type is String.',
-        ],
-      );
-    },
-  );
-
-  test('rejects a generic AckField schema function', () async {
-    await _expectFailure(
-      '''
-final class Box<T> {
-  const Box(this.value);
-  final T value;
-}
-
-AckSchema<Object, Box<T>> boxSchema<T extends Object>() =>
-    Ack.any().codec<Box<T>>(
-      decode: (value) => Box(value as T),
-      encode: (box) => box.value,
-    );
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.box});
-
-  @AckField(schema: boxSchema<String>)
-  final Box<String> box;
-}
-''',
-      [
-        'User.box @AckField schema function boxSchema is generic, and the '
-            'generated call cannot keep its type arguments.',
-      ],
-    );
-  });
-
-  test('rejects an AckField function that does not return AckSchema', () async {
-    await _expectFailure(
-      '''
-String nameSchema() => 'not a schema';
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: nameSchema)
-  final String name;
-}
-''',
-      ['@AckField', 'AckSchema', 'name'],
-    );
-  });
-
-  test('rejects a one-way transform returned by AckField', () async {
-    await _expectFailure(
-      '''
-AckSchema<String, String> normalizedSchema() => Ack.string().trim();
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: normalizedSchema)
-  final String name;
-}
-''',
-      ['User.name', 'normalizedSchema', '.transform()'],
-    );
-  });
-
-  test('rejects a referenced one-way transform returned by AckField', () async {
-    await _expectFailure(
-      '''
-final normalized = Ack.string().trim();
-AckSchema<String, String> normalizedSchema() => normalized;
-
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @AckField(schema: normalizedSchema)
-  final String name;
-}
-''',
-      ['User.name', 'normalizedSchema', 'normalized', '.transform()'],
-    );
-  });
 
   test('rejects dynamic map values and points to Object?', () async {
     await _expectFailure(
@@ -705,6 +550,26 @@ final class Config with _\$ConfigAck {
     );
   });
 
+  test(
+    'rejects a capture field that shadows the generated dynamic type',
+    () async {
+      await _expectFailure(
+        '''
+@Schemable(
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'dynamic',
+)
+final class Config with _\$ConfigAck {
+  const Config({required this.dynamic});
+
+  final Map<String, Object?> dynamic;
+}
+''',
+        ['Config.dynamic', 'shadows the dynamic type'],
+      );
+    },
+  );
+
   test('rejects captureField without the capture policy', () async {
     await _expectFailure(
       '''
@@ -829,57 +694,25 @@ final class User with _\$UserAck {
     );
   });
 
-  test('rejects every unsupported JsonKey serialization option', () async {
+  test('rejects @JsonKey on fields', () async {
     await _expectFailure(
       '''
-enum Role { member, unknown }
-
-Role decodeRole(Object? value) => Role.member;
-String encodeRole(Role value) => value.name;
-Object? readRole(Map<dynamic, dynamic> map, String key) => map[key];
-
 @Schemable()
 final class User with _\$UserAck {
-  const User({required this.role});
+  const User({required this.name});
 
-  @JsonKey(
-    name: 'wire_role',
-    defaultValue: Role.member,
-    disallowNullValue: true,
-    explicitJsonNullWhenNonNullField: true,
-    fromJson: decodeRole,
-    ignore: true,
-    includeFromJson: false,
-    includeIfNull: false,
-    includeToJson: false,
-    readValue: readRole,
-    required: true,
-    toJson: encodeRole,
-    unknownEnumValue: Role.unknown,
-  )
-  final Role role;
+  @JsonKey(name: 'wire_name')
+  final String name;
 }
 ''',
       [
-        'User.role',
-        '@JsonKey',
-        'defaultValue',
-        'disallowNullValue',
-        'explicitJsonNullWhenNonNullField',
-        'fromJson',
-        'ignore',
-        'includeFromJson',
-        'includeIfNull',
-        'includeToJson',
-        'readValue',
-        'required',
-        'toJson',
-        'unknownEnumValue',
+        'User.name',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckKey(...) instead.',
       ],
     );
   });
 
-  test('requires JsonKey name overrides on the field', () async {
+  test('rejects @JsonKey on constructor parameters', () async {
     await _expectFailure(
       '''
 @Schemable()
@@ -889,7 +722,10 @@ final class User with _\$UserAck {
   final String name;
 }
 ''',
-      ['User.name', '@JsonKey', 'constructor parameter', 'field'],
+      [
+        'User.name',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckKey(...) instead.',
+      ],
     );
   });
 
@@ -907,8 +743,7 @@ import 'package:ack/ack.dart'
     show Ack, AckSchema, AckSchemaModel, SchemaResult;
 import 'package:ack/annotations.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
     );
   });
@@ -989,39 +824,14 @@ abstract final class CatSchema {}
   });
 
   for (final collision in <({String name, String declaration})>[
-    (
-      name: r'_$UserFromRuntime',
-      declaration:
-          r'User _$UserFromRuntime(Map<String, Object?> value) => throw 0;',
-    ),
-    (
-      name: r'_$UserToRuntime',
-      declaration:
-          r'Map<String, Object?> _$UserToRuntime(User value) => throw 0;',
-    ),
-    (
-      name: '_ackUserFromRuntimeName',
-      declaration: 'String _ackUserFromRuntimeName(Object? value) => "";',
-    ),
-    (
-      name: '_ackUserToRuntimeName',
-      declaration: 'Object? _ackUserToRuntimeName(String value) => value;',
-    ),
-    (
-      name: r'_$UserFromJson',
-      declaration:
-          r'User _$UserFromJson(Map<String, dynamic> value) => throw 0;',
-    ),
-    (
-      name: r'_$UserToJson',
-      declaration: r'Map<String, dynamic> _$UserToJson(User value) => throw 0;',
-    ),
     (name: r'_$UserAck', declaration: r'mixin _$UserAck {}'),
     (name: r'_userObject', declaration: r'final _userObject = Ack.object({});'),
     (
       name: r'_userWireSchema',
       declaration: r'final _userWireSchema = Ack.string();',
     ),
+    (name: r'_$UserFromRuntime', declaration: r'void _$UserFromRuntime() {}'),
+    (name: r'_$UserToRuntime', declaration: r'void _$UserToRuntime() {}'),
   ]) {
     test('rejects local ${collision.name} helper collisions', () async {
       await _expectFailure(
@@ -1131,16 +941,14 @@ import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'child.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
       extraSources: {
         'child.dart': '''
 import 'package:ack/annotations.dart';
 import 'model.dart';
 
-part 'child.ack.dart';
-part 'child.ack.g.dart';
+part 'child.g.dart';
 
 @Schemable()
 final class Child with _\$ChildAck {
@@ -1171,16 +979,14 @@ import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
         extraSources: {
           'address.dart': '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -1191,7 +997,7 @@ final class Address with _\$AddressAck {
 ''',
         },
         allowedOutputs: {
-          'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+          'test_pkg|lib/address.g.dart': decodedMatches(anything),
         },
       );
     },
@@ -1209,8 +1015,7 @@ import 'package:ack/annotations.dart';
 import 'address.dart' show Address;
 import 'address.dart' show AddressSchema;
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 
 @Schemable()
 final class Order with _\$OrderAck {
@@ -1223,8 +1028,7 @@ final class Order with _\$OrderAck {
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -1240,8 +1044,8 @@ final class Address with _\$AddressAck {
       },
       readerWriter: readerWriter,
       outputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
-        'test_pkg|lib/model.ack.dart': decodedMatches(
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
+        'test_pkg|lib/model.g.dart': decodedMatches(
           contains('AddressSchema.schema'),
         ),
       },
@@ -1264,8 +1068,7 @@ import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 import 'exports.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
       extraSources: {
         'exports.dart': "export 'address.dart' show Address;",
@@ -1273,8 +1076,7 @@ part 'model.ack.g.dart';
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -1284,9 +1086,7 @@ final class Address with _\$AddressAck {
 }
 ''',
       },
-      allowedOutputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
-      },
+      allowedOutputs: {'test_pkg|lib/address.g.dart': decodedMatches(anything)},
     );
   });
 
@@ -1319,23 +1119,42 @@ final class User {
     );
   });
 
-  test('rejects a no-op AckField', () async {
+  test('rejects blank @AckKey(...)', () async {
     await _expectFailure(
       '''
 @Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @AckField()
+  @AckKey('   ')
   final String name;
 }
 ''',
-      ['User.name', '@AckField()', 'no-op'],
+      ['User.name', '@AckKey.name must not be blank.'],
+    );
+  });
+
+  test('rejects combining @AckKey(...) and @JsonKey(name: ...)', () async {
+    await _expectFailure(
+      '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckKey('a')
+  @JsonKey(name: 'b')
+  final String name;
+}
+''',
+      [
+        'User.name',
+        'uses @JsonKey, which is not supported on @Schemable classes in Ack 2.0. Use @AckKey(...) instead.',
+      ],
     );
   });
 
   test(
-    'rejects optional presence on a required constructor parameter',
+    'rejects @Validate.optional() on a required constructor parameter',
     () async {
       await _expectFailure(
         '''
@@ -1343,7 +1162,7 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @AckField(presence: AckFieldPresence.optional)
+  @Validate.optional()
   final String name;
 }
 ''',
@@ -1352,83 +1171,21 @@ final class User with _\$UserAck {
     },
   );
 
-  test('rejects @Optional() on a required constructor parameter', () async {
-    await _expectFailure(
-      '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({required this.name});
-
-  @Optional()
-  final String name;
-}
-''',
-      ['User.name', 'optional', 'constructor'],
-    );
-  });
-
-  test('rejects combining @Optional() and @Required()', () async {
-    await _expectFailure(
-      '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({this.name});
-
-  @Optional()
-  @Required()
-  final String? name;
-}
-''',
-      ['User.name', '@Optional()', '@Required()'],
-    );
-  });
-
-  test('rejects conflicting legacy and new presence declarations', () async {
-    await _expectFailure(
-      '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({this.name});
-
-  @Optional()
-  @AckField(presence: AckFieldPresence.required)
-  final String? name;
-}
-''',
-      ['User.name', 'conflicting', 'presence'],
-    );
-  });
-
-  test('warns when legacy AckField presence is used', () async {
-    await _expectWarning(
-      '''
-@Schemable()
-final class User with _\$UserAck {
-  const User({this.name});
-
-  @AckField(presence: AckFieldPresence.optional)
-  final String? name;
-}
-''',
-      ['User.name', '@AckField(presence:', '@Optional()', '2.0.0'],
-    );
-  });
-
   test(
-    'warns when matching legacy and new presence declarations coexist',
+    'rejects combining @Validate.optional() and @Validate.required()',
     () async {
-      await _expectWarning(
+      await _expectFailure(
         '''
 @Schemable()
 final class User with _\$UserAck {
   const User({this.name});
 
-  @Optional()
-  @AckField(presence: AckFieldPresence.optional)
+  @Validate.optional()
+  @Validate.required()
   final String? name;
 }
 ''',
-        ['User.name', '@AckField(presence:', '2.0.0'],
+        ['User.name', '@Validate.optional()', '@Validate.required()'],
       );
     },
   );
@@ -1447,4 +1204,141 @@ final class User with _\$UserAck {
       ['User', 'extra', 'mapped'],
     );
   });
+
+  test(
+    'allows an imported class-first model with hidden facade when it exposes static schema',
+    () async {
+      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+      await readerWriter.testing.loadIsolateSources();
+      await testBuilder(
+        ackModelBuilder(BuilderOptions.empty),
+        {
+          'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+import 'address.dart' show Address;
+
+part 'model.g.dart';
+
+@Schemable()
+final class Order with _\$OrderAck {
+  const Order({required this.address});
+
+  final Address address;
+}
+''',
+          'test_pkg|lib/address.dart': '''
+import 'package:ack/ack.dart';
+
+part 'address.g.dart';
+
+@Schemable()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+
+  static final schema = _addressSchema;
+}
+''',
+        },
+        generateFor: const {
+          'test_pkg|lib/model.dart',
+          'test_pkg|lib/address.dart',
+        },
+        readerWriter: readerWriter,
+        outputs: {
+          'test_pkg|lib/address.g.dart': decodedMatches(anything),
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            contains('Address.schema'),
+          ),
+        },
+      );
+    },
+  );
+
+  test(
+    'rejects invalid @Validate.* constraints on mismatched field types or values',
+    () async {
+      await _expectFailure(
+        '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @Validate.min(1)
+  final String name;
+}
+''',
+        ['User.name', '@Validate.min', 'String', '@Validate.minLength'],
+      );
+      await _expectFailure(
+        '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({required this.ip});
+
+  @Validate.ip(version: 5)
+  final String ip;
+}
+''',
+        ['User.ip', '@Validate.ip(version: 5)', 'version must be 4 or 6.'],
+      );
+      await _expectFailure(
+        '''
+@Schemable()
+final class User with _\$UserAck {
+  const User({@Validate.minLength(1) required this.age});
+
+  final int age;
+}
+''',
+        ['User.age', '@Validate.minLength', 'int', '@Validate.min'],
+      );
+    },
+  );
+
+  test(
+    'resolves constructor parameter annotations alongside same-build schema-first generated model',
+    () async {
+      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+      await readerWriter.testing.loadIsolateSources();
+      await testBuilder(
+        ackModelBuilder(BuilderOptions.empty),
+        {
+          'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+
+part 'model.g.dart';
+
+@Schemable()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@Schemable()
+final class Order with _\$OrderAck {
+  const Order({
+    @AckKey('shipping_address') required this.shipping,
+    @Validate.minItems(1) this.history = const [],
+  });
+
+  final Address shipping;
+  final List<Address> history;
+
+  static final schema = _orderSchema;
+}
+''',
+        },
+        generateFor: const {'test_pkg|lib/model.dart'},
+        readerWriter: readerWriter,
+        outputs: {
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            allOf([
+              contains("'shipping_address': Address.\$ack.schema"),
+              contains('Ack.list(Address.\$ack.schema)'),
+              contains('.minItems(1)'),
+            ]),
+          ),
+        },
+      );
+    },
+  );
 }

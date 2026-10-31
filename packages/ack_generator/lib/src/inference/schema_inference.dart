@@ -1,5 +1,4 @@
 import 'package:ack/annotations.dart' as annotations;
-import 'package:ack/format_annotations.dart' as formats;
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
@@ -11,7 +10,8 @@ import 'package:source_gen/source_gen.dart';
 import '../utils/doc_comment_utils.dart';
 import '../utils/string_literal.dart';
 
-/// Infers Ack schema expressions from resolved Dart types and annotations.
+/// Inference helper that builds Ack schema expressions from resolved Dart
+/// types and annotations.
 ///
 /// The caller resolves application model types and import prefixes. Ack owns
 /// scalar, collection, and constraint inference for each generator.
@@ -20,76 +20,16 @@ final class AckSchemaInference {
 
   final String? ackPrefix;
 
-  static const _min = TypeChecker.typeNamed(annotations.Min, inPackage: 'ack');
-  static const _max = TypeChecker.typeNamed(annotations.Max, inPackage: 'ack');
-  static const _multipleOf = TypeChecker.typeNamed(
-    annotations.MultipleOf,
-    inPackage: 'ack',
-  );
-  static const _positive = TypeChecker.typeNamed(
-    annotations.Positive,
-    inPackage: 'ack',
-  );
-  static const _negative = TypeChecker.typeNamed(
-    annotations.Negative,
-    inPackage: 'ack',
-  );
-  static const _minLength = TypeChecker.typeNamed(
-    annotations.MinLength,
-    inPackage: 'ack',
-  );
-  static const _maxLength = TypeChecker.typeNamed(
-    annotations.MaxLength,
-    inPackage: 'ack',
-  );
-  static const _matches = TypeChecker.typeNamed(
-    annotations.Matches,
-    inPackage: 'ack',
-  );
-  static const _email = TypeChecker.typeNamed(
-    annotations.Email,
-    inPackage: 'ack',
-  );
-  static const _url = TypeChecker.typeNamed(annotations.Url, inPackage: 'ack');
-  static const _uri = TypeChecker.typeNamed(formats.Uri, inPackage: 'ack');
-  static const _uuid = TypeChecker.typeNamed(
-    annotations.Uuid,
-    inPackage: 'ack',
-  );
-  static const _date = TypeChecker.typeNamed(
-    annotations.Date,
-    inPackage: 'ack',
-  );
-  static const _dateTime = TypeChecker.typeNamed(
-    formats.DateTime,
-    inPackage: 'ack',
-  );
-  static const _notEmpty = TypeChecker.typeNamed(
-    annotations.NotEmpty,
-    inPackage: 'ack',
-  );
-  static const _minItems = TypeChecker.typeNamed(
-    annotations.MinItems,
-    inPackage: 'ack',
-  );
-  static const _maxItems = TypeChecker.typeNamed(
-    annotations.MaxItems,
-    inPackage: 'ack',
-  );
-  static const _uniqueItems = TypeChecker.typeNamed(
-    annotations.UniqueItems,
-    inPackage: 'ack',
-  );
-  static const _ackField = TypeChecker.typeNamed(
-    annotations.AckField,
+  static const _validate = TypeChecker.typeNamed(
+    annotations.Validate,
     inPackage: 'ack',
   );
 
   /// Infers a schema expression for [type].
   ///
   /// [resolveNamed] returns a schema expression for an application type,
-  /// including an enum that declares its own schema. Return null when the type
-  /// has no supported model contract; an enum then uses `Ack.enumValues`.
+  /// including an enum that declares its own schema. Return `null` when the
+  /// type has no supported model contract; an enum then uses `Ack.enumValues`.
   Future<String> inferType(
     DartType type, {
     required String Function(InterfaceType) visibleTypeName,
@@ -100,6 +40,13 @@ final class AckSchemaInference {
     required void Function(InterfaceType) validateMapKey,
   }) async {
     if (type is! InterfaceType) return unsupported(type);
+    if (_core(type, 'DateTime') ||
+        _core(type, 'Uri') ||
+        _core(type, 'Duration') ||
+        (_core(type, 'Object') && !_nullable(type))) {
+      final override = await resolveNamed(type);
+      if (override != null) return override;
+    }
     final scalar = _scalar(type);
     if (scalar != null) return scalar;
     if (type.element is EnumElement) {
@@ -123,7 +70,11 @@ final class AckSchemaInference {
         rejectNullableCollectionElement: rejectNullableCollectionElement,
         validateMapKey: validateMapKey,
       );
-      return '${_ack('Ack')}.list($itemSchema).codec<${renderType(type)}>(decode: (list) => list.toSet(), encode: (set) => set.toList(growable: false),)';
+      final runtimeType = type.element.instantiate(
+        typeArguments: type.typeArguments,
+        nullabilitySuffix: NullabilitySuffix.none,
+      );
+      return '${_ack('Ack')}.list($itemSchema).codec<${renderType(runtimeType)}>(decode: (list) => list.toSet(), encode: (set) => set.toList(growable: false),)';
     }
     if (type.isDartCoreMap) {
       validateMapKey(type);
@@ -145,111 +96,274 @@ final class AckSchemaInference {
   /// Applies constraint annotations declared on a field or parameter.
   String applyConstraints(String schema, Element declaration, DartType type) {
     var output = schema;
-    final isNumeric =
-        type is InterfaceType &&
-        (_core(type, 'int') || _core(type, 'double') || _core(type, 'num'));
-    final isString = type is InterfaceType && _core(type, 'String');
     final isCollection =
         type is InterfaceType && (type.isDartCoreList || type.isDartCoreSet);
     final isSet = type is InterfaceType && type.isDartCoreSet;
+    final scalarType = isCollection && type.typeArguments.length == 1
+        ? type.typeArguments.single
+        : type;
+    final isNumeric =
+        scalarType is InterfaceType &&
+        (_core(scalarType, 'int') ||
+            _core(scalarType, 'double') ||
+            _core(scalarType, 'num'));
+    final isString = scalarType is InterfaceType && _core(scalarType, 'String');
+    final itemConstraints = <String>[];
     final setConstraints = <String>[];
     var hasUniqueConstraint = false;
+
+    void addScalarConstraint(String constraint) {
+      if (isCollection) {
+        itemConstraints.add(constraint);
+      } else {
+        output = '$output$constraint';
+      }
+    }
+
+    void addCollectionConstraint(String constraint, {bool isUnique = false}) {
+      if (isSet) {
+        if (isUnique) hasUniqueConstraint = true;
+        setConstraints.add(constraint);
+      } else {
+        output = '$output$constraint';
+      }
+    }
+
     for (final metadata in declaration.metadata.annotations) {
       final value = metadata.computeConstantValue();
       final valueType = value?.type;
       if (value == null || valueType == null) continue;
-      if (_min.isExactlyType(valueType)) {
-        _require(declaration, type, '@Min', isNumeric, '@MinLength');
-        output = '$output.min(${_number(declaration, '@Min', value)})';
-      } else if (_max.isExactlyType(valueType)) {
-        _require(declaration, type, '@Max', isNumeric, '@MaxLength');
-        output = '$output.max(${_number(declaration, '@Max', value)})';
-      } else if (_multipleOf.isExactlyType(valueType)) {
-        _require(declaration, type, '@MultipleOf', isNumeric, 'numeric field');
-        output =
-            '$output.multipleOf(${_number(declaration, '@MultipleOf', value)})';
-      } else if (_positive.isExactlyType(valueType)) {
-        _require(declaration, type, '@Positive', isNumeric, 'numeric field');
-        output = '$output.positive()';
-      } else if (_negative.isExactlyType(valueType)) {
-        _require(declaration, type, '@Negative', isNumeric, 'numeric field');
-        output = '$output.negative()';
-      } else if (_minLength.isExactlyType(valueType)) {
-        _require(declaration, type, '@MinLength', isString, '@Min');
-        output = '$output.minLength(${value.getField('length')!.toIntValue()})';
-      } else if (_maxLength.isExactlyType(valueType)) {
-        _require(declaration, type, '@MaxLength', isString, '@Max');
-        output = '$output.maxLength(${value.getField('length')!.toIntValue()})';
-      } else if (_matches.isExactlyType(valueType)) {
-        _require(declaration, type, '@Matches', isString, 'String field');
-        output =
-            '$output.matches(${dartStringLiteral(value.getField('pattern')!.toStringValue()!)})';
-      } else if (_email.isExactlyType(valueType)) {
-        _require(declaration, type, '@Email', isString, 'String field');
-        output = '$output.email()';
-      } else if (_url.isExactlyType(valueType)) {
-        _require(declaration, type, '@Url', isString, 'String field');
-        output = '$output.url()';
-      } else if (_uri.isExactlyType(valueType)) {
-        _require(declaration, type, '@Uri', isString, 'String field');
-        output = '$output.uri()';
-      } else if (_uuid.isExactlyType(valueType)) {
-        _require(declaration, type, '@Uuid', isString, 'String field');
-        output = '$output.uuid()';
-      } else if (_date.isExactlyType(valueType)) {
-        _require(declaration, type, '@Date', isString, 'String field');
-        output = '$output.date()';
-      } else if (_dateTime.isExactlyType(valueType)) {
-        _require(declaration, type, '@DateTime', isString, 'String field');
-        output = '$output.datetime()';
-      } else if (_notEmpty.isExactlyType(valueType)) {
-        _require(declaration, type, '@NotEmpty', isString, 'String field');
-        output = '$output.notEmpty()';
-      } else if (_minItems.isExactlyType(valueType)) {
-        _require(
-          declaration,
-          type,
-          '@MinItems',
-          isCollection,
-          'List or Set field',
-        );
-        final constraint =
-            '.minItems(${value.getField('count')!.toIntValue()})';
-        if (isSet) {
-          setConstraints.add(constraint);
-        } else {
-          output = '$output$constraint';
-        }
-      } else if (_maxItems.isExactlyType(valueType)) {
-        _require(
-          declaration,
-          type,
-          '@MaxItems',
-          isCollection,
-          'List or Set field',
-        );
-        final constraint =
-            '.maxItems(${value.getField('count')!.toIntValue()})';
-        if (isSet) {
-          setConstraints.add(constraint);
-        } else {
-          output = '$output$constraint';
-        }
-      } else if (_uniqueItems.isExactlyType(valueType)) {
-        _require(
-          declaration,
-          type,
-          '@UniqueItems',
-          isCollection,
-          'List or Set field',
-        );
-        if (isSet) {
-          hasUniqueConstraint = true;
-          setConstraints.add('.unique()');
-        } else {
-          output = '$output.unique()';
+      if (_validate.isExactlyType(valueType)) {
+        final kind = value.getField('kind')!.toStringValue()!;
+        switch (kind) {
+          case 'optional' || 'required' || 'notNull':
+            break;
+          case 'min':
+            _require(
+              declaration,
+              type,
+              '@Validate.min',
+              isNumeric,
+              '@Validate.minLength',
+            );
+            addScalarConstraint(
+              '.min(${_number(declaration, '@Validate.min', value)})',
+            );
+          case 'max':
+            _require(
+              declaration,
+              type,
+              '@Validate.max',
+              isNumeric,
+              '@Validate.maxLength',
+            );
+            addScalarConstraint(
+              '.max(${_number(declaration, '@Validate.max', value)})',
+            );
+          case 'multipleOf':
+            _require(
+              declaration,
+              type,
+              '@Validate.multipleOf',
+              isNumeric,
+              'numeric field',
+            );
+            addScalarConstraint(
+              '.multipleOf(${_number(declaration, '@Validate.multipleOf', value)})',
+            );
+          case 'positive':
+            _require(
+              declaration,
+              type,
+              '@Validate.positive',
+              isNumeric,
+              'numeric field',
+            );
+            addScalarConstraint('.positive()');
+          case 'negative':
+            _require(
+              declaration,
+              type,
+              '@Validate.negative',
+              isNumeric,
+              'numeric field',
+            );
+            addScalarConstraint('.negative()');
+          case 'minLength':
+            _require(
+              declaration,
+              type,
+              '@Validate.minLength',
+              isString,
+              '@Validate.min',
+            );
+            addScalarConstraint(
+              '.minLength(${value.getField('value')!.toIntValue()})',
+            );
+          case 'maxLength':
+            _require(
+              declaration,
+              type,
+              '@Validate.maxLength',
+              isString,
+              '@Validate.max',
+            );
+            addScalarConstraint(
+              '.maxLength(${value.getField('value')!.toIntValue()})',
+            );
+          case 'matches':
+            _require(
+              declaration,
+              type,
+              '@Validate.matches',
+              isString,
+              'String field',
+            );
+            addScalarConstraint(
+              '.matches(${dartStringLiteral(value.getField('value')!.toStringValue()!)})',
+            );
+          case 'notEmpty':
+            _require(
+              declaration,
+              type,
+              '@Validate.notEmpty',
+              isString || isCollection,
+              'String, List, or Set field',
+            );
+            if (isCollection) {
+              addCollectionConstraint('.notEmpty()');
+            } else {
+              output = '$output.notEmpty()';
+            }
+          case 'email':
+            _require(
+              declaration,
+              type,
+              '@Validate.email',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.email()');
+          case 'url':
+            _require(
+              declaration,
+              type,
+              '@Validate.url',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.url()');
+          case 'uri':
+            _require(
+              declaration,
+              type,
+              '@Validate.uri',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.uri()');
+          case 'uuid':
+            _require(
+              declaration,
+              type,
+              '@Validate.uuid',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.uuid()');
+          case 'date':
+            _require(
+              declaration,
+              type,
+              '@Validate.date',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.date()');
+          case 'dateTime':
+            _require(
+              declaration,
+              type,
+              '@Validate.dateTime',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.datetime()');
+          case 'ip':
+            _require(
+              declaration,
+              type,
+              '@Validate.ip',
+              isString,
+              'String field',
+            );
+            final version = value.getField('value')?.toIntValue();
+            if (version != null) {
+              if (version != 4 && version != 6) {
+                throw InvalidGenerationSource(
+                  '${_qualifiedName(declaration)} has @Validate.ip(version: '
+                  '$version); version must be 4 or 6.',
+                  element: declaration,
+                );
+              }
+              addScalarConstraint('.ip(version: $version)');
+            } else {
+              addScalarConstraint('.ip()');
+            }
+          case 'ipv4':
+            _require(
+              declaration,
+              type,
+              '@Validate.ipv4',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.ipv4()');
+          case 'ipv6':
+            _require(
+              declaration,
+              type,
+              '@Validate.ipv6',
+              isString,
+              'String field',
+            );
+            addScalarConstraint('.ipv6()');
+          case 'minItems':
+            _require(
+              declaration,
+              type,
+              '@Validate.minItems',
+              isCollection,
+              'List or Set field',
+            );
+            addCollectionConstraint(
+              '.minItems(${value.getField('value')!.toIntValue()})',
+            );
+          case 'maxItems':
+            _require(
+              declaration,
+              type,
+              '@Validate.maxItems',
+              isCollection,
+              'List or Set field',
+            );
+            addCollectionConstraint(
+              '.maxItems(${value.getField('value')!.toIntValue()})',
+            );
+          case 'uniqueItems':
+            _require(
+              declaration,
+              type,
+              '@Validate.uniqueItems',
+              isCollection,
+              'List or Set field',
+            );
+            addCollectionConstraint('.unique()', isUnique: true);
         }
       }
+    }
+    if (itemConstraints.isNotEmpty) {
+      output = _appendListItemConstraints(output, itemConstraints.join());
     }
     if (setConstraints.isNotEmpty) {
       if (isSet && !hasUniqueConstraint) {
@@ -260,6 +374,26 @@ final class AckSchemaInference {
       output = _beforeOuterCodec(output, setConstraints.join());
     }
     return output;
+  }
+
+  String _appendListItemConstraints(String schema, String modifiers) {
+    const prefix = 'final schema = ';
+    final unit = parseString(
+      content: '$prefix$schema;',
+      throwIfDiagnostics: false,
+    ).unit;
+    final declaration = unit.declarations.single as TopLevelVariableDeclaration;
+    Expression? current = declaration.variables.variables.single.initializer;
+    while (current is MethodInvocation) {
+      if (current.methodName.name == 'list' &&
+          current.argumentList.arguments.length == 1) {
+        final itemArg = current.argumentList.arguments.single;
+        final end = itemArg.end - prefix.length;
+        return '${schema.substring(0, end)}$modifiers${schema.substring(end)}';
+      }
+      current = current.target;
+    }
+    return '$schema$modifiers';
   }
 
   /// Inserts [modifiers] before the codec that ends [schema], or appends them
@@ -281,7 +415,7 @@ final class AckSchemaInference {
     return '$schema$modifiers';
   }
 
-  /// Adds an explicit Ack description or a tagged documentation description.
+  /// Adds a tagged documentation description (`/// @description ...`) to [schema].
   ///
   /// Analyzer does not attach parameter doc comments to parameter elements.
   /// A function generator passes the comment from its source AST.
@@ -290,9 +424,9 @@ final class AckSchemaInference {
     Element declaration, {
     String? sourceComment,
   }) {
-    final String? tag;
+    final String? description;
     try {
-      tag = parseDescriptionTag(
+      description = parseDescriptionTag(
         sourceComment ?? declaration.documentationComment,
       );
     } on FormatException catch (error) {
@@ -301,18 +435,6 @@ final class AckSchemaInference {
         element: declaration,
       );
     }
-    final annotation = _ackField.firstAnnotationOfExact(declaration);
-    final value = annotation == null
-        ? null
-        : ConstantReader(annotation).read('description');
-    final explicit = value == null || value.isNull ? null : value.stringValue;
-    if (explicit != null && explicit.trim().isEmpty) {
-      throw InvalidGenerationSource(
-        '${declaration.name} @AckField.description must not be blank.',
-        element: declaration,
-      );
-    }
-    final description = explicit ?? tag;
     return description == null
         ? schema
         : '$schema.describe(${dartStringLiteral(description)})';
@@ -342,17 +464,14 @@ final class AckSchemaInference {
   bool _nullable(DartType type) =>
       type.nullabilitySuffix == NullabilitySuffix.question;
 
-  String _ack(String symbol) {
-    final prefix = ackPrefix;
-    return prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
-  }
+  String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
 
   String _number(Element declaration, String annotation, DartObject value) {
     final field = value.getField('value')!;
     final number = (field.toIntValue() ?? field.toDoubleValue())!;
     if (!number.isFinite) {
       throw InvalidGenerationSource(
-        '${declaration.enclosingElement?.name}.${declaration.name} has '
+        '${_qualifiedName(declaration)} has '
         '$annotation($number); the value must be a finite number.',
         element: declaration,
       );
@@ -369,9 +488,20 @@ final class AckSchemaInference {
   ) {
     if (valid) return;
     throw InvalidGenerationSource(
-      '${declaration.enclosingElement?.name}.${declaration.name} has '
+      '${_qualifiedName(declaration)} has '
       '$annotation on ${type.getDisplayString()}; use $alternative instead.',
       element: declaration,
     );
+  }
+
+  String _qualifiedName(Element declaration) {
+    final owner = switch (declaration.enclosingElement) {
+      ConstructorElement(:final enclosingElement) => enclosingElement.name,
+      final enclosing? => enclosing.name,
+      null => null,
+    };
+    return owner == null || owner.isEmpty
+        ? '${declaration.name}'
+        : '$owner.${declaration.name}';
   }
 }

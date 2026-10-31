@@ -1,5 +1,4 @@
 {
   "type": "string",
-  "minLength": 1,
-  "x-transformed": true
+  "minLength": 1
 }

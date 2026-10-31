@@ -61,7 +61,7 @@ final class DiscriminatedObjectSchema<T extends Object>
           'Discriminated branches must be object-backed schemas.',
         );
       }
-      // Union-owned discriminator (PR #107): if a branch declares the
+      // Union-owned discriminator: if a branch declares the
       // discriminator property, it must accept the branch label. Otherwise
       // the union synthesizes the literal automatically via [effectiveBranch].
       final branchDiscriminator = base.properties[discriminatorKey];
@@ -246,6 +246,8 @@ final class DiscriminatedObjectSchema<T extends Object>
   /// The effective schema includes this union's discriminator property as an
   /// exact branch literal, even when the authored branch omitted it. Wrappers
   /// around the branch (codecs, defaults) are preserved.
+  /// Object-backed codec outputs that omit the key accept its optional literal,
+  /// so decoded maps remain valid after union normalization adds the key.
   ///
   /// When [optionalDiscriminator] is true the injected literal is optional.
   /// This is used only on the encode path, where a branch encoder may legally
@@ -265,13 +267,79 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    return effectiveDiscriminatedBranch(
-          discriminatorKey: discriminatorKey,
-          discriminatorValue: discriminatorValue,
-          branchSchema: branchSchema,
-          optionalDiscriminator: optionalDiscriminator,
-        )
+    final effective = effectiveDiscriminatedBranch(
+      discriminatorKey: discriminatorKey,
+      discriminatorValue: discriminatorValue,
+      branchSchema: branchSchema,
+      optionalDiscriminator: optionalDiscriminator,
+    );
+    return _withRuntimeDiscriminator(effective, discriminatorValue)
         as AckSchema<JsonMap, T>;
+  }
+
+  AnyAckSchema _withRuntimeDiscriminator(
+    AnyAckSchema schema,
+    String discriminatorValue,
+  ) {
+    if (schema is ObjectSchema) {
+      if (schema.additionalProperties ||
+          schema.properties.containsKey(discriminatorKey)) {
+        return schema;
+      }
+      // A decoder may omit the union-owned key; normalization adds it later.
+      // Its output must also accept that normalized value on subsequent use.
+      return effectiveDiscriminatedObjectBranch(
+        discriminatorKey: discriminatorKey,
+        discriminatorValue: discriminatorValue,
+        objectSchema: schema,
+        optionalDiscriminator: true,
+      );
+    }
+    if (schema is LazySchema) {
+      return schema._mapTarget(
+        (target) => _withRuntimeDiscriminator(target, discriminatorValue),
+      );
+    }
+    if (schema is CodecSchema) {
+      final input = _withRuntimeDiscriminator(
+        schema.inputSchema,
+        discriminatorValue,
+      );
+      final output = _withRuntimeDiscriminator(
+        schema.outputSchema as AnyAckSchema,
+        discriminatorValue,
+      );
+      return identical(input, schema.inputSchema) &&
+              identical(output, schema.outputSchema)
+          ? schema
+          : schema._copyWithSchemas(input: input, output: output);
+    }
+    if (schema is AnyOfSchema) {
+      final branches = [
+        for (final branch in schema.schemas)
+          _withRuntimeDiscriminator(branch, discriminatorValue),
+      ];
+      if (const ListEquality<AnyAckSchema>(
+        IdentityEquality(),
+      ).equals(branches, schema.schemas)) {
+        return schema;
+      }
+      return AnyOfSchema(
+        List.unmodifiable(branches),
+        isNullable: schema.isNullable,
+        isOptional: schema.isOptional,
+        description: schema.description,
+        constraints: schema.constraints,
+        refinements: schema.refinements,
+      );
+    }
+    if (schema is WrapperSchema) {
+      final inner = _withRuntimeDiscriminator(schema.inner, discriminatorValue);
+      return identical(inner, schema.inner)
+          ? schema
+          : schema.copyWithInner(inner);
+    }
+    return schema;
   }
 
   @override
@@ -298,7 +366,7 @@ final class DiscriminatedObjectSchema<T extends Object>
     final discValue = discriminatorResult.getOrNull()!;
 
     // Route through `effectiveBranch` so branches authored without the
-    // discriminator property (per PR #107) still validate the literal at parse
+    // discriminator property still validate the literal at parse
     // time. The shared discriminator check guarantees the branch exists, so
     // `effectiveBranch` is always callable here.
     final effective = effectiveBranch(discValue);
@@ -334,6 +402,55 @@ final class DiscriminatedObjectSchema<T extends Object>
     Object? value,
     SchemaContext context,
   ) {
+    final checked = _checkRuntimeType(value, context);
+    if (checked.isFail || value == null) return checked;
+    final runtime = checked.getOrNull()!;
+
+    final mapRuntime = jsonMapOrNull(runtime);
+    if (mapRuntime != null) {
+      final discResult = _validateDiscriminatorKey(mapRuntime, context);
+      if (discResult.isFail) return SchemaResult.fail(discResult.getError());
+      final discValue = discResult.getOrNull()!;
+      final effective = effectiveBranch(discValue);
+      final branchContext = context.createChild(
+        name: 'when $discriminatorKey="$discValue"',
+        schema: effective,
+        value: runtime,
+        pathSegment: '',
+      );
+      final result = effective.validateRuntimeWithContext(
+        runtime,
+        branchContext,
+      );
+      if (result.isFail) return SchemaResult.fail(result.getError());
+      return applyConstraintsAndRefinements(result.getOrNull()!, context);
+    }
+
+    final errors = <SchemaError>[];
+    for (final discValue in schemas.keys) {
+      final effective = effectiveBranch(discValue);
+      final branchContext = context.createChild(
+        name: 'when $discriminatorKey="$discValue"',
+        schema: effective,
+        value: runtime,
+        pathSegment: '',
+      );
+      final result = effective.validateRuntimeWithContext(
+        runtime,
+        branchContext,
+      );
+      if (result.isOk) {
+        return applyConstraintsAndRefinements(result.getOrNull()!, context);
+      }
+      errors.add(result.getError());
+    }
+
+    return SchemaResult.fail(
+      SchemaNestedError(errors: errors, context: context),
+    );
+  }
+
+  SchemaResult<T> _checkRuntimeType(Object? value, SchemaContext context) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
     if (value is! T) {
@@ -346,13 +463,20 @@ final class DiscriminatedObjectSchema<T extends Object>
       );
     }
 
-    return applyConstraintsAndRefinements(value, context);
+    return SchemaResult.ok(value);
   }
 
   @override
   @protected
   SchemaResult<JsonMap> encodeWithContext(T value, SchemaContext context) {
-    final validated = validateRuntimeWithContext(value, context);
+    final checked = _checkRuntimeType(value, context);
+    if (checked.isFail) return SchemaResult.fail(checked.getError());
+    final typed = checked.getOrNull();
+    if (typed == null) return SchemaResult.ok(null);
+
+    // Encoding validates each branch below. Repeating the full runtime
+    // membership check here would execute branch callbacks an extra time.
+    final validated = applyConstraintsAndRefinements(typed, context);
     if (validated.isFail) {
       return SchemaResult.fail(validated.getError());
     }
@@ -401,7 +525,7 @@ final class DiscriminatedObjectSchema<T extends Object>
     String? matchedDiscValue;
     for (final discValue in schemas.keys) {
       // Select the branch via the effective schema (its literal discriminator
-      // gates selection per PR #107); the union itself writes the discriminator
+      // gates selection); the union itself writes the discriminator
       // onto the encoded boundary in [_encodeBranch].
       final effective = effectiveBranch(discValue, optionalDiscriminator: true);
       final branchCtx = context.createChild(
@@ -471,18 +595,6 @@ final class DiscriminatedObjectSchema<T extends Object>
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
-  }
-
-  @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'discriminatorKey': discriminatorKey,
-      'schemas': schemas.length,
-    };
   }
 
   @override

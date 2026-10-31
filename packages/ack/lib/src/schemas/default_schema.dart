@@ -1,8 +1,10 @@
 part of 'schema.dart';
 
-/// Wraps another schema and supplies a runtime default when the input is
-/// null on parse. Object encode injects encoded defaults for missing
-/// default-wrapped fields.
+/// Schema wrapper that supplies [defaultValue] when the parse input is
+/// `null`.
+///
+/// Object encoding also injects encoded defaults for missing default-wrapped
+/// fields.
 @immutable
 final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>
@@ -28,16 +30,15 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   @internal
   SchemaResult<Runtime> resolveDefaultWithContext(SchemaContext context) {
     // Defaults are runtime values, not boundary values, so validate via the
-    // runtime path. `cloneDefault` returns unmodifiable collection copies when
-    // it can; mutable collection defaults are rejected if the inner schema
-    // would otherwise return the original reference.
-    final cloned = cloneDefault(defaultValue);
+    // runtime path. Reject collection defaults when neither the snapshot nor
+    // the inner schema can detach the value while preserving its runtime type.
+    final cloned = deepUnmodifiableCopy(defaultValue);
     final clonedSafely = cloned is Runtime && !identical(cloned, defaultValue);
-    final effective = (cloned is Runtime) ? cloned : defaultValue;
+    final effective = cloned is Runtime ? cloned : defaultValue;
     final result = inner.validateRuntimeWithContext(effective, context);
     if (result.isOk &&
         !clonedSafely &&
-        _isCollectionDefault(defaultValue) &&
+        (defaultValue is List || defaultValue is Map || defaultValue is Set) &&
         identical(result.getOrNull(), defaultValue)) {
       return SchemaResult.fail(
         SchemaValidationError(
@@ -155,6 +156,3 @@ final class DefaultSchema<Boundary extends Object, Runtime extends Object>
   int get hashCode =>
       Object.hash(inner, defaultValue, isNullable, isOptional, description);
 }
-
-bool _isCollectionDefault(Object value) =>
-    value is List || value is Map || value is Set;

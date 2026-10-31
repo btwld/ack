@@ -90,81 +90,31 @@ extension AckMcpServer on McpServer {
     ToolAnnotations? annotations,
     Map<String, dynamic>? meta,
     CallToolResult Function(SchemaError error)? onInvalidArguments,
-  }) => _registerAckTool(
-    this,
-    name,
-    input: input,
-    parse: (args) => parseMcpToolArguments(input, args, debugName: name),
-    callback: callback,
-    title: title,
-    description: description,
-    annotations: annotations,
-    meta: meta,
-    onInvalidArguments: onInvalidArguments,
-  );
-
-  /// Advertises [model]'s schema and passes a typed model to [callback].
-  ///
-  /// Defaults and codecs run before the model is constructed. Registration and
-  /// invalid-argument handling follow [registerAckTool].
-  RegisteredTool registerAckModelTool<M extends Object>(
-    String name, {
-    required AckModelAdapter<JsonMap, Object, M> model,
-    required AckToolFunction<M> callback,
-    String? title,
-    String? description,
-    ToolAnnotations? annotations,
-    Map<String, dynamic>? meta,
-    CallToolResult Function(SchemaError error)? onInvalidArguments,
-  }) => _registerAckTool(
-    this,
-    name,
-    input: model.schema,
-    parse: (args) => model.safeParse(args, debugName: name),
-    callback: callback,
-    title: title,
-    description: description,
-    annotations: annotations,
-    meta: meta,
-    onInvalidArguments: onInvalidArguments,
-  );
-}
-
-RegisteredTool _registerAckTool<R extends Object>(
-  McpServer server,
-  String name, {
-  required AckSchema<JsonMap, Object> input,
-  required SchemaResult<R> Function(Map<String, dynamic>) parse,
-  required AckToolFunction<R> callback,
-  String? title,
-  String? description,
-  ToolAnnotations? annotations,
-  Map<String, dynamic>? meta,
-  CallToolResult Function(SchemaError error)? onInvalidArguments,
-}) {
-  final inputSchema = input.toMcpToolInputSchema();
-  return server.registerTool(
-    name,
-    inputSchema: inputSchema,
-    title: title,
-    description: description,
-    annotations: annotations,
-    meta: meta,
-    callback: (args, extra) {
-      final result = parse(args);
-      if (result case Ok<R>(value: final value?)) {
-        return callback(value, extra);
-      }
-      final error = switch (result) {
-        Fail<R>(:final error) => error,
-        Ok<R>() => SchemaValidationError(
-          message: 'Tool arguments must parse to a non-null object.',
-          context: SchemaContext(name: name, schema: input, value: args),
-        ),
-      };
-      return onInvalidArguments != null
-          ? onInvalidArguments(error)
-          : ackValidationErrorToCallToolResult(error, toolName: name);
-    },
-  );
+  }) {
+    final inputSchema = input.toMcpToolInputSchema();
+    return registerTool(
+      name,
+      inputSchema: inputSchema,
+      title: title,
+      description: description,
+      annotations: annotations,
+      meta: meta,
+      callback: (args, extra) {
+        final result = parseMcpToolArguments(input, args, debugName: name);
+        if (result case Ok<R>(value: final value?)) {
+          return callback(value, extra);
+        }
+        final error = switch (result) {
+          Fail<R>(:final error) => error,
+          Ok<R>() => SchemaValidationError(
+            message: 'Tool arguments must parse to a non-null object.',
+            context: SchemaContext(name: name, schema: input, value: args),
+          ),
+        };
+        return onInvalidArguments != null
+            ? onInvalidArguments(error)
+            : ackValidationErrorToCallToolResult(error, toolName: name);
+      },
+    );
+  }
 }

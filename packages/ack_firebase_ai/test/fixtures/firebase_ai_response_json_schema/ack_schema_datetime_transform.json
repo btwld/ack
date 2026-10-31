@@ -1,5 +1,4 @@
 {
   "type": "string",
-  "format": "date-time",
-  "x-transformed": true
+  "format": "date-time"
 }

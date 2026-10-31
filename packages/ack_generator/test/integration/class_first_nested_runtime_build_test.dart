@@ -23,11 +23,7 @@ Map<String, String> _generatedFiles(Directory directory) => {
       in directory
           .listSync(recursive: true)
           .whereType<File>()
-          .where(
-            (file) =>
-                file.path.endsWith('.ack.dart') ||
-                file.path.endsWith('.ack.g.dart'),
-          ))
+          .where((file) => file.path.endsWith('.g.dart')))
     p.relative(file.path, from: directory.path): file.readAsStringSync(),
 };
 
@@ -68,8 +64,7 @@ dependency_overrides:
           r'''
 import 'package:ack/ack.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable(schemaName: 'PostalAddressSchema')
 final class Address with _$AddressAck {
@@ -103,8 +98,7 @@ import 'package:ack/ack.dart';
 
 import 'address.dart' show Address, PostalAddressSchema;
 
-part 'customer.ack.dart';
-part 'customer.ack.g.dart';
+part 'customer.g.dart';
 
 @Schemable()
 final class Customer with _$CustomerAck {
@@ -127,8 +121,7 @@ import 'package:ack/ack.dart';
 
 import 'models.dart' as models;
 
-part 'parcel.ack.dart';
-part 'parcel.ack.g.dart';
+part 'parcel.g.dart';
 
 @Schemable()
 final class Parcel with _$ParcelAck {
@@ -141,8 +134,7 @@ final class Parcel with _$ParcelAck {
         File(p.join(temporary.path, 'lib', 'north.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
-part 'north.ack.dart';
-part 'north.ack.g.dart';
+part 'north.g.dart';
 
 @Schemable()
 final class Place with _$PlaceAck {
@@ -154,8 +146,7 @@ final class Place with _$PlaceAck {
         File(p.join(temporary.path, 'lib', 'south.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
-part 'south.ack.dart';
-part 'south.ack.g.dart';
+part 'south.g.dart';
 
 @Schemable()
 final class Place with _$PlaceAck {
@@ -171,8 +162,7 @@ import 'package:ack/ack.dart';
 import 'north.dart' as north;
 import 'south.dart' as south;
 
-part 'itinerary.ack.dart';
-part 'itinerary.ack.g.dart';
+part 'itinerary.g.dart';
 
 @Schemable()
 final class Itinerary with _$ItineraryAck {
@@ -186,8 +176,7 @@ final class Itinerary with _$ItineraryAck {
         File(p.join(temporary.path, 'lib', 'pet.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
-part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 @Schemable(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
@@ -208,8 +197,7 @@ import 'package:ack/ack.dart';
 import 'address.dart' as address;
 import 'pet.dart' as pets;
 
-part 'order.ack.dart';
-part 'order.ack.g.dart';
+part 'order.g.dart';
 
 @Schemable()
 final class Order with _$OrderAck {
@@ -232,8 +220,7 @@ final class Order with _$OrderAck {
           r'''
 import 'package:ack/ack.dart';
 
-part 'legacy.ack.dart';
-part 'legacy.ack.g.dart';
+part 'legacy.g.dart';
 
 @Schemable(name: 'LegacyAddress')
 final legacyAddressContract = Ack.object({'city': Ack.string()});
@@ -245,8 +232,7 @@ import 'package:ack/ack.dart';
 
 import 'legacy.dart' as legacy;
 
-part 'holder.ack.dart';
-part 'holder.ack.g.dart';
+part 'holder.g.dart';
 
 @Schemable()
 final class Holder with _$HolderAck {
@@ -267,14 +253,87 @@ final class Holder with _$HolderAck {
 ''',
         );
         File(
+          p.join(temporary.path, 'lib', 'value_models.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack/ack.dart';
+
+part 'value_models.g.dart';
+
+final class Token {
+  const Token(this.value);
+  final String value;
+  static int decodes = 0;
+  static int encodes = 0;
+
+  static Token decode(String value) {
+    decodes++;
+    return Token(value);
+  }
+
+  static String encode(Token token) {
+    encodes++;
+    return token.value;
+  }
+
+  @override
+  bool operator ==(Object other) => other is Token && other.value == value;
+  @override
+  int get hashCode => value.hashCode;
+}
+
+@Schemable()
+final scalarSchema = Ack.integer();
+@Schemable()
+final stringsSchema = Ack.list(Ack.string());
+@Schemable()
+StringSchema get getterLabelSchema => Ack.string();
+@Schemable()
+final encodedSchema = Ack.string().codec<Token>(
+  decode: Token.decode,
+  encode: Token.encode,
+);
+''');
+        File(
+          p.join(temporary.path, 'lib', 'value_holder.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack/ack.dart';
+import 'value_models.dart' as values;
+
+part 'value_holder.g.dart';
+
+@Schemable()
+final class ValueHolder with _$ValueHolderAck {
+  const ValueHolder({
+    required this.scalar,
+    required this.strings,
+    required this.encoded,
+    required this.getterLabel,
+    required this.history,
+    required this.unique,
+    this.patch = const JsonMaybe.absent(),
+    required this.sets,
+    required this.nestedSets,
+  });
+
+  final values.Scalar scalar;
+  final values.Strings strings;
+  final values.Encoded encoded;
+  final values.GetterLabel getterLabel;
+  final List<values.Scalar> history;
+  final Set<values.Scalar> unique;
+  final JsonMaybe<values.Encoded> patch;
+  final Map<String, Set<int>?> sets;
+  final Map<String, Map<String, Set<String>?>?> nestedSets;
+}
+''');
+        File(
           p.join(temporary.path, 'lib', 'address_envelope.dart'),
         ).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 import 'address.dart' as address;
 
-part 'address_envelope.ack.dart';
-part 'address_envelope.ack.g.dart';
+part 'address_envelope.g.dart';
 
 @Schemable()
 final addressEnvelopeSchema = Ack.object({
@@ -299,9 +358,57 @@ import 'package:ack_class_first_nested/itinerary.dart';
 import 'package:ack_class_first_nested/order.dart';
 import 'package:ack_class_first_nested/parcel.dart';
 import 'package:ack_class_first_nested/pet.dart';
+import 'package:ack_class_first_nested/value_holder.dart';
+import 'package:ack_class_first_nested/value_models.dart' as values;
+import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('same-build value models and nullable nested Sets round-trip', () {
+    values.Token.decodes = 0;
+    values.Token.encodes = 0;
+    final json = <String, Object?>{
+      'scalar': 7,
+      'strings': ['one', 'two'],
+      'encoded': 'token',
+      'getterLabel': 'from-getter',
+      'history': [1, 2],
+      'unique': [3, 4],
+      'sets': {'present': [1, 2], 'none': null},
+      'nestedSets': {
+        'present': {'items': ['a', 'b'], 'none': null},
+        'none': null,
+      },
+    };
+    final holder = ValueHolderSchema.parse(json);
+    expect(holder.scalar.value, 7);
+    expect(holder.strings.value, ['one', 'two']);
+    expect(holder.encoded.value.value, 'token');
+    expect(holder.getterLabel.value, 'from-getter');
+    expect(holder.history.map((model) => model.value), [1, 2]);
+    expect(holder.unique.map((model) => model.value), [3, 4]);
+    expect(holder.patch, const JsonMaybe<values.Encoded>.absent());
+    expect(holder.sets['present'], {1, 2});
+    expect(holder.sets['none'], isNull);
+    expect(holder.nestedSets['present']!['items'], {'a', 'b'});
+    expect(holder.nestedSets['present']!['none'], isNull);
+    expect(holder.nestedSets['none'], isNull);
+    expect(values.Token.decodes, 1);
+    expect(holder.toJson(), json);
+    expect(values.Token.encodes, 1);
+    expect(ValueHolderSchema.parse(holder.toJson()), holder);
+    expect(() => holder.strings.value.add('three'), throwsUnsupportedError);
+    expect(() => holder.sets['present']!.add(3), throwsUnsupportedError);
+    expect(
+      () => holder.nestedSets['present']!['items']!.add('c'),
+      throwsUnsupportedError,
+    );
+
+    final patched = ValueHolderSchema.parse({...json, 'patch': 'changed'});
+    expect(patched.patch.valueOrNull!.value.value, 'changed');
+    expect(patched.toJson()['patch'], 'changed');
+  });
+
   test('nested models parse, encode, and export through facades', () {
     final order = OrderSchema.parse({
       'shipping': {'city': 'Amsterdam'},
@@ -336,8 +443,8 @@ void main() {
       'cat': {'type': 'Cat', 'id': 'c1', 'lives': 8},
     });
     expect(PostalAddressSchema.schema, isNotNull);
-    expect(PetSchema.toJsonSchema()['x-transformed'], isTrue);
-    expect(CatSchema.toJsonSchema()['x-transformed'], isTrue);
+    expect(PetSchema.toJsonSchema().containsKey('x-transformed'), isFalse);
+    expect(CatSchema.toJsonSchema().containsKey('x-transformed'), isFalse);
 
     final book = AddressBookSchema.parse({
       'primary': {'city': 'Delft'},
@@ -449,7 +556,10 @@ void main() {
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         final runtimeDependencies = await _run(temporary, [
           'pub',
           'deps',
@@ -463,36 +573,36 @@ void main() {
           'clean build_runner build',
         );
         final generated = _generatedFiles(temporary);
-        final orderOutput = generated['lib/order.ack.dart'];
+        final orderOutput = generated['lib/order.g.dart'];
         expect(orderOutput, contains('address.PostalAddressSchema.schema'));
         expect(orderOutput, contains('pets.PetSchema.schema'));
         expect(orderOutput, contains('pets.CatSchema.schema'));
         expect(orderOutput, isNot(contains('address.addressSchema')));
         expect(
-          generated['lib/address.ack.dart'],
+          generated['lib/address.g.dart'],
           contains("'primary': PostalAddressSchema.schema"),
         );
         expect(
-          generated['lib/customer.ack.dart'],
+          generated['lib/customer.g.dart'],
           contains("'primary': PostalAddressSchema.schema.withDefault"),
         );
         expect(
-          generated['lib/parcel.ack.dart'],
+          generated['lib/parcel.g.dart'],
           contains('models.PostalAddressSchema.schema'),
         );
         expect(
-          generated['lib/itinerary.ack.dart'],
+          generated['lib/itinerary.g.dart'],
           allOf(
             contains('north.PlaceSchema.schema'),
             contains('south.PlaceSchema.schema'),
           ),
         );
         expect(
-          generated['lib/holder.ack.dart'],
+          generated['lib/holder.g.dart'],
           contains(r'legacy.LegacyAddress.$ack.schema'),
         );
         expect(
-          generated['lib/address_envelope.ack.dart'],
+          generated['lib/address_envelope.g.dart'],
           contains('address.Address'),
         );
         _expectSuccess(

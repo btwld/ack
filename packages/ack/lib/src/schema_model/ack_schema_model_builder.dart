@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
@@ -5,8 +6,8 @@ import 'package:collection/collection.dart';
 import '../constraints/constraint.dart';
 import '../constraints/datetime_constraint.dart';
 import '../context.dart';
-import '../json_schema/json_schema_utils.dart';
 import '../schemas/schema.dart';
+import '../utils/json_utils.dart';
 import 'ack_schema_model.dart';
 import 'ack_schema_model_warning.dart';
 
@@ -17,18 +18,38 @@ extension AckSchemaModelExtension<
   Runtime extends Object
 >
     on AckSchema<Boundary, Runtime> {
-  AckSchemaModel toSchemaModel() => _SchemaModelBuilder().build(this);
+  /// Converts this schema into an [AckSchemaModel], preserving imported Draft
+  /// 2020-12 resources including dynamic references.
+  ///
+  /// Native Ack schemas continue to use their Draft-7 representation.
+  AckSchemaModel toSchemaModel() =>
+      _SchemaModelBuilder(preserveImportedDialect: true).build(this);
+
+  /// Lowers imported schemas into the legacy Draft-7 `definitions` / `$ref`
+  /// representation when possible.
+  AckSchemaModel toSchemaModelDraft7() =>
+      _SchemaModelBuilder(preserveImportedDialect: false).build(this);
+
+  /// Exports imported schemas using the legacy Draft-7 `definitions` / `$ref`
+  /// representation when possible.
+  Map<String, Object?> toJsonSchemaDraft7() =>
+      toSchemaModelDraft7().toJsonSchema();
 }
 
 final class _SchemaModelBuilder {
+  _SchemaModelBuilder({this.preserveImportedDialect = true});
+
+  final bool preserveImportedDialect;
   // Every emitted definition name is reserved here. A null value marks a lazy
   // target that is currently being built.
   final _definitions = <String, Object?>{};
 
-  // Lazy-target identity is tracked separately because imported definitions
-  // are complete schema bodies, not recursive lazy targets.
+  // Lazy-target identity is tracked separately from emitted definitions.
   final _lazyTargets = <String, Object>{};
   var _importCount = 0;
+  var _composingImports = false;
+  final _importedResources = <Uri, Map<String, Object?>>{};
+  final _resourceLocations = <Uri, Uri>{};
 
   Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
     final schemaDefinitions = <String, Object?>{};
@@ -81,18 +102,20 @@ final class _SchemaModelBuilder {
     return merged;
   }
 
-  AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {
+  AckSchemaModel _build(
+    AckSchema<dynamic, dynamic> schema, {
+    bool requireStandardDialect = false,
+  }) {
     if (schema is WrapperSchema) {
-      final base = _build(schema.inner);
-      // Defaults and boundary-preserving wrappers do not transform the wire
-      // value, so they should not advertise themselves as transformed.
-      final extensions = schema is DefaultSchema || schema is BoundarySchema
-          ? base.extensions
-          : {...base.extensions, 'x-transformed': true};
-      final layered = base
+      // Wrappers can add null operators or projected constraints. Keep those
+      // outside a source dialect that may have disabled their vocabularies.
+      final base = _build(schema.inner, requireStandardDialect: true);
+      var layered = base
           .withDescription(schema.description ?? base.description)
-          .withNullable(schema.isNullable || base.nullable)
-          .withExtensions(extensions);
+          .withNullable(schema.isNullable);
+      if (schema.excludesInnerNull && _admitsNull(layered)) {
+        layered = _excludeNull(layered);
+      }
       // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
       // which `_build(schema.inner)` already applied. Re-running them here
       // would emit duplicate warnings (e.g. datetime range under a default).
@@ -131,17 +154,22 @@ final class _SchemaModelBuilder {
     }
 
     final model = switch (schema) {
-      StringSchema() => _string(schema),
-      IntegerSchema() => _integer(schema),
-      DoubleSchema() => _number(
+      StringSchema() => AckStringSchemaModel(
         description: schema.description,
         nullable: schema.isNullable,
       ),
-      NumberSchema() => _number(
+      IntegerSchema() => AckIntegerSchemaModel(
         description: schema.description,
         nullable: schema.isNullable,
       ),
-      BooleanSchema() => _boolean(schema),
+      DoubleSchema() || NumberSchema() => AckNumberSchemaModel(
+        description: schema.description,
+        nullable: schema.isNullable,
+      ),
+      BooleanSchema() => AckBooleanSchemaModel(
+        description: schema.description,
+        nullable: schema.isNullable,
+      ),
       EnumSchema() => _enum(schema),
       ListSchema() => _array(schema),
       MapSchema() => _map(schema),
@@ -151,7 +179,10 @@ final class _SchemaModelBuilder {
       InstanceSchema() => _instance(schema),
       DiscriminatedObjectSchema() => _discriminated(schema),
       LazySchema<dynamic, dynamic>() => _lazy(schema),
-      ImportedJsonSchema() => _imported(schema),
+      ImportedJsonSchema() => _imported(
+        schema,
+        requireStandardDialect: requireStandardDialect,
+      ),
       _ => throw UnsupportedError(
         'Schema type ${schema.runtimeType} is not supported for AckSchemaModel conversion.',
       ),
@@ -160,8 +191,52 @@ final class _SchemaModelBuilder {
     return schema is LazySchema ? model : _applyConstraints(model, schema);
   }
 
-  AckSchemaModel _imported(ImportedJsonSchema schema) {
-    final prefix = '_ack_import_${_importCount++}_';
+  AckSchemaModel _imported(
+    ImportedJsonSchema schema, {
+    required bool requireStandardDialect,
+  }) {
+    final importIndex = _importCount++;
+    if (preserveImportedDialect) {
+      final indexedSchemas = HashSet<Map<String, Object?>>.identity();
+      final needsAssertionEnvelope =
+          schema.needsStandardAssertionEnvelope &&
+          (requireStandardDialect ||
+              schema.isNullable != schema.sourceAllowsNull ||
+              schema.constraints.isNotEmpty);
+      if (_composingImports || needsAssertionEnvelope) {
+        final document = schema.export2020Document(
+          importIndex: importIndex,
+          includeFluentNullability: false,
+          onSchema: indexedSchemas.add,
+        );
+        return AckAllOfSchemaModel(
+          schemas: [
+            AckRawSchemaModel(
+              schema: _shareImportedResources(document, indexedSchemas),
+              indexedSchemas: indexedSchemas,
+            ),
+          ],
+          description: schema.description,
+          nullable: schema.isNullable,
+          extensions: {
+            if (!schema.isNullable && schema.sourceAllowsNull)
+              'not': const {'type': 'null'},
+          },
+        );
+      }
+      return AckRawSchemaModel(
+        schema: schema.export2020Document(
+          importIndex: importIndex,
+          onSchema: indexedSchemas.add,
+        ),
+        indexedSchemas: indexedSchemas,
+        description: schema.description,
+        nullable:
+            schema.isNullable &&
+            (!schema.sourceAllowsNull || schema.constraints.isNotEmpty),
+      );
+    }
+    final prefix = '_ack_import_${importIndex}_';
     for (final entry in schema.exportDefinitions(prefix).entries) {
       if (_definitions.containsKey(entry.key)) {
         throw ArgumentError(
@@ -183,29 +258,145 @@ final class _SchemaModelBuilder {
     );
   }
 
-  AckSchemaModel _string(StringSchema schema) {
-    return AckStringSchemaModel(
-      description: schema.description,
-      nullable: schema.isNullable,
-    );
-  }
+  // Resource identity belongs to the imported document, not an occurrence's
+  // fluent constraints. Keep one copy and reference it from later occurrences.
+  Map<String, Object?> _shareImportedResources(
+    Map<String, Object?> document,
+    Set<Map<String, Object?>> indexedSchemas,
+  ) {
+    final locations = <Uri, Uri>{};
+    Uri location(Uri base, List<String> path) => path.isEmpty
+        ? base.removeFragment()
+        : base.replace(
+            fragment: '/${path.map(escapeJsonPointerToken).join('/')}',
+          );
 
-  AckSchemaModel _integer(IntegerSchema schema) {
-    return AckIntegerSchemaModel(
-      description: schema.description,
-      nullable: schema.isNullable,
-    );
-  }
+    Object? index(Object? value, Uri base, List<(Uri, List<String>)> scopes) {
+      final id = value is Map<String, Object?> ? value[r'$id'] : null;
+      if (id is String) {
+        try {
+          base = base.resolve(id);
+          final address = scopes.isEmpty
+              ? base
+              : location(scopes.first.$1, scopes.first.$2);
+          _resourceLocations.putIfAbsent(base, () => address);
+          scopes = [...scopes, (base, <String>[])];
+        } on FormatException {
+          // Dormant malformed $id values in unreachable definitions remain as-is.
+        }
+      }
+      for (final (uri, path) in scopes) {
+        final (resource, relativePath) = scopes.last;
+        locations[location(uri, path)] = location(resource, relativePath);
+      }
+      if (value is! Map<String, Object?>) return value;
+      return _mapImportedChildren(
+        value,
+        (child, path) => index(child, base, [
+          for (final (uri, prefix) in scopes) (uri, [...prefix, ...path]),
+        ]),
+        indexedSchemas,
+      );
+    }
 
-  AckSchemaModel _number({String? description, required bool nullable}) {
-    return AckNumberSchemaModel(description: description, nullable: nullable);
-  }
+    final base = Uri.parse(document[r'$id']! as String);
+    index(document, base, []);
 
-  AckSchemaModel _boolean(BooleanSchema schema) {
-    return AckBooleanSchemaModel(
-      description: schema.description,
-      nullable: schema.isNullable,
-    );
+    Uri canonicalLocation(Uri reference) {
+      if (locations[reference] case final exact?) return exact;
+      // Boolean schemas have no map identity to index. Their pointer still
+      // follows the canonical resource of the nearest indexed ancestor.
+      var prefix = reference.fragment;
+      while (prefix.startsWith('/')) {
+        prefix = prefix.substring(0, prefix.lastIndexOf('/'));
+        final ancestor = prefix.isEmpty
+            ? reference.removeFragment()
+            : reference.replace(fragment: prefix);
+        if (locations[ancestor] case final canonical?) {
+          return canonical.replace(
+            fragment:
+                '${canonical.fragment}${reference.fragment.substring(prefix.length)}',
+          );
+        }
+      }
+      return reference;
+    }
+
+    Object? normalize(Object? value, Uri base) {
+      if (value is! Map<String, Object?>) return value;
+      final id = value[r'$id'];
+      var resolvedValidId = false;
+      if (id is String) {
+        try {
+          base = base.resolve(id);
+          resolvedValidId = true;
+        } on FormatException {
+          // Dormant malformed $id values in unreachable definitions remain as-is.
+        }
+      }
+      final result = _mapImportedChildren(
+        value,
+        (child, _) => normalize(child, base),
+        indexedSchemas,
+      );
+      if (indexedSchemas.contains(value)) indexedSchemas.add(result);
+      if (resolvedValidId) result[r'$id'] = base.toString();
+      for (final keyword in [r'$ref', r'$dynamicRef']) {
+        final ref = result[keyword];
+        if (ref is String) {
+          Uri resolved;
+          try {
+            resolved = base.resolve(ref);
+          } on FormatException {
+            // Dormant malformed references are not evaluated by the importer.
+            continue;
+          }
+          final canonical = canonicalLocation(resolved);
+          final address = _resourceLocations[canonical.removeFragment()];
+          if (address != null &&
+              (canonical.fragment.isEmpty ||
+                  canonical.fragment.startsWith('/'))) {
+            result[keyword] = address
+                .replace(fragment: '${address.fragment}${canonical.fragment}')
+                .toString();
+          } else {
+            result[keyword] = canonical.toString();
+          }
+        }
+      }
+      return result;
+    }
+
+    Object? share(Object? value) {
+      if (value is! Map<String, Object?>) return value;
+      final id = value[r'$id'];
+      if (id is String) {
+        final uri = Uri.tryParse(id);
+        if (uri != null) {
+          final existing = _importedResources[uri];
+          if (existing != null) {
+            if (!_deepEquality.equals(existing, value)) {
+              throw ArgumentError(
+                'Conflicting imported schema resource "$uri".',
+              );
+            }
+            return <String, Object?>{
+              r'$ref': _resourceLocations[uri].toString(),
+            };
+          }
+          _importedResources[uri] = value;
+        }
+      }
+      final rebuilt = _mapImportedChildren(
+        value,
+        (child, _) => share(child),
+        indexedSchemas,
+      );
+      if (indexedSchemas.contains(value)) indexedSchemas.add(rebuilt);
+      return rebuilt;
+    }
+
+    return share(normalize(document, base))! as Map<String, Object?>;
   }
 
   AckSchemaModel _enum(EnumSchema schema) {
@@ -241,7 +432,7 @@ final class _SchemaModelBuilder {
 
     for (final entry in schema.properties.entries) {
       ordering.add(entry.key);
-      properties[entry.key] = wrapPropertyConversion(
+      properties[entry.key] = _wrapPropertyConversion(
         entry.key,
         () => _build(entry.value),
       );
@@ -270,52 +461,39 @@ final class _SchemaModelBuilder {
     );
   }
 
-  AckSchemaModel _instance(InstanceSchema schema) {
-    // InstanceSchema accepts arbitrary Dart instances of a runtime type with no
-    // direct JSON representation. Adapters that flow through a codec see the
-    // boundary schema instead; this is the fallback for a bare instance.
+  AckSchemaModel _instance(InstanceSchema schema) => _jsonBoundaryAnyOf(
+    schema,
+    warningCode: 'ack_instance_json_boundary',
+    warningMessage:
+        'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
+  );
+
+  AckSchemaModel _any(AnySchema schema) => _jsonBoundaryAnyOf(
+    schema,
+    warningCode: 'ack_any_json_boundary',
+    warningMessage:
+        'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
+  );
+
+  AckSchemaModel _jsonBoundaryAnyOf(
+    AckSchema<Object, Object> schema, {
+    required String warningCode,
+    required String warningMessage,
+  }) {
+    final description = schema.description;
     return AckAnyOfSchemaModel(
       schemas: [
-        AckStringSchemaModel(description: schema.description),
-        AckNumberSchemaModel(description: schema.description),
-        AckIntegerSchemaModel(description: schema.description),
-        AckBooleanSchemaModel(description: schema.description),
-        AckObjectSchemaModel(description: schema.description),
-        AckArraySchemaModel(description: schema.description),
+        AckStringSchemaModel(description: description),
+        AckNumberSchemaModel(description: description),
+        AckIntegerSchemaModel(description: description),
+        AckBooleanSchemaModel(description: description),
+        AckObjectSchemaModel(description: description),
+        AckArraySchemaModel(description: description),
       ],
-      nullable: schema.isNullable,
-      description: schema.description,
-      warnings: const [
-        AckSchemaModelWarning(
-          code: 'ack_instance_json_boundary',
-          message:
-              'Ack.instance<T>() accepts arbitrary Dart instances at runtime; JSON-like adapters can only represent JSON-compatible values.',
-        ),
-      ],
-    );
-  }
-
-  AckSchemaModel _any(AnySchema schema) {
-    final description = schema.description;
-    final primitiveBranches = [
-      AckStringSchemaModel(description: description),
-      AckNumberSchemaModel(description: description),
-      AckIntegerSchemaModel(description: description),
-      AckBooleanSchemaModel(description: description),
-      AckObjectSchemaModel(description: description),
-      AckArraySchemaModel(description: description),
-    ];
-
-    return AckAnyOfSchemaModel(
-      schemas: primitiveBranches,
       nullable: schema.isNullable,
       description: description,
-      warnings: const [
-        AckSchemaModelWarning(
-          code: 'ack_any_json_boundary',
-          message:
-              'Ack.any() accepts non-null JSON-safe values at runtime, matching the JSON-compatible values adapters can represent.',
-        ),
+      warnings: [
+        AckSchemaModelWarning(code: warningCode, message: warningMessage),
       ],
     );
   }
@@ -381,16 +559,14 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel _lazyRef(LazySchema<dynamic, dynamic> schema) {
-    var model = AckRefSchemaModel(
+    AckSchemaModel model = AckRefSchemaModel(
       refName: schema.name,
       description: schema.description,
       nullable: schema.isNullable,
     );
+    if (schema.excludesTargetNull) model = _excludeNull(model);
     final constraintCount = schema.runtimeConstraintCount;
     final refinementCount = schema.runtimeRefinementCount;
-    if (constraintCount == 0 && refinementCount == 0) {
-      return model;
-    }
 
     return model.withWarnings([
       ...model.warnings,
@@ -407,15 +583,53 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel build(AckSchema<dynamic, dynamic> schema) {
+    var unwrapped = schema;
+    while (unwrapped is WrapperSchema) {
+      unwrapped = unwrapped.inner;
+    }
+    _composingImports = unwrapped is! ImportedJsonSchema;
     final root = _build(schema);
-    if (_definitions.isEmpty) return root;
+    final needs2020Dialect =
+        preserveImportedDialect &&
+        _importCount > 0 &&
+        root is! AckRawSchemaModel &&
+        !root.extensions.containsKey(r'$schema');
+    if (_definitions.isEmpty && !needs2020Dialect) return root;
 
     return root.withExtensions({
+      if (needs2020Dialect)
+        r'$schema': 'https://json-schema.org/draft/2020-12/schema',
       ...root.extensions,
-      'definitions': _mergeRootDefinitions(root.extensions['definitions']),
+      if (_definitions.isNotEmpty)
+        'definitions': _mergeRootDefinitions(root.extensions['definitions']),
     });
   }
 }
+
+/// Whether [model] can still accept `null` after its own nullable flag.
+///
+/// References, imported resources, and extension keywords are opaque here, so
+/// they count as accepting `null`.
+bool _admitsNull(AckSchemaModel model) {
+  if (model.nullable || model.extensions.isNotEmpty) return true;
+  return switch (model) {
+    AckRefSchemaModel() || AckRawSchemaModel() || AckNullSchemaModel() => true,
+    AckAnyOfSchemaModel(:final schemas) ||
+    AckOneOfSchemaModel(:final schemas) => schemas.any(_admitsNull),
+    AckAllOfSchemaModel(:final schemas) => schemas.every(_admitsNull),
+    _ => false,
+  };
+}
+
+AckSchemaModel _excludeNull(AckSchemaModel model) => model.withExtensions({
+  ...model.extensions,
+  'allOf': [
+    ...?model.extensions['allOf'] as List<Object?>?,
+    const {
+      'not': {'type': 'null'},
+    },
+  ],
+});
 
 AckSchemaModel _applyConstraints(
   AckSchemaModel model,
@@ -429,8 +643,14 @@ AckSchemaModel _applyConstraints(
     for (final entry in _renderedKeywords(model).entries)
       entry.key: <Object?>[entry.value],
   };
+  final postNormalizerStart = schema is StringSchema
+      ? schema.firstPostNormalizerConstraintIndex
+      : null;
   final omittedConstraintKeys = <String>[];
-  for (final constraint in schema.constraints) {
+  for (final (index, constraint) in schema.constraints.indexed) {
+    final projectConstraint =
+        projectKeywords &&
+        (postNormalizerStart == null || index < postNormalizerStart);
     if (constraint is DateTimeConstraint) {
       next = _applyDateTimeConstraint(next, constraint);
       continue;
@@ -438,7 +658,7 @@ AckSchemaModel _applyConstraints(
 
     if (constraint is JsonSchemaSpec) {
       final keywords = constraint.toJsonSchema();
-      if (!projectKeywords) {
+      if (!projectConstraint) {
         if (keywords.isNotEmpty) {
           omittedConstraintKeys.add(constraint.constraintKey);
         }
@@ -462,6 +682,7 @@ AckSchemaModel _applyConstraints(
         next = next.withJsonSchemaKeywords(newKeywords);
       }
       if (conflicts.isNotEmpty) {
+        appliedKeywordValues.putIfAbsent('allOf', () => <Object?>[]);
         final existingAllOf = switch (next.extensions['allOf']) {
           final List<Object?> value => value,
           _ => const <Object?>[],
@@ -567,4 +788,51 @@ Object? _jsonRoundTripOrNull(Object? value) {
   } catch (_) {
     return null;
   }
+}
+
+/// Adds the property name to supported conversion errors without losing stacks.
+T _wrapPropertyConversion<T>(String key, T Function() fn) {
+  try {
+    return fn();
+  } catch (e, st) {
+    final msg = 'Error converting property "$key": $e';
+    if (e is UnsupportedError) {
+      Error.throwWithStackTrace(UnsupportedError(msg), st);
+    } else if (e is ArgumentError) {
+      Error.throwWithStackTrace(ArgumentError(msg), st);
+    } else if (e is StateError) {
+      Error.throwWithStackTrace(StateError(msg), st);
+    }
+    rethrow;
+  }
+}
+
+// Rewrite identities only at compiler-indexed schema locations. Annotation
+// payloads stay ordinary data unless explicitly referenced as schemas.
+Map<String, Object?> _mapImportedChildren(
+  Map<String, Object?> schema,
+  Object? Function(Object?, List<String>) visit,
+  Set<Map<String, Object?>> indexedSchemas,
+) {
+  Object? visitIndexed(Object? value, List<String> path) {
+    if (value is Map<String, Object?>) {
+      if (indexedSchemas.contains(value)) return visit(value, path);
+      return {
+        for (final entry in value.entries)
+          entry.key: visitIndexed(entry.value, [...path, entry.key]),
+      };
+    }
+    if (value is List) {
+      return [
+        for (final (index, child) in value.indexed)
+          visitIndexed(child, [...path, '$index']),
+      ];
+    }
+    return value;
+  }
+
+  return {
+    for (final entry in schema.entries)
+      entry.key: visitIndexed(entry.value, [entry.key]),
+  };
 }

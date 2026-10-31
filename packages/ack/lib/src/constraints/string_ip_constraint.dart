@@ -1,7 +1,7 @@
 import 'constraint.dart';
 
 /// Constraint to validate if a string is a valid IP address.
-class StringIpConstraint extends Constraint<String>
+final class StringIpConstraint extends Constraint<String>
     with Validator<String>, JsonSchemaSpec<String> {
   final int? version; // 4, 6 or null for any
 

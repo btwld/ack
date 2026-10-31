@@ -176,17 +176,6 @@ final class MapSchema<ValueBoundary extends Object, ValueRuntime extends Object>
   }
 
   @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'valueSchema': valueSchema.schemaType.typeName,
-    };
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! MapSchema<ValueBoundary, ValueRuntime>) return false;

@@ -69,7 +69,8 @@ The source document is a decoded map or boolean, not a JSON string.
 `Ack.fromJsonSchema()` returns an executable validator and rejects unsupported
 semantics with `JsonSchemaImportException`; its immutable diagnostics identify
 the source keyword and location. Supply reference bundles with `documents` and
-`baseUri`; no references are fetched automatically.
+`baseUri`; no references are fetched automatically. See
+[`example/json_schema_import.dart`](example/json_schema_import.dart).
 
 Exports preserve supported validation behavior, not textual document identity.
 Full A2UI coverage is not supported. MCP registration compatibility remains

@@ -2,32 +2,21 @@
 title: Model Code Generation
 ---
 
-Ack supports code generation in both directions. You can start with a schema
-and generate a Dart model, or start with a Dart model and generate its schema.
+Ack supports code generation in three workflows: start from an Ack schema, start
+from a Dart class, or start from a `.schema.json` document.
 
-| Starting point | Annotation | Generated result |
+| Starting point | Trigger | Generated output |
 | --- | --- | --- |
-| A top-level Ack schema | `@Schemable()` | An immutable Dart model |
-| A Dart class | `@Schemable()` | An Ack codec schema and JSON helpers |
+| A top-level Ack schema (`final userSchema = ...`) | `@Schemable()` | Immutable `User` class, `User.schema`, `parse`/`safeParse`, `fromJson`/`toJson`, `copyWith` in `<file>.g.dart` |
+| A Dart class or sealed union (`final class Account`) | `@Schemable()` | `_accountSchema` codec, `AccountSchema` facade, and `_$AccountAck` mixin in `<file>.g.dart` |
+| A JSON Schema asset (`lib/**/*.schema.json`) | `ack_generator:ack_json_schema` in `build.yaml` | `<name>.schema.dart` + `<name>.schema.g.dart` with typed `@Schemable()` models or validated value models |
 
-`@Schemable()` and the model annotations (`@AckField`, `@Optional`,
-`@Required`, `@NotNull`) come from `package:ack/ack.dart`.
-Constraint annotations such as `@MinLength` and `@Email` come from
-`package:ack/annotations.dart`. Where a constraint name clashes with another
-type, such as `package:uuid`'s `Uuid` or your own `Email`, import it with a
-prefix and write `@ack.Email()`:
-
-```dart
-import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart' as ack;
-```
-
-`@Uri()` and `@DateTime()` come from `package:ack/format_annotations.dart`,
-imported with a prefix because they share names with `dart:core` types.
-There is no `@AckSchema()` annotation. `AckSchema<Boundary, Runtime>` is the
+`@Schemable()`, `@AckKey`, and the `@Validate.*` constraint and presence
+namespace all come from `package:ack/ack.dart` (and `package:ack/annotations.dart`).
+There is no `@AckSchema()` annotation; `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
-`@AckInfer()` and `@AckModel()` are deprecated spellings of `@Schemable()` and
-will be removed in 2.0.0.
+
+> **Upgrading from Ack 1.x?** See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for a complete table of changes, removed 1.x annotations, and drop-in 2.0 substitutions.
 
 ## Install the generator
 
@@ -36,11 +25,10 @@ dart pub add ack
 dart pub add --dev ack_generator build_runner
 ```
 
-Every annotated library needs both generated parts:
+Every annotated library needs the generated part:
 
 ```dart
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 ```
 
 Run the generator after adding or changing a model:
@@ -52,14 +40,12 @@ dart run build_runner build
 ## A working example of both directions
 
 This file contains one schema-first model and one class-first model. Both use
-the same builders and generated parts.
+the same builder and generated part.
 
 ```dart title="lib/models.dart"
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 
 // Schema-first: write the schema; Ack generates Order.
 @Schemable()
@@ -68,7 +54,7 @@ final orderSchema = Ack.object({
   'total': Ack.double().positive(),
 });
 
-// Class-first: write Account; Ack generates AccountSchema.
+// Class-first: write Account; Ack generates _accountSchema and AccountSchema.
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({
@@ -79,16 +65,17 @@ final class Account with _$AccountAck {
     this.role = 'member',
   });
 
-  @MinLength(2)
+  @Validate.minLength(2)
   final String displayName;
 
-  @Email()
+  @Validate.email()
   final String email;
 
   final String? middleName;
   final Uri? website;
   final String role;
 
+  static final schema = _accountSchema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
@@ -186,30 +173,36 @@ This generates a sealed `Pet` base plus `Cat` and `Dog` branches.
 ## Class-first: `@Schemable()` on a class
 
 Use class-first generation when the Dart class is the primary artifact. Ack
-reads constructor-backed fields and generates a codec schema whose runtime
-value is your class:
+reads constructor-backed fields (including Dart 3.12+ primary constructors) and
+generates a codec schema whose runtime value is your class:
 
 ```dart
-final profile = ProfileSchema.parse(payload); // Profile
-final result = ProfileSchema.safeParse(payload);
-final json = profile.toJson();
+@Schemable(caseStyle: AckCaseStyle.snake)
+final class Profile({
+  @Validate.minLength(2) required final String displayName,
+  @Validate.email() required final String email,
+  final String role = 'member',
+}) with _$ProfileAck {
+  static final schema = _profileSchema;
+  static final fromJson = ProfileSchema.fromJson;
+}
 ```
 
-Ack generates a public `ProfileSchema` facade and keeps the codec itself in a
-library-private `_profileSchema` variable. The facade is the only public schema
-entry point:
+Ack generates a library-private `_profileSchema` codec variable and a public
+`ProfileSchema` facade:
 
 - `ProfileSchema.parse` and `safeParse` validate input;
 - `ProfileSchema.fromJson` is the one-argument map convenience;
 - `ProfileSchema.encode` and `safeEncode` validate while encoding;
 - `ProfileSchema.toJsonSchema()` exports the boundary JSON Schema;
 - `ProfileSchema.toSchemaModel()` exports Ack's canonical schema model;
-- `ProfileSchema.schema` is the typed model codec used for composition;
-- `ProfileSchema.wireSchema` is the raw structural `Map` schema.
+- `ProfileSchema.schema` is the typed model codec (`_profileSchema`) used for composition;
+- `ProfileSchema.wireSchema` validates like `schema` and returns the JSON map
+  instead of the model.
 
 Every instantiable `@Schemable` class and implicit sealed-union branch must
 be declared `final class`, initialize its fields through an unnamed generative
-constructor, contain only final stored fields, and apply its
+or primary constructor, contain only final stored fields, and apply its
 generated `_$ClassAck` mixin. The mixin supplies `toJson()`, `safeToJson()`, a
 typed `copyWith` where omission keeps the current value, explicit `null`
 clears a nullable field, and a wrongly typed argument is a compile-time error,
@@ -223,15 +216,23 @@ replacements passed to `copyWith` must defensively copy mutable inputs in the
 source class when that guarantee is required.
 
 Generated `toJson()` and `safeToJson()` methods delegate through that same
-facade. Ack cannot inject a constructor into a hand-written class, so the
-recommended conventional entry point is an inferred static tear-off:
+facade. Ack cannot inject static members or constructors into a hand-written
+class, so the recommended conventions are one-line static tear-offs/fields:
 
 ```dart
+static final schema = _profileSchema;
 static final fromJson = ProfileSchema.fromJson;
 ```
 
-This is a callable static field. If a framework specifically requires a
-constructor, use:
+`static final schema = _profileSchema;` (or `ProfileSchema.schema`) attaches the
+generated codec directly to `Profile.schema` so callers can write
+`Profile.schema.parse(...)`, `Profile.schema.toJsonSchema()`, or
+`Ack.list(Profile.schema)`, and other libraries only need to import `Profile`.
+Both lines are optional: if omitted, `ProfileSchema` still provides every static
+entry point and nested `@Schemable()` models still compose automatically.
+Generation rejects a `schema` static whose type produces another class.
+
+If a framework specifically requires a factory constructor for `fromJson`, use:
 
 ```dart
 factory Profile.fromJson(Map<String, dynamic> json) =>
@@ -245,21 +246,13 @@ static final Profile Function(Map<String, dynamic>) fromJson =
     ProfileSchema.fromJson;
 ```
 
-The same convention gives the class a `schema` of its own, so other code can
-write `Profile.schema`:
-
-```dart
-static final schema = ProfileSchema.schema;
-```
-
-Generation rejects a `schema` static whose type produces another class.
-
-Use `@Schemable(description: ...)` and `@AckField(description: ...)` to export
-schema descriptions. A single-line `@description` tag in a `///` or `/** */`
-doc comment is a fallback. Only the text after the tag, on the same line, is exported. Untagged
-prose does not become schema data. Explicit annotation text takes precedence.
-Blank or duplicate tags fail generation. `@description` is an Ack convention,
-not a Dart annotation.
+Use `@Schemable(description: ...)` and a single-line `@description` tag in a
+`///` or `/** */` doc comment on classes, fields, or constructor parameters to
+export schema descriptions. Only the text after the tag, on the same line, is
+exported. Untagged prose does not become schema data. Explicit annotation text
+on `@Schemable(description: ...)` takes precedence over a class doc tag. Blank
+or duplicate tags fail generation. `@description` is an Ack convention, not a
+Dart annotation.
 
 A class description applies to its object schema and model codec. This includes
 sealed union bases and branches. A field description applies at its property.
@@ -300,24 +293,25 @@ Nullable defaults keep their source-level behavior. With
 null. With `this.label = null`, missing input and JSON `null` parse as null and
 the encoded object keeps the key with a null value.
 
-Use `@Optional()` or `@Required()` to override inferred key presence. These
-control whether the JSON key must exist; they do not change Dart nullability.
-Unannotated fields keep constructor inference.
+Use `@Validate.optional()` or `@Validate.required()` to override inferred key
+presence. These control whether the JSON key must exist; they do not change Dart
+nullability. Unannotated fields keep constructor inference.
 
-Use `@NotNull()` when the Dart type is nullable (`String?`) but a present JSON
-value must not be `null`. Do not add it on non-nullable fields such as
-`Map<String, V>` — those already reject JSON `null`. `@Optional()` alone on
-`String?` still accepts JSON `null`, matching legacy `presence: optional`
-behavior. `@Optional()` is redundant when the constructor already treats the
-field as optional; `@NotNull()` is the annotation that changes null acceptance:
+Use `@Validate.notNull()` when the Dart type is nullable (`String?`) or
+`JsonMaybe<T>` but a present JSON value must not be `null`. Do not add it on
+non-nullable fields such as `Map<String, V>` — those already reject JSON `null`.
+`@Validate.optional()` alone on `String?` still accepts JSON `null`, matching
+legacy `presence: optional` behavior. `@Validate.optional()` is redundant when
+the constructor already treats the field as optional; `@Validate.notNull()` is
+the annotation that changes null acceptance:
 
 ```dart
 @Schemable()
 final class Example with _$ExampleAck {
   const Example({this.label});
 
-  @Optional()
-  @NotNull()
+  @Validate.optional()
+  @Validate.notNull()
   final String? label;
 }
 ```
@@ -336,6 +330,30 @@ values use the Dart types you already write:
 | `List<Object>` | `Ack.list(Ack.any())` |
 | `Map<String, T>` | `Ack.map(<schema for T>)` |
 | `Map<String, Object?>` | `Ack.map(Ack.any().nullable())` |
+| `JsonMaybe<T>` | Optional-and-nullable `<schema for T>`; omitted when `JsonAbsent`, `null` when `JsonValue(null)` |
+
+Use `JsonMaybe<T>` when a `PATCH` request needs to distinguish an omitted field
+(`JsonAbsent`) from an explicit `null` (`JsonValue(null)`):
+
+```dart
+@Schemable()
+final class ProfilePatch with _$ProfilePatchAck {
+  const ProfilePatch({
+    this.bio = const JsonMaybe.absent(),
+  });
+
+  final JsonMaybe<String> bio;
+
+  static final schema = _profilePatchSchema;
+  static final fromJson = ProfilePatchSchema.fromJson;
+}
+
+// Omitted key -> JsonAbsent(); toJson() returns {}
+final unchanged = ProfilePatch.fromJson({});
+
+// Explicit null -> JsonValue(null); toJson() returns {'bio': null}
+final cleared = ProfilePatch.fromJson({'bio': null});
+```
 
 `Object` means a JSON-safe value (a finite number, string, boolean, list, or
 string-keyed map of those values), not an arbitrary Dart instance, so a
@@ -344,31 +362,38 @@ Map values may be `null` only when the value type is nullable. `List<Object?>`
 stays rejected because `Ack.list` has no nullable-item contract. Parsed
 `Object` values are recursively unmodifiable, like other stored collections.
 
-Constraint annotations follow the field type:
+Validation annotations use `@Validate.*` and follow the field type:
 
-- numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`;
-- strings: `@MinLength`, `@MaxLength`, `@Matches`, `@Email`, `@NotEmpty`;
-- string formats: `@Url`, `@Uuid`, `@Date`; `@Uri()` and `@DateTime()` from
-  `package:ack/format_annotations.dart` imported with a prefix
-  (`@formats.Uri()`);
-- lists and sets: `@MinItems`, `@MaxItems`, `@UniqueItems`.
+- presence & nullability: `@Validate.required`, `@Validate.optional`, `@Validate.notNull`;
+- numeric: `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`;
+- strings: `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.email`, `@Validate.notEmpty`;
+- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`;
+- lists and sets: `@Validate.notEmpty`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems`.
 
-`@Matches` is the annotation form of `Ack.string().matches(...)`. Numeric
+
+`@Validate.matches` is the annotation form of `Ack.string().matches(...)`. Numeric
 constraint values must be finite. On a `Set<Set<T>>` field the collection
 constraints apply to the outer set.
 
 Use `caseStyle` for model-wide JSON names. Supported values are `none`,
 `snake`, `kebab`, `pascal`, and `screamingSnake`. Use
-`@JsonKey(name: 'wire_name')` on the field for a single override. `JsonKey`
-comes from `package:json_annotation/json_annotation.dart`, so a library that
-uses it imports that library and lists `json_annotation` in its app's
-`dependencies`; `caseStyle` needs neither. Ack resolves
-each wire key once and uses it for both validation and JSON mapping. Other
-`JsonKey` options, constructor-parameter placement, and `JsonConverter`
-annotations are rejected so the Ack schema and generated JSON mapping cannot
-diverge.
+`@AckKey('wire_name')` on the field or primary constructor parameter for
+a single wire-name override. Ack resolves each wire key once and uses it for both
+validation and JSON mapping. `JsonConverter` annotations are rejected so the Ack
+schema and generated JSON mapping cannot diverge.
 
-### Types that own their schema
+### Custom schemas and types that own their schema
+
+When a class-first field has a custom type `T` (including inside `List<T>`,
+`Set<T>`, `Map<String, T>`, `JsonMaybe<T>`, or generic `Box<T>`), Ack resolves
+its schema in the following priority order:
+
+1. **`@Schemable(schemas: [...])`** on the class, enclosing union base, current
+   `library;` directive, or an imported `library;` directive;
+2. **Type-owned schema (`T.schema` / `T.schema<A>(...)`)** on the type itself;
+3. **Automatic current-library detection**: a unique top-level
+   `AckSchema<Boundary, T>` variable, getter, or zero-argument function in the
+   current library.
 
 A type you own can declare its schema once, as a static member named
 `schema`. Any field of that type then resolves to it with no annotation on
@@ -461,23 +486,26 @@ The schema must produce the field's type; generation fails otherwise,
 for example when `Slot.schema` produces a `String` or when a generic type
 offers a static field instead of a `schema<A>()` method. Schema-first objects
 can reference the same members, such as `'header': Slot.schema` or
-`'open': Command.schema<CompletionAction>()`; a `void` type argument is
-supported only in class-first fields.
+`'open': Command.schema<void>()`.
 
-A type with neither a static `schema` nor built-in inference fails generation
-with a message that names both fixes: declare a static `schema` on the type, or
-set `@AckField(schema: ...)` on the field.
+### External types and library registries
 
-### Custom field schemas
+For a third-party type you cannot edit:
 
-Use `@AckField` for a type you cannot edit, or when one field needs a different
-schema than its type provides. `schema` is a const tear-off of a non-generic
-top-level function returning an `AckSchema` whose runtime type is the field's
-type. A mismatched or generic function is rejected. A no-op `@AckField()` is
-rejected.
+- **In the same library**: declare a unique top-level `AckSchema<Boundary, T>`
+  variable, getter, or zero-argument function — Ack detects it automatically.
+- **Across a class, union, or library**: pass top-level schema function tear-offs
+  in `@Schemable(schemas: [colorSchema])` on the class, union base, or `library;`
+  directive (including an imported shared `library;` directive).
 
 ```dart
+@Schemable(schemas: [colorSchema])
+library;
+
+import 'package:ack/ack.dart';
 import 'package:color_library/color.dart';
+
+part 'theme.g.dart';
 
 AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
   decode: Color.parse,
@@ -488,44 +516,14 @@ AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
 final class Theme with _$ThemeAck {
   const Theme({required this.primary});
 
-  @AckField(schema: colorSchema)
   final Color primary;
 }
 ```
 
-`@AckField` also replaces an inferred `Object` or `Map<String, V>` schema when
-the field needs a tighter contract, such as a function returning
-`Ack.map(Ack.integer().min(0))` for a `Map<String, int>` field. Non-String map
-keys and `dynamic` are rejected because they do not provide a static schema;
-use `Object?` for an open JSON value.
+Non-String map keys and `dynamic` are rejected because they do not provide a
+static schema; use `Object?` for an open JSON value.
 Automatic `List<T>` and `Set<T>` inference also requires non-nullable element
-types because `Ack.list` has no nullable-item contract. An explicit
-`@AckField(schema: ...)` codec remains the escape hatch when a field deliberately
-uses a different collection representation.
-
-`@AckField(presence: ...)` is deprecated. Migrate to field annotations:
-
-```dart
-// Optional
-@Optional()
-final String? summary;
-
-// Required
-@Required()
-final String? summary;
-
-// Inferred: omit presence annotations
-
-// Schema plus presence
-@Optional()
-@AckField(schema: parametersSchema)
-final Map<String, ParameterEntry> parameters;
-```
-
-Matching legacy and new declarations are accepted with a deprecation warning.
-Conflicting declarations and combining `@Optional()` with `@Required()` are
-errors. `@Optional()` is allowed only when the constructor can accept a missing
-value, with a discriminator exception for union branches.
+types because `Ack.list` has no nullable-item contract.
 
 ### Class-first unions
 
@@ -584,7 +582,8 @@ inputs without validating them.
 
 ### Reusing generated schemas
 
-Nested class-first fields compose through the target facade automatically:
+Nested class-first fields compose through the target facade (or `Address.schema`
+when declared on the class) automatically:
 
 ```dart
 import 'address.dart' as address;
@@ -598,7 +597,7 @@ final class Order with _$OrderAck {
 // Generated field schema: address.AddressSchema.schema
 ```
 
-Schema-first declarations can use the same facade explicitly:
+Schema-first declarations can use `Address.schema` or the facade explicitly:
 
 ```dart
 @Schemable()
@@ -619,9 +618,16 @@ visible in the annotated library itself. A type reached only through a
 `typedef` from another library, or a codec's runtime type from a library you
 did not import, fails generation with the library to import.
 
-The complete import route must expose each authored declaration and generated
-companion. For class-first composition that means the hand-written model and
-its facade:
+When importing with `show` / `hide` combinators, if a class-first model declares
+`static final schema = _addressSchema;`, importing libraries only need to expose
+`Address`:
+
+```dart
+import 'address.dart' show Address;
+```
+
+If `Address` does not declare a static `schema`, expose both the hand-written
+model and its generated facade:
 
 ```dart
 import 'address.dart' show Address, AddressSchema;
@@ -648,60 +654,30 @@ schema-first types while new domain-owned types use class-first generation.
 
 ## Limit generation in larger projects
 
-Use matching `generate_for` entries for both Ack phases. This reduces analyzer
-work and keeps the JSON phase scoped to libraries whose `.ack.dart` input is
-generated:
+Scope `ack_generator` to your model files with `generate_for`:
 
 ```yaml title="build.yaml"
 targets:
   $default:
     builders:
-      ack_generator|ack_models:
-        generate_for: [lib/models/**.dart]
-      ack_generator|ack_model_json:
+      ack_generator|ack_generator:
         generate_for: [lib/models/**.dart]
 ```
-
-Both entries must cover the same annotated libraries.
 
 ## Build checklist
 
 1. Add `ack` to dependencies and import `package:ack/ack.dart`.
 2. Add `ack_generator` and `build_runner` to dev dependencies.
-3. Declare both generated parts in each annotated library.
+3. Declare `part '<file>.g.dart';` in each annotated library.
 4. Put `@Schemable()` on a top-level schema or on a class.
 5. Run `dart run build_runner build`.
 
-## Migrating from 1.6.x
+## Migrating from 1.x
 
-- The `ack_annotations` package is gone. Remove it from `pubspec.yaml`.
-  Import `package:ack/ack.dart` for `@Schemable()` and the model annotations,
-  and replace `package:ack_annotations/ack_annotations.dart` with
-  `package:ack/annotations.dart` in files that use constraint annotations or
-  the deprecated `@AckInfer()`, `@AckModel()` and `@AckType()`. Replace
-  `package:ack_annotations/format_annotations.dart` with
-  `package:ack/format_annotations.dart`.
-- Rename `@Pattern(...)` to `@Matches(...)`. The old name remains a deprecated
-  alias in `package:ack/annotations.dart` only. Until 2.0.0, an unprefixed
-  import of that library hides `dart:core`'s `Pattern` in the file; import it
-  `as ack`, or with `hide Pattern`, where the file needs `dart:core`'s
-  `Pattern`.
-- Replace `@AckInfer()` and `@AckModel()` with `@Schemable()`; the options keep
-  their names. The old spellings still generate the same code until 2.0.0,
-  as long as `Schemable` is in scope: generated models carry
-  `@Schemable.generatedJson`, so an import with `show AckInfer` must also show
-  `Schemable`.
-- A name that `package:ack/ack.dart` or `package:ack/annotations.dart` exports
-  can clash with a same-named class from another library, such as
-  `package:uuid`'s `Uuid`, your own `Email` type, or `package:meta`'s
-  `Required`. Import `package:ack/annotations.dart` with a prefix
-  (`as ack`, then `@ack.Uuid()`), or `hide` the name from one import.
-- `ack` no longer depends on `json_annotation` or re-exports `JsonKey`. A
-  file that renames a field with `@JsonKey(name: ...)` adds
-  `import 'package:json_annotation/json_annotation.dart';` and the app lists
-  `json_annotation` in its `dependencies`. `caseStyle` needs neither.
-- `Schemable.jsonSerializable`, `AckModel.jsonSerializable`, and
-  `AckGeneratedJson.config` are removed; `ack_generator` owns the JSON
-  configuration.
-- Regenerate: generated schema-first models now carry
-  `@Schemable.generatedJson`.
+- Remove `ack_annotations`, `json_serializable`, and `json_annotation` from `pubspec.yaml` (unless used by non-Ack classes), and import `package:ack/ack.dart`.
+- Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
+- Replace `@AckType()`, `@AckInfer()`, and `@AckModel()` with `@Schemable()`.
+- Replace top-level presence and constraint annotations (`@Optional`, `@Required`, `@NotNull`, `@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with `@Validate.*` (`@Validate.optional`, `@Validate.required`, `@Validate.notNull`, `@Validate.min`, `@Validate.max`, `@Validate.minLength`, `@Validate.matches`, `@Validate.email`, `@Validate.dateTime`, etc.).
+- Replace `@JsonKey(name: '...')` and `@AckField(name: '...')` on `@Schemable` fields with `@AckKey('...')`.
+
+See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for the complete substitution tables and side-by-side before/after examples.

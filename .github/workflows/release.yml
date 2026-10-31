@@ -26,13 +26,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # A full checkout already carries origin/main. The refresh keeps the
-      # check current when the tag lands moments after a merge, and the
-      # verification step reports a missing ref on its own.
+      # A full checkout already carries origin/main and origin/release/*. The
+      # refresh keeps the check current when the tag lands moments after a
+      # merge, and the verification step reports a missing ref on its own.
       - name: Refresh the release branch
         run: |
-          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main \
-            || echo "Could not refresh origin/main; using the checked-out refs."
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            '+refs/heads/release/*:refs/remotes/origin/release/*' \
+            || echo "Could not refresh origin refs; using the checked-out refs."
 
       - name: Set up the pinned Flutter SDK
         uses: ./.github/actions/setup-flutter
@@ -42,10 +44,21 @@ jobs:
 
       # A tag is the only trigger of this workflow, so the tag must prove that
       # it points at reviewed code and that every package agrees on the version.
+      # Pre-release tags may also publish from a matching `release/<major>.<minor>`
+      # branch.
       - name: Require a releasable tag
         run: |
+          set -euo pipefail
+          main_ref="origin/main"
+          if [[ "$GITHUB_REF_NAME" =~ ^v([0-9]+\.[0-9]+)\.[0-9]+- ]]; then
+            release_ref="origin/release/${BASH_REMATCH[1]}"
+            if git rev-parse --verify "${release_ref}^{commit}" >/dev/null 2>&1 \
+              && git merge-base --is-ancestor "$GITHUB_SHA" "$release_ref"; then
+              main_ref="$release_ref"
+            fi
+          fi
           dart scripts/verify_release_tag.dart "$GITHUB_REF_NAME" \
-            --commit="$GITHUB_SHA" --main-ref=origin/main
+            --commit="$GITHUB_SHA" --main-ref="$main_ref"
 
   preflight:
     name: Preflight

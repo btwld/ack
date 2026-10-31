@@ -1,3 +1,133 @@
+## Unreleased
+
+* Enforce RFC 5893 Bidi rules using Unicode classes for internationalized
+  hostnames and email domains, including decoded punycode labels.
+
+* Preserve nested resource dialects for JSON pointers targeting schemas in
+  extension containers, matching resource URI references during parse and encode.
+
+* Reject a second unescaped fragment delimiter in URI and IRI formats.
+* Accept colons in relative URI and IRI queries, fragments, and later path
+  segments while rejecting them in a relative first path segment.
+* Enforce RFC 3987 Unicode ranges for IRI format assertions, allowing private-use
+  code points only in queries and rejecting forbidden code points.
+* Accept line terminators in relative JSON pointer reference tokens.
+* Validate plain ASCII hostname labels under RFC 1123, allowing internal
+  double hyphens while retaining IDNA checks for internationalized labels.
+
+## 2.0.0-beta.1
+
+### Breaking
+
+* Restrict `Ack.preserveBoundary` to JSON-object schemas
+  (`AckSchema<JsonMap, R>`), such as objects, maps, discriminated unions, and
+  lazy, default, or codec wrappers over them. `BoundarySchema` no longer takes
+  a type argument. Compose list wire views as `Ack.list(X.wireSchema)`, and use
+  a codec's input schema, such as `Ack.string().datetime()`, for a scalar.
+* Return a detached, recursively unmodifiable copy of the input map from
+  `BoundarySchema` parse, runtime validation, and encode instead of the
+  caller's map instance.
+
+### Fixed
+
+* Accept union-owned discriminators in strict map-backed codec outputs while
+  preserving declared discriminator rules and rejecting unrelated extra keys.
+  Already-permissive intermediate outputs retain their policies and values.
+  Lazy outputs preserve round trips, deferred resolution and recursion limits.
+* Expose the shared `deepUnmodifiableCopy` helper for generated immutable
+  constructors. It snapshots nested collections without validating data or
+  changing opaque noncollection objects.
+* Honor explicit boundary-wrapper nullability consistently during parse and
+  encode. Preserve non-null restrictions on wrappers and lazy references when
+  exporting nullable primitives, unions, and imported JSON Schema resources.
+* Validate discriminated codec output against its selected map branch or a
+  matching typed runtime branch, including required fields and refinements,
+  without decoding runtime values again or adding encode callback passes.
+* Reject duration millisecond inputs that overflow the platform's `Duration`
+  representation instead of silently decoding to a different duration.
+* Respect custom JSON Schema vocabularies during import and export: keep
+  inactive keywords inert, preserve annotation payloads and explicit format
+  assertions, and apply fluent nullability under an active assertion dialect.
+  Identical caller-supplied standard meta-schemas can replace offline fallbacks
+  without relaxing duplicate-ID checks between caller resources.
+* Discover selected custom dialects bundled beneath their own active schema
+  keywords, without interpreting inactive keyword payloads or annotation data
+  as schemas.
+* Return the same JSON from `BoundarySchema` for every string-keyed map
+  container, including `jsonDecode` output, without running an encoder. Nested
+  codec values keep their wire form, one-way transforms no longer reject valid
+  input, and wrapped defaults are not injected.
+* Validate `BoundarySchema` values with parse semantics during encode and
+  runtime validation, so encode no longer accepts a value that parse rejects.
+* Return a schema that is already a wire view from `Ack.preserveBoundary`
+  unchanged instead of validating its values twice.
+* Export a wrapper's non-null restriction as `allOf: [{not: {type: null}}]`
+  only when the narrowed schema can still accept `null`.
+
+## 2.0.0-alpha.1
+
+### Breaking
+
+* Remove legacy 1.x generator annotations (`@AckType`, `@AckInfer`, `@AckModel`,
+  `@AckField`, `JsonKeyCaseStyle`, `AckFieldPresence`, and
+  `@Schemable.generatedJson`). Use `@Schemable()` on both top-level schemas and
+  hand-written classes/unions (`#188`, `#189`).
+* Remove top-level presence annotations (`@Optional`, `@Required`, `@NotNull`),
+  the 18 `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`,
+  `@MultipleOf`, `@Positive`, `@Negative`, `@MinLength`, `@MaxLength`,
+  `@Matches`, `@NotEmpty`, `@Email`, `@Url`, `@Uuid`, `@Date`, `@DateTime`,
+  `@Uri`, `@Ip`, `@Ipv4`, `@Ipv6`, `@MinItems`, `@MaxItems`, `@UniqueItems`), and
+  `package:ack/format_annotations.dart` in favor of `@Validate.*` (`#191`).
+* Remove `Ack.enumCodec` in favor of `Ack.enumValues` and remove unused
+  `StandardSchemaV1` (`#129`).
+* Seal `SchemaError` and `AckSchema` so pattern matching across all error and
+  schema subtypes is exhaustive without a wildcard branch.
+* Rethrow programmer `Error`s (`TypeError`, `StateError`, etc.) with their
+  original stack trace during `CodecSchema` decode (`parse` / `safeParse`),
+  matching `encode` / `safeEncode` (`#163`).
+* `Ack.fromJsonSchema()` now defaults to `assertFormats: false` to match JSON
+  Schema Draft 2020-12's default Core/Applicator/Validation vocabularies; pass
+  `assertFormats: true` (or declare the `format-assertion` vocabulary in
+  `$vocabulary`) to enforce format assertions (`#171`, `#186`).
+* `schema.toJsonSchema()` and `schema.toSchemaModel()` now preserve imported
+  Draft 2020-12 resources by default (`$defs`, `$dynamicRef`,
+  `unevaluatedProperties`, `prefixItems`, etc.). Use `toJsonSchemaDraft7()` or
+  `toSchemaModelDraft7()` for legacy Draft-07 `definitions` lowering (`#171`).
+
+### Added
+
+* Add unified `@Validate.*` presence and constraint annotation namespace
+  (`final class Validate`, including `@Validate.optional()`,
+  `@Validate.required()`, and `@Validate.notNull()`) exported from both
+  `package:ack/ack.dart` and `package:ack/annotations.dart` (`#191`).
+* Add `sealed class JsonMaybe<T>` (`JsonAbsent<T>`, `JsonValue<T>`) with
+  `JsonMaybe.absent()`, `JsonMaybe.value(T? value)`, and `JsonMaybe.nullValue()`
+  for PATCH tri-state presence (`#148`).
+* Add `@Schemable(schemas: [...])` (supported on classes, sealed unions, and
+  `library;` directives) and `@AckKey('...')` for custom schema registration and
+  field wire-name overrides (`#185`, `#189`).
+* Make `.trim()`, `.toLowerCase()`, and `.toUpperCase()` two-way normalizers
+  directly on `StringSchema` that execute in declaration order alongside
+  constraints during both `parse` and `encode`, preserve `StringSchema`
+  chaining, and export as `type: 'string'` without `'x-transformed': true`.
+* Support the complete JSON Schema Draft 2020-12 validation runtime in
+  `Ack.fromJsonSchema()`, including `$dynamicRef`, `$dynamicAnchor`,
+  `unevaluatedProperties`, `unevaluatedItems`, `prefixItems`,
+  `dependentRequired`, `dependentSchemas`, `patternProperties`, `minContains`,
+  `maxContains`, bundled offline 2020-12 meta-schemas, and the full Draft
+  2020-12 format suite (`#171`, `#186`).
+
+### Fixed
+
+* Explicit Draft-7 export (`toJsonSchemaDraft7()` / `toSchemaModelDraft7()`)
+  rejects unsupported Draft 2020-12 assertions rather than emitting keywords
+  that Draft-7 validators ignore.
+* Imported schema exports preserve JSON Pointer targets through retrieval URI
+  aliases and opt-in format assertions in nested resources.
+* Composed imports share identical identified resources, retain occurrence-level
+  nullability and constraints (including source `allOf` when layering
+  conflicting constraints), and reject conflicting resource definitions.
+
 ## 1.7.0
 
 ### Breaking

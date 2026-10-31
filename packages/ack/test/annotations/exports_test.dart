@@ -4,36 +4,58 @@ import 'package:test/test.dart';
 
 import 'own_types.dart';
 
+@ack.Schemable(caseStyle: ack.AckCaseStyle.snake)
 final class Contact {
   const Contact(this.email);
 
-  @ack.Email()
+  /// @description Primary email
+  @ack.AckKey('email_address')
+  @ack.Validate.email()
   final Email email;
 }
 
+@Schemable()
+final class SingleImportContact {
+  const SingleImportContact(this.email, this.id);
+
+  /// @description Contact email
+  @AckKey('email')
+  @Validate.email()
+  final Email email;
+
+  @Validate.uuid()
+  final Uuid id;
+}
+
 void main() {
-  test('package:ack/ack.dart exports the model annotations', () {
+  test('package:ack/ack.dart exports the model and Validate annotations', () {
     const values = <Object>[
       Schemable(caseStyle: AckCaseStyle.snake),
-      AckField(description: 'id'),
-      Required(),
-      Optional(),
-      NotNull(),
+      AckKey('id'),
+      Validate.required(),
+      Validate.optional(),
+      Validate.notNull(),
+      Validate.email(),
+      Validate.minLength(2),
+      Validate.matches(r'^\d+$'),
+      ack.Validate.uuid(),
     ];
 
-    expect(values, hasLength(5));
+    expect(values, hasLength(9));
     expect(AckUnknownPropertyPolicy.values, hasLength(3));
   });
 
   test(
-    'constraint names from package:ack/ack.dart leave room for app types',
+    'constraint names from package:ack/ack.dart and annotations.dart leave room for app types',
     () {
       const uuid = Uuid('7c9e6679');
       const email = Email('ada@example.com');
       const url = Url('https://example.com');
       const date = Date('2026-10-01');
       const min = Min(1);
+      const max = Max(10);
       const pattern = Pattern('^a');
+      const contact = SingleImportContact(email, uuid);
 
       expect(
         [
@@ -42,7 +64,10 @@ void main() {
           url.href,
           date.iso,
           min.value,
+          max.value,
           pattern.source,
+          contact.email.address,
+          contact.id.value,
         ],
         [
           '7c9e6679',
@@ -50,24 +75,29 @@ void main() {
           'https://example.com',
           '2026-10-01',
           1,
+          10,
           '^a',
+          'ada@example.com',
+          '7c9e6679',
         ],
       );
     },
   );
 
-  test('a prefixed annotations import sits beside a same-named app type', () {
-    const contact = Contact(Email('ada@example.com'));
+  test(
+    'a prefixed annotations import exposes Schemable, AckKey, and Validate',
+    () {
+      const contact = Contact(Email('ada@example.com'));
+      const schemable = ack.Schemable(name: 'Contact');
+      const key = ack.AckKey('email_address');
+      const validate = ack.Validate.matches('^a');
 
-    expect(contact.email.address, 'ada@example.com');
-    expect(const ack.Email(), isA<ack.Email>());
-  });
-
-  test('the deprecated Pattern spelling creates a Matches annotation', () {
-    // ignore: deprecated_member_use_from_same_package
-    const annotation = ack.Pattern('^a');
-
-    expect(annotation, isA<ack.Matches>());
-    expect(annotation.pattern, '^a');
-  });
+      expect(contact.email.address, 'ada@example.com');
+      expect(schemable.name, 'Contact');
+      expect(key.name, 'email_address');
+      expect(validate, isA<Validate>());
+      expect(validate.kind, 'matches');
+      expect(validate.value, '^a');
+    },
+  );
 }

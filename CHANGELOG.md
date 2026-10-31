@@ -5,8 +5,140 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## Unreleased
 
-* Keep the generator's JSON dependencies compatible with the supported Dart 3.9
-  SDK, including clean builds in consumer packages.
+* Keep the generator's JSON dependencies compatible with the minimum supported
+  Dart 3.11 SDK, including clean builds in consumer packages.
+
+## 2.0.0-beta.1
+
+### Breaking
+
+* Restrict `Ack.preserveBoundary` to JSON-object schemas and return detached,
+  unmodifiable copies of the input map. Generated preserved map fields infer
+  JSON numbers as `num`.
+
+### Fixed
+
+* Reject generator aliases whose final passthrough policy makes an inherited
+  field collide with the generated additional-properties member.
+* Preserve round trips for discriminated map codecs with strict output schemas,
+  including values used as another codec's output, without narrowing permissive
+  intermediate output policies. Lazy outputs retain deferred resolution and
+  recursion limits.
+* Accept contextual Dart member names and deeply snapshot JSON-owned generated
+  fields without changing opaque codec values. Preserve effective nullable
+  overrides when inferring explicit JSON boundaries.
+* Align wrapper and lazy nullability across parsing, encoding, and JSON Schema
+  export; validate discriminated codec outputs against their runtime branches.
+* Reject duration inputs that cannot preserve their original milliseconds.
+* Preserve custom JSON Schema vocabulary semantics, inert annotation payloads,
+  explicit format assertions, and fluent null policies through export.
+* Resolve custom dialects bundled under active schema keywords while leaving
+  unrelated annotation data untouched.
+* Preserve schema-first alias metadata and strict/passthrough precedence;
+  diagnose unsupported shape transformations instead of emitting wrong fields.
+* Accept parenthesized no-op `null` overrides in generated schema metadata.
+* Resolve same-build value-model and getter references, nullable nested Sets,
+  generated-name collisions, and application-generic nullability correctly.
+* Substitute nested and recursive type bounds when resolving type-owned schemas.
+* Infer native JSON `Ack.anyOf(...)` fields without a wire-view wrapper, and
+  validate wire views with parse semantics and no encoders.
+
+### Documentation and release preparation
+
+* Correct integration examples, converter templates, migration guidance, and
+  SDK floors; include new cross-platform contract regressions in CI.
+* Coordinate all five packages at 2.0.0-beta.1 and require that version of
+  the core in dependent packages. Published alpha.1 release notes remain unchanged.
+
+## 2.0.0-alpha.1
+
+### Breaking & Substitutions
+
+* **Single `.g.dart` part & direct JSON emitter (`#189`)**: `ack_generator:ack_generator`
+  now emits a single `<file>.g.dart` part via `SharedPartBuilder` with direct
+  `toJson()` / `fromJson()` helpers (no `json_serializable` or `json_annotation`
+  dependency).
+  * **Substitute:** Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';`
+    with `part '<file>.g.dart';`.
+  * **Substitute:** Replace `ack_generator|ack_models` and
+    `ack_generator|ack_model_json` in `build.yaml` with
+    `ack_generator|ack_generator`.
+* **Unified `@Validate.*` presence & constraint namespace (`#191`)**: Removed the
+  top-level presence classes (`@Optional`, `@Required`, `@NotNull`), the 18
+  `@Deprecated` 1.x top-level constraint classes (`@Min`, `@Max`, `@Email`, etc.),
+  and `package:ack/format_annotations.dart`.
+  * **Substitute:** Use `@Validate.<name>(...)` from `package:ack/ack.dart`
+    (`@Validate.optional()`, `@Validate.required()`, `@Validate.notNull()`,
+    `@Validate.min(...)`, `@Validate.max(...)`, `@Validate.multipleOf(...)`,
+    `@Validate.positive()`, `@Validate.negative()`, `@Validate.minLength(...)`,
+    `@Validate.maxLength(...)`, `@Validate.matches(...)`, `@Validate.notEmpty()`,
+    `@Validate.email()`, `@Validate.url()`, `@Validate.uuid()`, `@Validate.date()`,
+    `@Validate.dateTime()`, `@Validate.uri()`, `@Validate.ip()`, `@Validate.ipv4()`,
+    `@Validate.ipv6()`, `@Validate.minItems(...)`, `@Validate.maxItems(...)`,
+    `@Validate.uniqueItems()`).
+* **Removed legacy 1.x generator annotations & shims (`#188`, `#189`)**:
+  Removed `@AckType`, `@AckInfer`, `@AckModel`, `@AckField`, `JsonKeyCaseStyle`,
+  `AckTypeDef`, `AckFieldPresence`, `*Type` extension-type models, and the
+  `@JsonKey(name: ...)` fallback.
+  * **Substitute:** Use `@Schemable()` on schemas and classes,
+    `@Validate.optional()` / `@Validate.required()` / `@Validate.notNull()` for
+    field presence, `/// @description ...` for field descriptions, and
+    `@AckKey('...')` for wire-name overrides.
+* **Removed redundant helpers & `StandardSchemaV1` (`#129`)**:
+  * **Substitute:** `Ack.enumCodec(E.values)` $\rightarrow$ `Ack.enumValues(E.values)`.
+  * **Substitute:** `registerAckModelTool(...)` $\rightarrow$
+    `registerAckTool(..., input: Model.schema)`.
+  * **Substitute:** `convertAckSchemaModelToBuilder(m)` $\rightarrow$
+    `schema.toJsonSchemaBuilder()`.
+  * **Substitute:** `StandardSchemaV1` $\rightarrow$ `AckSchema<Boundary, Runtime>`
+    + `SchemaResult<T>`.
+* **Sealed `SchemaError` & `AckSchema` hierarchies + decoder `Error` propagation (`#163`)**:
+  `SchemaError` and `AckSchema` are now `sealed class`es for exhaustive pattern
+  matching. `CodecSchema` rethrows programmer `Error`s during `parse` /
+  `safeParse` (matching `encode` / `safeEncode`) and catches only `Exception`s
+  as `SchemaTransformError`.
+* **JSON Schema Draft 2020-12 default export & `format` annotation mode (`#171`, `#186`)**:
+  `Ack.fromJsonSchema()` defaults to `assertFormats: false` (pass
+  `assertFormats: true` or declare the `format-assertion` vocabulary to enforce
+  format assertions). `toJsonSchema()`, `toSchemaModel()`, and
+  `toJsonSchemaBuilder()` preserve imported Draft 2020-12 resources by default;
+  use `toJsonSchemaDraft7()`, `toSchemaModelDraft7()`, or
+  `toJsonSchemaBuilderDraft7()` when legacy Draft-07 lowering is needed.
+
+### Added
+
+* **`JsonMaybe<T>` tri-state presence (`#148`)**: `sealed class JsonMaybe<T>`
+  (`JsonAbsent<T>`, `JsonValue<T>`) distinguishes omitted keys (`JsonAbsent`),
+  explicit `null` (`JsonValue(null)`), and present values (`JsonValue(v)`) in
+  `@Schemable()` class-first models for `PATCH` payloads.
+* **Layered custom schema resolution (`#185`)**: Class-first `@Schemable()`
+  fields resolve custom types via `@Schemable(schemas: [...])` (on classes,
+  unions, or `library;` directives), type-owned `T.schema` / `T.schema<...>()`
+  factories, or automatic detection of a unique top-level
+  `AckSchema<Boundary, T>` in the current library.
+* **Two-way `StringSchema` normalizers**: `.trim()`, `.toLowerCase()`, and
+  `.toUpperCase()` execute in declaration order during both `parse` and `encode`,
+  preserve `StringSchema` chaining, work in `@Schemable()` models, and export as
+  `type: 'string'` without `'x-transformed': true`.
+* **Full JSON Schema Draft 2020-12 runtime & `.schema.json` generator (`#167`, `#171`, `#186`)**:
+  Supports `$dynamicRef`, `$dynamicAnchor`, `unevaluatedProperties`,
+  `unevaluatedItems`, `prefixItems`, `dependentRequired`, `dependentSchemas`,
+  `patternProperties`, `minContains`, `maxContains`, bundled offline 2020-12
+  meta-schemas, and all 19 Draft 2020-12 formats. Opt-in
+  `ack_generator:ack_json_schema` compiles `lib/**/*.schema.json` into
+  `<name>.schema.dart` + `<name>.schema.g.dart`.
+
+### Fixed
+
+* Explicit Draft-7 export rejects unsupported Draft 2020-12 assertions rather
+  than emitting keywords that Draft-7 validators ignore.
+* Imported schema exports preserve JSON Pointer targets through retrieval URI
+  aliases, share identical identified resources across composed imports, and
+  preserve occurrence-level nullability and constraints (including source
+  `allOf` when layering conflicting constraints).
+* Preserve integral decimal length and item bounds in `.schema.json` generation,
+  and use validated value models for Unicode regex patterns and named scalar
+  unions.
 
 ## 1.7.0
 

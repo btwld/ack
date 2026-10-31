@@ -1,0 +1,188 @@
+---
+title: What's New & Migration Guide
+---
+
+This guide summarizes **what exists in Ack today**, **what changed in 1.7 and 2.0 (and why)**, and **every deprecated or removed 1.x symbol with its exact substitution**.
+
+---
+
+## 1. What Exists in Ack
+
+Ack is organized into five coordinated packages that share one version number and one canonical schema representation (`AckSchema<Boundary, Runtime>`):
+
+| Package | Role | Key Capabilities |
+| --- | --- | --- |
+| **`ack`** | Core runtime & annotations | • Fluent schema builders: `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`, `Ack.list()`, `Ack.map()`, `Ack.object()`, `Ack.any()`, `Ack.literal()`, `Ack.enumString()`, `Ack.enumValues()`, `Ack.anyOf()`, `Ack.discriminated()`, `Ack.lazy()`<br/>• Bidirectional `CodecSchema<Boundary, Runtime>`: `Ack.date()`, `Ack.datetime()`, `Ack.uri()`, `Ack.duration()`, `.codec()`, `.transform()`<br/>• Two-way string normalizers: `.trim()`, `.toLowerCase()`, `.toUpperCase()`<br/>• `JsonMaybe<T>` (`JsonAbsent<T>` / `JsonValue<T>`) for tri-state `PATCH` payloads<br/>• JSON Schema Draft 2020-12 import and runtime validation (`Ack.fromJsonSchema()`); native schemas export Draft-7, while `toJsonSchema()` preserves imported 2020-12 resources (`toJsonSchemaDraft7()` explicitly lowers them)<br/>• Sealed `SchemaResult<T>` (`Ok` / `Fail`) and sealed `SchemaError` hierarchy<br/>• Unified codegen annotations in `package:ack/ack.dart`: `@Schemable()`, `@AckKey()`, and `@Validate.*` |
+| **`ack_generator`** | Two-way code generator | • **Schema-first (`@Schemable()` on a top-level schema)**: Generates an immutable model class, `Model.schema`, `parse`/`safeParse`, `fromJson`/`toJson`/`safeToJson`, typed `copyWith`, and deep `==`/`hashCode` in `<file>.g.dart`<br/>• **Class-first (`@Schemable()` on a `final class` or `sealed class`)**: Supports standard and Dart 3.12+ primary constructors; generates `_<name>Schema`, `<Name>Schema`, and `_$<Name>Ack` in `<file>.g.dart`<br/>• **`.schema.json` codegen (`ack_generator:ack_json_schema`)**: Compiles `lib/**/*.schema.json` assets into `<name>.schema.dart` + `<name>.schema.g.dart` |
+| **`ack_mcp_dart`** | MCP tool input adapter | • `server.registerAckTool(name, input: schema, callback: ...)`, `schema.toMcpToolInputSchema()`, and `parseMcpToolArguments(...)`; callbacks return `CallToolResult` and own output validation |
+| **`ack_firebase_ai`** | Firebase AI (Gemini) adapter | • `schema.toFirebaseAiResponseJsonSchema()` for the map-based `GenerationConfig.responseJsonSchema` field |
+| **`ack_json_schema_builder`** | `json_schema_builder` bridge | • Bidirectional `schema.toJsonSchemaBuilder()` and `jsbSchema.toAckSchema()` |
+
+---
+
+## 2. What Changed & Why
+
+| Change | Introduced | What Changed | Why It Changed |
+| --- | --- | --- | --- |
+| **Annotations merged into `package:ack`** | `1.7.0` | `ack_annotations` was retired and model/validation annotations moved into `ack`. In 2.0, the public annotation API is `@Schemable()`, `@AckKey()`, and `@Validate.*` from `package:ack/ack.dart`. | Eliminated version skew between `ack` and a separate annotations package and reduced model files to a single `import 'package:ack/ack.dart';`. |
+| **Unified `@Schemable()` annotation** | `1.7.0` | `@Schemable()` drives both schema-first and class-first generation, replacing `@AckInfer()`, `@AckModel()`, and `@AckType()`. | One annotation and one mental model whether you start from an `AckSchema` or a hand-written Dart `class`. |
+| **Unified `@Validate.*` validation namespace** | `2.0.0` | All field and parameter validation annotations—including presence (`@Validate.required()`, `@Validate.optional()`), nullability (`@Validate.notNull()`), bounds (`@Validate.min(0)`), formats (`@Validate.email()`, `@Validate.dateTime()`, `@Validate.uri()`), and collection rules (`@Validate.notEmpty()`, `@Validate.uniqueItems()`)—live under `@Validate.*` in `package:ack/ack.dart`. | Top-level 1.x classes (`@Required`, `@Email`, `@Uuid`, `@Date`, `@Uri`, `@DateTime`, `@Pattern`) collided with `package:meta` / Flutter (`Required`), `dart:core` (`Uri`, `DateTime`, `Pattern`), and `package:uuid`, forcing import prefixes (`as ack`). `@Validate.*` has zero symbol collisions and one canonical name per validation rule. |
+| **Single `.g.dart` part & direct JSON emitter** | `2.0.0` | `ack_generator:ack_generator` is a `SharedPartBuilder` that emits `<file>.g.dart` directly with no `json_serializable` or `json_annotation` dependency. | In 1.x, every model required two `part` directives (`.ack.dart` + `.ack.g.dart`) and a second `json_serializable` pass. Direct emission cuts build steps in half, uses standard `part '<file>.g.dart';`, and coexists with Freezed or Riverpod in the same file. |
+| **Layered custom schema resolution (`T.schema`, `schemas: [...]`)** | `1.7.0` / `2.0.0` | Custom field types resolve via `@Schemable(schemas: [...])` (on classes, unions, or `library;` directives), type-owned `T.schema` / `T.schema<A>()` factories, or automatic detection of a unique top-level `AckSchema<Boundary, T>` in the current library. | Removed per-field `@AckField(schema: ...)` boilerplate on every field that uses a domain value object, extension type, enum, or generic wrapper. |
+| **Typed `$ClassCopyWith<Class>` getter** | `1.7.0` | `model.copyWith` returns a typed callable interface instead of widening parameters to `Object?`. | Passing `model.copyWith(age: 'wrong')` previously compiled and failed only at runtime (`TypeError`). Now mistyped arguments fail at compile time while `model.copyWith(age: null)` still clears nullable fields. |
+| **Two-way string normalizers (`.trim()`, `.toLowerCase()`, `.toUpperCase()`)** | `2.0.0` | Normalizers live directly on `StringSchema` and run in declaration order alongside constraints during both `parse` and `encode`. | In 1.x, `.trim()` used a one-way `.transform()`, which failed on `encode()`, was rejected by `@Schemable()`, and emitted `'x-transformed': true` in JSON Schema. |
+| **`JsonMaybe<T>` (`JsonAbsent` / `JsonValue<T>`)** | `2.0.0` | Tri-state field container for class-first `@Schemable()` models. | A plain `String?` field in Dart cannot distinguish `{"bio": null}` (clear field in a `PATCH` request) from `{}` (leave field unchanged) when encoding back to JSON. |
+| **Sealed `SchemaError` & `AckSchema` hierarchies + decoder `Error` propagation** | `2.0.0` | `SchemaError` and `AckSchema` are `sealed class`es. `CodecSchema` rethrows programmer `Error`s (`TypeError`, `StateError`) on `parse`/`safeParse` and catches only `Exception`s as `SchemaTransformError`. | Enables exhaustive `switch (error)` pattern matching without a wildcard branch, and prevents programming bugs inside `decode` callbacks from being masked as user input errors. |
+| **JSON Schema Draft 2020-12 default + `.schema.json` codegen** | `2.0.0` | `Ack.fromJsonSchema()` supports the full required Draft 2020-12 keyword suite (`$dynamicRef`, `unevaluatedProperties`, `prefixItems`, `minContains`/`maxContains`, `dependentSchemas`, `patternProperties`, and all 19 formats when `assertFormats: true`). `toJsonSchema()` preserves 2020-12 resources by default (`toJsonSchemaDraft7()` lowers to Draft-7). | Enables lossless round-tripping of modern protocol schemas (MCP, A2UI v0.9, OpenAPI 3.1) and compile-time Dart codegen from `.schema.json` files. |
+| **ECMA-262 Unicode mode (`u`) for imported `pattern`** | `1.7.0` | Imported JSON Schema `pattern` expressions compile with ECMA-262 Unicode semantics. | Required by the JSON Schema specification so `.` matches full Unicode code points (including emoji) and `\p{...}` property escapes work identically to Ajv. |
+
+---
+
+## 3. What Doesn't Exist Anymore & Exact Substitutions
+
+### Packages & Imports
+
+| Removed Item | Removed In | Exact Substitution |
+| --- | --- | --- |
+| `ack_annotations` package in `pubspec.yaml` | `1.7.0` | Remove `ack_annotations`; `ack` includes all annotations. |
+| `import 'package:ack_annotations/ack_annotations.dart';` | `1.7.0` | `import 'package:ack/ack.dart';` |
+| `import 'package:ack_annotations/format_annotations.dart';` | `1.7.0` | `import 'package:ack/ack.dart';` (use `@Validate.*`) |
+| `import 'package:ack/format_annotations.dart';` | `2.0.0` | `import 'package:ack/ack.dart';` (use `@Validate.dateTime()`, `@Validate.uri()`, `@Validate.ip()`, `@Validate.ipv4()`, `@Validate.ipv6()`) |
+| `json_serializable` & `json_annotation` for `@Schemable()` models | `2.0.0` | Remove unless used by other non-Ack classes; `ack_generator` emits `toJson` / `fromJson` directly. |
+
+### Model & Field Annotations
+
+| Removed / Deprecated Symbol | Status | Exact Substitution |
+| --- | --- | --- |
+| `@AckType()` | Removed in `2.0.0` | `@Schemable()` on the top-level schema |
+| `@AckInfer(...)` | Deprecated in `1.7.0`, Removed in `2.0.0` | `@Schemable(...)` on the top-level schema |
+| `@AckModel(...)` | Deprecated in `1.7.0`, Removed in `2.0.0` | `@Schemable(...)` on the class |
+| `JsonKeyCaseStyle` | Removed in `2.0.0` | `AckCaseStyle` (`none`, `snake`, `kebab`, `pascal`, `screamingSnake`) |
+| `@Optional()` / `@AckField(presence: AckFieldPresence.optional)` | Removed in `2.0.0` | `@Validate.optional()` (add `@Validate.notNull()` if present JSON value must not be `null`) |
+| `@Required()` / `@AckField(presence: AckFieldPresence.requiredNull)` | Removed in `2.0.0` | `@Validate.required()` on a nullable field (`final T? field;`) |
+| `@NotNull()` / `@AckField(presence: AckFieldPresence.requiredNonNull)` | Removed in `2.0.0` | `@Validate.required()` + `@Validate.notNull()` |
+| `@JsonKey(name: 'wire_name')` / `@AckField(name: 'wire_name')` | Removed in `2.0.0` | `@AckKey('wire_name')` |
+| `@AckField(schema: ...)` | Removed in `2.0.0` | `@Schemable(schemas: [...])`, `T.schema`, or top-level library schema |
+| `@AckField(description: ...)` | Removed in `2.0.0` | `/// @description ...` doc tag |
+| `@JsonConverter()` on `@Schemable` classes/fields | Rejected in `1.7.0+` | Declare `static final schema = ...` on the type or register one in `@Schemable(schemas: [...])` |
+
+### Validation Annotations (`1.x` Top-Level Classes $\rightarrow$ `2.0` `@Validate.*`)
+
+All top-level validation and presence classes were removed in `2.0.0`. Replace them with `@Validate.*` from `package:ack/ack.dart`:
+
+| Removed `1.x` Annotation | Exact `2.0` Substitution |
+| --- | --- |
+| `@Required()` / `@Optional()` / `@NotNull()` | `@Validate.required()` / `@Validate.optional()` / `@Validate.notNull()` |
+| `@Min(value)` / `@Max(value)` / `@MultipleOf(value)` | `@Validate.min(value)` / `@Validate.max(value)` / `@Validate.multipleOf(value)` |
+| `@Positive()` / `@Negative()` | `@Validate.positive()` / `@Validate.negative()` |
+| `@MinLength(n)` / `@MaxLength(n)` / `@NotEmpty()` | `@Validate.minLength(n)` / `@Validate.maxLength(n)` / `@Validate.notEmpty()` (works on `String`, `List`, and `Set`) |
+| `@Pattern(r'...')` / `@Matches(r'...')` | `@Validate.matches(r'...')` |
+| `@Email()` / `@Url()` / `@Uuid()` / `@Date()` | `@Validate.email()` / `@Validate.url()` / `@Validate.uuid()` / `@Validate.date()` |
+| `@DateTime()` / `@Uri()` | `@Validate.dateTime()` / `@Validate.uri()` |
+| `@Ip()` / `@Ipv4()` / `@Ipv6()` | `@Validate.ip()` / `@Validate.ipv4()` / `@Validate.ipv6()` |
+| `@MinItems(n)` / `@MaxItems(n)` / `@UniqueItems()` | `@Validate.minItems(n)` / `@Validate.maxItems(n)` / `@Validate.uniqueItems()` |
+
+
+### Generated Files, Builders & Runtime APIs
+
+| Removed `1.x` Item | Removed In | Exact `2.0` Substitution |
+| --- | --- | --- |
+| `part 'model.ack.dart';` + `part 'model.ack.g.dart';` | `2.0.0` | Single `part 'model.g.dart';` |
+| `ack_generator\|ack_models` & `ack_generator\|ack_model_json` in `build.yaml` | `2.0.0` | `ack_generator\|ack_generator` (plus optional `ack_generator\|ack_json_schema` for `.schema.json` files) |
+| Legacy `*Type` extension type, `.args`, `ModelType.parse(...)` | `2.0.0` | Generated `Model` class with typed fields, `Model.parse(...)`, `Model.safeParse(...)`, `Model.fromJson(...)`, `model.toJson()` |
+| `Ack.enumCodec(MyEnum.values)` | `2.0.0` | `Ack.enumValues(MyEnum.values)` |
+| `StandardSchemaV1` (`standard_schema.dart`) | `2.0.0` | `AckSchema<Boundary, Runtime>` + `SchemaResult<T>` |
+| `schema.toMap()` | `2.0.0` | `schema.toJsonSchema()` or `schema.toSchemaModel()` |
+| `server.registerAckModelTool(...)` (`ack_mcp_dart`) | `2.0.0` | `server.registerAckTool(name, input: Model.schema, callback: ...)`; return a `CallToolResult` from the callback |
+| `convertAckSchemaModelToBuilder(model)` (`ack_json_schema_builder`) | `2.0.0` | `schema.toJsonSchemaBuilder()` |
+| `Ack.fromJsonSchema(...)` enforcing `format` by default | `2.0.0` | Pass `Ack.fromJsonSchema(schema, assertFormats: true)` (or declare `format-assertion` in `$vocabulary`) when format assertions are required |
+| `schema.toJsonSchema()` lowering imported 2020-12 schemas to Draft-7 | `2.0.0` | `schema.toJsonSchema()` now preserves Draft 2020-12 resources by default; call `schema.toJsonSchemaDraft7()` when Draft-7 lowering is required |
+
+---
+
+## 4. Before & After Migration Examples
+
+### Class-First Model Migration
+
+```dart
+// ❌ BEFORE (Ack 1.6)
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart' as ack;
+import 'package:ack_annotations/format_annotations.dart' as formats;
+import 'package:json_annotation/json_annotation.dart';
+
+part 'account.ack.dart';
+part 'account.ack.g.dart';
+
+@ack.AckModel(caseStyle: ack.AckCaseStyle.snake)
+final class Account with _$AccountAck {
+  const Account({required this.userName, required this.createdAt});
+
+  @JsonKey(name: 'username')
+  @ack.MinLength(3)
+  @ack.Pattern(r'^[a-z0-9_]+$')
+  final String userName;
+
+  @formats.DateTime()
+  final String createdAt;
+}
+```
+
+```dart
+// ✅ AFTER (Ack 2.0)
+import 'package:ack/ack.dart';
+
+part 'account.g.dart';
+
+@Schemable(caseStyle: AckCaseStyle.snake)
+final class Account with _$AccountAck {
+  const Account({required this.userName, required this.createdAt});
+
+  @AckKey('username')
+  @Validate.minLength(3)
+  @Validate.matches(r'^[a-z0-9_]+$')
+  final String userName;
+
+  @Validate.dateTime()
+  final String createdAt;
+
+  static final schema = _accountSchema;
+  static final fromJson = AccountSchema.fromJson;
+}
+```
+
+### Schema-First Model Migration
+
+```dart
+// ❌ BEFORE (Ack 1.6 / Legacy @AckType or @AckInfer)
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user.ack.dart';
+part 'user.ack.g.dart';
+
+@AckInfer()
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'email': Ack.string().email(),
+});
+```
+
+```dart
+// ✅ AFTER (Ack 2.0)
+import 'package:ack/ack.dart';
+
+part 'user.g.dart';
+
+@Schemable()
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'email': Ack.string().email(),
+});
+
+// Generated class User provides:
+// - User.schema (AckSchema<Map<String, Object?>, User>)
+// - User.parse(...) / User.safeParse(...)
+// - User.fromJson(...) / user.toJson() / user.safeToJson()
+// - user.copyWith(...) / deep == and hashCode
+```

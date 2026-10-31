@@ -1,8 +1,7 @@
 import 'package:ack/ack.dart';
 // These symbols are intentionally hidden from the public ack.dart export;
 // the internal characterization tests below reach into the source path.
-import 'package:ack/src/schemas/schema.dart'
-    show AnyAckSchema, Refinement, SchemaOperation, WrapperSchema;
+import 'package:ack/src/schemas/schema.dart' show AnyAckSchema, WrapperSchema;
 import 'package:test/test.dart';
 
 final class _Event {
@@ -31,71 +30,22 @@ final class _StartsWithConstraint extends Constraint<String>
   String buildMessage(String value) => 'Expected value to start with $prefix';
 }
 
-final class _OperationRecordingSchema extends AckSchema<String, String>
-    with FluentSchema<String, String, _OperationRecordingSchema> {
-  _OperationRecordingSchema({
-    required this.parseOperations,
-    required this.validateOperations,
-    required this.encodeOperations,
-    super.isNullable,
-    super.isOptional,
-    super.description,
-    super.constraints,
-    super.refinements,
-  });
+final class _RecordingConstraint extends Constraint<String>
+    with Validator<String> {
+  _RecordingConstraint(this.events, {required this.passes})
+    : super(constraintKey: 'recording', description: 'Records validation');
 
-  final List<SchemaOperation> parseOperations;
-  final List<SchemaOperation> validateOperations;
-  final List<SchemaOperation> encodeOperations;
+  final List<String> events;
+  final bool Function(String value) passes;
 
   @override
-  SchemaType get schemaType => SchemaType.string;
-
-  @override
-  SchemaResult<String> parseWithContext(Object? value, SchemaContext context) {
-    parseOperations.add(context.operation);
-    return validateRuntimeWithContext(value, context);
+  bool isValid(String value) {
+    events.add('constraint:$value');
+    return passes(value);
   }
 
   @override
-  SchemaResult<String> validateRuntimeWithContext(
-    Object? value,
-    SchemaContext context,
-  ) {
-    validateOperations.add(context.operation);
-    return SchemaResult.ok(value as String);
-  }
-
-  @override
-  SchemaResult<String> encodeWithContext(String value, SchemaContext context) {
-    encodeOperations.add(context.operation);
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-    return SchemaResult.ok(value);
-  }
-
-  @override
-  _OperationRecordingSchema copyWith({
-    bool? isNullable,
-    bool? isOptional,
-    String? description,
-    List<Constraint<String>>? constraints,
-    List<Refinement<String>>? refinements,
-  }) {
-    return _OperationRecordingSchema(
-      parseOperations: parseOperations,
-      validateOperations: validateOperations,
-      encodeOperations: encodeOperations,
-      isNullable: isNullable ?? this.isNullable,
-      isOptional: isOptional ?? this.isOptional,
-      description: description ?? this.description,
-      constraints: constraints ?? this.constraints,
-      refinements: refinements ?? this.refinements,
-    );
-  }
-
-  @override
-  Map<String, Object?> toJsonSchema() => const {'type': 'string'};
+  String buildMessage(String value) => 'Constraint rejected $value';
 }
 
 void main() {
@@ -281,7 +231,7 @@ void main() {
 
     test('decoder exceptions use codec decode wording', () {
       final transformSchema = Ack.string().transform<int>(
-        (_) => throw StateError('transform decoder failed'),
+        (_) => throw const FormatException('transform decoder failed'),
       );
       final transformResult = transformSchema.safeParse('value');
 
@@ -291,7 +241,7 @@ void main() {
       expect(transformError.message, startsWith('Codec decode failed:'));
 
       final codecSchema = Ack.string().codec<int>(
-        decode: (_) => throw StateError('codec decoder failed'),
+        decode: (_) => throw const FormatException('codec decoder failed'),
         encode: (value) => value.toString(),
       );
       final codecResult = codecSchema.safeParse('value');
@@ -310,54 +260,6 @@ void main() {
       expect(parsed, _Role.admin);
       final String? encoded = schema.encode(_Role.admin);
       expect(encoded, 'admin');
-    });
-  });
-
-  group('Ack.enumCodec', () {
-    test('returns a CodecSchema with String boundary and enum runtime', () {
-      final schema = Ack.enumCodec(_Role.values);
-      expect(schema, isA<CodecSchema<String, _Role>>());
-    });
-
-    test('parses .name into the typed enum value', () {
-      final schema = Ack.enumCodec(_Role.values);
-      // Static-type check: boundary is String, runtime is _Role.
-      // The String → _Role mapping is performed inside the underlying
-      // EnumSchema (via `.name` lookup), not by the codec's identity
-      // decoder.
-      const String boundaryInput = 'admin';
-      final _Role? parsed = schema.parse(boundaryInput);
-      expect(parsed, _Role.admin);
-      expect(schema.parse('member'), _Role.member);
-    });
-
-    test('encodes the enum value back to .name', () {
-      final schema = Ack.enumCodec(_Role.values);
-      // Static-type check: encoder takes _Role, returns String.
-      const _Role runtimeValue = _Role.admin;
-      final String? encoded = schema.encode(runtimeValue);
-      expect(encoded, 'admin');
-      expect(schema.encode(_Role.member), 'member');
-    });
-
-    test('round-trips through the codec without losing identity', () {
-      final schema = Ack.enumCodec(_Role.values);
-      for (final value in _Role.values) {
-        final encoded = schema.encode(value);
-        expect(schema.parse(encoded), value);
-      }
-    });
-
-    test('rejects strings outside the allowed values', () {
-      final schema = Ack.enumCodec(_Role.values);
-      final result = schema.safeParse('owner');
-      expect(result.isFail, true);
-    });
-
-    test('rejects non-string boundary input', () {
-      final schema = Ack.enumCodec(_Role.values);
-      final result = schema.safeParse(42);
-      expect(result.isFail, true);
     });
   });
 
@@ -553,35 +455,96 @@ void main() {
     });
   });
 
-  group('SchemaContext.operation', () {
-    test('parse path observes SchemaOperation.parse', () {
-      final parseOperations = <SchemaOperation>[];
-      final validateOperations = <SchemaOperation>[];
-      final schema = _OperationRecordingSchema(
-        parseOperations: parseOperations,
-        validateOperations: validateOperations,
-        encodeOperations: [],
-      );
+  group('Constraint and refinement execution order', () {
+    test('parse and encode run constraints before refinements', () {
+      final events = <String>[];
+      final schema = Ack.string()
+          .withConstraint(_RecordingConstraint(events, passes: (_) => true))
+          .refine((value) {
+            events.add('refine:$value');
+            return true;
+          });
 
-      schema.parse('x');
+      expect(schema.parse('x'), 'x');
+      expect(events, ['constraint:x', 'refine:x']);
 
-      expect(parseOperations, [SchemaOperation.parse]);
-      expect(validateOperations, [SchemaOperation.parse]);
+      events.clear();
+      expect(schema.encode('y'), 'y');
+      expect(events, ['constraint:y', 'refine:y']);
     });
 
-    test('encode path observes SchemaOperation.encode', () {
-      final validateOperations = <SchemaOperation>[];
-      final encodeOperations = <SchemaOperation>[];
-      final schema = _OperationRecordingSchema(
-        parseOperations: [],
-        validateOperations: validateOperations,
-        encodeOperations: encodeOperations,
-      );
+    test(
+      'failing constraint short-circuits refinements on parse and encode',
+      () {
+        final events = <String>[];
+        final schema = Ack.string()
+            .withConstraint(
+              _RecordingConstraint(events, passes: (value) => value != 'bad'),
+            )
+            .refine((value) {
+              events.add('refine:$value');
+              return true;
+            });
 
-      schema.encode('x');
+        expect(schema.safeParse('bad').isFail, true);
+        expect(events, ['constraint:bad']);
 
-      expect(encodeOperations, [SchemaOperation.encode]);
-      expect(validateOperations, [SchemaOperation.encode]);
-    });
+        events.clear();
+        expect(schema.safeEncode('bad').isFail, true);
+        expect(events, ['constraint:bad']);
+      },
+    );
+  });
+
+  group('Sealed SchemaError exhaustiveness', () {
+    String classifyError(SchemaError error) => switch (error) {
+      TypeMismatchError() => 'type_mismatch',
+      SchemaConstraintsError() => 'constraints',
+      SchemaNestedError() => 'nested',
+      SchemaValidationError() => 'validation',
+      SchemaTransformError() => 'transform',
+      SchemaEncodeError() => 'encode',
+    };
+
+    test(
+      'exhaustive switch handles all SchemaError subtypes without default',
+      () {
+        expect(
+          classifyError(Ack.string().safeParse(42).getError()),
+          'type_mismatch',
+        );
+        expect(
+          classifyError(Ack.string().minLength(5).safeParse('hi').getError()),
+          'constraints',
+        );
+        expect(
+          classifyError(
+            Ack.object({'a': Ack.string()}).safeParse({'a': 1}).getError(),
+          ),
+          'nested',
+        );
+        expect(
+          classifyError(
+            Ack.string()
+                .refine((v) => v == 'ok', message: 'nope')
+                .safeParse('no')
+                .getError(),
+          ),
+          'validation',
+        );
+        expect(
+          classifyError(
+            Ack.string().transform(int.parse).safeParse('abc').getError(),
+          ),
+          'transform',
+        );
+        expect(
+          classifyError(
+            Ack.string().transform(int.parse).safeEncode(1).getError(),
+          ),
+          'encode',
+        );
+      },
+    );
   });
 }

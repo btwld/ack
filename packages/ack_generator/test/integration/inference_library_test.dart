@@ -61,7 +61,7 @@ import 'package:ack/annotations.dart';
 
 void widget({
   /// The item title.
-  @MinLength(2)
+  @Validate.minLength(2)
   required String title,
 }) {}
 ''',
@@ -71,33 +71,6 @@ void widget({
       outputs: {
         'test_pkg|lib/widget.probe': decodedMatches(
           "Ack.string().minLength(2).describe('It appears on screen.')",
-        ),
-      },
-    );
-  });
-
-  test('an explicit parameter description overrides its source tag', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
-    await testBuilder(
-      const _InferenceProbe(
-        sourceComment: '/// @description Tag text.\n/// Following prose.',
-      ),
-      {
-        'test_pkg|lib/widget.dart': '''
-import 'package:ack/annotations.dart';
-
-void widget({
-  @AckField(description: 'Explicit text.')
-  required String title,
-}) {}
-''',
-      },
-      generateFor: const {'test_pkg|lib/widget.dart'},
-      readerWriter: readerWriter,
-      outputs: {
-        'test_pkg|lib/widget.probe': decodedMatches(
-          "Ack.string().describe('Explicit text.')",
         ),
       },
     );
@@ -134,7 +107,7 @@ void widget({required List<Priority> priorities}) {}
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@MinItems(2) required Set<String> tags}) {}
+void widget({@Validate.minItems(2) required Set<String> tags}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},
@@ -158,7 +131,7 @@ void widget({@MinItems(2) required Set<String> tags}) {}
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@MaxItems(3) required Set<Set<String>> cells}) {}
+void widget({@Validate.maxItems(3) required Set<Set<String>> cells}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},
@@ -175,4 +148,35 @@ void widget({@MaxItems(3) required Set<Set<String>> cells}) {}
       },
     );
   });
+
+  test(
+    'a second generator applies scalar item constraints and collection constraints on List<int>',
+    () async {
+      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+      await readerWriter.testing.loadIsolateSources();
+      await testBuilder(
+        const _InferenceProbe(parameterName: 'weekdays'),
+        {
+          'test_pkg|lib/widget.dart': '''
+import 'package:ack/annotations.dart';
+
+void widget({
+  @Validate.min(1)
+  @Validate.max(7)
+  @Validate.minItems(1)
+  @Validate.uniqueItems()
+  required List<int> weekdays,
+}) {}
+''',
+        },
+        generateFor: const {'test_pkg|lib/widget.dart'},
+        readerWriter: readerWriter,
+        outputs: {
+          'test_pkg|lib/widget.probe': decodedMatches(
+            'Ack.list(Ack.integer().min(1).max(7)).minItems(1).unique()',
+          ),
+        },
+      );
+    },
+  );
 }

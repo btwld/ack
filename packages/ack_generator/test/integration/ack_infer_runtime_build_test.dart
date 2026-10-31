@@ -107,8 +107,7 @@ linter:
           r'''
 import 'package:ack/ack.dart';
 
-part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 
 final class Box {
   const Box(this.values);
@@ -204,6 +203,169 @@ final labelsSchema = Ack.object({
   'groups': Ack.map(Ack.list(Ack.string()).nullable()),
 });
 
+final optionalLabel = Ack.string().optional();
+final optionalLabelAlias = optionalLabel;
+StringSchema get nullableLabelAlias => nullableLabel;
+final defaultLabel = Ack.string().withDefault('member');
+final optionalDefaultLabel = optionalLabel.withDefault('member');
+final nullableDefaultLabel = nullableLabel.withDefault('member');
+
+@Schemable()
+final flagAliasesSchema = Ack.object({
+  'name': optionalLabelAlias,
+  'nickname': nullableLabelAlias,
+  'role': defaultLabel,
+  'forced': optionalLabel.optional(value: false),
+  'notNull': nullableLabel.nullable(value: false),
+  'codec': optionalDefaultLabel.codec<String>(
+    decode: (value) => value,
+    encode: (value) => value,
+  ),
+  'wrapped': nullableDefaultLabel.nullable(value: false),
+  'labels': Ack.map(nullableLabel.nullable(value: false)),
+});
+
+@Schemable()
+final strictPolicySchema = Ack.object(
+  {'name': Ack.string()},
+  additionalProperties: true,
+).passthrough().strict();
+
+@Schemable()
+final openPolicySchema = strictPolicySchema.passthrough();
+
+@Schemable()
+final resetNullableSchema = Ack.string().nullable().nullable(value: false);
+
+@Schemable()
+final keywordFieldsSchema = Ack.object({
+  'required': Ack.boolean().withDefault(false),
+  'abstract': Ack.string(),
+  'as': Ack.string(),
+  'late': Ack.string(),
+  'operator': Ack.string(),
+  'async': Ack.string(),
+  'await': Ack.string(),
+  'yield': Ack.string(),
+});
+
+final nonEmptyText = Ack.string().minLength(1);
+final choiceOptionSchema = Ack.anyOf([
+  nonEmptyText,
+  Ack.object({'label': Ack.string(), 'value': nonEmptyText}),
+]);
+
+@Schemable()
+final choiceFieldSchema = Ack.object({
+  'options': Ack.list(choiceOptionSchema).minLength(1).optional(),
+});
+
+final opaqueValueSchema = Ack.string().codec<Object>(
+  decode: DateTime.parse,
+  encode: (value) => (value as DateTime).toIso8601String(),
+);
+
+@Schemable()
+final opaqueRecordSchema = Ack.object({'value': opaqueValueSchema});
+final typedListValueSchema = Ack.string().codec<Object>(
+  decode: (_) => <int>[1, 2],
+  encode: (value) => (value as List<int>).join(','),
+);
+final typedMapValueSchema = Ack.string().codec<Object>(
+  decode: (_) => <String, List<int>>{'values': <int>[3, 4]},
+  encode: (value) => (value as Map<String, List<int>>)['values']!.join(','),
+);
+
+@Schemable()
+final opaqueCollectionsSchema = Ack.object({
+  'value': typedListValueSchema,
+  'items': Ack.list(typedListValueSchema),
+  'byKey': Ack.map(typedListValueSchema),
+  'map': typedMapValueSchema,
+  'nullable': typedListValueSchema.nullable(),
+});
+
+final answerValueSchema = Ack.anyOf([
+  Ack.string(), Ack.number(), Ack.list(Ack.string()),
+]);
+
+@Schemable()
+final answerRecordSchema = Ack.object({
+  'values': Ack.map(answerValueSchema).optional(),
+});
+
+@Schemable()
+final answerSheetSchema = Ack.object({'values': Ack.map(answerValueSchema)});
+
+final nullableBoundaryValue = Ack.string().nullable();
+final nullableBoundaryAlias = nullableBoundaryValue;
+
+@Schemable()
+final boundaryFlagsSchema = Ack.object({
+  'copiedValues': Ack.preserveBoundary(Ack.map(Ack.string().copyWith(isNullable: true))),
+  'configuredValues': Ack.preserveBoundary(Ack.map(Ack.string().withRuntimeConfig(isNullable: true))),
+  'clearedValues': Ack.preserveBoundary(Ack.map(nullableBoundaryAlias.nullable(value: false))),
+  'items': Ack.preserveBoundary(Ack.map(Ack.list(nullableBoundaryAlias.nullable(value: false)))),
+  'outer': Ack.preserveBoundary(Ack.object({'text': nullableBoundaryValue}).nullable()).nullable(value: false),
+  'outerMap': Ack.preserveBoundary(Ack.map(nullableBoundaryValue).nullable()).nullable(value: false),
+});
+
+final nullableBoundaryProfile = Ack.preserveBoundary(Ack.object({'name': Ack.string()}).nullable());
+final boundaryProfileAlias = nullableBoundaryProfile;
+final nullableBoundaryMap = Ack.preserveBoundary(Ack.map(Ack.string().nullable()).nullable());
+final boundaryMapAlias = nullableBoundaryMap;
+
+@Schemable()
+final boundaryAliasesSchema = Ack.object({
+  'profile': boundaryProfileAlias.nullable(value: false),
+  'values': boundaryMapAlias.nullable(value: false),
+  'groups': Ack.list(boundaryMapAlias.nullable(value: false)),
+  'byName': Ack.map(boundaryMapAlias.nullable(value: false)),
+});
+
+enum WireStatus { active, archived }
+
+@Schemable()
+final nativeBoundarySchema = Ack.object({
+  'day': Ack.preserveBoundary(Ack.map(Ack.date())),
+  'instant': Ack.preserveBoundary(Ack.map(Ack.datetime())),
+  'url': Ack.preserveBoundary(Ack.map(Ack.uri())),
+  'milliseconds': Ack.preserveBoundary(Ack.map(Ack.duration())),
+  'status': Ack.preserveBoundary(Ack.map(Ack.enumValues(WireStatus.values))),
+  'boxed': Ack.preserveBoundary(Ack.map(Ack.codec(
+    input: Ack.string(),
+    decode: DateTime.parse,
+    encode: (DateTime value) => value.toIso8601String(),
+  ))),
+  'later': Ack.preserveBoundary(Ack.map(Ack.lazy('later', () => Ack.integer(), maxDepth: 4))),
+  'ratio': Ack.preserveBoundary(Ack.map(Ack.double())),
+  'payload': Ack.preserveBoundary(Ack.object({
+    'createdAt': Ack.datetime(),
+    'statuses': Ack.list(Ack.enumValues(WireStatus.values)),
+  })),
+});
+
+
+@Schemable()
+final keywordBranchSchema = Ack.object({'answer': Ack.string()});
+
+@Schemable()
+final keywordUnionSchema = Ack.discriminated(
+  discriminatorKey: 'required',
+  schemas: {'yes': keywordBranchSchema},
+);
+
+@Schemable(
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'required',
+)
+final class KeywordCapture with _$KeywordCaptureAck {
+  KeywordCapture({Map<String, Object?> required = const {}})
+      : required = Map.unmodifiable(required);
+
+  final Map<String, Object?> required;
+}
+
 final class Counted {
   Counted(this.value);
   final String value;
@@ -265,11 +427,13 @@ final countedSchema = Ack.object({
           r'''
 import 'package:ack/ack.dart';
 
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
+
+final optionalLabel = Ack.string().optional();
+StringSchema get nullableLabel => Ack.string().nullable();
 ''',
         );
         File(
@@ -282,25 +446,307 @@ import 'package:ack/ack.dart';
 import 'address.dart' as direct;
 import 'exports.dart' as exported;
 
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({
   'home': direct.addressSchema,
   'history': Ack.list(exported.addressSchema),
+  'note': direct.optionalLabel,
+  'label': exported.nullableLabel,
 });
 ''',
         );
         File(
           p.join(temporary.path, 'test', 'runtime_test.dart'),
         ).writeAsStringSync(r'''
+import 'dart:convert';
+
 import 'package:ack/ack.dart';
 import 'package:ack_ack_infer_runtime/models.dart';
 import 'package:ack_ack_infer_runtime/person.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('contextual and built-in field names retain their JSON keys', () {
+    final json = <String, Object?>{
+      'required': true,
+      'abstract': 'a',
+      'as': 'b',
+      'late': 'c',
+      'operator': 'd',
+      'async': 'e',
+      'await': 'f',
+      'yield': 'g',
+    };
+    final fields = KeywordFields.parse(json);
+    expect(fields.required, isTrue);
+    expect(fields.abstract, 'a');
+    expect(fields.as, 'b');
+    expect(fields.late, 'c');
+    expect(fields.operator, 'd');
+    expect(fields.async, 'e');
+    expect(fields.await, 'f');
+    expect(fields.yield, 'g');
+    expect(fields.toJson(), json);
+    expect(fields.copyWith(required: false).toJson(), {...json, 'required': false});
+    expect(KeywordFields.parse({...json}..remove('required')).required, isFalse);
+  });
+
+  test('constructor snapshots Object-valued option maps without validating them', () {
+    final option = <String, Object?>{'label': 'Keep', 'value': 'keep'};
+    final options = <Object>['skip', option];
+    final field = ChoiceField(options: options);
+    option['value'] = 'changed';
+    options.clear();
+    final expected = ChoiceField.parse({
+      'options': ['skip', {'label': 'Keep', 'value': 'keep'}],
+    });
+    expect(field, expected);
+    expect(field.hashCode, expected.hashCode);
+    expect(field.toJson(), expected.toJson());
+    expect(() => field.options!.clear(), throwsUnsupportedError);
+    expect(() => (field.options!.last as Map)['value'] = 'changed',
+        throwsUnsupportedError);
+    expect(ChoiceField(options: [false]).safeToJson().isFail, isTrue);
+    expect(ChoiceField(options: [Object()]).safeToJson().isFail, isTrue);
+    expect(ChoiceField(options: [<Object?, Object?>{1: 'invalid'}])
+        .safeToJson().isFail, isTrue);
+  });
+
+  test('direct Object fields and typed collections snapshot nested aliases', () {
+    final items = <Object?>['original'];
+    final nested = <String, Object?>{'items': items};
+    final optional = <Object?>[nested];
+    final record = Envelope(
+      kind: nested,
+      payload: optional,
+      items: [nested],
+      values: {'key': nested},
+      metadata: {'key': nested, 'absent': null},
+      labels: const {},
+    );
+    items.add('changed');
+    nested.clear();
+    optional.clear();
+    const expected = {'items': ['original']};
+    expect(record.kind, expected);
+    expect(record.payload, [expected]);
+    expect(record.items, [expected]);
+    expect(record.values, {'key': expected});
+    expect(record.metadata, {'key': expected, 'absent': null});
+    expect(() => (record.kind as Map).clear(), throwsUnsupportedError);
+    expect(() => ((record.kind as Map)['items'] as List).clear(), throwsUnsupportedError);
+    expect(() => (record.payload as List).clear(), throwsUnsupportedError);
+    expect(() => (record.values['key']! as Map).clear(), throwsUnsupportedError);
+    expect(() => (record.metadata['key']! as Map).clear(), throwsUnsupportedError);
+  });
+
+  test('Object-valued codecs preserve opaque constructor values', () {
+    final value = DateTime.utc(2026, 10, 26);
+    final record = OpaqueRecord(value: value);
+    expect(record.value, same(value));
+    expect(record.toJson(), {'value': value.toIso8601String()});
+  });
+
+
+  test('opaque codec Object collections retain their reified runtime types', () {
+    final list = <int>[1, 2];
+    final nested = <String, List<int>>{'values': <int>[3, 4]};
+    final record = OpaqueCollections(value: list, items: [list], byKey: {'key': list},
+        map: nested, nullable: list);
+    expect(record.value, same(list));
+    expect(record.items.single, same(list));
+    expect(record.byKey['key'], same(list));
+    expect(record.map, same(nested));
+    expect(record.nullable, same(list));
+    expect(record.toJson(), {'value': '1,2', 'items': ['1,2'], 'byKey': {'key': '1,2'},
+        'map': '3,4', 'nullable': '1,2'});
+    final parsed = OpaqueCollections.parse({'value': 'x', 'items': ['x'], 'byKey': {'key': 'x'},
+        'map': 'x', 'nullable': 'x'});
+    expect(parsed.value, isA<List<int>>());
+    expect(parsed.items.single, isA<List<int>>());
+    expect(parsed.byKey['key'], isA<List<int>>());
+    expect(parsed.map, isA<Map<String, List<int>>>());
+    expect(parsed.nullable, isA<List<int>>());
+    expect(parsed.copyWith(nullable: null).toJson()['nullable'], isNull);
+    expect(parsed.toJson(), record.toJson());
+  });
+
+  test('native JSON union maps encode snapshotted nested string lists', () {
+    final tags = <String>['a', 'b'];
+    final values = <String, Object>{'tags': tags, 'title': 'Review', 'count': 2};
+    final record = AnswerRecord(values: values);
+    tags.add('changed');
+    values.clear();
+    final expected = <String, Object>{'tags': ['a', 'b'], 'title': 'Review', 'count': 2};
+    expect(record.values, expected);
+    expect(record.toJson(), {'values': expected});
+    expect(AnswerRecord.parse({'values': expected}).toJson(), {'values': expected});
+    expect(() => (record.values!['tags'] as List).clear(), throwsUnsupportedError);
+    expect(AnswerRecord(values: {'invalid': false}).safeToJson().isFail, isTrue);
+  });
+
+  test('a required native JSON union map field round-trips JSON', () {
+    final json = jsonDecode(
+      '{"values": {"tags": ["a"], "count": 2, "title": "Review"}}',
+    ) as Map<String, Object?>;
+    final sheet = AnswerSheet.parse(json);
+    final Map<String, Object> values = sheet.values;
+    expect(values, json['values']);
+    expect(sheet.toJson(), json);
+    expect(AnswerSheet.parse(sheet.toJson()), sheet);
+    expect(() => (values['tags'] as List).add('b'), throwsUnsupportedError);
+    expect(AnswerSheet.safeParse(<String, Object?>{}).isFail, isTrue);
+    expect(AnswerSheet.safeParse({'values': null}).isFail, isTrue);
+    expect(AnswerSheet.safeParse({'values': {'flag': true}}).isFail, isTrue);
+  });
+
+  test('native JSON union fields round-trip JSON like their former wrappers', () {
+    final optionsJson = jsonDecode(
+      '{"options": ["skip", {"label": "Keep", "value": "keep"}]}',
+    ) as Map<String, Object?>;
+    final field = ChoiceField.parse(optionsJson);
+    final List<Object>? options = field.options;
+    expect(options, optionsJson['options']);
+    expect(field.toJson(), optionsJson);
+    expect(ChoiceField.parse(field.toJson()), field);
+    expect(() => (options!.last as Map)['value'] = 'changed', throwsUnsupportedError);
+    expect(ChoiceField.parse(<String, Object?>{}).options, isNull);
+    expect(ChoiceField.safeParse({'options': <Object>[]}).isFail, isTrue);
+    expect(ChoiceField.safeParse({'options': ['']}).isFail, isTrue);
+    expect(ChoiceField.safeParse({
+      'options': [{'label': 'Keep', 'value': ''}],
+    }).isFail, isTrue);
+
+    final answersJson = jsonDecode(
+      '{"values": {"tags": ["a"], "count": 2.5, "title": "Review"}}',
+    ) as Map<String, Object?>;
+    final record = AnswerRecord.parse(answersJson);
+    final Map<String, Object>? values = record.values;
+    expect(values, answersJson['values']);
+    expect(record.toJson(), answersJson);
+    expect(() => (values!['tags'] as List).add('b'), throwsUnsupportedError);
+    expect(AnswerRecord.parse(<String, Object?>{}).values, isNull);
+    expect(AnswerRecord.safeParse({
+      ...answersJson,
+      'values': {'flag': true},
+    }).isFail, isTrue);
+    expect(
+      (AnswerRecord.schema.toJsonSchema()['properties'] as Map)['values'],
+      Ack.preserveBoundary(Ack.map(answerValueSchema)).toJsonSchema(),
+    );
+  });
+
+  test('preserved boundary metadata agrees with generated runtime fields', () {
+    final json = <String, Object?>{
+      'copiedValues': {'a': null},
+      'configuredValues': {'b': null},
+      'clearedValues': {'c': 'present'},
+      'items': {'e': ['present']},
+      'outer': {'text': null},
+      'outerMap': {'d': null},
+    };
+    final record = BoundaryFlags.parse(json);
+    final Map<String, String?> copied = record.copiedValues;
+    final Map<String, String?> configured = record.configuredValues;
+    final Map<String, String> cleared = record.clearedValues;
+    final Map<String, List<String>> items = record.items;
+    final Map<String, Object?> outer = record.outer;
+    final Map<String, String?> outerMap = record.outerMap;
+    expect(copied['a'], isNull);
+    expect(configured['b'], isNull);
+    expect(cleared['c'], 'present');
+    expect(items, {'e': ['present']});
+    expect(outer, {'text': null});
+    expect(outerMap['d'], isNull);
+    expect(record.toJson(), json);
+    expect(BoundaryFlags.parse(record.toJson()), record);
+    expect(BoundaryFlags.safeParse({...json, 'outer': null}).isFail, isTrue);
+    expect(BoundaryFlags.safeParse({...json, 'outerMap': null}).isFail, isTrue);
+    expect(BoundaryFlags.safeParse({...json, 'clearedValues': {'c': null}}).isFail, isTrue);
+    expect(() => record.copiedValues['a'] = 'changed', throwsUnsupportedError);
+  });
+
+  test('preserved boundary aliases clear only their outer nullable type', () {
+    final json = <String, Object?>{
+      'profile': {'name': 'present'},
+      'values': {'a': null},
+      'groups': [{'b': null}],
+      'byName': {'first': {'c': null}},
+    };
+    final record = BoundaryAliases.parse(json);
+    final Map<String, Object?> profile = record.profile;
+    final Map<String, String?> values = record.values;
+    final List<Map<String, String?>> groups = record.groups;
+    final Map<String, Map<String, String?>> byName = record.byName;
+    expect(profile, {'name': 'present'});
+    expect(values['a'], isNull);
+    expect(groups.single['b'], isNull);
+    expect(byName['first']!['c'], isNull);
+    expect(record.toJson(), json);
+    expect(BoundaryAliases.parse(record.toJson()), record);
+    expect(BoundaryAliases.safeParse({...json, 'profile': null}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'values': null}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'groups': [null]}).isFail, isTrue);
+    expect(BoundaryAliases.safeParse({...json, 'byName': {'first': null}}).isFail, isTrue);
+  });
+
+  test('preserved native codecs keep JSON boundary types and validation', () {
+    final json = <String, Object?>{
+      'day': {'a': '2026-10-26'},
+      'instant': {'a': '2026-10-26T12:00:00Z'},
+      'url': {'a': 'https://example.invalid/review'},
+      'milliseconds': {'a': 1500},
+      'status': {'a': 'active'},
+      'boxed': {'a': '2026-10-26T12:00:00Z'},
+      'later': {'a': 7},
+      'ratio': {'a': 0.5},
+      'payload': {
+        'createdAt': '2026-10-26T12:00:00Z',
+        'statuses': ['active'],
+      },
+    };
+    final record = NativeBoundary.parse(json);
+    final Map<String, String> instant = record.instant;
+    final Map<String, String> status = record.status;
+    final Map<String, num> milliseconds = record.milliseconds;
+    final Map<String, num> later = record.later;
+    final Map<String, num> ratio = record.ratio;
+    expect(instant, json['instant']);
+    expect(status, {'a': 'active'});
+    expect(milliseconds, {'a': 1500});
+    expect(later, {'a': 7});
+    expect(ratio, {'a': 0.5});
+    expect(record.toJson(), json);
+    expect(record.copyWith(milliseconds: {'a': 2500}).toJson(), {
+      ...json,
+      'milliseconds': {'a': 2500},
+    });
+    expect(NativeBoundary.safeParse({...json, 'instant': {'a': 'bad'}}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'status': {'a': 'unknown'}}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'milliseconds': {'a': 1.5}}).isFail, isTrue);
+    expect(NativeBoundary.safeParse({...json, 'boxed': {'a': 'bad'}}).isFail, isTrue);
+    final otherNumbers = <String, Object?>{
+      ...json,
+      'milliseconds': {'a': 1500.0},
+      'later': {'a': 7.0},
+      'ratio': {'a': 1},
+    };
+    expect(NativeBoundary.parse(otherNumbers).toJson(), otherNumbers);
+  });
+
+  test('contextual discriminator and capture members retain their wire shape', () {
+    final unionJson = <String, Object?>{'required': 'yes', 'answer': 'done'};
+    final union = KeywordUnion.parse(unionJson);
+    expect(union.required, 'yes');
+    expect(union.toJson(), unionJson);
+
+    final capture = KeywordCaptureSchema.parse({'extra': 1});
+    expect(capture.required, {'extra': 1});
+    expect(capture.toJson(), {'extra': 1});
+  });
+
   test('models expose their model schema as a static shorthand', () {
     final AckSchema<Map<String, Object?>, Node> schema = Node.schema;
     expect(identical(Node.schema, schema), isTrue);
@@ -389,12 +835,17 @@ void main() {
 
     final person = Person.parse({
       'home': {'city': 'New York'},
+      'label': null,
       'history': [
         {'city': 'Amsterdam'},
       ],
     });
     expect(person.home.city, 'New York');
     expect(person.history.single.city, 'Amsterdam');
+    expect(person.note, isNull);
+    expect(person.label, isNull);
+    expect(person.toJson()['label'], isNull);
+    expect(person.toJson().containsKey('note'), isFalse);
   });
 
   test('generated list fields use deep equality, hashing, and copyWith', () {
@@ -542,6 +993,35 @@ void main() {
     expect(labels.toJson(), json);
   });
 
+  test('aliases and wrapper boundaries preserve field flags', () {
+    final json = <String, Object?>{
+      'nickname': null,
+      'forced': 'present',
+      'notNull': 'present',
+      'wrapped': null,
+      'labels': {'a': 'x'},
+    };
+    final value = FlagAliases.parse(json);
+    expect(value.name, isNull);
+    expect(value.nickname, isNull);
+    expect(value.role, 'member');
+    expect(value.codec, isNull);
+    expect(value.wrapped, 'member');
+    expect(value.toJson(), {...json, 'role': 'member', 'wrapped': 'member'});
+    expect(FlagAliases.parse(value.toJson()), value);
+    expect(FlagAliases.safeParse({...json, 'notNull': null}).isFail, isTrue);
+    expect(FlagAliases.safeParse({...json, 'labels': {'a': null}}).isFail, isTrue);
+    expect(ResetNullable.parse('value').value, 'value');
+    expect(ResetNullable.safeParse(null).isFail, isTrue);
+  });
+
+  test('strict and passthrough override object policy through aliases', () {
+    expect(StrictPolicy.safeParse({'name': 'Ada', 'extra': 1}).isFail, isTrue);
+    final open = OpenPolicy.parse({'name': 'Ada', 'extra': 1});
+    expect(open.additionalProperties, {'extra': 1});
+    expect(open.toJson(), {'name': 'Ada', 'extra': 1});
+  });
+
   test('union discriminators cannot be spoofed through extras', () {
     final dog = Dog(
       friendly: true,
@@ -589,7 +1069,10 @@ void main() {
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',
@@ -600,27 +1083,19 @@ void main() {
               in temporary
                   .listSync(recursive: true)
                   .whereType<File>()
-                  .where(
-                    (file) =>
-                        file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.ack.g.dart'),
-                  ))
+                  .where((file) => file.path.endsWith('.g.dart')))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),
         };
+        expect(generated.keys, contains('lib/models.g.dart'));
         expect(
-          generated.keys,
-          containsAll(['lib/models.ack.dart', 'lib/models.ack.g.dart']),
+          generated['lib/models.g.dart'],
+          contains('static Extras _fromAckRuntime'),
         );
         expect(
-          generated['lib/models.ack.g.dart'],
-          contains(r'_$ExtrasFromJson'),
+          generated['lib/models.g.dart'],
+          contains('Map<String, Object?> _toAckRuntime()'),
         );
-        expect(
-          generated['lib/models.ack.g.dart'],
-          contains('Extras._ackFromRuntimeName'),
-        );
-        expect(generated['lib/models.ack.dart'], contains(r'_$ExtrasFromJson'));
 
         _expectSuccess(
           await _run(temporary, ['analyze', '--fatal-infos']),
@@ -642,11 +1117,7 @@ Extras misuse(Extras extras) => extras.copyWith(nickname: const Object());
               in temporary
                   .listSync(recursive: true)
                   .whereType<File>()
-                  .where(
-                    (file) =>
-                        file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.ack.g.dart'),
-                  ))
+                  .where((file) => file.path.endsWith('.g.dart')))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),
         };

@@ -25,6 +25,13 @@ mixin WrapperSchema<
   /// The wrapped schema used for boundary-shape traversal.
   AnyAckSchema get inner;
 
+  /// Whether this wrapper rejects null that its inner schema would accept.
+  ///
+  /// Exporters must preserve this restriction even when null acceptance is
+  /// embedded in a union or an imported resource rather than a nullable flag.
+  @internal
+  bool get excludesInnerNull => !acceptsNull && inner.acceptsNull;
+
   /// Returns a copy of this wrapper with [inner] swapped for [newInner].
   ///
   /// Used by traversal utilities (e.g. discriminated-branch synthesis) that

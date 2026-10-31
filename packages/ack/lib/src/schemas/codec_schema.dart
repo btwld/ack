@@ -109,6 +109,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     try {
       runtime = _decoder(intermediate);
     } catch (e, st) {
+      _rethrowIfError(e, st);
       return SchemaResult.fail(
         SchemaTransformError(
           message: 'Codec decode failed: ${e.toString()}',
@@ -165,9 +166,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     try {
       intermediate = encode(runtime);
     } catch (e, st) {
-      if (e is Error) {
-        Error.throwWithStackTrace(e, st);
-      }
+      _rethrowIfError(e, st);
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
           message: 'Codec encode failed: ${e.toString()}',
@@ -182,10 +181,16 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
-  CodecSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) {
+  CodecSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) =>
+      _copyWithSchemas(input: newInner as AckSchema<Boundary, Object>);
+
+  CodecSchema<Boundary, Runtime> _copyWithSchemas({
+    AckSchema<Boundary, Object>? input,
+    AckSchema<dynamic, Runtime>? output,
+  }) {
     return CodecSchema._(
-      inputSchema: newInner as AckSchema<Boundary, Object>,
-      outputSchema: outputSchema,
+      inputSchema: input ?? inputSchema,
+      outputSchema: output ?? outputSchema,
       decoder: _decoder,
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,

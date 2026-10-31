@@ -1,7 +1,131 @@
 ## Unreleased
 
-* Bound `source_helper` below 1.4 so `json_serializable` 6.14 compiles on Dart 3.9
-  through 3.11. Newer SDKs can still select `json_serializable` 6.15.
+* Use runtime-validated value models for custom dialects so inactive vocabulary
+  keywords retain annotation semantics instead of adding generated constraints.
+* Honor supplied dialect resources under alias URIs even when their JSON maps
+  use dynamic or object key types, including bundled resources.
+* Normalize and copy string-keyed JSON maps before preserve-mode widening so
+  external and bundled resources retain unknown properties for parse and encode
+  regardless of their declared map key types.
+* Preserve exact integer bounds on generated number schemas beyond 2^53.
+* Bound `source_helper` below 1.4 so `json_serializable` 6.14 compiles on the
+  minimum supported Dart 3.11 SDK. Newer SDKs can still select
+  `json_serializable` 6.15.
+
+## 2.0.0-beta.1
+
+### Breaking
+
+* Infer JSON numbers in `Ack.preserveBoundary(Ack.map(...))` field values,
+  including duration milliseconds, as `num`. A wire value keeps each number as
+  decoded, and numeric schemas accept both `1` and `1.0`.
+
+### Changed
+
+* Require `ack: ^2.0.0-beta.1` so consumers receive the corrected runtime
+  nullability, discriminated validation, and imported JSON Schema contracts.
+
+### Fixed
+
+* Validate inherited field names against an alias's final capture policy before
+  generation, rejecting collisions with the additional-properties member.
+* Reject unproven object-shape changes inside preserved boundaries, including
+  aliases and fluent codecs, rather than copying opaque values as JSON.
+* Preserve native codec boundary types when inferring the values of
+  `Ack.preserveBoundary(Ack.map(...))` fields, including dates, datetimes,
+  URIs, enums, explicit codec inputs and statically resolvable nonrecursive
+  lazy schemas.
+* Resolve preserved JSON boundary nullability through the same effective
+  metadata as ordinary fields, including aliases and explicit flag overrides.
+* Snapshot nested JSON collections held as `Object` or `Object?` in
+  schema-first model constructors and `copyWith`. Reuse Ack's shared deep
+  copier; constructors still do not validate data. Opaque codec runtime values
+  retain their identity and container types.
+* Allow built-in and contextual Dart keywords such as `required` as generated
+  field, discriminator, and capture-member names without changing their JSON
+  keys. Reserved words such as `class` remain rejected. Member validation now
+  follows the analyzer's keyword classification rather than a fixed word list.
+  `dynamic` remains rejected because it shadows the type in generated JSON
+  methods, not because it is a reserved Dart word.
+* Preserve schema flags and object policies when `copyWith` no-op `null`
+  arguments are parenthesized.
+* Infer `Ack.anyOf(...)` fields whose branches are all native JSON as JSON
+  `Object` values, including list items and map values, without an
+  `Ack.preserveBoundary(...)` wrapper. A branch may itself be an explicit
+  `Ack.preserveBoundary(...)` wire view.
+* Reject an `Ack.anyOf(...)` field with a codec, `Ack.instance<T>()`, model
+  schema, or nullable branch, naming the field and the offending branch.
+  `Ack.any()` and `Ack.anyOf(...)` model roots remain unsupported, including
+  through type-erased aliases. Branches are proven from their static schema
+  types and statically resolvable initializers. A custom method whose declared
+  runtime type is `Object` or a JSON collection but that returns a codec cannot
+  be detected.
+* Preserve schema-first presence, nullability, and default-wrapper behavior
+  through aliases and explicit constant flag overrides. Apply the outermost
+  strict/passthrough policy to object models and aliases.
+* Reject object shape-changing methods that cannot be modeled statically,
+  instead of generating fields that disagree with the authored schema.
+* Resolve same-build scalar, list, and codec model references using their
+  actual runtime types, and generate valid codecs for nullable nested Sets.
+* Diagnose value-model helper collisions, class/member name conflicts, and
+  duplicate schema-first keys before emission. Resolve same-build models
+  declared with annotated getters.
+* Preserve application-generic argument nullability when selecting custom
+  schemas, and substitute nested generic bounds before validating type-owned
+  schema methods.
+
+## 2.0.0-alpha.1
+
+### Breaking
+
+* Requires `ack: ^2.0.0-alpha.1`.
+* **Single-pass `.g.dart` builder (`#189`)**: `ack_generator:ack_generator` is
+  now a `SharedPartBuilder` that emits `<file>.g.dart` directly with generated
+  `toJson()` / `fromJson()` helpers. The two-part `.ack.dart` and `.ack.g.dart`
+  builders and runtime `json_serializable` delegation are removed. Replace
+  `part '<file>.ack.dart';` and `part '<file>.ack.g.dart';` with a single
+  `part '<file>.g.dart';`.
+* Remove legacy `@AckType`, `@AckInfer`, `@AckModel`, `@AckField`, `*Type`
+  extension-type model generation, top-level `@Optional` / `@Required` /
+  `@NotNull` / constraint classes, and the legacy `@JsonKey(name: ...)` fallback
+  in favor of `@Schemable()`, `@Validate.*`, and `@AckKey('...')` (`#188`, `#189`, `#191`).
+
+### Added
+
+* Support `@Validate.*` presence and constraint annotations (`@Validate.optional()`,
+  `@Validate.required()`, `@Validate.notNull()`, `@Validate.notEmpty()` on
+  `String`/`List`/`Set`, etc.) from `package:ack/ack.dart` across field
+  declarations and primary/generative constructor parameters, as well as
+  `static final schema = _<name>Schema;` on class-first models (`#191`).
+* Support `JsonMaybe<T>` fields in `@Schemable()` class-first models for PATCH
+  tri-state presence (`#148`).
+* Support `@AckKey('...')` directly without `package:json_annotation` (`#189`).
+* Support custom schema resolution on `@Schemable()` class fields via:
+  1. `@Schemable(schemas: [...])` on the class, enclosing sealed union, current
+     `library;` directive, or an imported `library;` directive
+  2. Type-owned `T.schema` / `T.schema<...>()`
+  3. Automatic detection of a unique top-level `AckSchema<Boundary, T>`
+     variable, getter, or zero-argument function in the current library (`#185`).
+* Support two-way `StringSchema` normalizers (`.trim()`, `.toLowerCase()`,
+  `.toUpperCase()`) in schema-first `@Schemable()` models.
+* Add `ack_generator:ack_json_schema` builder and `generateAckSchemaLibrary()`
+  API: `ack_generator:ack_json_schema` emits `<name>.schema.dart` from
+  `lib/**/*.schema.json` Draft 2020-12 documents, which
+  `ack_generator:ack_generator` compiles into `<name>.schema.g.dart` typed
+  models or validated value-model libraries (`#167`).
+* Apply scalar `@Validate.*` constraints on `List` and `Set` fields and
+  parameters to the items, alongside the collection's own constraints:
+  `@Validate.min(1) @Validate.minItems(1) List<int>` infers
+  `Ack.list(Ack.integer().min(1)).minItems(1)`.
+* Resolve non-nullable `Object` fields through a class-level or union-level
+  `@Schemable(schemas: [...])` entry whose schema targets `Object`; `Object?`
+  fields still infer `Ack.any()`.
+
+### Fixed
+
+* Preserve integral decimal length and item bounds in JSON Schema generation.
+  Use validated value models for Unicode regex patterns and named scalar unions
+  that the typed model generator cannot represent faithfully.
 
 ## 1.7.0
 

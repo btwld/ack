@@ -15,8 +15,8 @@ Transport, negotiation, cancellation, and lifecycle remain in `mcp_dart`.
 
 ```yaml
 dependencies:
-  ack: ^1.2.0
-  ack_mcp_dart: ^1.7.0
+  ack: ^2.0.0-beta.1
+  ack_mcp_dart: ^2.0.0-beta.1
   mcp_dart: ^2.4.2
 ```
 
@@ -55,13 +55,13 @@ void registerTools() {
 }
 ```
 
-Both registration helpers return `RegisteredTool` and forward `title`,
+`registerAckTool` returns `RegisteredTool` and forwards `title`,
 `description`, `annotations`, and `meta`. Callbacks may be synchronous or
 asynchronous and receive the original `RequestHandlerExtra`.
 
-Use `server.registerAckModelTool('search', model: SearchSchema.model,
-callback: (args, extra) { ... })` with an `AckModelAdapter<JsonMap, Object, M>`
-(such as a generated model adapter) to receive a typed `M` instead of a map.
+Pass a model-valued schema such as `Search.schema` (from a `@Schemable()` model
+or class) to `server.registerAckTool('search', input: Search.schema,
+callback: (args, extra) { ... })` to receive a typed `Search` instead of a map.
 The model is constructed after ACK parses defaults and codecs.
 
 ## Bare conversion and parsing
@@ -98,7 +98,7 @@ Cause-backed messages (for example a codec throwing `FormatException`) become
 Other messages from ACK and your refinements are preserved verbatim and may
 contain values; use safe custom messages or `onInvalidArguments` when inputs
 are sensitive. Pass `onInvalidArguments`
-to either registration helper to customize ACK failures. It receives the full
+to `registerAckTool` to customize ACK failures. It receives the full
 `SchemaError`; its returned `CallToolResult` is used unchanged.
 
 ## Advertised schema vs runtime validation
@@ -112,7 +112,7 @@ It does not throw `McpError`. A parsed null is also rejected by the wrapper.
 | --- | --- | --- |
 | Optional default | `default` annotation; field may be omitted | ACK fills the value during parse |
 | Refinement | Predicate is not exported | ACK runs the predicate |
-| Codec / transform | Boundary shape and `x-transformed` metadata | ACK produces typed values, e.g. `DateTime` |
+| Codec / transform | Boundary shape | ACK produces typed values, e.g. `DateTime` |
 | Integer | JSON Schema integer semantics | `2.0` becomes `int 2`; `2.5` fails |
 | Structural failure | Rejected by `mcp_dart` | ACK and custom invalid handler are not reached |
 
@@ -140,9 +140,9 @@ New emitted keywords require revisiting this dialect assumption.
 
 | Component | Supported / exercised |
 | --- | --- |
-| Dart | `>=3.9.0 <4.0.0` |
-| ACK | `^1.2.0` |
-| mcp_dart | `^2.4.2` (tests resolved against 2.4.2) |
+| Dart | `>=3.11.0 <4.0.0` |
+| ACK | `^2.0.0-beta.1` |
+| mcp_dart | `^2.4.2` |
 | MCP stable discovery | `2026-07-28` |
 | MCP initialization | `2025-11-25`, `2025-06-18` |
 
@@ -151,7 +151,7 @@ New emitted keywords require revisiting this dialect assumption.
 | Input / feature | Support |
 | --- | --- |
 | Plain object root (`type: object`) | Supported, including empty objects |
-| Nullable or discriminated root | Rejected at registration; renders as composition (`anyOf` in ACK 1.2) |
+| Nullable or discriminated root | Rejected at registration; renders as composition (`anyOf` in ACK) |
 | Primitive, list, or other composition root | Rejected at registration |
 | Nullable, union, discriminated, recursive, or codec **fields** | Supported inside an object |
 | Output schemas | Out of scope |

@@ -325,5 +325,96 @@ void main() {
         expect(data['username'], equals('johndoe'));
       });
     });
+
+    group('Two-way StringSchema normalizers (C3)', () {
+      test(
+        'trim, toLowerCase, and toUpperCase return StringSchema and chain directly',
+        () {
+          final StringSchema schema = Ack.string()
+              .trim()
+              .toLowerCase()
+              .minLength(3)
+              .email();
+
+          expect(schema.parse('  USER@EXAMPLE.COM  '), 'user@example.com');
+          expect(schema.safeParse('  a  ').isFail, isTrue);
+          expect(schema.safeParse('  not-an-email  ').isFail, isTrue);
+        },
+      );
+
+      test(
+        'declaration order is preserved between normalizers and constraints',
+        () {
+          final trimFirst = Ack.string().trim().minLength(3);
+          final minLengthFirst = Ack.string().minLength(3).trim();
+
+          // '  a  ' has length 5 before trim, length 1 after trim.
+          expect(trimFirst.safeParse('  a  ').isFail, isTrue);
+          expect(minLengthFirst.parse('  a  '), 'a');
+        },
+      );
+
+      test('encode and safeEncode normalize and validate bidirectionally', () {
+        final trimmed = Ack.string().trim().notEmpty();
+        expect(trimmed.encode('  hello  '), 'hello');
+        expect(trimmed.safeEncode('  hello  ').getOrThrow(), 'hello');
+        expect(trimmed.safeEncode('   ').isFail, isTrue);
+
+        final lower = Ack.string().toLowerCase();
+        expect(lower.encode('HeLLo'), 'hello');
+
+        final upper = Ack.string().toUpperCase();
+        expect(upper.encode('HeLLo'), 'HELLO');
+
+        final nullableTrimmed = Ack.string().nullable().trim();
+        expect(nullableTrimmed.encode(null), isNull);
+        expect(nullableTrimmed.encode('  hi  '), 'hi');
+      });
+
+      test('exports clean JSON Schema without x-transformed', () {
+        final schema = Ack.string().minLength(2).email().trim().toLowerCase();
+        final jsonSchema = schema.toJsonSchema();
+
+        expect(jsonSchema['type'], 'string');
+        expect(jsonSchema['minLength'], 2);
+        expect(jsonSchema['format'], 'email');
+        expect(jsonSchema.containsKey('x-transformed'), isFalse);
+      });
+
+      test('omits post-normalization constraints from JSON Schema export', () {
+        final schema = Ack.string().minLength(1).trim().minLength(3).email();
+        final model = schema.toSchemaModel();
+        final jsonSchema = model.toJsonSchema();
+
+        expect(jsonSchema, {'type': 'string', 'minLength': 1});
+        expect(
+          model.warnings,
+          contains(
+            isA<AckSchemaModelWarning>()
+                .having(
+                  (w) => w.code,
+                  'code',
+                  'codec_runtime_constraint_not_exported',
+                )
+                .having((w) => w.context['constraints'], 'constraints', [
+                  'string_min_length',
+                  'string_format_email',
+                ]),
+          ),
+        );
+      });
+
+      test('copyWith clamps normalizer indices when constraints shrink', () {
+        final schema = Ack.string()
+            .minLength(2)
+            .refine((s) => s.isNotEmpty)
+            .trim()
+            .minLength(3)
+            .copyWith(constraints: const [], refinements: const []);
+
+        expect(schema.parse('  a  '), 'a');
+        expect(schema.encode('  a  '), 'a');
+      });
+    });
   });
 }

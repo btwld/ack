@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/**']
   # No `branches:` filter. A stacked pull request targets its parent
   # branch, not main, and would otherwise run no checks at all.
   pull_request:
@@ -46,12 +46,15 @@ jobs:
         run: |
           dart test --platform chrome \
             test/schemas/numeric_platform_parity_test.dart \
+            test/schemas/duration_range_test.dart \
+            test/schemas/nullability_export_contract_test.dart \
             test/schemas/extensions/numeric_extensions_test.dart \
             test/schemas/extensions/list_schema_extensions_test.dart \
             test/utils/collection_utils_test.dart \
             test/json_schema_import_test.dart \
-            test/json_schema_import_api_test.dart \
-            test/json_schema_format_import_test.dart
+            test/json_schema_bundled_dialect_test.dart \
+            test/json_schema_vocabulary_contract_test.dart \
+            test/json_schema_import_api_test.dart
 
       - name: Test JSON Schema import bridge in Chrome
         working-directory: packages/ack_json_schema_builder

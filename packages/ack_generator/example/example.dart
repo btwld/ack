@@ -4,8 +4,7 @@
 // analyzes without running `build_runner`. A real library adds them:
 //
 // ```dart
-// part 'example.ack.dart';   // the model class and its parse/JSON API
-// part 'example.ack.g.dart'; // the structural field mapping
+// part 'example.g.dart';
 // ```
 //
 // Then run:
@@ -17,7 +16,6 @@
 // Add `ack` to `dependencies`, and `ack_generator` plus `build_runner` to
 // `dev_dependencies`.
 import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
 
 /// Schema-first. `@Schemable()` derives an immutable `User` class from this
 /// schema: final `name`, `email`, and `age` fields, `User.parse`,
@@ -44,10 +42,10 @@ final settingsSchema = Ack.object({
 final class Product {
   const Product({required this.displayName, required this.priceCents});
 
-  @NotEmpty()
+  @Validate.notEmpty()
   final String displayName;
 
-  @Min(0)
+  @Validate.min(0)
   final int priceCents;
 }
 

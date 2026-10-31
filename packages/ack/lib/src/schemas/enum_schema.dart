@@ -148,7 +148,7 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
 }
 
 /// Internal constraint used for better error reporting in EnumSchema.
-class _EnumValuesConstraint extends Constraint<Object?> {
+final class _EnumValuesConstraint extends Constraint<Object?> {
   final List<String> allowed;
 
   _EnumValuesConstraint(this.allowed)

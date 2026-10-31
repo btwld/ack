@@ -11,7 +11,7 @@ enum DurationComparisonType { min, max }
 ///
 /// Used internally by [Ack.duration] schemas when applying `min()` or `max()`
 /// constraints.
-class DurationConstraint extends Constraint<Duration>
+final class DurationConstraint extends Constraint<Duration>
     with Validator<Duration>, JsonSchemaSpec<Duration> {
   final DurationComparisonType type;
   final Duration reference;

@@ -1,3 +1,29 @@
+## 2.0.0-beta.1
+
+### Changed
+
+* Require `ack: ^2.0.0-beta.1` so consumers receive the corrected runtime
+  nullability, discriminated validation, and imported JSON Schema contracts.
+* Align with the coordinated 2.0.0-beta.1 release; the bridge public API is unchanged.
+
+## 2.0.0-alpha.1
+
+### Breaking
+
+* Requires `ack: ^2.0.0-alpha.1`.
+* `toAckSchema()` now defaults to `assertFormats: false` (matching
+  `Ack.fromJsonSchema()` and JSON Schema Draft 2020-12 default annotation
+  semantics); pass `assertFormats: true` to enforce format assertions (`#171`).
+* `toJsonSchemaBuilder()` now preserves imported Draft 2020-12 resources by
+  default; use `toJsonSchemaBuilderDraft7()` when legacy Draft-07 `definitions`
+  lowering is required (`#171`).
+* Remove `convertAckSchemaModelToBuilder` in favor of `schema.toJsonSchemaBuilder()`.
+
+### Added
+
+* Add `assertFormats` parameter to `toAckSchema()` and add
+  `toJsonSchemaBuilderDraft7()` on `AckSchema` (`#171`).
+
 ## 1.7.0
 
 ### Changed

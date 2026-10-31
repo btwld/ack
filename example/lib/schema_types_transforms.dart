@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 
-part 'schema_types_transforms.ack.dart';
-part 'schema_types_transforms.ack.g.dart';
+part 'schema_types_transforms.g.dart';
 
 class Color {
   final String value;

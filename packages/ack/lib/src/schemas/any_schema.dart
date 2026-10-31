@@ -24,8 +24,7 @@ final class AnySchema extends AckSchema<Object, Object>
     final validated = result.getOrNull();
     if (validated == null) return result;
 
-    // Same deep, unmodifiable copy that schema defaults use.
-    return SchemaResult.ok(cloneDefault(validated)!);
+    return SchemaResult.ok(deepUnmodifiableCopy(validated)!);
   }
 
   @override
@@ -36,7 +35,7 @@ final class AnySchema extends AckSchema<Object, Object>
   ) {
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
-    if (_jsonSafeOrNull(value) == null) {
+    if (!_isJsonSafe(value)) {
       return SchemaResult.fail(
         SchemaValidationError(
           message:
