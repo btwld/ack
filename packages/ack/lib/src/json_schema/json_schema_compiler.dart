@@ -762,6 +762,7 @@ final class _JsonSchemaCompiler {
   _ImportedNode? _resolvePointer(_ImportedNode resource, String fragment) {
     var pointer = resource.pointer;
     var base = resource.baseUri;
+    var dialect = resource.dialectUri;
     Object? value = resource.source;
     for (final encoded in fragment.substring(1).split('/')) {
       if (RegExp(r'~(?![01])').hasMatch(encoded)) return null;
@@ -779,6 +780,7 @@ final class _JsonSchemaCompiler {
       pointer = '$pointer/${escapeJsonPointerToken(token)}';
       if (locations[(resource.documentUri, pointer)] case final indexed?) {
         base = indexed.baseUri;
+        dialect = indexed.dialectUri;
       }
     }
     if (value is! Map<String, Object?> && value is! bool) return null;
@@ -790,7 +792,7 @@ final class _JsonSchemaCompiler {
       resource.documentUri,
       pointer,
       base,
-      dialect: resource.dialectUri,
+      dialect: dialect,
     );
     _indexPendingChildren();
     return indexed;

@@ -1,5 +1,8 @@
 ## Unreleased
 
+* Preserve nested resource dialects for JSON pointers targeting schemas in
+  extension containers, matching resource URI references during parse and encode.
+
 * Reject a second unescaped fragment delimiter in URI and IRI formats.
 * Accept colons in relative URI and IRI queries, fragments, and later path
   segments while rejecting them in a relative first path segment.

@@ -50,6 +50,50 @@ const _officialFormatAnnotationMetaSchema = <String, Object?>{
 };
 
 void main() {
+  for (final nestedValidates in [true, false]) {
+    for (final operation in ['parse', 'encode']) {
+      test('extension references inherit nested validation '
+          '$nestedValidates during $operation', () {
+        for (final reference in [
+          'https://example.test/inner#/x-extension/target',
+          r'#/$defs/Inner/x-extension/target',
+        ]) {
+          final schema = Ack.fromJsonSchema(
+            {
+              r'$id': 'https://example.test/root',
+              r'$schema': nestedValidates
+                  ? _dialectUri.toString()
+                  : _standardDialect,
+              r'$defs': {
+                'Inner': {
+                  r'$id': 'inner',
+                  r'$schema': nestedValidates
+                      ? _standardDialect
+                      : _dialectUri.toString(),
+                  'x-extension': {
+                    'target': {'type': 'string'},
+                  },
+                },
+              },
+              r'$ref': reference,
+            },
+            documents: {_dialectUri: _dialect([])},
+          );
+          for (final value in ['ok', 42]) {
+            final result = operation == 'parse'
+                ? schema.safeParse(value)
+                : schema.safeEncode(value);
+            expect(
+              result.isOk,
+              value is String || !nestedValidates,
+              reason: reference,
+            );
+          }
+        }
+      });
+    }
+  }
+
   group('inactive vocabulary keywords are annotations', () {
     final applicatorCases = <String, Object?>{
       'properties': false,
