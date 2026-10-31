@@ -60,7 +60,8 @@ Ack is organized into five coordinated packages that share one version number an
 | `JsonKeyCaseStyle` | Removed in `2.0.0` | `AckCaseStyle` (`none`, `snake`, `kebab`, `pascal`, `screamingSnake`) |
 | `@Optional()` / `@AckField(presence: AckFieldPresence.optional)` | Removed in `2.0.0` | `@Validate.optional()` (add `@Validate.notNull()` if present JSON value must not be `null`) |
 | `@Required()` / `@AckField(presence: AckFieldPresence.requiredNull)` | Removed in `2.0.0` | `@Validate.required()` on a nullable field (`final T? field;`) |
-| `@NotNull()` / `@AckField(presence: AckFieldPresence.requiredNonNull)` | Removed in `2.0.0` | `@Validate.required()` + `@Validate.notNull()` |
+| `@NotNull()` | Removed in `2.0.0` | `@Validate.notNull()` (rejects explicit `null` without requiring an optional key) |
+| `@AckField(presence: AckFieldPresence.requiredNonNull)` | Removed in `2.0.0` | `@Validate.required()` + `@Validate.notNull()` |
 | `@JsonKey(name: 'wire_name')` / `@AckField(name: 'wire_name')` | Removed in `2.0.0` | `@AckKey('wire_name')` |
 | `@AckField(schema: ...)` | Removed in `2.0.0` | `@Schemable(schemas: [...])`, `T.schema`, or top-level library schema |
 | `@AckField(description: ...)` | Removed in `2.0.0` | `/// @description ...` doc tag |
