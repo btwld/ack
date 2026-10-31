@@ -341,37 +341,56 @@ bool _isIdnaLabel(String label) {
       label.endsWith('-')) {
     return false;
   }
-  var hasArabicIndic = false;
-  var hasExtendedArabicIndic = false;
-  var hasJapanese = false;
   for (var i = 0; i < runes.length; i++) {
-    final rune = runes[i];
-    if (_idnaProperty(rune) == _IdnaProperty.disallowed) return false;
-    if (rune >= 0x0660 && rune <= 0x0669) hasArabicIndic = true;
-    if (rune >= 0x06f0 && rune <= 0x06f9) hasExtendedArabicIndic = true;
-    if (rune != 0x30fb && _isJapaneseRune(rune)) hasJapanese = true;
-    if (rune == 0x00b7 &&
-        (i == 0 ||
-            i == runes.length - 1 ||
-            runes[i - 1] != 0x6c ||
-            runes[i + 1] != 0x6c)) {
-      return false;
-    }
-    if (rune == 0x0375 &&
-        (i == runes.length - 1 || !_isGreekRune(runes[i + 1]))) {
-      return false;
-    }
-    if ((rune == 0x05f3 || rune == 0x05f4) &&
-        (i == 0 || !_isHebrewRune(runes[i - 1]))) {
-      return false;
-    }
-    if ((rune == 0x200c || rune == 0x200d) && !_isValidContextJ(runes, i)) {
-      return false;
+    switch (_idnaProperty(runes[i])) {
+      case _IdnaProperty.pvalid:
+        continue;
+      case _IdnaProperty.contextj:
+        if (!_isValidContextJ(runes, i)) return false;
+        break;
+      case _IdnaProperty.contexto:
+        if (!_isValidContextO(runes, i)) return false;
+        break;
+      case _IdnaProperty.disallowed:
+        return false;
     }
   }
-  if (hasArabicIndic && hasExtendedArabicIndic) return false;
-  if (runes.contains(0x30fb) && !hasJapanese) return false;
   return true;
+}
+
+// RFC 5892 Appendix A.3-A.9. Script means the Unicode Script property,
+// including assignments outside the script's named blocks. Unknown contextual
+// characters fail closed rather than being admitted without a registered rule.
+bool _isValidContextO(List<int> runes, int index) {
+  final rune = runes[index];
+  switch (rune) {
+    case 0x00b7:
+      return index > 0 &&
+          index + 1 < runes.length &&
+          runes[index - 1] == 0x6c &&
+          runes[index + 1] == 0x6c;
+    case 0x0375:
+      return index + 1 < runes.length &&
+          _idnaScript(runes[index + 1]) == _IdnaScript.greek;
+    case 0x05f3 || 0x05f4:
+      return index > 0 && _idnaScript(runes[index - 1]) == _IdnaScript.hebrew;
+    case 0x30fb:
+      return runes.any(
+        (cp) => const {
+          _IdnaScript.hiragana,
+          _IdnaScript.katakana,
+          _IdnaScript.han,
+        }.contains(_idnaScript(cp)),
+      );
+    default:
+      if (rune >= 0x0660 && rune <= 0x0669) {
+        return !runes.any((cp) => cp >= 0x06f0 && cp <= 0x06f9);
+      }
+      if (rune >= 0x06f0 && rune <= 0x06f9) {
+        return !runes.any((cp) => cp >= 0x0660 && cp <= 0x0669);
+      }
+      return false;
+  }
 }
 
 // RFC 5892 Appendix A.1/A.2: either join control may immediately follow a
@@ -400,12 +419,6 @@ bool _isValidContextJ(List<int> runes, int index) {
   final right = _unicodeJoiningType(runes[after]);
   return right == _UnicodeJoiningType.r || right == _UnicodeJoiningType.d;
 }
-
-bool _isHebrewRune(int rune) => rune >= 0x0590 && rune <= 0x05ff;
-bool _isGreekRune(int rune) =>
-    (rune >= 0x0370 && rune <= 0x03ff) || (rune >= 0x1f00 && rune <= 0x1fff);
-bool _isJapaneseRune(int rune) =>
-    (rune >= 0x3040 && rune <= 0x30ff) || (rune >= 0x3400 && rune <= 0x9fff);
 
 bool _isEmail(String value, {required bool international}) {
   final match = RegExp(

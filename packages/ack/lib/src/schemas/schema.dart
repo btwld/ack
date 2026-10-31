@@ -27,6 +27,7 @@ part '../json_schema/standard_meta_schemas.dart';
 part '../json_schema/unicode_bidi.dart';
 part '../json_schema/unicode_contextj.dart';
 part '../json_schema/unicode_idna.dart';
+part '../json_schema/unicode_idna_scripts.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boundary_schema.dart';

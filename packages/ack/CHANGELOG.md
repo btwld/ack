@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Apply IDNA ContextO rules using Unicode Script properties, including
+  supplementary Han and Katakana extensions while excluding Common and
+  Inherited characters from the Japanese-script condition.
+
 * Validate internationalized hostname and email labels against the complete
   IANA IDNA2008 repertoire pinned to Unicode 12.0.0, rejecting disallowed and
   unassigned code points with matching Unicode contextual and Bidi data.

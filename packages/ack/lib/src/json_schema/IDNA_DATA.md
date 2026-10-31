@@ -7,7 +7,7 @@ from that registry. `DISALLOWED` and `UNASSIGNED` are rejected. Characters
 assigned after Unicode 12 are therefore unsupported until this pin is updated.
 
 Joining_Type, Canonical_Combining_Class=Virama, General_Category (leading
-marks) and Bidi_Class use the same Unicode
+marks), Bidi_Class, and contextual Script properties use the same Unicode
 version. The runtime does not infer IDNA admissibility from Unicode categories
 or blocks. Contextual rules follow RFC 5892 Appendix A and RFC 5893.
 
@@ -26,6 +26,7 @@ Download these pinned sources into a temporary directory:
 - https://www.unicode.org/Public/12.0.0/ucd/extracted/DerivedJoiningType.txt
 - https://www.unicode.org/Public/12.0.0/ucd/extracted/DerivedCombiningClass.txt
 - https://www.unicode.org/Public/12.0.0/ucd/extracted/DerivedBidiClass.txt
+- https://www.unicode.org/Public/12.0.0/ucd/Scripts.txt
 
 From the repository root, substitute their downloaded paths:
 
@@ -33,6 +34,7 @@ From the repository root, substitute their downloaded paths:
 dart scripts/generate_unicode_idna.dart idna-tables-properties.csv DerivedGeneralCategory.txt
 dart scripts/generate_unicode_contextj.dart DerivedJoiningType.txt DerivedCombiningClass.txt
 dart scripts/generate_unicode_bidi.dart DerivedBidiClass.txt
+dart scripts/generate_unicode_idna_scripts.dart Scripts.txt
 ```
 
 The IANA generator requires complete, ordered coverage of U+0000–U+10FFFF,
