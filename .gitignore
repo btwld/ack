@@ -41,8 +41,7 @@ coverage/*
 packages/*/coverage/*
 
 # Keep .claude directory
-.claude/*
-!.claude/skills/
+.claude/
 CLAUDE.md
 .idea
 *.iml
