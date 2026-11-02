@@ -17,11 +17,12 @@ const _excludedFileNames = <String>{'pubspec_overrides.yaml'};
 /// finds sibling files such as the shared `analysis_options.yaml`. The copy
 /// reads the working tree, which lets a maintainer stage uncommitted work.
 Directory stageTrackedFiles(String output, {required List<String> paths}) {
+  final files = trackedFiles(paths);
   final directory = Directory(output);
   if (directory.existsSync()) directory.deleteSync(recursive: true);
   directory.createSync(recursive: true);
 
-  for (final relativePath in trackedFiles(paths)) {
+  for (final relativePath in files) {
     final source = File(relativePath);
     // `git ls-files` also lists files that the working tree has deleted.
     if (!source.existsSync()) continue;
