@@ -583,8 +583,10 @@ void main() {
           contains("'primary': PostalAddressSchema.schema"),
         );
         expect(
-          generated['lib/customer.g.dart'],
-          contains("'primary': PostalAddressSchema.schema.withDefault"),
+          generated['lib/customer.g.dart']!.replaceAll(RegExp(r'\s+'), ''),
+          contains(
+            "'primary':PostalAddressSchema.schema.nullable(value:false).withDefault",
+          ),
         );
         expect(
           generated['lib/parcel.g.dart'],
