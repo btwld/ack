@@ -357,6 +357,21 @@ AckSchema<String, NameTag> nullableNameSchema() =>
     );
 
 @Schemable(schemas: [nullableNameSchema])
+final class CustomDefault with _$CustomDefaultAck {
+  const CustomDefault({this.name = const NameTag('fallback')});
+
+  final NameTag name;
+}
+
+@Schemable(schemas: [nullableNameSchema])
+final class CustomNotNullDefault with _$CustomNotNullDefaultAck {
+  const CustomNotNullDefault({this.name = const NameTag('fallback')});
+
+  @Validate.notNull()
+  final NameTag? name;
+}
+
+@Schemable(schemas: [nullableNameSchema])
 final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
@@ -754,6 +769,14 @@ void main() {
     expect(NotNullDefaultSchema.parse({}).label, 'fallback');
     expect(NotNullDefaultSchema.safeParse({'label': null}).isFail, isTrue);
     expect(NotNullDefault(label: null).toJson(), {'label': 'fallback'});
+  });
+
+  test('constructor defaults narrow a nullable custom schema before wrapping', () {
+    expect(CustomDefaultSchema.parse({}).name, const NameTag('fallback'));
+    expect(CustomDefaultSchema.safeParse({'name': null}).isFail, isTrue);
+    expect(CustomNotNullDefaultSchema.parse({}).name, const NameTag('fallback'));
+    expect(CustomNotNullDefaultSchema.safeParse({'name': null}).isFail, isTrue);
+    expect(CustomNotNullDefault(name: null).toJson(), {'name': 'fallback'});
   });
 
   test('nullable constructor defaults apply to missing and null values', () {

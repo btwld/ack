@@ -1392,7 +1392,8 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
         '$schema.optional()',
       AckSchemaFieldPresence.defaulted when acceptsNull =>
         '$schema.nullable().withDefault($defaultCode)',
-      AckSchemaFieldPresence.defaulted => '$schema.withDefault($defaultCode)',
+      AckSchemaFieldPresence.defaulted =>
+        '$schema.nullable(value: false).withDefault($defaultCode)',
       AckSchemaFieldPresence.optional when acceptsNull =>
         '$schema.optional().nullable()',
       AckSchemaFieldPresence.optional => '$schema.optional()',

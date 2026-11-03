@@ -177,7 +177,7 @@ final class const PrimaryTask({
                   "'title': Ack.string().minLength(1).describe('The item title.')",
                 ),
                 _containsCode(
-                  "'category': Ack.string().minLength(1).describe('The category id.').withDefault('general')",
+                  "'category': Ack.string().minLength(1).describe('The category id.').nullable(value: false).withDefault('general')",
                 ),
               ),
             ),
@@ -444,9 +444,11 @@ final class Defaults with _\$DefaultsAck {
             contains("'empty': Ack.string().optional().nullable()"),
             contains("'requiredValue': Ack.string()"),
             contains("'requiredNullable': Ack.string().nullable()"),
-            contains("'role': Ack.string().withDefault('member')"),
-            contains(
-              "'strict': Ack.string().withDefault('strict').nullable(value: false)",
+            _containsCode(
+              "'role': Ack.string().nullable(value: false).withDefault('member')",
+            ),
+            _containsCode(
+              "'strict': Ack.string().nullable(value: false).withDefault('strict').nullable(value: false)",
             ),
             contains("'fallback': model.fallback"),
             contains("'strict': model.strict"),
@@ -557,7 +559,9 @@ final class Profile with _\$ProfileAck {
               contains("'bio': Ack.string().minLength(1).maxLength(500)"),
               contains("'website': Ack.uri().optional().nullable()"),
               contains("'nickname': Ack.string().nullable()"),
-              contains("'role': Ack.string().withDefault('member')"),
+              _containsCode(
+                "'role': Ack.string().nullable(value: false).withDefault('member')",
+              ),
               contains('Ack.list(Ack.string())'),
               contains(
                 RegExp(
