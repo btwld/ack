@@ -10,14 +10,15 @@ Add Ack to your project using the Dart CLI:
 
 ```bash
 # For Dart projects
-dart pub add ack
+dart pub add ack:^2.0.0-beta.1
 
 # For Flutter projects
-flutter pub add ack
+flutter pub add ack:^2.0.0-beta.1
 ```
 
-The unversioned commands select the latest stable release. To select the
-2.0.0-beta.1 prerelease, add it to your `pubspec.yaml`:
+These docs describe the 2.0.0-beta.1 prerelease. An unversioned
+`dart pub add ack` selects the latest stable release instead. You can also add
+the constraint to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
@@ -30,8 +31,7 @@ To generate models from Ack schemas or Ack schemas from hand-written models,
 add `ack` and the generator package:
 
 ```bash
-dart pub add ack
-dart pub add --dev ack_generator build_runner
+dart pub add ack:^2.0.0-beta.1 dev:ack_generator:^2.0.0-beta.1 dev:build_runner
 ```
 
 Or add them to your `pubspec.yaml`:
@@ -93,4 +93,4 @@ Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./q
 
 - Dart SDK: `>=3.11.0 <4.0.0` for all Ack packages.
 - Flutter: `>=3.41.2` when using `ack_firebase_ai`.
-- Dart 3.12 or later when your models use primary-constructor syntax.
+- Dart 3.13 or later when your models use primary-constructor syntax.

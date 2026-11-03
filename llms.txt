@@ -3,8 +3,8 @@
 > Dart/Flutter schema validation, codecs, JSON Schema, and optional code generation.
 
 This checkout documents Ack 2.0.0-beta.1. Read the local files linked below so
-examples match the checked-out branch; the default branch can document 1.x.
-Package `pubspec.yaml` files own SDK and dependency constraints.
+examples match the checked-out version. Package `pubspec.yaml` files own SDK
+and dependency constraints.
 
 ## Find the owning guide
 

@@ -142,7 +142,7 @@ names must be unchanged UpperCamelCase identifiers.
 
 ## Class-first usage
 
-In a class-first library, keep the model in source (using a standard or Dart 3.12+
+In a class-first library, keep the model in source (using a standard or Dart 3.13+
 primary constructor) and apply the generated mixin:
 
 ```dart

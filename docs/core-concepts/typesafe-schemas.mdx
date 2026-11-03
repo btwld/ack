@@ -21,8 +21,7 @@ runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 ## Install the generator
 
 ```bash
-dart pub add ack
-dart pub add --dev ack_generator build_runner
+dart pub add ack:^2.0.0-beta.1 dev:ack_generator:^2.0.0-beta.1 dev:build_runner
 ```
 
 Every annotated library needs the generated part:
@@ -173,7 +172,7 @@ This generates a sealed `Pet` base plus `Cat` and `Dog` branches.
 ## Class-first: `@Schemable()` on a class
 
 Use class-first generation when the Dart class is the primary artifact. Ack
-reads constructor-backed fields (including Dart 3.12+ primary constructors) and
+reads constructor-backed fields (including Dart 3.13+ primary constructors) and
 generates a codec schema whose runtime value is your class:
 
 ```dart
@@ -660,7 +659,7 @@ Scope `ack_generator` to your model files with `generate_for`:
 targets:
   $default:
     builders:
-      ack_generator|ack_generator:
+      ack_generator:ack_generator:
         generate_for: [lib/models/**.dart]
 ```
 
