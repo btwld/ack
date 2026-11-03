@@ -677,6 +677,6 @@ targets:
 - Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
 - Replace `@AckType()`, `@AckInfer()`, and `@AckModel()` with `@Schemable()`.
 - Replace top-level presence and constraint annotations (`@Optional`, `@Required`, `@NotNull`, `@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with `@Validate.*` (`@Validate.optional`, `@Validate.required`, `@Validate.notNull`, `@Validate.min`, `@Validate.max`, `@Validate.minLength`, `@Validate.matches`, `@Validate.email`, `@Validate.dateTime`, etc.).
-- Replace `@JsonKey(name: '...')` and `@AckField(name: '...')` on `@Schemable` fields with `@AckKey('...')`.
+- Replace `@JsonKey(name: '...')` on `@Schemable` fields with `@AckKey('...')`.
 
 See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for the complete substitution tables and side-by-side before/after examples.

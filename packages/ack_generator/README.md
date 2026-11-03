@@ -88,7 +88,8 @@ An integral JSON number beyond Dart's `int` range is a known edge case:
 `Ack.integer()` model cannot represent it as an `int`. String length bounds also
 differ for astral Unicode characters (code points in the importer versus UTF-16
 units in the fluent schema). Set `model_mode: validated` when these edge cases
-matter; typed output retains the original v1 contract for compatibility.
+matter; typed output follows the fluent `Ack.integer()` and `Ack.string()`
+semantics.
 
 ## Schema-first usage
 

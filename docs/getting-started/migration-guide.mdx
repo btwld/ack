@@ -2,7 +2,7 @@
 title: What's New & Migration Guide
 ---
 
-This guide summarizes **what exists in Ack today**, **what changed in 1.7 and 2.0 (and why)**, and **every deprecated or removed 1.x symbol with its exact substitution**.
+This guide summarizes **what exists in Ack today**, **what changed in 1.7 and 2.0 (and why)**, and **every removed 1.x symbol with its exact substitution**.
 
 ---
 
@@ -52,20 +52,18 @@ Ack is organized into five coordinated packages that share one version number an
 
 ### Model & Field Annotations
 
-| Removed / Deprecated Symbol | Status | Exact Substitution |
+| Removed Symbol | Removed In | Exact Substitution |
 | --- | --- | --- |
-| `@AckType()` | Removed in `2.0.0` | `@Schemable()` on the top-level schema |
-| `@AckInfer(...)` | Deprecated in `1.7.0`, Removed in `2.0.0` | `@Schemable(...)` on the top-level schema |
-| `@AckModel(...)` | Deprecated in `1.7.0`, Removed in `2.0.0` | `@Schemable(...)` on the class |
-| `JsonKeyCaseStyle` | Removed in `2.0.0` | `AckCaseStyle` (`none`, `snake`, `kebab`, `pascal`, `screamingSnake`) |
-| `@Optional()` / `@AckField(presence: AckFieldPresence.optional)` | Removed in `2.0.0` | `@Validate.optional()` (add `@Validate.notNull()` if present JSON value must not be `null`) |
-| `@Required()` / `@AckField(presence: AckFieldPresence.requiredNull)` | Removed in `2.0.0` | `@Validate.required()` on a nullable field (`final T? field;`) |
-| `@NotNull()` | Removed in `2.0.0` | `@Validate.notNull()` (rejects explicit `null` without requiring an optional key) |
-| `@AckField(presence: AckFieldPresence.requiredNonNull)` | Removed in `2.0.0` | `@Validate.required()` + `@Validate.notNull()` |
-| `@JsonKey(name: 'wire_name')` / `@AckField(name: 'wire_name')` | Removed in `2.0.0` | `@AckKey('wire_name')` |
-| `@AckField(schema: ...)` | Removed in `2.0.0` | `@Schemable(schemas: [...])`, `T.schema`, or top-level library schema |
-| `@AckField(description: ...)` | Removed in `2.0.0` | `/// @description ...` doc tag |
-| `@JsonConverter()` on `@Schemable` classes/fields | Rejected in `1.7.0+` | Declare `static final schema = ...` on the type or register one in `@Schemable(schemas: [...])` |
+| `@AckType()` | `2.0.0` | `@Schemable()` on the top-level schema |
+| `@AckInfer(...)` | `2.0.0` | `@Schemable(...)` on the top-level schema |
+| `@AckModel(...)` | `2.0.0` | `@Schemable(...)` on the class |
+| `@Optional()` / `@AckField(presence: AckFieldPresence.optional)` | `2.0.0` | `@Validate.optional()` (add `@Validate.notNull()` if present JSON value must not be `null`) |
+| `@Required()` / `@AckField(presence: AckFieldPresence.required)` | `2.0.0` | `@Validate.required()` |
+| `@NotNull()` | `2.0.0` | `@Validate.notNull()` (rejects explicit `null` without requiring an optional key) |
+| `@JsonKey(name: 'wire_name')` on `@Schemable` fields | `2.0.0` | `@AckKey('wire_name')` |
+| `@AckField(schema: ...)` | `2.0.0` | `@Schemable(schemas: [...])`, `T.schema`, or top-level library schema |
+| `@AckField(description: ...)` | `2.0.0` | `/// @description ...` doc tag |
+| `@JsonConverter()` on `@Schemable` classes/fields | `1.7.0` (rejected) | Declare `static final schema = ...` on the type or register one in `@Schemable(schemas: [...])` |
 
 ### Validation Annotations (`1.x` Top-Level Classes $\rightarrow$ `2.0` `@Validate.*`)
 
@@ -89,10 +87,9 @@ All top-level validation and presence classes were removed in `2.0.0`. Replace t
 | Removed `1.x` Item | Removed In | Exact `2.0` Substitution |
 | --- | --- | --- |
 | `part 'model.ack.dart';` + `part 'model.ack.g.dart';` | `2.0.0` | Single `part 'model.g.dart';` |
-| `ack_generator\|ack_models` & `ack_generator\|ack_model_json` in `build.yaml` | `2.0.0` | `ack_generator\|ack_generator` (plus optional `ack_generator\|ack_json_schema` for `.schema.json` files) |
-| Legacy `*Type` extension type, `.args`, `ModelType.parse(...)` | `2.0.0` | Generated `Model` class with typed fields, `Model.parse(...)`, `Model.safeParse(...)`, `Model.fromJson(...)`, `model.toJson()` |
+| `ack_generator\|ack_models` & `ack_generator\|ack_model_json` in `build.yaml` | `2.0.0` | `ack_generator:ack_generator` (plus optional `ack_generator:ack_json_schema` for `.schema.json` files) |
+| `@AckType()` `*Type` extension type, `.args`, `ModelType.parse(...)` | `2.0.0` | Generated `Model` class with typed fields, `Model.parse(...)`, `Model.safeParse(...)`, `Model.fromJson(...)`, `model.toJson()` |
 | `Ack.enumCodec(MyEnum.values)` | `2.0.0` | `Ack.enumValues(MyEnum.values)` |
-| `StandardSchemaV1` (`standard_schema.dart`) | `2.0.0` | `AckSchema<Boundary, Runtime>` + `SchemaResult<T>` |
 | `schema.toMap()` | `2.0.0` | `schema.toJsonSchema()` or `schema.toSchemaModel()` |
 | `server.registerAckModelTool(...)` (`ack_mcp_dart`) | `2.0.0` | `server.registerAckTool(name, input: Model.schema, callback: ...)`; return a `CallToolResult` from the callback |
 | `convertAckSchemaModelToBuilder(model)` (`ack_json_schema_builder`) | `2.0.0` | `schema.toJsonSchemaBuilder()` |
@@ -155,7 +152,7 @@ final class Account with _$AccountAck {
 ### Schema-First Model Migration
 
 ```dart
-// ❌ BEFORE (Ack 1.6 / Legacy @AckType or @AckInfer)
+// ❌ BEFORE (Ack 1.6, @AckInfer)
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 

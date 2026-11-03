@@ -74,7 +74,8 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     'urn:ack:json-schema:2020-12:format-assertion',
   );
 
-  /// Keeps the documented 1.x Draft-7 definitions/ref export for imports.
+  /// Lowers the import to Draft-7 `definitions` / `$ref` for
+  /// `toJsonSchemaDraft7()`.
   @internal
   Map<String, Map<String, Object?>> exportDefinitions(String prefix) {
     final names = <_ImportedNode, String>{};
@@ -92,7 +93,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     visit(_root);
     return {
       for (final entry in names.entries)
-        entry.value: entry.key.renderLegacy((node) => refs[node]!),
+        entry.value: entry.key.renderDraft7((node) => refs[node]!),
     };
   }
 

@@ -137,9 +137,9 @@ final class _ImportedNode {
     ],
   ];
 
-  /// The 1.x Draft-7 representation of an imported node. Newer 2020-12
-  /// assertions that cannot be lowered fail when `toJsonSchemaDraft7()` is used.
-  Map<String, Object?> renderLegacy(String Function(_ImportedNode) refOf) {
+  /// The Draft-7 representation of an imported node, used by
+  /// `toJsonSchemaDraft7()`. 2020-12 assertions that cannot be lowered fail.
+  Map<String, Object?> renderDraft7(String Function(_ImportedNode) refOf) {
     // Draft-7 silently ignores these keywords (and applies `items` to the
     // entire array instead of only the suffix after `prefixItems`). Until a
     // semantics-preserving lowering exists, fail instead of changing which
