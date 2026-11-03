@@ -787,6 +787,16 @@ void main() {
     expect(NotNullDefaultSchema.parse({}).label, 'fallback');
     expect(NotNullDefaultSchema.safeParse({'label': null}).isFail, isTrue);
     expect(NotNullDefault(label: null).toJson(), {'label': 'fallback'});
+    for (final jsonSchema in [
+      NonNullableDefaultSchema.toJsonSchema(),
+      NotNullDefaultSchema.toJsonSchema(),
+    ]) {
+      expect((jsonSchema['properties'] as Map)['label'], {
+        'type': 'string',
+        'default': 'fallback',
+      });
+      expect(jsonSchema['required'] ?? [], isNot(contains('label')));
+    }
   });
 
   test('constructor defaults narrow a nullable custom schema before wrapping', () {
@@ -797,6 +807,16 @@ void main() {
     expect(CustomNotNullDefaultSchema.parse({}).name, const NameTag('fallback'));
     expect(CustomNotNullDefaultSchema.safeParse({'name': null}).isFail, isTrue);
     expect(CustomNotNullDefault(name: null).toJson(), {'name': 'fallback'});
+    for (final jsonSchema in [
+      CustomDefaultSchema.toJsonSchema(),
+      CustomNestedDefaultSchema.toJsonSchema(),
+      CustomNotNullDefaultSchema.toJsonSchema(),
+    ]) {
+      expect((jsonSchema['properties'] as Map)['name'], {
+        'type': 'string',
+        'default': 'fallback',
+      });
+    }
   });
 
   test('constructor defaults retain their original runtime constraints', () {
@@ -812,6 +832,10 @@ void main() {
     final explicitNull = NullableDefault(label: null);
     expect(explicitNull.toJson(), {'label': 'fallback'});
     expect(NullableDefaultSchema.encode(explicitNull), {'label': 'fallback'});
+    expect((NullableDefaultSchema.toJsonSchema()['properties'] as Map)['label'], {
+      'type': ['string', 'null'],
+      'default': 'fallback',
+    });
     expect(NullableDefault().copyWith().label, 'fallback');
     expect(NullableDefault().copyWith(label: null).label, isNull);
 
