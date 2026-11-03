@@ -1,9 +1,25 @@
+import 'dart:io';
+
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../scripts/src/staging.dart';
 
 void main() {
+  test('a Git failure preserves the previous staging output', () {
+    final output = Directory.systemTemp.createTempSync('ack-staging-');
+    addTearDown(() => output.deleteSync(recursive: true));
+    final previous = File('${output.path}/previous.txt')
+      ..writeAsStringSync('previous staging output');
+
+    expect(
+      () =>
+          stageTrackedFiles(output.path, paths: const [':(ack-invalid-magic)']),
+      throwsA(isA<ProcessException>()),
+    );
+    expect(previous.readAsStringSync(), 'previous staging output');
+  });
+
   group('detachFromWorkspace', () {
     test('removes workspace resolution so pub resolves hosted versions', () {
       const pubspec = '''

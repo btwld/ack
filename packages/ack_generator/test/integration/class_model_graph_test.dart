@@ -4,6 +4,8 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<void> _expectFailure(
   String body,
   List<String> messages, {
@@ -11,8 +13,7 @@ Future<void> _expectFailure(
   Map<String, String> extraSources = const {},
   Map<String, Object> allowedOutputs = const {},
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   final seen = <String>{};
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
@@ -1004,8 +1005,7 @@ final class Address with _\$AddressAck {
   );
 
   test('allows split imports for a class-first model and its facade', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       ackModelBuilder(BuilderOptions.empty),
       {
@@ -1208,8 +1208,7 @@ final class User with _\$UserAck {
   test(
     'allows an imported class-first model with hidden facade when it exposes static schema',
     () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
+      final readerWriter = await createTestReaderWriter();
       await testBuilder(
         ackModelBuilder(BuilderOptions.empty),
         {
@@ -1300,8 +1299,7 @@ final class User with _\$UserAck {
   test(
     'resolves constructor parameter annotations alongside same-build schema-first generated model',
     () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
+      final readerWriter = await createTestReaderWriter();
       await testBuilder(
         ackModelBuilder(BuilderOptions.empty),
         {
