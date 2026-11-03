@@ -114,7 +114,9 @@ dart scripts/verify_release_tag.dart v2.0.0-beta.2 --main-ref=origin/release/2.0
 git push origin v2.0.0-beta.2
 ```
 
-These commands target the 2.0 prerelease branch. Stable release tags must be
+These commands target the 2.0 prerelease branch. If the release PR is merged
+into `main`, tag that reviewed merge commit after its CI passes and verify
+with `--main-ref=origin/main` instead. Stable release tags must also be
 reachable from `origin/main`; use the verifier's default main reference for them.
 
 Pushing the tag triggers `.github/workflows/release.yml`; there is no Melos

@@ -296,7 +296,7 @@ encodes as `'fallback'` too. With `this.label = null`, missing input and JSON
 These changes are breaking relative to beta.1. `@Validate.*`, including
 `@Validate.required()`, remains the public annotation API.
 
-Three annotations override the inferred presence. They change the JSON
+Three annotations control presence and null acceptance. They change the JSON
 contract only; Dart nullability and the constructor stay as written, and
 unannotated fields keep constructor inference.
 

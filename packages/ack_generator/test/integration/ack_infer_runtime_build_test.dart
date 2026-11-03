@@ -1009,6 +1009,8 @@ void main() {
     expect(value.wrapped, 'member');
     expect(value.toJson(), {...json, 'role': 'member', 'wrapped': 'member'});
     expect(FlagAliases.parse(value.toJson()), value);
+    expect(FlagAliases.safeParse({...json, 'role': null}).isFail, isTrue);
+    expect(value.copyWith(wrapped: null).toJson()['wrapped'], 'member');
     expect(FlagAliases.safeParse({...json, 'notNull': null}).isFail, isTrue);
     expect(FlagAliases.safeParse({...json, 'labels': {'a': null}}).isFail, isTrue);
     expect(ResetNullable.parse('value').value, 'value');

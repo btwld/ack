@@ -107,6 +107,7 @@ void main() {
       test('an object property default fills a missing key, not a null', () {
         final schema = Ack.object({'role': Ack.string().withDefault('member')});
 
+        expect(Ack.string().withDefault('member').parse(null), 'member');
         expect(schema.parse({}), {'role': 'member'});
         expect(schema.parse({'role': 'admin'}), {'role': 'admin'});
         final result = schema.safeParse({'role': null});
