@@ -46,15 +46,23 @@ new response fields while still validating every field your application uses.
 
 ### Default values
 
-Use `.withDefault(value)` when a `null` or missing object field should receive
-a runtime value during parsing. The default must satisfy the schema's runtime
-type and constraints.
+Use `.withDefault(value)` when a missing object field should receive a runtime
+value during parsing. The default must satisfy the schema's runtime type and
+constraints, and it exports as the JSON Schema `default`. A present `null` is a
+value, not a missing key: it fails unless the field is also nullable, in which
+case `.nullable().withDefault(value)` parses it as the default too. Parsing
+`null` with a `withDefault` schema directly returns the default.
 
 ```dart
 final settingsSchema = Ack.object({
   'theme': Ack.enumString(['light', 'dark']).withDefault('light'),
   'pageSize': Ack.integer().min(1).max(100).withDefault(20),
 });
+```
+
+```dart
+settingsSchema.parse({});                  // {'theme': 'light', 'pageSize': 20}
+settingsSchema.safeParse({'theme': null}); // fails: theme is not nullable
 ```
 
 Defaults change the parsed result; `.optional()` only changes whether an object

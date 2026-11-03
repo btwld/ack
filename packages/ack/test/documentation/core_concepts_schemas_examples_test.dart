@@ -260,6 +260,20 @@ void main() {
           isTrue,
         );
       });
+
+      test('withDefault fills a missing key and a nullable null', () {
+        final userSchema = Ack.object({
+          'role': Ack.string().withDefault('member'),
+          'theme': Ack.string().nullable().withDefault('light'),
+        });
+
+        expect(userSchema.parse({}), {'role': 'member', 'theme': 'light'});
+        expect(userSchema.parse({'theme': null}), {
+          'role': 'member',
+          'theme': 'light',
+        });
+        expect(userSchema.safeParse({'role': null}).isFail, isTrue);
+      });
     });
 
     group('Object schema operations', () {

@@ -103,6 +103,34 @@ void main() {
           reason: 'Should return default value, not null',
         );
       });
+
+      test('an object property default fills a missing key, not a null', () {
+        final schema = Ack.object({'role': Ack.string().withDefault('member')});
+
+        expect(schema.parse({}), {'role': 'member'});
+        expect(schema.parse({'role': 'admin'}), {'role': 'admin'});
+        final result = schema.safeParse({'role': null});
+        expect(result.isFail, isTrue);
+        expect(
+          (result.getError() as SchemaNestedError).errors.single,
+          isA<SchemaConstraintsError>(),
+        );
+        expect(schema.toJsonSchema()['properties'], {
+          'role': {'type': 'string', 'default': 'member'},
+        }, reason: 'The exported schema rejects null, so parsing does too.');
+      });
+
+      test('a nullable object property default also fills a null', () {
+        for (final property in [
+          Ack.string().nullable().withDefault('member'),
+          Ack.string().withDefault('member').nullable(),
+        ]) {
+          final schema = Ack.object({'role': property});
+
+          expect(schema.parse({}), {'role': 'member'});
+          expect(schema.parse({'role': null}), {'role': 'member'});
+        }
+      });
     });
 
     group('ObjectSchema field validation', () {

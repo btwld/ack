@@ -13,6 +13,8 @@ part of 'schema.dart';
 /// * **Parse**: `optional` means the key may be absent. If the key IS
 ///   present with a null value, the property schema must also be
 ///   `nullable` or the parse fails with a non-nullable constraint error.
+///   This includes a `withDefault` property: its default fills a missing
+///   key, and fills a present `null` only when the property is `nullable`.
 /// * **Encode**: a key present with `null` whose schema is `optional`
 ///   (but not `nullable`) is omitted from the encoded output rather than
 ///   emitted as `null`. This is so a model encoder can simply write
@@ -104,6 +106,15 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         value: propertyValue,
         pathSegment: key,
       );
+      // A default fills a missing key. A present `null` is a value, so a
+      // default-wrapped property applies its default to it only when the
+      // property also accepts `null`.
+      if (propertyValue == null &&
+          schema is DefaultSchema &&
+          !schema.acceptsNull) {
+        errors.add(schema.failNonNullable(propertyCtx).getError());
+        continue;
+      }
       schema
           .parseWithContext(propertyValue, propertyCtx)
           .match(
