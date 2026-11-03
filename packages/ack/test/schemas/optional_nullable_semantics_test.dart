@@ -133,6 +133,50 @@ void main() {
       });
     });
 
+    group('Object default encoding', () {
+      test('missing and null defaulted properties encode as the default', () {
+        for (final property in [
+          Ack.string().withDefault('member'),
+          Ack.string().nullable().withDefault('member'),
+          Ack.string().withDefault('member').nullable(),
+          Ack.string().optional().withDefault('member'),
+        ]) {
+          final schema = Ack.object({'role': property});
+          expect(schema.encode({}), {'role': 'member'});
+          expect(schema.encode({'role': null}), {'role': 'member'});
+          expect(schema.encode({'role': 'admin'}), {'role': 'admin'});
+        }
+      });
+
+      test('defaults are runtime values and use the property encoder', () {
+        final date = DateTime.utc(2026, 11, 3);
+        final schema = Ack.object({
+          'created': Ack.datetime().nullable().withDefault(date),
+        });
+        final expected = {'created': date.toIso8601String()};
+        expect(schema.encode({}), expected);
+        expect(schema.encode({'created': null}), expected);
+      });
+
+      test('invalid defaults still fail when encoding null', () {
+        final schema = Ack.object({
+          'role': Ack.string().minLength(5).nullable().withDefault('x'),
+        });
+        expect(schema.safeEncode({'role': null}).isFail, isTrue);
+      });
+
+      test('ordinary null properties retain their nullability contract', () {
+        expect(
+          Ack.object({'role': Ack.string()}).safeEncode({'role': null}).isFail,
+          isTrue,
+        );
+        expect(
+          Ack.object({'role': Ack.string().nullable()}).encode({'role': null}),
+          {'role': null},
+        );
+      });
+    });
+
     group('ObjectSchema field validation', () {
       test('should correctly identify optional vs required fields', () {
         final schema = Ack.object({

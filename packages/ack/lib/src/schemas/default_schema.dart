@@ -6,7 +6,7 @@ part of 'schema.dart';
 /// As an object property, the default fills a missing key. A present `null`
 /// receives the default only when this schema accepts `null` (for example
 /// `.nullable().withDefault(value)`); otherwise the object rejects it. Object
-/// encoding also injects encoded defaults for missing default-wrapped fields.
+/// encoding injects encoded defaults for missing or null default-wrapped fields.
 @immutable
 final class DefaultSchema<Boundary extends Object, Runtime extends Object>
     extends AckSchema<Boundary, Runtime>

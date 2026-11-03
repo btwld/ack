@@ -258,6 +258,21 @@ final class NullableDefault with _$NullableDefaultAck {
 }
 
 @Schemable()
+final class NonNullableDefault with _$NonNullableDefaultAck {
+  const NonNullableDefault({this.label = 'fallback'});
+
+  final String label;
+}
+
+@Schemable()
+final class NotNullDefault with _$NotNullDefaultAck {
+  const NotNullDefault({this.label = 'fallback'});
+
+  @Validate.notNull()
+  final String? label;
+}
+
+@Schemable()
 final class NullDefault with _$NullDefaultAck {
   const NullDefault({this.label = null});
 
@@ -732,13 +747,23 @@ void main() {
     expect(NormalizedSchema.parse({'value': 'set'}).value, 'set');
   });
 
+  test('non-nullable constructor defaults reject explicit JSON null', () {
+    expect(NonNullableDefaultSchema.parse({}).label, 'fallback');
+    expect(NonNullableDefaultSchema.safeParse({'label': null}).isFail, isTrue);
+    expect(NonNullableDefault().toJson(), {'label': 'fallback'});
+    expect(NotNullDefaultSchema.parse({}).label, 'fallback');
+    expect(NotNullDefaultSchema.safeParse({'label': null}).isFail, isTrue);
+    expect(NotNullDefault(label: null).toJson(), {'label': 'fallback'});
+  });
+
   test('nullable constructor defaults apply to missing and null values', () {
     expect(NullableDefaultSchema.parse({}).label, 'fallback');
     expect(NullableDefaultSchema.parse({'label': null}).label, 'fallback');
     expect(NullableDefaultSchema.parse({'label': 'set'}).label, 'set');
 
     final explicitNull = NullableDefault(label: null);
-    expect(explicitNull.toJson(), {'label': null});
+    expect(explicitNull.toJson(), {'label': 'fallback'});
+    expect(NullableDefaultSchema.encode(explicitNull), {'label': 'fallback'});
     expect(NullableDefault().copyWith().label, 'fallback');
     expect(NullableDefault().copyWith(label: null).label, isNull);
 

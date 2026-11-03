@@ -402,7 +402,9 @@ Map<String, Object?> $function(${node.className} model) {
   }
 
   bool _omitIfNull(AckFieldNode field) =>
-      field.nullable && !(field.isRequired && field.acceptsNull);
+      field.nullable &&
+      field.presence != AckSchemaFieldPresence.defaulted &&
+      !(field.isRequired && field.acceptsNull);
 
   String _encodeField(AckFieldNode field) => _dataClasses.encodeField(
     field.runtimeRef,

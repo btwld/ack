@@ -20,7 +20,8 @@ part of 'schema.dart';
 ///   emitted as `null`. This is so a model encoder can simply write
 ///   `'color': value.color` and let optional nulls disappear.
 ///
-/// If you need to emit an explicit `null`, mark the property `nullable`.
+/// A default-wrapped property encodes a missing or null value as its validated
+/// default. To emit an explicit `null`, use a nullable property without a default.
 @immutable
 final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     with FluentSchema<JsonMap, JsonMap, ObjectSchema> {
@@ -230,7 +231,10 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
 
       if (propertyValue == null) {
-        if (schema.acceptsNull || (isEncode && schema.isOptional)) continue;
+        if (schema.acceptsNull ||
+            (isEncode && (schema.isOptional || schema is DefaultSchema))) {
+          continue;
+        }
         if (isEncode) {
           errors.add(SchemaEncodeError.nonNullable(context: propertyCtx));
         } else {
@@ -314,15 +318,15 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         operation: SchemaOperation.encode,
       );
       final Object? propertyValue;
-      if (hasValue) {
-        propertyValue = value[key];
-      } else if (schema is DefaultSchema) {
+      if (schema is DefaultSchema && (!hasValue || value[key] == null)) {
         final defaultResult = schema.resolveDefaultWithContext(propertyCtx);
         if (defaultResult.isFail) {
           errors.add(defaultResult.getError());
           continue;
         }
         propertyValue = defaultResult.getOrNull();
+      } else if (hasValue) {
+        propertyValue = value[key];
       } else {
         continue;
       }

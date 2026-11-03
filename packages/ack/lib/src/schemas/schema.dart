@@ -334,8 +334,9 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue] when
   /// the parse input is `null`.
   ///
-  /// Object encoding also injects encoded defaults for missing default-wrapped
-  /// fields.
+  /// As an object property, the default fills a missing key; a present null
+  /// requires a nullable property. Object encoding uses the validated default
+  /// for both missing and null default-wrapped fields.
   DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
     return DefaultSchema<Boundary, Runtime>(
       inner: this,

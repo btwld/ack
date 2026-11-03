@@ -405,7 +405,7 @@ final class Formats with _\$FormatsAck {
     );
   });
 
-  test('emits nullable constructor defaults without losing null', () async {
+  test('emits distinct presence, nullability, and default policies', () async {
     await _build(
       {
         'defaults.dart':
@@ -415,9 +415,22 @@ part 'defaults.g.dart';
 
 @Schemable()
 final class Defaults with _\$DefaultsAck {
-  const Defaults({this.fallback = 'fallback', this.empty = null});
+  const Defaults({
+    required this.requiredValue,
+    required this.requiredNullable,
+    this.role = 'member',
+    this.fallback = 'fallback',
+    this.strict = 'strict',
+    this.empty = null,
+  });
 
+  final String requiredValue;
+  @Validate.required()
+  final String? requiredNullable;
+  final String role;
   final String? fallback;
+  @Validate.notNull()
+  final String? strict;
   final String? empty;
 }
 ''',
@@ -429,7 +442,15 @@ final class Defaults with _\$DefaultsAck {
               "'fallback': Ack.string().nullable().withDefault('fallback')",
             ),
             contains("'empty': Ack.string().optional().nullable()"),
+            contains("'requiredValue': Ack.string()"),
+            contains("'requiredNullable': Ack.string().nullable()"),
+            contains("'role': Ack.string().withDefault('member')"),
+            contains(
+              "'strict': Ack.string().withDefault('strict').nullable(value: false)",
+            ),
             contains("'fallback': model.fallback"),
+            contains("'strict': model.strict"),
+            isNot(contains("'strict': ?model.strict")),
             contains("'empty': model.empty"),
             isNot(contains('withDefault(null)')),
           ]),
