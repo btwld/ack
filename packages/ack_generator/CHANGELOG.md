@@ -1,16 +1,19 @@
 ## Unreleased
 
+### Fixed
+
+* Interpolate field values in generated schema-first `toString()` output
+  instead of printing the field references as literal text.
 * Use runtime-validated value models for custom dialects so inactive vocabulary
   keywords retain annotation semantics instead of adding generated constraints.
+* Use runtime-validated value models when supplied `documents` provide the
+  source schema's own dialect, so the supplied vocabularies decide validation.
 * Honor supplied dialect resources under alias URIs even when their JSON maps
   use dynamic or object key types, including bundled resources.
 * Normalize and copy string-keyed JSON maps before preserve-mode widening so
   external and bundled resources retain unknown properties for parse and encode
   regardless of their declared map key types.
 * Preserve exact integer bounds on generated number schemas beyond 2^53.
-* Bound `source_helper` below 1.4 so `json_serializable` 6.14 compiles on the
-  minimum supported Dart 3.11 SDK. Newer SDKs can still select
-  `json_serializable` 6.15.
 
 ## 2.0.0-beta.1
 

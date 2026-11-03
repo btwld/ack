@@ -5,8 +5,22 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## Unreleased
 
-* Keep the generator's JSON dependencies compatible with the minimum supported
-  Dart 3.11 SDK, including clean builds in consumer packages.
+### Fixed
+
+* Validate internationalized hostnames and email domains against the IDNA2008
+  repertoire pinned to Unicode 12.0.0, with RFC 5892 ContextJ and ContextO and
+  RFC 5893 Bidi rules, and validate plain ASCII hostnames under RFC 1123.
+* Tighten URI, IRI, and relative JSON pointer formats: reject a second fragment
+  delimiter, accept colons where relative references allow them, enforce
+  RFC 3987 code point ranges, and accept line terminators in relative JSON
+  pointer tokens.
+* Preserve nested resource dialects for JSON pointers into extension
+  containers.
+* Interpolate field values in generated schema-first `toString()` output.
+* Generate runtime-validated value models for custom or caller-supplied
+  dialects, honor dialect resources under alias URIs, keep unknown properties
+  through preserve-mode widening for any JSON map key type, and preserve exact
+  integer bounds beyond 2^53.
 
 ## 2.0.0-beta.1
 

@@ -1,22 +1,19 @@
 ## Unreleased
 
+### Fixed
+
 * Apply IDNA ContextO rules using Unicode Script properties, including
   supplementary Han and Katakana extensions while excluding Common and
   Inherited characters from the Japanese-script condition.
-
 * Validate internationalized hostname and email labels against the complete
   IANA IDNA2008 repertoire pinned to Unicode 12.0.0, rejecting disallowed and
   unassigned code points with matching Unicode contextual and Bidi data.
-
 * Enforce RFC 5892 ContextJ using Unicode joining types and Virama data,
   including transparent marks in internationalized hostname and email labels.
-
 * Enforce RFC 5893 Bidi rules using Unicode classes for internationalized
   hostnames and email domains, including decoded punycode labels.
-
 * Preserve nested resource dialects for JSON pointers targeting schemas in
   extension containers, matching resource URI references during parse and encode.
-
 * Reject a second unescaped fragment delimiter in URI and IRI formats.
 * Accept colons in relative URI and IRI queries, fragments, and later path
   segments while rejecting them in a relative first path segment.
