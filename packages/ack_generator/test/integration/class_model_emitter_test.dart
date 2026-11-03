@@ -176,9 +176,7 @@ final class const PrimaryTask({
                 _containsCode(
                   "'title': Ack.string().minLength(1).describe('The item title.')",
                 ),
-                _containsCode(
-                  "'category': Ack.string().minLength(1).describe('The category id.').nullable(value: false).withDefault('general')",
-                ),
+                _containsCode(".withDefault('general')"),
               ),
             ),
           },
@@ -442,14 +440,14 @@ final class Defaults with _\$DefaultsAck {
               "'fallback': Ack.string().nullable().withDefault('fallback')",
             ),
             contains("'empty': Ack.string().optional().nullable()"),
+            _containsCode(
+              'fieldSchema.codec<R>(decode: (value) => value, '
+              'encode: (value) => value, output: fieldSchema).nullable(value: false)',
+            ),
             contains("'requiredValue': Ack.string()"),
             contains("'requiredNullable': Ack.string().nullable()"),
-            _containsCode(
-              "'role': Ack.string().nullable(value: false).withDefault('member')",
-            ),
-            _containsCode(
-              "'strict': Ack.string().nullable(value: false).withDefault('strict').nullable(value: false)",
-            ),
+            _containsCode(".withDefault('member')"),
+            _containsCode(".withDefault('strict').nullable(value: false)"),
             contains("'fallback': model.fallback"),
             contains("'strict': model.strict"),
             isNot(contains("'strict': ?model.strict")),
@@ -559,9 +557,7 @@ final class Profile with _\$ProfileAck {
               contains("'bio': Ack.string().minLength(1).maxLength(500)"),
               contains("'website': Ack.uri().optional().nullable()"),
               contains("'nickname': Ack.string().nullable()"),
-              _containsCode(
-                "'role': Ack.string().nullable(value: false).withDefault('member')",
-              ),
+              _containsCode(".withDefault('member')"),
               contains('Ack.list(Ack.string())'),
               contains(
                 RegExp(

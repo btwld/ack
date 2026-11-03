@@ -1392,8 +1392,16 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
         '$schema.optional()',
       AckSchemaFieldPresence.defaulted when acceptsNull =>
         '$schema.nullable().withDefault($defaultCode)',
+      // A custom schema may inherit null acceptance from a default or union.
+      // An identity codec supplies an explicit null gate, while its output
+      // retains the original runtime validation for constructor defaults.
       AckSchemaFieldPresence.defaulted =>
-        '$schema.nullable(value: false).withDefault($defaultCode)',
+        '(<B extends Object, R extends Object>('
+            '${ack('AckSchema')}<B, R> fieldSchema) => '
+            'fieldSchema.codec<R>('
+            'decode: (value) => value, encode: (value) => value, '
+            'output: fieldSchema).nullable(value: false))'
+            '($schema).withDefault($defaultCode)',
       AckSchemaFieldPresence.optional when acceptsNull =>
         '$schema.optional().nullable()',
       AckSchemaFieldPresence.optional => '$schema.optional()',

@@ -363,7 +363,25 @@ final class CustomDefault with _$CustomDefaultAck {
   final NameTag name;
 }
 
-@Schemable(schemas: [nullableNameSchema])
+AckSchema<String, NameTag> nestedDefaultNameSchema() =>
+    nullableNameSchema().withDefault(const NameTag('inner'));
+
+@Schemable(schemas: [nestedDefaultNameSchema])
+final class CustomNestedDefault with _$CustomNestedDefaultAck {
+  const CustomNestedDefault({this.name = const NameTag('fallback')});
+
+  final NameTag name;
+}
+
+@Schemable()
+final class InvalidDefault with _$InvalidDefaultAck {
+  const InvalidDefault({this.label = 'x'});
+
+  @Validate.minLength(5)
+  final String label;
+}
+
+@Schemable(schemas: [nestedDefaultNameSchema])
 final class CustomNotNullDefault with _$CustomNotNullDefaultAck {
   const CustomNotNullDefault({this.name = const NameTag('fallback')});
 
@@ -774,9 +792,16 @@ void main() {
   test('constructor defaults narrow a nullable custom schema before wrapping', () {
     expect(CustomDefaultSchema.parse({}).name, const NameTag('fallback'));
     expect(CustomDefaultSchema.safeParse({'name': null}).isFail, isTrue);
+    expect(CustomNestedDefaultSchema.parse({}).name, const NameTag('fallback'));
+    expect(CustomNestedDefaultSchema.safeParse({'name': null}).isFail, isTrue);
     expect(CustomNotNullDefaultSchema.parse({}).name, const NameTag('fallback'));
     expect(CustomNotNullDefaultSchema.safeParse({'name': null}).isFail, isTrue);
     expect(CustomNotNullDefault(name: null).toJson(), {'name': 'fallback'});
+  });
+
+  test('constructor defaults retain their original runtime constraints', () {
+    expect(InvalidDefaultSchema.safeParse({}).isFail, isTrue);
+    expect(InvalidDefaultSchema.safeEncode(InvalidDefault()).isFail, isTrue);
   });
 
   test('nullable constructor defaults apply to missing and null values', () {
