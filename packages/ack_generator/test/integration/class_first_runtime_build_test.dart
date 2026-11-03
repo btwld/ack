@@ -833,7 +833,10 @@ void main() {
     expect(explicitNull.toJson(), {'label': 'fallback'});
     expect(NullableDefaultSchema.encode(explicitNull), {'label': 'fallback'});
     expect((NullableDefaultSchema.toJsonSchema()['properties'] as Map)['label'], {
-      'type': ['string', 'null'],
+      'anyOf': [
+        {'type': 'string'},
+        {'type': 'null'},
+      ],
       'default': 'fallback',
     });
     expect(NullableDefault().copyWith().label, 'fallback');
