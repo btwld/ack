@@ -29,6 +29,11 @@ final class Validate {
   /// [Validate.notNull] rejects it. Valid only when the constructor can accept
   /// a missing value, with a discriminator-specific exception for union
   /// branches.
+  ///
+  /// On a parameter with a default value, this replaces the inferred
+  /// `.withDefault(...)` with `.optional()`: a missing key still receives the
+  /// constructor default, but JSON `null` is rejected for a non-nullable type
+  /// and the exported JSON Schema has no `default`.
   const Validate.optional() : kind = 'optional', value = null;
 
   /// Marks a class-first field as required on the JSON wire.

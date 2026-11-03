@@ -279,12 +279,12 @@ generated.
 
 ### Presence comes from the constructor
 
-| Declaration | Input behavior | Encoding behavior |
-| --- | --- | --- |
-| `required T` | Required, non-null | Always present |
-| `required T?` | Required, may be null | Present even when null |
-| Optional `T?` | May be omitted | Omitted when null |
-| Constructor default | Missing input uses the default | Encodes the stored value, including null |
+| Declaration | Generated field schema | Input behavior | Encoding behavior |
+| --- | --- | --- | --- |
+| `required T` | `<schema>` | Required, non-null | Always present |
+| `required T?` | `<schema>.nullable()` | Required, may be null | Present even when null |
+| Optional `T?` | `<schema>.optional().nullable()` | May be omitted | Omitted when null |
+| Constructor default, such as `this.tools = const []` | `<schema>.withDefault(const [])` | A missing key or JSON `null` uses the default | Encodes the stored value, including null |
 
 Nullable defaults keep their source-level behavior. With
 `this.label = 'fallback'`, missing input and JSON `null` both parse as
@@ -292,17 +292,24 @@ Nullable defaults keep their source-level behavior. With
 null. With `this.label = null`, missing input and JSON `null` parse as null and
 the encoded object keeps the key with a null value.
 
-Use `@Validate.optional()` or `@Validate.required()` to override inferred key
-presence. These control whether the JSON key must exist; they do not change Dart
-nullability. Unannotated fields keep constructor inference.
+Three annotations override the inferred presence. They change the JSON
+contract only; Dart nullability and the constructor stay as written, and
+unannotated fields keep constructor inference.
 
-Use `@Validate.notNull()` when the Dart type is nullable (`String?`) or
-`JsonMaybe<T>` but a present JSON value must not be `null`. Do not add it on
-non-nullable fields such as `Map<String, V>` — those already reject JSON `null`.
-`@Validate.optional()` alone on `String?` still accepts JSON `null`, matching
-legacy `presence: optional` behavior. `@Validate.optional()` is redundant when
-the constructor already treats the field as optional; `@Validate.notNull()` is
-the annotation that changes null acceptance:
+| Annotation | Effect |
+| --- | --- |
+| `@Validate.optional()` | The key may be omitted. Valid when the constructor can accept a missing value: an optional or defaulted parameter, or `required T?` (a missing key then parses as `null` and encoding omits a null value). On `required T` generation fails. |
+| `@Validate.required()` | The key must be present. On an optional `T?` field JSON `null` is still accepted and encoding writes the key even when the value is null. On a defaulted field, input no longer falls back to the default. |
+| `@Validate.notNull()` | A present JSON `null` is rejected; key presence is unchanged. Use it on `T?` and `JsonMaybe<T>` fields; non-nullable fields such as `Map<String, V>` already reject JSON `null`. A missing optional key still parses as `null`, and encoding omits a null Dart value. |
+
+`@Validate.optional()` is not a no-op on a defaulted field. Without it,
+`this.tools = const []` generates `.withDefault(const [])`. With it, the field
+generates `.optional()`: a missing key still gets the constructor default, but
+JSON `null` is rejected for a non-nullable type and the exported JSON Schema
+carries no `default`.
+
+`@Validate.optional()` alone on `String?` still accepts JSON `null`. Add
+`@Validate.notNull()` when a present value must not be `null`:
 
 ```dart
 @Schemable()
@@ -316,7 +323,9 @@ final class Example with _$ExampleAck {
 ```
 
 `ExampleSchema.parse({})` yields `label: null`, `{"label": "hello"}` succeeds,
-and `{"label": null}` fails. Encoding omits a null Dart value.
+and `{"label": null}` fails. Encoding omits a null Dart value. Here
+`@Validate.optional()` only restates what the constructor already infers;
+`@Validate.notNull()` is the annotation that changes null acceptance.
 
 The generator infers `String`, `bool`, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, nested lists, and sets. Sets use a list codec. Open JSON
