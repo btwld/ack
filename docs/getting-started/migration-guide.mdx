@@ -6,6 +6,26 @@ This guide summarizes **what exists in Ack today**, **what changed in 1.7 and 2.
 
 ---
 
+## Beta.1 to beta.2: defaults and explicit null
+
+These are breaking changes in 2.0.0-beta.2:
+
+- `Ack.object({'role': Ack.string().withDefault('member')})` parses `{}` as
+  `{'role': 'member'}`, but rejects `{'role': null}`. Add `.nullable()` before
+  `.withDefault('member')` to accept a present null and parse it as the default.
+  Calling the defaulted schema's `parse(null)` directly still uses the default.
+- Object encoding substitutes the validated default for a missing or null
+  defaulted property. A nullable defaulted model constructed with `label: null`
+  now encodes its non-null default. A nullable field without a default keeps
+  its existing null behavior.
+- Generated fields follow Dart nullability: `T` rejects explicit JSON null;
+  `T?` accepts it unless marked `@Validate.notNull()`. Constructor defaults
+  fill missing keys and follow the same encoding rules as object schemas.
+
+Keep using `@Validate.*`, including `@Validate.required()`, for field and
+parameter constraints. Regenerate model parts after updating `ack` and
+`ack_generator` together to beta.2.
+
 ## 1. What Exists in Ack
 
 Ack is organized into five coordinated packages that share one version number and one canonical schema representation (`AckSchema<Boundary, Runtime>`):

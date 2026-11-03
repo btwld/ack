@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2.0.0-beta.2
+
+* **Breaking:** Object defaults fill omitted keys; explicit JSON null requires
+  a nullable property. Missing or null defaulted fields encode as the default.
+* **Breaking:** Generated models follow the same null/default rules. Keep
+  `@Validate.*`, regenerate model parts, and upgrade all five packages together.
+* Include the fixes documented in each package's beta.2 changelog.
+
 ## Unreleased
 
 ### Fixed

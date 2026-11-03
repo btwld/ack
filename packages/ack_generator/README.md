@@ -363,3 +363,13 @@ Across all imports and barrel exports, `show`/`hide` combinators must expose the
 authored declaration and either `Address.schema` or its generated companion
 (`AddressSchema` for class-first, or `Address` for schema-first). Visibility may
 be split across multiple imports that use the same prefix.
+
+### Beta.2 defaults and null
+
+`@Validate.*` remains the field and parameter annotation API, including
+`@Validate.required()` and `@Validate.notNull()`. Non-nullable fields reject an
+explicit JSON null even with a constructor default; `T?` accepts it unless
+marked `@Validate.notNull()`. An omitted key uses its constructor default, and a
+null defaulted field encodes as that default. Regenerate model parts after
+upgrading `ack` and `ack_generator` to 2.0.0-beta.2; these rules break beta.1
+behavior. See the [migration guide](../../docs/getting-started/migration-guide.mdx).

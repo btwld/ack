@@ -21,7 +21,7 @@ runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 ## Install the generator
 
 ```bash
-dart pub add ack:^2.0.0-beta.1 dev:ack_generator:^2.0.0-beta.1 dev:build_runner
+dart pub add ack:^2.0.0-beta.2 dev:ack_generator:^2.0.0-beta.2 dev:build_runner
 ```
 
 Every annotated library needs the generated part:
@@ -284,13 +284,17 @@ generated.
 | `required T` | `<schema>` | Required, non-null | Always present |
 | `required T?` | `<schema>.nullable()` | Required, may be null | Present even when null |
 | Optional `T?` | `<schema>.optional().nullable()` | May be omitted | Omitted when null |
-| Constructor default, such as `this.tools = const []` | `<schema>.withDefault(const [])` | A missing key or JSON `null` uses the default | Encodes the stored value, including null |
+| Constructor default, such as `this.tools = const []` | `<schema>.withDefault(const [])` | A missing key uses the default; JSON `null` requires `T?` | A null stored value encodes as the default |
 
-Nullable defaults keep their source-level behavior. With
-`this.label = 'fallback'`, missing input and JSON `null` both parse as
-`'fallback'`, while a directly constructed `label: null` still encodes as JSON
-null. With `this.label = null`, missing input and JSON `null` parse as null and
-the encoded object keeps the key with a null value.
+In 2.0.0-beta.2, a constructor default fills an omitted key. A present JSON
+`null` is rejected for `T`, including defaulted fields. Declare `T?` to accept
+it, or use the existing `@Validate.notNull()` to reject it on a nullable field.
+With `String? label` and `this.label = 'fallback'`, missing input and JSON
+`null` both parse as `'fallback'`. A directly constructed `label: null` now
+encodes as `'fallback'` too. With `this.label = null`, missing input and JSON
+`null` parse as null and the encoded object keeps the key with a null value.
+These changes are breaking relative to beta.1. `@Validate.*`, including
+`@Validate.required()`, remains the public annotation API.
 
 Three annotations override the inferred presence. They change the JSON
 contract only; Dart nullability and the constructor stay as written, and
@@ -300,7 +304,7 @@ unannotated fields keep constructor inference.
 | --- | --- |
 | `@Validate.optional()` | The key may be omitted. Valid when the constructor can accept a missing value: an optional or defaulted parameter, or `required T?` (a missing key then parses as `null` and encoding omits a null value). On `required T` generation fails. |
 | `@Validate.required()` | The key must be present. On an optional `T?` field JSON `null` is still accepted and encoding writes the key even when the value is null. On a defaulted field, input no longer falls back to the default. |
-| `@Validate.notNull()` | A present JSON `null` is rejected; key presence is unchanged. Use it on `T?` and `JsonMaybe<T>` fields; non-nullable fields such as `Map<String, V>` already reject JSON `null`. A missing optional key still parses as `null`, and encoding omits a null Dart value. |
+| `@Validate.notNull()` | A present JSON `null` is rejected; key presence is unchanged. Use it on `T?` and `JsonMaybe<T>` fields; non-nullable fields such as `Map<String, V>` already reject JSON `null`. A missing optional key still parses as `null`. Encoding uses a non-null constructor default when one is inferred; otherwise it omits a null Dart value. |
 
 `@Validate.optional()` is not a no-op on a defaulted field. Without it,
 `this.tools = const []` generates `.withDefault(const [])`. With it, the field

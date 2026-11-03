@@ -49,7 +49,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 3. Preview/prepare a coordinated version without creating commits or tags:
 
    ```sh
-   dart run melos version --manual-version=ack:2.0.0-beta.1 --yes --no-git-commit-version
+   dart run melos version --manual-version=ack:2.0.0-beta.2 --yes --no-git-commit-version
    ```
 
    Use the named flag, not a positional package argument: the positional form
@@ -76,7 +76,7 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 7. Validate the complete release from that clean commit:
 
    ```sh
-   dart scripts/verify_release_tag.dart v2.0.0-beta.1 --skip-ancestry
+   dart scripts/verify_release_tag.dart v2.0.0-beta.2 --skip-ancestry
    dart run melos run ci
    dart scripts/api_check.dart 1.7.0
    dart scripts/publish_dry_run.dart
@@ -109,9 +109,9 @@ After the release commit's CI/preflight succeeds:
 ```sh
 git fetch origin main release/2.0 --tags
 # Use the exact reviewed release merge commit, not an arbitrary later main head.
-git tag -a v2.0.0-beta.1 <release-merge-sha> -m 'Ack 2.0.0 beta 1'
-dart scripts/verify_release_tag.dart v2.0.0-beta.1 --main-ref=origin/release/2.0
-git push origin v2.0.0-beta.1
+git tag -a v2.0.0-beta.2 <release-merge-sha> -m 'Ack 2.0.0 beta 2'
+dart scripts/verify_release_tag.dart v2.0.0-beta.2 --main-ref=origin/release/2.0
+git push origin v2.0.0-beta.2
 ```
 
 These commands target the 2.0 prerelease branch. Stable release tags must be
@@ -144,4 +144,4 @@ After all five exact versions are visible, create the GitHub Release from the
 existing tag using the prepared release notes and mark it as a prerelease for
 alpha/beta versions. Before the first subsequent code
 change, begin a new unreleased changelog section instead of editing the
-2.0.0-beta.1 notes (and preserve every earlier published section).
+2.0.0-beta.2 notes (and preserve every earlier published section).

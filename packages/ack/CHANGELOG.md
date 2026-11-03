@@ -1,4 +1,14 @@
-## Unreleased
+## 2.0.0-beta.2
+
+### Breaking
+
+* **Breaking:** Object property defaults now fill omitted keys. A present JSON
+  `null` is rejected unless the property accepts null; use
+  `.nullable().withDefault(value)` to parse a present null as the default.
+  Direct parsing with a defaulted schema still resolves `parse(null)`.
+* **Breaking:** Object encoding substitutes the validated, encoded default for
+  missing or null defaulted fields. Nullable fields without defaults retain
+  their existing null behavior.
 
 ### Fixed
 

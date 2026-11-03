@@ -1,4 +1,18 @@
-## Unreleased
+## 2.0.0-beta.2
+
+### Breaking
+
+* **Breaking:** Non-nullable generated fields reject explicit JSON null even
+  when they have constructor defaults. Nullable `T?` fields accept null unless
+  marked `@Validate.notNull()`; omitted keys still use their defaults.
+* **Breaking:** Null defaulted model fields now encode as the default through
+  the property encoder. Regenerate model parts after upgrading both packages.
+* Keep `@Validate.*`, including `@Validate.required()`, as the public annotation
+  API. No new annotations are required.
+
+### Changed
+
+* Require `ack: ^2.0.0-beta.2` for the matching default/null contract.
 
 ### Fixed
 

@@ -65,6 +65,11 @@ settingsSchema.parse({});                  // {'theme': 'light', 'pageSize': 20}
 settingsSchema.safeParse({'theme': null}); // fails: theme is not nullable
 ```
 
+During object encoding, both a missing defaulted field and a field holding
+`null` encode as the validated default, through the field's encoder. A nullable
+field without a default still encodes as `null`. These default/null rules are
+breaking changes in 2.0.0-beta.2.
+
 Defaults change the parsed result; `.optional()` only changes whether an object
 field is required.
 

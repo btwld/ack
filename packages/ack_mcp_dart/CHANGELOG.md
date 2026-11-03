@@ -1,3 +1,12 @@
+## 2.0.0-beta.2
+
+### Breaking
+
+* **Breaking:** Require `ack: ^2.0.0-beta.2`. Object property defaults fill
+  omitted keys; explicit JSON null requires a nullable property. Missing or
+  null defaulted fields encode as their validated default. Review callers
+  against these core parsing and encoding changes.
+
 ## 2.0.0-beta.1
 
 ### Changed
