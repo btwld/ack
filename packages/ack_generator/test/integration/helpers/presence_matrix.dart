@@ -105,7 +105,7 @@ final class $name with _\$${name}Ack {
     final schema = ${name}Schema.toJsonSchema();
     expect((schema['required'] as List? ?? []).contains('value'), $required);
     final property = (schema['properties'] as Map)['value'] as Map;
-    expect(property.containsKey('default'), ${defaulted || source == 'Defaulted'});
+    expect(property.containsKey('default'), $defaulted);
     expect(Ack.fromJsonSchema(property.cast<String, Object?>()).safeParse(null).isOk, $acceptsNull);
     ${defaulted ? "expect(property['default'], 'fallback');" : ''}
     ${nullable && !defaulted ? 'expect(${name}Schema.safeEncode($name()).isOk, ${!required || acceptsNull});' : ''}

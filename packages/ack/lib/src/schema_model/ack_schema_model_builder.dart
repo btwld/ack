@@ -105,11 +105,18 @@ final class _SchemaModelBuilder {
   AckSchemaModel _build(
     AckSchema<dynamic, dynamic> schema, {
     bool requireStandardDialect = false,
+    bool omitDefault = false,
   }) {
     if (schema is WrapperSchema) {
       // Wrappers can add null operators or projected constraints. Keep those
       // outside a source dialect that may have disabled their vocabularies.
-      final base = _build(schema.inner, requireStandardDialect: true);
+      final suppressDefault =
+          omitDefault || (schema is CodecSchema && schema.isGeneratedField);
+      final base = _build(
+        schema.inner,
+        requireStandardDialect: true,
+        omitDefault: suppressDefault,
+      );
       var layered = base
           .withDescription(schema.description ?? base.description)
           .withNullable(schema.isNullable);
@@ -134,7 +141,7 @@ final class _SchemaModelBuilder {
                   schema.projectsConstraintsToBoundary,
             );
 
-      if (schema is DefaultSchema) {
+      if (schema is DefaultSchema && !suppressDefault) {
         final exportDefault = _defaultExportValueOrNull(schema);
         if (exportDefault != null) {
           wrapped = wrapped.withDefaultValue(exportDefault);

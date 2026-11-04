@@ -12,6 +12,8 @@
 
 ### Fixed
 
+* Keep generated field defaults separate from defaults inside custom schemas;
+  exported properties reflect the field's own presence and default policy.
 * Apply IDNA ContextO rules using Unicode Script properties, including
   supplementary Han and Katakana extensions while excluding Common and
   Inherited characters from the Japanese-script condition.

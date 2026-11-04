@@ -441,8 +441,7 @@ final class Defaults with _\$DefaultsAck {
             ),
             contains("'empty': Ack.string().optional().nullable()"),
             _containsCode(
-              'fieldSchema.codec<R>(decode: (value) => value, '
-              'encode: (value) => value, output: fieldSchema).nullable(value: false)',
+              "'role': AckSchema.forGeneratedField(Ack.string()).withDefault('member')",
             ),
             contains("'requiredValue': Ack.string()"),
             contains("'requiredNullable': Ack.string().nullable()"),
@@ -655,7 +654,7 @@ final class Record with _\$RecordAck {
       outputs: {
         'test_pkg|lib/types.g.dart': decodedMatches(
           allOf([
-            _containsCode(')(colorSchema())'),
+            _containsCode('AckSchema.forGeneratedField(colorSchema())'),
             isNot(contains("'color': colorSchema().describe(")),
             contains("'scores': Ack.map(Ack.integer())"),
             contains("'role': Ack.enumValues(Role.values)"),
@@ -868,13 +867,11 @@ final class Account with _\$AccountAck {
     },
   );
 
-  test(
-    'field presence annotations compose independently of nullability',
-    () async {
-      await _build(
-        {
-          'fields.dart':
-              '''
+  test('field presence annotations compose independently of nullability', () async {
+    await _build(
+      {
+        'fields.dart':
+            '''
 $_imports
 part 'fields.g.dart';
 
@@ -963,47 +960,42 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
 }
 
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/fields.g.dart': decodedMatches(
-            allOf([
+      },
+      outputs: {
+        'test_pkg|lib/fields.g.dart': decodedMatches(
+          allOf([
+            contains("'label': Ack.string().optional().nullable(value: false)"),
+            contains("'nickname': Ack.string().optional().nullable()"),
+            isNot(
               contains(
-                "'label': Ack.string().optional().nullable(value: false)",
+                "'nickname': Ack.string().optional().nullable(value: false)",
               ),
-              contains("'nickname': Ack.string().optional().nullable()"),
-              isNot(
-                contains(
-                  "'nickname': Ack.string().optional().nullable(value: false)",
-                ),
-              ),
-              contains(
-                "'title': Ack.string().notEmpty().optional().nullable(value: false)",
-              ),
-              _containsCode(
-                ')(nullableNameSchema()).optional().nullable(value: false)',
-              ),
-              contains("'value': Ack.string().nullable(value: false)"),
-              isNot(contains("'value': Ack.string().optional()")),
-              contains("'summary': Ack.string().nullable()"),
-              contains(
-                "'parameters': Ack.map(parameterEntrySchema()).optional()",
-              ),
-              isNot(
-                contains(
-                  'Ack.map(parameterEntrySchema()).optional().nullable(',
-                ),
-              ),
-              contains('Map<String, ParameterEntry>? parameters'),
-              contains('parameters: parameters ?? _source.parameters'),
-              isNot(contains('parameters as Map<String, ParameterEntry>?')),
-              contains('Object? label = _ackCopyWithUnset'),
-              contains(': label as String?'),
-            ]),
-          ),
-        },
-      );
-    },
-  );
+            ),
+            contains(
+              "'title': Ack.string().notEmpty().optional().nullable(value: false)",
+            ),
+            _containsCode(
+              'AckSchema.forGeneratedField(nullableNameSchema()).optional().nullable(value: false)',
+            ),
+            contains("'value': Ack.string().nullable(value: false)"),
+            isNot(contains("'value': Ack.string().optional()")),
+            contains("'summary': Ack.string().nullable()"),
+            contains(
+              "'parameters': Ack.map(parameterEntrySchema()).optional()",
+            ),
+            isNot(
+              contains('Ack.map(parameterEntrySchema()).optional().nullable('),
+            ),
+            contains('Map<String, ParameterEntry>? parameters'),
+            contains('parameters: parameters ?? _source.parameters'),
+            isNot(contains('parameters as Map<String, ParameterEntry>?')),
+            contains('Object? label = _ackCopyWithUnset'),
+            contains(': label as String?'),
+          ]),
+        ),
+      },
+    );
+  });
 
   test('qualifies facade APIs through a prefixed Ack import', () async {
     await _build(

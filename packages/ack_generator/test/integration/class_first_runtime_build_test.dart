@@ -1,6 +1,7 @@
 @Tags(['integration'])
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -1368,7 +1369,39 @@ import 'models.dart';
 
 Profile misuse(Profile profile) => profile.copyWith(nickname: const Object());
 ''');
-        _expectSuccess(await _run(temporary, ['test']), 'dart test');
+        final matrix = await _run(temporary, [
+          'test',
+          'test/presence_matrix_test.dart',
+          '--reporter=json',
+          '--concurrency=1',
+        ]);
+        final results = const LineSplitter()
+            .convert(matrix.stdout as String)
+            .where((line) => line.startsWith('{'))
+            .map((line) => jsonDecode(line) as Map<String, dynamic>)
+            .where(
+              (event) =>
+                  event['type'] == 'testDone' && event['hidden'] == false,
+            )
+            .toList();
+        final passed = results
+            .where((event) => event['result'] == 'success')
+            .length;
+        final failed = results
+            .where((event) => event['result'] != 'success')
+            .length;
+        print('Presence matrix: $passed passed, $failed failed');
+        _expectSuccess(matrix, 'dart test presence matrix');
+        expect(passed, 144);
+        expect(failed, 0);
+        _expectSuccess(
+          await _run(temporary, [
+            'test',
+            'test/runtime_test.dart',
+            '--concurrency=1',
+          ]),
+          'dart test runtime contract',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'outputs-present build_runner build',

@@ -18,6 +18,8 @@
 
 * Apply generated field presence and nullability rules to custom schemas, even
   when their wrappers already supply defaults or optional/nullable flags.
+  Export only defaults supplied by the field's own default policy.
+* Emit one internal Ack field-policy helper instead of inline generic codecs.
 
 * Interpolate field values in generated schema-first `toString()` output
   instead of printing the field references as literal text.

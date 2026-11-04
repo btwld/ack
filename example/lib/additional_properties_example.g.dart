@@ -7,6 +7,7 @@ part of 'additional_properties_example.dart';
 // **************************************************************************
 
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_internal_member
 // coverage:ignore-file
 
 /// Immutable model generated from `userConfigSchema`.

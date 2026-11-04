@@ -33,6 +33,10 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   @internal
   final bool projectsConstraintsToBoundary;
 
+  /// Whether field declarations replace inherited presence and defaults.
+  @internal
+  final bool isGeneratedField;
+
   final Runtime Function(Object value) _decoder;
   final Object Function(Runtime value)? _encoder;
   final Object _decoderIdentity;
@@ -54,6 +58,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     required Object Function(Runtime value)? encoder,
     required Object decoderIdentity,
     this.projectsConstraintsToBoundary = false,
+    this.isGeneratedField = false,
     super.isNullable,
     super.isOptional,
     super.description,
@@ -195,6 +200,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
       projectsConstraintsToBoundary: projectsConstraintsToBoundary,
+      isGeneratedField: isGeneratedField,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -218,6 +224,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
       projectsConstraintsToBoundary: projectsConstraintsToBoundary,
+      isGeneratedField: isGeneratedField,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -235,6 +242,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema &&
         projectsConstraintsToBoundary == other.projectsConstraintsToBoundary &&
+        isGeneratedField == other.isGeneratedField &&
         _decoderIdentity == other._decoderIdentity &&
         _encoder == other._encoder;
   }
@@ -251,6 +259,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     inputSchema,
     outputSchema,
     projectsConstraintsToBoundary,
+    isGeneratedField,
     _decoderIdentity,
     _encoder,
   );

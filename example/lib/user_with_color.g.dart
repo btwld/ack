@@ -7,6 +7,7 @@ part of 'user_with_color.dart';
 // **************************************************************************
 
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_internal_member
 // coverage:ignore-file
 
 /// Immutable value model generated from `colorSchema`.

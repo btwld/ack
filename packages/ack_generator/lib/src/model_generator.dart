@@ -144,6 +144,7 @@ final class AckModelGenerator extends Generator {
     final body = output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');
     if (body.isEmpty) return '';
     return '// ignore_for_file: type=lint\n'
+        '// ignore_for_file: invalid_use_of_internal_member\n'
         '// coverage:ignore-file\n\n'
         '$body';
   }

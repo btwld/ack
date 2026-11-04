@@ -7,6 +7,7 @@ part of 'class_first_models.dart';
 // **************************************************************************
 
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_internal_member
 // coverage:ignore-file
 
 final _catObject = Ack.object({
@@ -348,16 +349,7 @@ final _accountObject = Ack.object({
       .minLength(2)
       .describe('The name shown to other users.'),
   'website': Ack.uri().optional().nullable(),
-  'role':
-      (<B extends Object, R extends Object>(AckSchema<B, R> fieldSchema) =>
-              fieldSchema
-                  .codec<R>(
-                    decode: (value) => value,
-                    encode: (value) => value,
-                    output: fieldSchema,
-                  )
-                  .nullable(value: false))(Ack.string())
-          .withDefault('member'),
+  'role': AckSchema.forGeneratedField(Ack.string()).withDefault('member'),
 }).describe('A signed-in user\'s account.');
 
 final _accountWireSchema = Ack.preserveBoundary(_accountObject);

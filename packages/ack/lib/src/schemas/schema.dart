@@ -113,6 +113,24 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   }) : _constraints = constraints,
        _refinements = refinements;
 
+  /// Isolates a generated field's presence policy from its custom schema.
+  ///
+  /// The field declaration supplies optionality, nullability and defaults.
+  /// Non-null values retain the custom schema's validation and encoder.
+  @internal
+  static CodecSchema<B, R> forGeneratedField<
+    B extends Object,
+    R extends Object
+  >(AckSchema<B, R> schema) => CodecSchema._(
+    inputSchema: schema,
+    outputSchema: schema,
+    decoder: (value) => value as R,
+    encoder: (R value) => value,
+    decoderIdentity: forGeneratedField<B, R>,
+    isGeneratedField: true,
+    description: schema.description,
+  );
+
   // ---------------------------------------------------------------------------
   // Subclass-facing internal lifecycle
   // ---------------------------------------------------------------------------

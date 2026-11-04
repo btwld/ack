@@ -297,8 +297,10 @@ These changes are breaking relative to beta.1. `@Validate.*`, including
 `@Validate.required()`, remains the public annotation API.
 
 Presence and nullability rules also apply to fields backed by registered or
-type-owned custom schemas. Custom codecs keep their value validation and
-encoding; their wrapper flags cannot make a required field optional or a
+type-owned custom schemas. A custom schema's own default does not become a
+field default: required fields and optional fields export no inherited
+`default`. Only the field's default policy supplies an exported `default`.
+Custom codecs keep their value validation and encoding; their wrapper flags cannot make a required field optional or a
 non-nullable field accept null.
 
 Three annotations control presence and null acceptance. They change the JSON
