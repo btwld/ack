@@ -5,6 +5,14 @@ import 'package:test/test.dart';
 void main() {
   // RFC 5892 Appendix A.4-A.7 use Script, not Script_Extensions or blocks.
   const examples = [
+    (label: 'ا١٢', valid: true, name: 'allows Arabic-Indic digits'),
+    (label: 'ا۱۲', valid: true, name: 'allows Extended Arabic-Indic digits'),
+    (
+      label: 'ا١۲',
+      valid: false,
+      name: 'rejects mixed contextual digit families',
+    ),
+    (label: 'ا۱٢', valid: false, name: 'rejects mixed digits in reverse order'),
     (label: '\u30fb\u31f0', valid: true, name: 'allows Katakana extensions'),
     (label: '\u30fb\u{20000}', valid: true, name: 'allows supplementary Han'),
     (

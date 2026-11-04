@@ -343,8 +343,34 @@ bool _isIdnaLabel(String label) {
       label.endsWith('-')) {
     return false;
   }
+  var hasJapanese = false;
+  var hasKatakanaDot = false;
+  var hasArabicIndic = false;
+  var hasExtendedArabicIndic = false;
   for (var i = 0; i < runes.length; i++) {
-    switch (_idnaProperty(runes[i])) {
+    final rune = runes[i];
+    hasJapanese =
+        hasJapanese ||
+        const {
+          _IdnaScript.hiragana,
+          _IdnaScript.katakana,
+          _IdnaScript.han,
+        }.contains(_idnaScript(rune));
+    if (rune == 0x30fb) {
+      hasKatakanaDot = true;
+      continue;
+    }
+    if (rune >= 0x0660 && rune <= 0x0669) {
+      hasArabicIndic = true;
+      if (hasExtendedArabicIndic) return false;
+      continue;
+    }
+    if (rune >= 0x06f0 && rune <= 0x06f9) {
+      hasExtendedArabicIndic = true;
+      if (hasArabicIndic) return false;
+      continue;
+    }
+    switch (_idnaProperty(rune)) {
       case _IdnaProperty.pvalid:
         continue;
       case _IdnaProperty.contextj:
@@ -357,7 +383,7 @@ bool _isIdnaLabel(String label) {
         return false;
     }
   }
-  return true;
+  return !hasKatakanaDot || hasJapanese;
 }
 
 // RFC 5892 Appendix A.3-A.9. Script means the Unicode Script property,
@@ -376,21 +402,7 @@ bool _isValidContextO(List<int> runes, int index) {
           _idnaScript(runes[index + 1]) == _IdnaScript.greek;
     case 0x05f3 || 0x05f4:
       return index > 0 && _idnaScript(runes[index - 1]) == _IdnaScript.hebrew;
-    case 0x30fb:
-      return runes.any(
-        (cp) => const {
-          _IdnaScript.hiragana,
-          _IdnaScript.katakana,
-          _IdnaScript.han,
-        }.contains(_idnaScript(cp)),
-      );
     default:
-      if (rune >= 0x0660 && rune <= 0x0669) {
-        return !runes.any((cp) => cp >= 0x06f0 && cp <= 0x06f9);
-      }
-      if (rune >= 0x06f0 && rune <= 0x06f9) {
-        return !runes.any((cp) => cp >= 0x0660 && cp <= 0x0669);
-      }
       return false;
   }
 }

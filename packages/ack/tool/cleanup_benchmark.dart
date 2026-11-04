@@ -1,4 +1,4 @@
-// Run: dart run tool/cleanup_benchmark.dart
+// Run from the workspace: dart run packages/ack/tool/cleanup_benchmark.dart
 import 'dart:convert';
 
 import 'package:ack/ack.dart';
@@ -43,6 +43,7 @@ void main(List<String> args) {
     return;
   }
   for (final nested in [false, true]) {
+    if (args.contains('formats') || args.contains('enum')) break;
     for (final size in [10, 100, 1000]) {
       AckSchema<Object, Object> schema = Ack.integer();
       Object? value = 1;
@@ -98,6 +99,7 @@ void main(List<String> args) {
     'format': 'idn-hostname',
   }, assertFormats: true);
   for (final size in [1000, 10000]) {
+    if (args.contains('enum')) break;
     final input = '${'・' * size}カ.example';
     print(
       jsonEncode({
@@ -108,6 +110,7 @@ void main(List<String> args) {
     );
   }
   for (final size in [2000, 20000]) {
+    if (args.contains('formats')) break;
     final document = {'enum': List<int>.generate(size, (i) => i)};
     print(
       jsonEncode({

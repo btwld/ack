@@ -12,6 +12,8 @@
 
 ### Fixed
 
+* Check IDNA label-wide contextual rules in one pass, keeping long rejected
+  internationalized hostname and email inputs linear in label length.
 * Reject malformed supplementary punycode input as a format failure during
   parsing and encoding instead of allowing decoder range errors to escape.
 * Keep generated field defaults separate from defaults inside custom schemas;
