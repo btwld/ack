@@ -14,15 +14,15 @@
 
 * Validate nested objects as they encode, avoiding repeated subtree checks
   while observing nested changes made by earlier sibling encoders.
-
 * Build imported schema locations from shared pointer segments, avoiding
   repeated ancestor-string copies during deeply nested compilation.
 * Reuse the standard meta-schema index across imports while keeping compiled
   references and format assertions isolated to each schema.
 * Deduplicate imported enum values with JSON equality and hashing, preserving
   first occurrences while keeping compilation linear in enum size.
-* Check IDNA label-wide contextual rules in one pass, keeping long rejected
-  internationalized hostname and email inputs linear in label length.
+* Check IDNA label-wide contextual rules in one pass, avoiding repeated scans
+  for Japanese-script presence and mixed Arabic digit families.
+  Encoded label length is still checked after punycode conversion.
 * Reject malformed supplementary punycode input as a format failure during
   parsing and encoding instead of allowing decoder range errors to escape.
 * Keep generated field defaults separate from defaults inside custom schemas;
