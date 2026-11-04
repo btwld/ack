@@ -12,6 +12,8 @@
 
 ### Fixed
 
+* Deduplicate imported enum values with JSON equality and hashing, preserving
+  first occurrences while keeping compilation linear in enum size.
 * Check IDNA label-wide contextual rules in one pass, keeping long rejected
   internationalized hostname and email inputs linear in label length.
 * Reject malformed supplementary punycode input as a format failure during

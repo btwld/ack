@@ -650,12 +650,10 @@ final class _JsonSchemaCompiler {
           _fail(node, key, 'Expected an enum array.');
         }
         // Draft-7 requires unique enum entries; 2020-12 merely recommends it.
-        final unique = <Object?>[];
-        for (final candidate in value) {
-          if (!unique.any((v) => deepEquals(v, candidate))) {
-            unique.add(candidate);
-          }
-        }
+        final unique = LinkedHashSet<Object?>(
+          equals: deepEquals,
+          hashCode: deepHashCode,
+        )..addAll(value);
         node.keywords[key] = node.enumValues = List<Object?>.unmodifiable(
           unique,
         );
