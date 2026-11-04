@@ -12,8 +12,8 @@
 
 ### Fixed
 
-* Reuse successful object runtime checks within an encode call, avoiding
-  repeated subtree validation for deeply nested objects.
+* Validate nested objects as they encode, avoiding repeated subtree checks
+  while observing nested changes made by earlier sibling encoders.
 
 * Build imported schema locations from shared pointer segments, avoiding
   repeated ancestor-string copies during deeply nested compilation.

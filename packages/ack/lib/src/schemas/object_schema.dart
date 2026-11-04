@@ -160,11 +160,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
-    if (context is _ObjectEncodeContext &&
-        context._hasValidated(this, mapValue)) {
-      return SchemaResult.ok(mapValue);
-    }
-
     final errors = <SchemaError>[];
     final isEncode = context.operation == SchemaOperation.encode;
 
@@ -246,11 +241,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
-    final result = applyConstraintsAndRefinements(mapValue, context);
-    if (result.isOk && context is _ObjectEncodeContext) {
-      context._rememberValidation(this, mapValue);
-    }
-    return result;
+    return applyConstraintsAndRefinements(mapValue, context);
   }
 
   void _checkAdditionalProperties(
@@ -299,12 +290,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     JsonMap value,
     SchemaContext context,
   ) {
-    if (context is! _ObjectEncodeContext) {
-      context = _ObjectEncodeContext(context);
-    }
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-
     final encoded = <String, Object?>{};
     final errors = <SchemaError>[];
 
@@ -336,31 +321,76 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       } else if (hasValue) {
         propertyValue = value[key];
       } else {
+        if (!schema.isOptional) {
+          errors.add(
+            SchemaEncodeError.missingRequiredProperty(
+              propertyKey: key,
+              context: propertyCtx,
+            ),
+          );
+        }
         continue;
       }
       if (propertyValue == null) {
-        if (schema.acceptsNull) encoded[key] = null;
+        if (schema.acceptsNull) {
+          encoded[key] = null;
+        } else if (!schema.isOptional) {
+          errors.add(SchemaEncodeError.nonNullable(context: propertyCtx));
+        }
         continue;
       }
-      try {
-        final r = schema.encodeWithContext(propertyValue, propertyCtx);
-        if (r.isFail) {
-          errors.add(r.getError());
-        } else {
-          encoded[key] = r.getOrNull();
+      // Objects validate their children and refinements as they encode. Do not
+      // prevalidate subtrees or reuse checks across sibling encoder callbacks.
+      var valueSchema = schema;
+      while (valueSchema is DefaultSchema) {
+        valueSchema = valueSchema.inner;
+      }
+      final SchemaResult<Object> r;
+      if (valueSchema is ObjectSchema) {
+        final mapValue = jsonMapOrNull(propertyValue);
+        if (mapValue == null) {
+          errors.add(
+            _buildTypeMismatch(
+              expectedType: valueSchema.schemaType,
+              actualValue: propertyValue,
+              context: propertyCtx,
+            ),
+          );
+          continue;
         }
-      } catch (e, st) {
-        _rethrowIfError(e, st);
-        errors.add(
-          SchemaEncodeError.encoderThrew(
-            message: 'Property "$key" encoder threw: $e',
-            context: propertyCtx,
-            cause: e,
-            stackTrace: st,
-          ),
+        r = valueSchema.encodeWithContext(mapValue, propertyCtx);
+      } else {
+        final validated = schema.validateRuntimeWithContext(
+          propertyValue,
+          propertyCtx,
         );
+        if (validated.isFail) {
+          errors.add(validated.getError());
+          continue;
+        }
+        try {
+          r = schema.encodeWithContext(propertyValue, propertyCtx);
+        } catch (e, st) {
+          _rethrowIfError(e, st);
+          errors.add(
+            SchemaEncodeError.encoderThrew(
+              message: 'Property "$key" encoder threw: $e',
+              context: propertyCtx,
+              cause: e,
+              stackTrace: st,
+            ),
+          );
+          continue;
+        }
+      }
+      if (r.isFail) {
+        errors.add(r.getError());
+      } else {
+        encoded[key] = r.getOrNull();
       }
     }
+
+    _checkAdditionalProperties(value, context, errors, isEncode: true);
 
     if (additionalProperties) {
       for (final key in value.keys) {
@@ -376,6 +406,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
+    final validated = applyConstraintsAndRefinements(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(UnmodifiableMapView(encoded));
   }
 
@@ -423,66 +455,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       additionalProperties,
       mapEq.hash(properties),
     );
-  }
-}
-
-// Cache successful object checks within one encode, separately per property path.
-final class _ObjectEncodeContext extends SchemaContext {
-  _ObjectEncodeContext(SchemaContext source, [_ObjectEncodeContext? prior])
-    : _children = prior?._children ?? {},
-      _validated = prior?._validated ?? HashMap.identity(),
-      super(
-        name: source.name,
-        schema: source.schema,
-        value: source.value,
-        parent: source.parent,
-        pathSegment: source.pathSegment,
-        operation: source.operation,
-      );
-
-  final Map<String, _ObjectEncodeContext> _children;
-  final Map<ObjectSchema, (JsonMap, JsonMap)> _validated;
-
-  bool _hasValidated(ObjectSchema schema, JsonMap value) {
-    final previous = _validated[schema];
-    if (previous == null || !identical(previous.$1, value)) return false;
-    final snapshot = previous.$2;
-    return value.length == snapshot.length &&
-        snapshot.entries.every(
-          (entry) =>
-              value.containsKey(entry.key) &&
-              identical(value[entry.key], entry.value),
-        );
-  }
-
-  void _rememberValidation(ObjectSchema schema, JsonMap value) {
-    if (parent == null) return;
-    _validated[schema] = (value, Map.of(value));
-  }
-
-  @override
-  SchemaContext createChild({
-    required String name,
-    required AnyAckSchema schema,
-    required Object? value,
-    String? pathSegment,
-    SchemaOperation? operation,
-  }) {
-    final child = super.createChild(
-      name: name,
-      schema: schema,
-      value: value,
-      pathSegment: pathSegment,
-      operation: operation,
-    );
-    if (schema is NumSchema ||
-        schema is StringSchema ||
-        schema is BooleanSchema) {
-      return child;
-    }
-    if (pathSegment == '') return _ObjectEncodeContext(child, this);
-    final key = pathSegment ?? name;
-    return _children[key] = _ObjectEncodeContext(child, _children[key]);
   }
 }
 

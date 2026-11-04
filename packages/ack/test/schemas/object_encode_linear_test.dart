@@ -41,6 +41,34 @@ void main() {
     expect(visits, 2);
   });
 
+  test('later object refinements observe nested sibling encoder mutations', () {
+    final inner = <String, Object?>{'y': 1};
+    final later = <String, Object?>{'inner': inner};
+    final trigger = Ack.string().codec<String>(
+      decode: (value) => value,
+      encode: (value) {
+        inner['y'] = 2;
+        return value;
+      },
+    );
+    final schema = Ack.object({
+      'trigger': trigger,
+      'later':
+          Ack.object({
+            'inner': Ack.object({'y': Ack.integer()}),
+          }).refine(
+            (value) => (value['inner']! as Map)['y'] == 1,
+            message: 'inner.y must remain 1',
+          ),
+    });
+
+    final result = schema.safeEncode({'trigger': 'ok', 'later': later});
+    expect(result.isFail, isTrue);
+    final error = (result.getError() as SchemaNestedError).errors.single;
+    expect(error.context.path, '#/later');
+    expect(error.toMap().toString(), contains('inner.y must remain 1'));
+  });
+
   test('later object mutations still return normal encode failures', () {
     for (final mutation in [
       {'extra': true},
