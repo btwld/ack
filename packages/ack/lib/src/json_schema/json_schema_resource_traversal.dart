@@ -13,10 +13,11 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
     Uri dialect,
   ) {
     final provisional = _ImportedNode(source, document, pointer, base, dialect);
-    if (source is! bool && source is! Map<String, Object?>) {
+    if (source is bool) return provisional;
+    if (source is! Map<String, Object?>) {
       _fail(provisional, '', 'Expected a schema object or boolean.');
     }
-    if (source is Map<String, Object?> && source.containsKey(r'$id')) {
+    if (source.containsKey(r'$id')) {
       final id = source[r'$id'];
       if (id is! String) _fail(provisional, r'$id', 'Expected a URI string.');
       base = _resolve(provisional, r'$id', base, id);
@@ -25,7 +26,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
       }
       base = base.removeFragment();
     }
-    if (source is Map<String, Object?> && source.containsKey(r'$schema')) {
+    if (source.containsKey(r'$schema')) {
       final declared = source[r'$schema'];
       if (declared is! String) {
         _fail(provisional, r'$schema', 'Expected a URI string.');
@@ -36,8 +37,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
       }
       dialect = resolved.removeFragment();
     }
-    final node = _ImportedNode(source, document, pointer, base, dialect);
-    return node;
+    return _ImportedNode(source, document, pointer, base, dialect);
   }
 
   /// Enumerates schema-valued locations in document order. Normal indexing
@@ -177,37 +177,36 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
     final wanted = node.dialectUri;
 
     bool visit(_ImportedNode parent, List<(_ImportedNode, String)> path) {
-      final source = parent.source;
-      if (source is! Map<String, Object?>) return false;
-
-      bool visitChild(Object? value, String keyword, String suffix) {
-        if (value is! Map<String, Object?>) return false;
+      children:
+      for (final location in _schemaChildren(parent)) {
+        final value = location.source;
+        if (value is! Map<String, Object?>) continue;
         final _ImportedNode child;
         try {
           child = _resourceNode(
             value,
             parent.documentUri,
-            '${parent.pointer}/$suffix',
+            '${parent.pointer}/${location.suffix}',
             parent.baseUri,
             parent.dialectUri,
           );
         } on JsonSchemaImportException {
           // Probing must not validate unrelated, potentially inert payloads.
-          return false;
+          continue;
         }
-        final childPath = [...path, (parent, keyword)];
+        final childPath = [...path, (parent, location.keyword)];
         if (value.containsKey(r'$id') && child.baseUri == wanted) {
-          if (value[r'$vocabulary'] is! Map<String, Object?>) return false;
+          if (value[r'$vocabulary'] is! Map<String, Object?>) continue;
           for (final (scope, key) in childPath) {
             if (scope.dialectUri != wanted &&
                 !resources.containsKey(scope.dialectUri) &&
                 !_JsonSchemaCompiler.draft7Dialects.contains(
                   scope.dialectUri,
                 )) {
-              return false;
+              continue children;
             }
             _configureDialect(scope, bundledDialect: child);
-            if (!scope.isKeywordActive(key)) return false;
+            if (!scope.isKeywordActive(key)) continue children;
           }
           _index(
             value,
@@ -218,11 +217,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
           );
           return true;
         }
-        return visit(child, childPath);
-      }
-
-      for (final child in _schemaChildren(parent)) {
-        if (visitChild(child.source, child.keyword, child.suffix)) return true;
+        if (visit(child, childPath)) return true;
       }
       return false;
     }
@@ -249,18 +244,16 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
     _ImportedNode node,
     String keyword,
   ) {
-    if (registry[uri] case final prior?) {
-      if (!identical(prior, node)) {
-        // Delayed optional-keyword indexing can discover an explicitly supplied
-        // copy after the offline fallback was registered. Only an identical
-        // fallback may be replaced; two caller-owned identifiers still conflict.
-        final replacesFallback =
-            _fallbackDocumentUris.contains(prior.documentUri) &&
-            !_fallbackDocumentUris.contains(node.documentUri) &&
-            deepEquals(prior.source, node.source);
-        if (!replacesFallback) {
-          _fail(node, keyword, 'Duplicate schema identifier: $uri.');
-        }
+    if (registry[uri] case final prior? when !identical(prior, node)) {
+      // Delayed optional-keyword indexing can discover an explicitly supplied
+      // copy after the offline fallback was registered. Only an identical
+      // fallback may be replaced; two caller-owned identifiers still conflict.
+      final replacesFallback =
+          _fallbackDocumentUris.contains(prior.documentUri) &&
+          !_fallbackDocumentUris.contains(node.documentUri) &&
+          deepEquals(prior.source, node.source);
+      if (!replacesFallback) {
+        _fail(node, keyword, 'Duplicate schema identifier: $uri.');
       }
     }
     registry[uri] = node;
