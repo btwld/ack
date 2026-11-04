@@ -455,6 +455,13 @@ void main() {
     final customer = CustomerSchema.parse({});
     expect(customer.primary.city, 'Default City');
     expect(customer.secondary, isNull);
+    expect(CustomerSchema.safeParse({'primary': null}).isFail, isTrue);
+    expect(CustomerSchema.encode(customer), {
+      'primary': {'city': 'Default City'},
+    });
+    final primary =
+        (CustomerSchema.toJsonSchema()['properties'] as Map)['primary'] as Map;
+    expect(primary['default'], {'city': 'Default City'});
 
     final parcel = ParcelSchema.parse({
       'destination': {'city': 'Utrecht'},
@@ -581,14 +588,6 @@ void main() {
         expect(
           generated['lib/address.g.dart'],
           contains("'primary': PostalAddressSchema.schema"),
-        );
-        expect(
-          generated['lib/customer.g.dart']!
-              .replaceAll(RegExp(r'\s+'), '')
-              .replaceAll(',)', ')'),
-          contains(
-            "PostalAddressSchema.schema).withDefault(constAddress(city:'DefaultCity'))",
-          ),
         );
         expect(
           generated['lib/parcel.g.dart'],
