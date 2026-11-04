@@ -126,31 +126,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           );
     }
 
-    for (final key in mapValue.keys) {
-      if (properties.containsKey(key)) continue;
-      if (additionalProperties) {
-        validatedMap[key] = mapValue[key];
-      } else {
-        errors.add(
-          SchemaConstraintsError(
-            constraints: [
-              ConstraintError(
-                constraint: ObjectNoAdditionalPropertiesConstraint(
-                  unexpectedPropertyKey: key,
-                ),
-                message: 'Property "$key" is not allowed.',
-              ),
-            ],
-            context: context.createChild(
-              name: key,
-              schema: this,
-              value: mapValue[key],
-              pathSegment: key,
-            ),
-          ),
-        );
-      }
-    }
+    _checkAdditionalProperties(mapValue, context, errors, parsed: validatedMap);
 
     if (errors.isNotEmpty) {
       return SchemaResult.fail(
@@ -262,38 +238,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       if (r.isFail) errors.add(r.getError());
     }
 
-    for (final key in mapValue.keys) {
-      if (properties.containsKey(key)) continue;
-      if (additionalProperties) continue;
-      final extraCtx = context.createChild(
-        name: key,
-        schema: this,
-        value: mapValue[key],
-        pathSegment: key,
-      );
-      if (isEncode) {
-        errors.add(
-          SchemaEncodeError.unexpectedProperty(
-            propertyKey: key,
-            context: extraCtx,
-          ),
-        );
-      } else {
-        errors.add(
-          SchemaConstraintsError(
-            constraints: [
-              ConstraintError(
-                constraint: ObjectNoAdditionalPropertiesConstraint(
-                  unexpectedPropertyKey: key,
-                ),
-                message: 'Property "$key" is not allowed.',
-              ),
-            ],
-            context: extraCtx,
-          ),
-        );
-      }
-    }
+    _checkAdditionalProperties(mapValue, context, errors, isEncode: isEncode);
 
     if (errors.isNotEmpty) {
       return SchemaResult.fail(
@@ -306,6 +251,46 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       context._rememberValidation(this, mapValue);
     }
     return result;
+  }
+
+  void _checkAdditionalProperties(
+    JsonMap value,
+    SchemaContext context,
+    List<SchemaError> errors, {
+    JsonMap? parsed,
+    bool isEncode = false,
+  }) {
+    for (final key in value.keys) {
+      if (properties.containsKey(key)) continue;
+      if (additionalProperties) {
+        if (parsed != null) parsed[key] = value[key];
+        continue;
+      }
+      final extraCtx = context.createChild(
+        name: key,
+        schema: this,
+        value: value[key],
+        pathSegment: key,
+      );
+      errors.add(
+        isEncode
+            ? SchemaEncodeError.unexpectedProperty(
+                propertyKey: key,
+                context: extraCtx,
+              )
+            : SchemaConstraintsError(
+                constraints: [
+                  ConstraintError(
+                    constraint: ObjectNoAdditionalPropertiesConstraint(
+                      unexpectedPropertyKey: key,
+                    ),
+                    message: 'Property "$key" is not allowed.',
+                  ),
+                ],
+                context: extraCtx,
+              ),
+      );
+    }
   }
 
   @override

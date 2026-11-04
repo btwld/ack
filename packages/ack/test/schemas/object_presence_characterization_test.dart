@@ -66,4 +66,13 @@ void main() {
     }
     expect(records, fixture.readAsLinesSync().map(jsonDecode).toList());
   });
+
+  test('additional-property errors retain order and pointer escaping', () {
+    final schema = Ack.object({});
+    final input = {'a/b': 1, 'c~d': 2};
+    for (final result in [schema.safeParse(input), schema.safeEncode(input)]) {
+      final error = result.getError() as SchemaNestedError;
+      expect(error.errors.map((e) => e.context.path), ['#/a~1b', '#/c~0d']);
+    }
+  });
 }
