@@ -21,6 +21,7 @@ import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
 part '../json_schema/json_schema_compiler.dart';
+part '../json_schema/json_schema_resource_traversal.dart';
 part '../json_schema/json_schema_formats.dart';
 part '../json_schema/json_schema_import_error.dart';
 part '../json_schema/standard_meta_schemas.dart';
