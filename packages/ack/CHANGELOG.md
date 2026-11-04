@@ -12,6 +12,8 @@
 
 ### Fixed
 
+* Reject malformed supplementary punycode input as a format failure during
+  parsing and encoding instead of allowing decoder range errors to escape.
 * Keep generated field defaults separate from defaults inside custom schemas;
   exported properties reflect the field's own presence and default policy.
 * Apply IDNA ContextO rules using Unicode Script properties, including

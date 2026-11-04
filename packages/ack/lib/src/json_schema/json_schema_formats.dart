@@ -243,6 +243,8 @@ bool _isHostname(String value, {required bool international}) {
         label = punycoder.punycode.decode(rawLabel.substring(4));
       } on FormatException {
         return false;
+      } on RangeError {
+        return false;
       }
       if (label.isEmpty || label.runes.every((rune) => rune < 128)) {
         return false;
