@@ -87,8 +87,7 @@ final class Holder with _\$HolderAck {
   test(
     'distinguishes registrations by application argument nullability',
     () async {
-      await _build(
-        '''
+      await _build('''
 $_box
 @Schemable(schemas: [boxSchema, nullableBoxSchema])
 final class Holder with _\$HolderAck {
@@ -96,12 +95,7 @@ final class Holder with _\$HolderAck {
   final Box<String> box;
   final Box<String?> nullableBox;
 }
-''',
-        output: allOf([
-          contains("'box': boxSchema()"),
-          contains("'nullableBox': nullableBoxSchema()"),
-        ]),
-      );
+''', output: allOf([contains('boxSchema()'), contains('nullableBoxSchema()')]));
     },
   );
 

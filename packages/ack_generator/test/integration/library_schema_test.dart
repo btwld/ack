@@ -49,15 +49,15 @@ final class Theme with _$ThemeAck {
 }
 ''',
         allOf([
-          containsCode("'primary': colorSchema,"),
-          containsCode("'secondary': colorSchema.optional().nullable(),"),
+          containsCode(')(colorSchema)'),
+          containsCode(')(colorSchema).optional().nullable()'),
           containsCode("'palette': Ack.list(colorSchema),"),
           containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
           containsCode("'namedColors': Ack.map(colorSchema),"),
-          containsCode("'maybeColor': colorSchema.optional().nullable(),"),
-          containsCode("'boxedColor': Box.schema<Color>(colorSchema),"),
-          containsCode("'price': centsSchema,"),
-          containsCode("'slug': slugSchema()"),
+          containsCode(')(colorSchema).optional().nullable()'),
+          containsCode(')(Box.schema<Color>(colorSchema))'),
+          containsCode(')(centsSchema)'),
+          containsCode(')(slugSchema())'),
         ]),
         types: '''
 import 'package:ack/ack.dart';

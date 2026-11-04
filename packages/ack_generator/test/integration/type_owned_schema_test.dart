@@ -22,10 +22,10 @@ final class Section with _$SectionAck {
 }
 ''',
       allOf(
-        containsCode("'header': Slot.schema,"),
-        containsCode("'footer': Slot.schema.optional().nullable(),"),
-        containsCode("'token': Token.schema,"),
-        containsCode("'widget': WidgetId.schema,"),
+        containsCode(')(Slot.schema)'),
+        containsCode(')(Slot.schema).optional().nullable()'),
+        containsCode(')(Token.schema)'),
+        containsCode(')(WidgetId.schema)'),
       ),
     );
   });
@@ -70,7 +70,7 @@ final class Menu with _$MenuAck {
 }
 ''',
         allOf(
-          containsCode("'open': Command.schema<CompletionAction>(),"),
+          containsCode(')(Command.schema<CompletionAction>())'),
           containsCode(
             "'history': Ack.list(Command.schema<CompletionAction>()),",
           ),
@@ -98,10 +98,10 @@ final class Panel with _$PanelAck {
 }
 ''',
       allOf(
-        containsCode("'openAll': Trigger.schema<void>(),"),
-        containsCode("'anything': Trigger.schema<Object?>(),"),
-        containsCode("'nothing': Trigger.schema<Null>(),"),
-        containsCode("'complete': Trigger.schema<CompletionAction>()"),
+        containsCode(')(Trigger.schema<void>())'),
+        containsCode(')(Trigger.schema<Object?>())'),
+        containsCode(')(Trigger.schema<Null>())'),
+        containsCode(')(Trigger.schema<CompletionAction>())'),
         contains('Trigger<void>? openAll'),
       ),
     );
@@ -117,7 +117,7 @@ final class Section with _$SectionAck {
   final types.Slot header;
 }
 ''',
-      containsCode("Ack.object({'header': types.Slot.schema})"),
+      containsCode(')(types.Slot.schema)'),
       head: '''
 import 'package:ack/ack.dart';
 import 'types.dart' as types;
@@ -225,14 +225,12 @@ final class Screen with _$ScreenAck {
 }
 ''',
       allOf(
-        containsCode("'row': Box.schema<Row>(RowSchema.schema),"),
-        containsCode("'title': Box.schema<String>(Ack.string()),"),
-        containsCode(
-          "'rows': Box.schema<List<Row>>(Ack.list(RowSchema.schema)),",
-        ),
+        containsCode(')(Box.schema<Row>(RowSchema.schema))'),
+        containsCode(')(Box.schema<String>(Ack.string()))'),
+        containsCode(')(Box.schema<List<Row>>(Ack.list(RowSchema.schema)))'),
         containsCode("'boxes': Ack.list(Box.schema<Row>(RowSchema.schema)),"),
         containsCode(
-          "'nested': Box.schema<Box<String>>(Box.schema<String>(Ack.string()))",
+          ')(Box.schema<Box<String>>(Box.schema<String>(Ack.string())))',
         ),
       ),
     );
@@ -512,7 +510,7 @@ final class Task with _$TaskAck {
 }
 ''',
       allOf(
-        containsCode("'status': Status.schema,"),
+        containsCode(')(Status.schema)'),
         containsCode("'plain': Ack.enumValues(Plain.values)"),
       ),
       types: '''

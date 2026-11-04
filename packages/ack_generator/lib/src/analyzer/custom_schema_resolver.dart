@@ -500,19 +500,23 @@ final class CustomSchemaResolver {
     InterfaceType interfaceType,
     FieldElement field, {
     ClassElement? activeClass,
+    String Function(String)? normalizeFieldSchema,
     required Future<String> Function(DartType type, FieldElement field)
     schemaForType,
     required AckInferRef Function(DartType type, FieldElement field) typeRef,
     required AckInferRef Function(DartType type, FieldElement field)
     typeArgumentRef,
   }) async {
+    String normalize(String schema) =>
+        normalizeFieldSchema?.call(schema) ?? schema;
+
     final registered = registeredSchemaForType(
       interfaceType,
       field,
       activeClass: activeClass,
     );
     if (registered != null) {
-      return renderRegisteredSchema(registered, field);
+      return normalize(renderRegisteredSchema(registered, field));
     }
     if (isOverridableBuiltInScalar(interfaceType)) {
       return null;
@@ -536,7 +540,7 @@ final class CustomSchemaResolver {
             schemaForType: schemaForType,
             typeArgumentRef: typeArgumentRef,
           );
-          if (typeOwned != null) return typeOwned;
+          if (typeOwned != null) return normalize(typeOwned);
         }
         _validateClassFirstFacadeImport(
           target,
@@ -553,7 +557,7 @@ final class CustomSchemaResolver {
         path: path,
         context: field,
       );
-      return '$visibleName.\$ack.schema';
+      return normalize('$visibleName.\$ack.schema');
     }
     final typeOwned = await typeOwnedSchema(
       interfaceType,
@@ -562,9 +566,10 @@ final class CustomSchemaResolver {
       schemaForType: schemaForType,
       typeArgumentRef: typeArgumentRef,
     );
-    if (typeOwned != null) return typeOwned;
+    if (typeOwned != null) return normalize(typeOwned);
     if (target is EnumElement) return null;
-    return await autoDetectedLibrarySchema(interfaceType, field);
+    final automatic = await autoDetectedLibrarySchema(interfaceType, field);
+    return automatic == null ? null : normalize(automatic);
   }
 
   /// Resolves [type] through a static `schema` that the type declares.

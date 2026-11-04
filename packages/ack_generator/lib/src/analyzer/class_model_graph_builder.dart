@@ -739,7 +739,11 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
           effectiveRef,
         );
       }
-      return _applySugar(futureType.schemaExpression, field, parameter);
+      return _applySugar(
+        _resetPresence(futureType.schemaExpression),
+        field,
+        parameter,
+      );
     }
     final type = unwrapJsonMaybeType(field.type);
     if (type is InterfaceType &&
@@ -751,7 +755,11 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
       final list = _applySugar('${ack('Ack')}.list($item)', field, parameter);
       return _setCodec(list, _typeRef(type, field, allowJsonMaybe: false));
     }
-    return _applySugar(await _schemaForType(type, field), field, parameter);
+    return _applySugar(
+      await _schemaForType(type, field, normalizePresence: true),
+      field,
+      parameter,
+    );
   }
 
   String _setCodec(String listSchema, AckInferRef runtimeRef) {
@@ -785,28 +793,36 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     _ => type,
   };
 
-  Future<String> _schemaForType(DartType type, FieldElement field) =>
-      _inference.inferType(
-        type,
-        visibleTypeName: (type) => _visibleTypeName(type, field),
-        renderType: (type) => _typeRef(
-          type,
-          field,
-          allowJsonMaybe: false,
-        ).render(ackPrefix: ackPrefix),
-        resolveNamed: (type) => _customSchemas.namedSchemaForType(
-          type,
-          field,
-          activeClass: _activeClass,
-          schemaForType: _schemaForType,
-          typeRef: (t, f) => _typeRef(t, f, allowJsonMaybe: false),
-          typeArgumentRef: _typeArgumentRef,
-        ),
-        unsupported: (type) => _unsupportedFieldType(field, type),
-        rejectNullableCollectionElement: (type) =>
-            _nullableCollectionElementError(field, type.getDisplayString()),
-        validateMapKey: (type) => _validateMapKey(field, type),
-      );
+  Future<String> _schemaForType(
+    DartType type,
+    FieldElement field, {
+    bool normalizePresence = false,
+  }) => _inference.inferType(
+    type,
+    visibleTypeName: (type) => _visibleTypeName(type, field),
+    renderType: (type) => _typeRef(
+      type,
+      field,
+      allowJsonMaybe: false,
+    ).render(ackPrefix: ackPrefix),
+    resolveNamed: (namedType) => _customSchemas.namedSchemaForType(
+      namedType,
+      field,
+      activeClass: _activeClass,
+      schemaForType: _schemaForType,
+      typeRef: (t, f) => _typeRef(t, f, allowJsonMaybe: false),
+      typeArgumentRef: _typeArgumentRef,
+      // Only the field itself owns presence. Collection elements keep
+      // their independently inferred policies.
+      normalizeFieldSchema: normalizePresence && namedType == type
+          ? _resetPresence
+          : null,
+    ),
+    unsupported: (type) => _unsupportedFieldType(field, type),
+    rejectNullableCollectionElement: (type) =>
+        _nullableCollectionElementError(field, type.getDisplayString()),
+    validateMapKey: (type) => _validateMapKey(field, type),
+  );
 
   void _rejectNullableCollectionElement(FieldElement field, DartType itemType) {
     if (!isNullableType(itemType)) return;
@@ -1377,6 +1393,20 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     RegExp('[A-Z]'),
     (match) => '${match.start == 0 ? '' : separator}${match[0]!.toLowerCase()}',
   );
+
+  /// Field declarations own missing/null handling, even when a supplied schema
+  /// inherits defaults or optional/nullable flags through wrappers. A fresh
+  /// identity codec gates null before delegating to that schema and retains its
+  /// runtime validation and encoder for non-null values.
+  String _resetPresence(String schema) =>
+      '(<B extends Object, R extends Object>('
+      '${ack('AckSchema')}<B, R> fieldSchema) => '
+      'fieldSchema.codec<R>('
+      'decode: (value) => value, encode: (value) => value, '
+      'output: fieldSchema).withRuntimeConfig('
+      'isOptional: false, isNullable: false, '
+      'description: fieldSchema.description))'
+      '($schema)';
 
   String _applyPresence(
     String schema, {

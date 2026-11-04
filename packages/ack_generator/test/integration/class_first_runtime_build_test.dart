@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import 'helpers/presence_matrix.dart';
+
 Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
     Process.run('dart', arguments, workingDirectory: directory.path);
 
@@ -95,6 +97,7 @@ void main() {
       try {
         Directory(p.join(temporary.path, 'lib')).createSync();
         Directory(p.join(temporary.path, 'test')).createSync();
+        writePresenceMatrix(temporary);
         File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_class_first_runtime
 publish_to: none

@@ -655,7 +655,7 @@ final class Record with _\$RecordAck {
       outputs: {
         'test_pkg|lib/types.g.dart': decodedMatches(
           allOf([
-            contains("'color': colorSchema()"),
+            _containsCode(')(colorSchema())'),
             isNot(contains("'color': colorSchema().describe(")),
             contains("'scores': Ack.map(Ack.integer())"),
             contains("'role': Ack.enumValues(Role.values)"),
@@ -979,8 +979,8 @@ final class CapabilityBinding with _\$CapabilityBindingAck {
               contains(
                 "'title': Ack.string().notEmpty().optional().nullable(value: false)",
               ),
-              contains(
-                'nullableNameSchema().optional().nullable(value: false)',
+              _containsCode(
+                ')(nullableNameSchema()).optional().nullable(value: false)',
               ),
               contains("'value': Ack.string().nullable(value: false)"),
               isNot(contains("'value': Ack.string().optional()")),

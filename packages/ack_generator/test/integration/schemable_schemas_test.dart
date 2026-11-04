@@ -48,11 +48,11 @@ final class Order with _$OrderAck {
 }
 ''',
         allOf(
-          containsCode("'color': hexColorSchema(),"),
-          containsCode("'total': importedMoneySchema(),"),
-          containsCode("'createdAt': epochDateTimeSchema(),"),
+          containsCode(')(hexColorSchema())'),
+          containsCode(')(importedMoneySchema())'),
+          containsCode(')(epochDateTimeSchema())'),
           containsCode("'timestamps': Ack.list(epochDateTimeSchema()),"),
-          containsCode("'cellValue': cellValueSchema(),"),
+          containsCode(')(cellValueSchema())'),
           containsCode("'anyJson': Ack.any().optional().nullable()"),
         ),
         types: '''
@@ -96,8 +96,8 @@ final class Palette with _$PaletteAck {
 }
 ''',
         allOf(
-          containsCode("'primary': libraryColorSchema(),"),
-          containsCode("'budget': sharedMoneySchema()"),
+          containsCode(')(libraryColorSchema())'),
+          containsCode(')(sharedMoneySchema())'),
         ),
         head: '''
 @Schemable(schemas: [libraryColorSchema])

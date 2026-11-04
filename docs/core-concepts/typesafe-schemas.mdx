@@ -296,6 +296,11 @@ encodes as `'fallback'` too. With `this.label = null`, missing input and JSON
 These changes are breaking relative to beta.1. `@Validate.*`, including
 `@Validate.required()`, remains the public annotation API.
 
+Presence and nullability rules also apply to fields backed by registered or
+type-owned custom schemas. Custom codecs keep their value validation and
+encoding; their wrapper flags cannot make a required field optional or a
+non-nullable field accept null.
+
 Three annotations control presence and null acceptance. They change the JSON
 contract only; Dart nullability and the constructor stay as written, and
 unannotated fields keep constructor inference.

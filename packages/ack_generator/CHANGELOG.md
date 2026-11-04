@@ -16,6 +16,9 @@
 
 ### Fixed
 
+* Apply generated field presence and nullability rules to custom schemas, even
+  when their wrappers already supply defaults or optional/nullable flags.
+
 * Interpolate field values in generated schema-first `toString()` output
   instead of printing the field references as literal text.
 * Use runtime-validated value models for custom dialects so inactive vocabulary
