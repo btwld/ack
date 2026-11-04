@@ -12,6 +12,9 @@
 
 ### Fixed
 
+* Reuse successful object runtime checks within an encode call, avoiding
+  repeated subtree validation for deeply nested objects.
+
 * Build imported schema locations from shared pointer segments, avoiding
   repeated ancestor-string copies during deeply nested compilation.
 * Reuse the standard meta-schema index across imports while keeping compiled
