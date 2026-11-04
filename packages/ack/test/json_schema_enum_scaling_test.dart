@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-import '../tool/cleanup_benchmark.dart' show measure;
+import 'support/measure.dart';
 
 void main() {
   test('enum compilation grows linearly with distinct values', () {
