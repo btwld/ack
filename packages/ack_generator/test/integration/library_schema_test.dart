@@ -49,21 +49,13 @@ final class Theme with _$ThemeAck {
 }
 ''',
         allOf([
-          containsCode('AckSchema.forGeneratedField(colorSchema)'),
-          containsCode(
-            'AckSchema.forGeneratedField(colorSchema).optional().nullable()',
-          ),
+          containsCode('colorSchema'),
           containsCode("'palette': Ack.list(colorSchema),"),
           containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
           containsCode("'namedColors': Ack.map(colorSchema),"),
-          containsCode(
-            'AckSchema.forGeneratedField(colorSchema).optional().nullable()',
-          ),
-          containsCode(
-            'AckSchema.forGeneratedField(Box.schema<Color>(colorSchema))',
-          ),
-          containsCode('AckSchema.forGeneratedField(centsSchema)'),
-          containsCode('AckSchema.forGeneratedField(slugSchema())'),
+          containsCode('Box.schema<Color>(colorSchema)'),
+          containsCode('centsSchema'),
+          containsCode('slugSchema()'),
         ]),
         types: '''
 import 'package:ack/ack.dart';

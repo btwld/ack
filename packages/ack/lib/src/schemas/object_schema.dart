@@ -318,7 +318,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         operation: SchemaOperation.encode,
       );
       final Object? propertyValue;
-      if (schema is DefaultSchema && (!hasValue || value[key] == null)) {
+      if (schema is DefaultSchema && value[key] == null) {
         final defaultResult = schema.resolveDefaultWithContext(propertyCtx);
         if (defaultResult.isFail) {
           errors.add(defaultResult.getError());

@@ -349,7 +349,7 @@ final _accountObject = Ack.object({
       .minLength(2)
       .describe('The name shown to other users.'),
   'website': Ack.uri().optional().nullable(),
-  'role': AckSchema.forGeneratedField(Ack.string()).withDefault('member'),
+  'role': Ack.string().withDefault('member'),
 }).describe('A signed-in user\'s account.');
 
 final _accountWireSchema = Ack.preserveBoundary(_accountObject);

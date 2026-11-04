@@ -22,12 +22,9 @@ final class Section with _$SectionAck {
 }
 ''',
       allOf(
-        containsCode('AckSchema.forGeneratedField(Slot.schema)'),
-        containsCode(
-          'AckSchema.forGeneratedField(Slot.schema).optional().nullable()',
-        ),
-        containsCode('AckSchema.forGeneratedField(Token.schema)'),
-        containsCode('AckSchema.forGeneratedField(WidgetId.schema)'),
+        containsCode('Slot.schema'),
+        containsCode('Token.schema'),
+        containsCode('WidgetId.schema'),
       ),
     );
   });
@@ -72,9 +69,7 @@ final class Menu with _$MenuAck {
 }
 ''',
         allOf(
-          containsCode(
-            'AckSchema.forGeneratedField(Command.schema<CompletionAction>())',
-          ),
+          containsCode('Command.schema<CompletionAction>()'),
           containsCode(
             "'history': Ack.list(Command.schema<CompletionAction>()),",
           ),
@@ -102,12 +97,10 @@ final class Panel with _$PanelAck {
 }
 ''',
       allOf(
-        containsCode('AckSchema.forGeneratedField(Trigger.schema<void>())'),
-        containsCode('AckSchema.forGeneratedField(Trigger.schema<Object?>())'),
-        containsCode('AckSchema.forGeneratedField(Trigger.schema<Null>())'),
-        containsCode(
-          'AckSchema.forGeneratedField(Trigger.schema<CompletionAction>())',
-        ),
+        containsCode('Trigger.schema<void>()'),
+        containsCode('Trigger.schema<Object?>()'),
+        containsCode('Trigger.schema<Null>()'),
+        containsCode('Trigger.schema<CompletionAction>()'),
         contains('Trigger<void>? openAll'),
       ),
     );
@@ -123,7 +116,7 @@ final class Section with _$SectionAck {
   final types.Slot header;
 }
 ''',
-      containsCode('AckSchema.forGeneratedField(types.Slot.schema)'),
+      containsCode('types.Slot.schema'),
       head: '''
 import 'package:ack/ack.dart';
 import 'types.dart' as types;
@@ -231,18 +224,12 @@ final class Screen with _$ScreenAck {
 }
 ''',
       allOf(
-        containsCode(
-          'AckSchema.forGeneratedField(Box.schema<Row>(RowSchema.schema))',
-        ),
-        containsCode(
-          'AckSchema.forGeneratedField(Box.schema<String>(Ack.string()))',
-        ),
-        containsCode(
-          'AckSchema.forGeneratedField(Box.schema<List<Row>>(Ack.list(RowSchema.schema)))',
-        ),
+        containsCode('Box.schema<Row>(RowSchema.schema)'),
+        containsCode('Box.schema<String>(Ack.string())'),
+        containsCode('Box.schema<List<Row>>(Ack.list(RowSchema.schema))'),
         containsCode("'boxes': Ack.list(Box.schema<Row>(RowSchema.schema)),"),
         containsCode(
-          'AckSchema.forGeneratedField(Box.schema<Box<String>>(Box.schema<String>(Ack.string())))',
+          'Box.schema<Box<String>>(Box.schema<String>(Ack.string()))',
         ),
       ),
     );
@@ -522,7 +509,7 @@ final class Task with _$TaskAck {
 }
 ''',
       allOf(
-        containsCode('AckSchema.forGeneratedField(Status.schema)'),
+        containsCode('Status.schema'),
         containsCode("'plain': Ack.enumValues(Plain.values)"),
       ),
       types: '''

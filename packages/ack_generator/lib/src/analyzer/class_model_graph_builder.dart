@@ -1394,10 +1394,6 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     (match) => '${match.start == 0 ? '' : separator}${match[0]!.toLowerCase()}',
   );
 
-  /// Field declarations own missing/null handling, even when a supplied schema
-  /// inherits defaults or optional/nullable flags through wrappers. A fresh
-  /// identity codec gates null before delegating to that schema and retains its
-  /// runtime validation and encoder for non-null values.
   String _resetPresence(String schema) =>
       '${ack('AckSchema')}.forGeneratedField($schema)';
 
@@ -1415,8 +1411,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
         '$schema.optional()',
       AckSchemaFieldPresence.defaulted when acceptsNull =>
         '$schema.nullable().withDefault($defaultCode)',
-      AckSchemaFieldPresence.defaulted =>
-        '${_resetPresence(schema)}.withDefault($defaultCode)',
+      AckSchemaFieldPresence.defaulted => '$schema.withDefault($defaultCode)',
       AckSchemaFieldPresence.optional when acceptsNull =>
         '$schema.optional().nullable()',
       AckSchemaFieldPresence.optional => '$schema.optional()',

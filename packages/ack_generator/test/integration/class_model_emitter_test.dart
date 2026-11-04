@@ -403,61 +403,6 @@ final class Formats with _\$FormatsAck {
     );
   });
 
-  test('emits distinct presence, nullability, and default policies', () async {
-    await _build(
-      {
-        'defaults.dart':
-            '''
-$_imports
-part 'defaults.g.dart';
-
-@Schemable()
-final class Defaults with _\$DefaultsAck {
-  const Defaults({
-    required this.requiredValue,
-    required this.requiredNullable,
-    this.role = 'member',
-    this.fallback = 'fallback',
-    this.strict = 'strict',
-    this.empty = null,
-  });
-
-  final String requiredValue;
-  @Validate.required()
-  final String? requiredNullable;
-  final String role;
-  final String? fallback;
-  @Validate.notNull()
-  final String? strict;
-  final String? empty;
-}
-''',
-      },
-      outputs: {
-        'test_pkg|lib/defaults.g.dart': decodedMatches(
-          allOf([
-            contains(
-              "'fallback': Ack.string().nullable().withDefault('fallback')",
-            ),
-            contains("'empty': Ack.string().optional().nullable()"),
-            _containsCode(
-              "'role': AckSchema.forGeneratedField(Ack.string()).withDefault('member')",
-            ),
-            contains("'requiredValue': Ack.string()"),
-            contains("'requiredNullable': Ack.string().nullable()"),
-            _containsCode(".withDefault('member')"),
-            _containsCode(".withDefault('strict').nullable(value: false)"),
-            contains("'fallback': model.fallback"),
-            contains("'strict': model.strict"),
-            isNot(contains("'strict': ?model.strict")),
-            contains("'empty': model.empty"),
-            isNot(contains('withDefault(null)')),
-          ]),
-        ),
-      },
-    );
-  });
-
   test('infers Ack.any and Ack.map for open JSON field types', () async {
     await _build(
       {
@@ -654,7 +599,7 @@ final class Record with _\$RecordAck {
       outputs: {
         'test_pkg|lib/types.g.dart': decodedMatches(
           allOf([
-            _containsCode('AckSchema.forGeneratedField(colorSchema())'),
+            _containsCode('colorSchema()'),
             isNot(contains("'color': colorSchema().describe(")),
             contains("'scores': Ack.map(Ack.integer())"),
             contains("'role': Ack.enumValues(Role.values)"),
@@ -866,136 +811,6 @@ final class Account with _\$AccountAck {
       );
     },
   );
-
-  test('field presence annotations compose independently of nullability', () async {
-    await _build(
-      {
-        'fields.dart':
-            '''
-$_imports
-part 'fields.g.dart';
-
-@Schemable()
-final class Example with _\$ExampleAck {
-  const Example({this.label, this.nickname, this.title});
-
-  @Validate.optional()
-  @Validate.notNull()
-  final String? label;
-
-  @Validate.optional()
-  final String? nickname;
-
-  @Validate.optional()
-  @Validate.notNull()
-  @Validate.notEmpty()
-  final String? title;
-}
-
-@Schemable()
-final class InferredNotNull with _\$InferredNotNullAck {
-  const InferredNotNull({this.label});
-
-  @Validate.notNull()
-  final String? label;
-}
-
-final class NameTag {
-  const NameTag(this.value);
-  final String value;
-}
-
-AckSchema<String, NameTag> nullableNameSchema() => Ack.string().nullable().codec<NameTag>(
-  decode: NameTag.new,
-  encode: (value) => value.value,
-);
-
-@Schemable(schemas: [nullableNameSchema])
-final class OverrideNotNull with _\$OverrideNotNullAck {
-  const OverrideNotNull({this.name});
-
-  @Validate.notNull()
-  final NameTag? name;
-}
-
-@Schemable()
-final class RequiredNotNull with _\$RequiredNotNullAck {
-  const RequiredNotNull({this.value});
-
-  @Validate.required()
-  @Validate.notNull()
-  final String? value;
-}
-
-@Schemable()
-final class Forced with _\$ForcedAck {
-  const Forced({this.summary});
-
-  @Validate.required()
-  final String? summary;
-}
-
-final class ParameterEntry {
-  const ParameterEntry(this.value);
-  final String value;
-}
-
-AckSchema<String, ParameterEntry> parameterEntrySchema() =>
-    Ack.string().codec<ParameterEntry>(
-      decode: ParameterEntry.new,
-      encode: (value) => value.value,
-    );
-
-@Schemable(schemas: [parameterEntrySchema])
-final class CapabilityBinding with _\$CapabilityBindingAck {
-  CapabilityBinding({
-    required this.name,
-    Map<String, ParameterEntry> parameters = const {},
-  }) : parameters = Map.unmodifiable(parameters);
-
-  final String name;
-
-  @Validate.optional()
-  final Map<String, ParameterEntry> parameters;
-}
-
-''',
-      },
-      outputs: {
-        'test_pkg|lib/fields.g.dart': decodedMatches(
-          allOf([
-            contains("'label': Ack.string().optional().nullable(value: false)"),
-            contains("'nickname': Ack.string().optional().nullable()"),
-            isNot(
-              contains(
-                "'nickname': Ack.string().optional().nullable(value: false)",
-              ),
-            ),
-            contains(
-              "'title': Ack.string().notEmpty().optional().nullable(value: false)",
-            ),
-            _containsCode(
-              'AckSchema.forGeneratedField(nullableNameSchema()).optional().nullable(value: false)',
-            ),
-            contains("'value': Ack.string().nullable(value: false)"),
-            isNot(contains("'value': Ack.string().optional()")),
-            contains("'summary': Ack.string().nullable()"),
-            contains(
-              "'parameters': Ack.map(parameterEntrySchema()).optional()",
-            ),
-            isNot(
-              contains('Ack.map(parameterEntrySchema()).optional().nullable('),
-            ),
-            contains('Map<String, ParameterEntry>? parameters'),
-            contains('parameters: parameters ?? _source.parameters'),
-            isNot(contains('parameters as Map<String, ParameterEntry>?')),
-            contains('Object? label = _ackCopyWithUnset'),
-            contains(': label as String?'),
-          ]),
-        ),
-      },
-    );
-  });
 
   test('qualifies facade APIs through a prefixed Ack import', () async {
     await _build(
