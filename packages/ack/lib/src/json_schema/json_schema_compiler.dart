@@ -9,18 +9,48 @@ String _keywordPointer(_ImportedNode node, String keyword) {
   return '#${Uri.encodeFull(pointer.substring(1)).replaceAll('#', '%23')}';
 }
 
+// Intern path segments so indexing and child lookup never copy ancestor text.
+final class _JsonSchemaPointer {
+  _JsonSchemaPointer([this.parent, this.token = '']);
+
+  final _JsonSchemaPointer? parent;
+  final String token;
+  final _children = <String, _JsonSchemaPointer>{};
+
+  _JsonSchemaPointer child(String suffix) {
+    var location = this;
+    for (final token in suffix.split('/')) {
+      final parent = location;
+      location = parent._children.putIfAbsent(
+        token,
+        () => _JsonSchemaPointer(parent, token),
+      );
+    }
+    return location;
+  }
+
+  String get text {
+    final tokens = <String>[];
+    for (var node = this; node.parent != null; node = node.parent!) {
+      tokens.add(node.token);
+    }
+    return tokens.isEmpty ? '#' : '#/${tokens.reversed.join('/')}';
+  }
+}
+
 final class _ImportedNode {
   _ImportedNode(
     this.source,
     this.documentUri,
-    this.pointer,
+    this._location,
     this.baseUri,
     this.dialectUri,
   );
 
   final Object source;
   final Uri documentUri;
-  final String pointer;
+  final _JsonSchemaPointer _location;
+  String get pointer => _location.text;
   final Uri baseUri;
   final Uri dialectUri;
   bool applicatorVocabulary = true;
@@ -213,7 +243,7 @@ final class _JsonSchemaCompiler {
   static const formatAssertionVocabularyUri =
       'https://json-schema.org/draft/2020-12/vocab/format-assertion';
   final diagnostics = <JsonSchemaImportDiagnostic>[];
-  final locations = <(Uri, String), _ImportedNode>{};
+  final locations = <(Uri, _JsonSchemaPointer), _ImportedNode>{};
   final resources = <Uri, _ImportedNode>{};
   final anchors = <Uri, _ImportedNode>{};
   final dynamicAnchors = <Uri, _ImportedNode>{};
@@ -249,7 +279,7 @@ final class _JsonSchemaCompiler {
           _ImportedNode(
               node.source,
               node.documentUri,
-              node.pointer,
+              node._location,
               node.baseUri,
               node.dialectUri,
             )
@@ -384,7 +414,7 @@ final class _JsonSchemaCompiler {
     return _index(
       copy!,
       uri.removeFragment(),
-      '#',
+      _JsonSchemaPointer(),
       uri.removeFragment(),
       dialect: standardDialect,
       isRoot: true,
@@ -497,7 +527,7 @@ final class _JsonSchemaCompiler {
   }
 
   _ImportedNode _child(_ImportedNode node, String suffix) =>
-      locations[(node.documentUri, '${node.pointer}/$suffix')]!;
+      locations[(node.documentUri, node._location.child(suffix))]!;
 
   void _compileNode(_ImportedNode node) {
     final source = node.source;

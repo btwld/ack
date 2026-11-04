@@ -8,7 +8,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
   _ImportedNode _resourceNode(
     Object source,
     Uri document,
-    String pointer,
+    _JsonSchemaPointer pointer,
     Uri base,
     Uri dialect,
   ) {
@@ -88,7 +88,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
   _ImportedNode _index(
     Object source,
     Uri document,
-    String pointer,
+    _JsonSchemaPointer pointer,
     Uri base, {
     Uri? dialect,
     bool isRoot = false,
@@ -139,7 +139,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
       _index(
         child.source ?? _invalidSchema(node, child.keyword),
         node.documentUri,
-        '${node.pointer}/${child.suffix}',
+        node._location.child(child.suffix),
         node.baseUri,
         dialect: node.dialectUri,
       );
@@ -186,7 +186,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
           child = _resourceNode(
             value,
             parent.documentUri,
-            '${parent.pointer}/${location.suffix}',
+            parent._location.child(location.suffix),
             parent.baseUri,
             parent.dialectUri,
           );
@@ -211,7 +211,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
           _index(
             value,
             child.documentUri,
-            child.pointer,
+            child._location,
             parent.baseUri,
             dialect: parent.dialectUri,
           );
@@ -227,7 +227,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
       _ImportedNode(
         node.source,
         node.documentUri,
-        node.pointer,
+        node._location,
         node.baseUri,
         node.dialectUri,
       ),
@@ -322,7 +322,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
   }
 
   _ImportedNode? _resolvePointer(_ImportedNode resource, String fragment) {
-    var pointer = resource.pointer;
+    var pointer = resource._location;
     var base = resource.baseUri;
     var dialect = resource.dialectUri;
     Object? value = resource.source;
@@ -339,7 +339,7 @@ extension _JsonSchemaResourceTraversal on _JsonSchemaCompiler {
       } else {
         return null;
       }
-      pointer = '$pointer/${escapeJsonPointerToken(token)}';
+      pointer = pointer.child(escapeJsonPointerToken(token));
       if (locations[(resource.documentUri, pointer)] case final indexed?) {
         base = indexed.baseUri;
         dialect = indexed.dialectUri;

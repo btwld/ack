@@ -12,6 +12,8 @@
 
 ### Fixed
 
+* Build imported schema locations from shared pointer segments, avoiding
+  repeated ancestor-string copies during deeply nested compilation.
 * Reuse the standard meta-schema index across imports while keeping compiled
   references and format assertions isolated to each schema.
 * Deduplicate imported enum values with JSON equality and hashing, preserving
