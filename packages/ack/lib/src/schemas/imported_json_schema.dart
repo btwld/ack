@@ -29,11 +29,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
         externalRoots.add(node);
       }
     }
-    for (final entry in _standardMetaSchemaDocuments.entries) {
-      if (!compiler.resources.containsKey(entry.key)) {
-        compiler.addDocument(entry.value, entry.key, isFallback: true);
-      }
-    }
+    compiler._addStandardMetaSchemas();
     compiler.compile(root);
     if (compiler.diagnostics.isNotEmpty) {
       throw JsonSchemaImportException._(compiler.diagnostics);

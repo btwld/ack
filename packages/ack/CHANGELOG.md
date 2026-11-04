@@ -12,6 +12,8 @@
 
 ### Fixed
 
+* Reuse the standard meta-schema index across imports while keeping compiled
+  references and format assertions isolated to each schema.
 * Deduplicate imported enum values with JSON equality and hashing, preserving
   first occurrences while keeping compilation linear in enum size.
 * Check IDNA label-wide contextual rules in one pass, keeping long rejected

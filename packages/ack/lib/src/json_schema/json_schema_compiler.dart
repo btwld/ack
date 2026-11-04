@@ -220,6 +220,64 @@ final class _JsonSchemaCompiler {
   final _pendingChildren = Queue<_ImportedNode>();
   final _fallbackDocumentUris = <Uri>{};
 
+  static final _standardMetaSchemaIndex = () {
+    final compiler = _JsonSchemaCompiler();
+    for (final entry in _standardMetaSchemaDocuments.entries) {
+      compiler.addDocument(entry.value, entry.key, isFallback: true);
+    }
+    compiler._indexPendingChildren();
+    return compiler;
+  }();
+
+  void _addStandardMetaSchemas() {
+    // Caller-owned standard resources can change dialect interpretation.
+    // Preserve normal indexing for those overrides, including duplicate IDs.
+    if (_standardMetaSchemaDocuments.keys.any(resources.containsKey)) {
+      for (final entry in _standardMetaSchemaDocuments.entries) {
+        if (!resources.containsKey(entry.key)) {
+          addDocument(entry.value, entry.key, isFallback: true);
+        }
+      }
+      return;
+    }
+    final index = _standardMetaSchemaIndex;
+    final copies = HashMap<_ImportedNode, _ImportedNode>.identity();
+    for (final entry in index.locations.entries) {
+      final node = entry.value;
+      // Share immutable sources and locations; compiled state stays local.
+      final copy =
+          _ImportedNode(
+              node.source,
+              node.documentUri,
+              node.pointer,
+              node.baseUri,
+              node.dialectUri,
+            )
+            ..applicatorVocabulary = node.applicatorVocabulary
+            ..unevaluatedVocabulary = node.unevaluatedVocabulary
+            ..validationVocabulary = node.validationVocabulary
+            ..metadataVocabulary = node.metadataVocabulary
+            ..contentVocabulary = node.contentVocabulary
+            ..formatAnnotationVocabulary = node.formatAnnotationVocabulary
+            ..formatAssertion = assertFormats || node.formatAssertion
+            ..dynamicAnchorName = node.dynamicAnchorName;
+      locations[entry.key] = copies[node] = copy;
+    }
+    void copyRegistry(
+      Map<Uri, _ImportedNode> target,
+      Map<Uri, _ImportedNode> source,
+    ) {
+      for (final entry in source.entries) {
+        target[entry.key] = copies[entry.value]!;
+      }
+    }
+
+    copyRegistry(resources, index.resources);
+    copyRegistry(anchors, index.anchors);
+    copyRegistry(dynamicAnchors, index.dynamicAnchors);
+    _fallbackDocumentUris.addAll(_standardMetaSchemaDocuments.keys);
+  }
+
   static const mapKeywords = {
     r'$defs',
     'definitions',
