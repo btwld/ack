@@ -64,14 +64,14 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (_propertyNullPolicy(schema, missing: true).useDefault) {
+        if (schema is DefaultSchema) {
           final childCtx = context.createChild(
             name: key,
             schema: schema,
             value: null,
             pathSegment: key,
           );
-          (schema as DefaultSchema)
+          schema
               .resolveDefaultWithContext(childCtx)
               .match(
                 onOk: (v) {
@@ -112,7 +112,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       // property also accepts `null`.
       if (propertyValue == null &&
           schema is DefaultSchema &&
-          !_propertyNullPolicy(schema).allowNull) {
+          !schema.acceptsNull) {
         errors.add(schema.failNonNullable(propertyCtx).getError());
         continue;
       }
@@ -169,13 +169,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       final hasValue = mapValue.containsKey(key);
 
       if (!hasValue) {
-        if (schema.isOptional ||
-            (isEncode &&
-                _propertyNullPolicy(
-                  schema,
-                  missing: true,
-                  encode: true,
-                ).useDefault)) {
+        if (schema.isOptional || (isEncode && schema is DefaultSchema)) {
           continue;
         }
         final propertyCtx = context.createChild(
@@ -213,7 +207,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
 
       if (propertyValue == null) {
-        if (_propertyNullPolicy(schema, encode: isEncode).allowNull) {
+        if (schema.acceptsNull ||
+            (isEncode && (schema.isOptional || schema is DefaultSchema))) {
           continue;
         }
         if (isEncode) {
@@ -305,13 +300,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         operation: SchemaOperation.encode,
       );
       final Object? propertyValue;
-      if (schema is DefaultSchema &&
-          value[key] == null &&
-          _propertyNullPolicy(
-            schema,
-            missing: !hasValue,
-            encode: true,
-          ).useDefault) {
+      if (schema is DefaultSchema && value[key] == null) {
         final defaultResult = schema.resolveDefaultWithContext(propertyCtx);
         if (defaultResult.isFail) {
           errors.add(defaultResult.getError());
@@ -456,20 +445,4 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       mapEq.hash(properties),
     );
   }
-}
-
-// Called only for a missing key or null value. Parse and encode intentionally
-// differ: only encode omits optional non-nullable nulls and defaults all nulls.
-({bool useDefault, bool allowNull}) _propertyNullPolicy(
-  AnyAckSchema schema, {
-  bool missing = false,
-  bool encode = false,
-}) {
-  final useDefault =
-      schema is DefaultSchema && (missing || encode || schema.acceptsNull);
-  return (
-    useDefault: useDefault,
-    allowNull:
-        useDefault || schema.acceptsNull || (encode && schema.isOptional),
-  );
 }
