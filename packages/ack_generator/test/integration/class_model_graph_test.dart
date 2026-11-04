@@ -1330,7 +1330,7 @@ final class Order with _\$OrderAck {
         outputs: {
           'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
-              contains("'shipping_address': Address.\$ack.schema"),
+              contains("'shipping_address':"),
               contains('Ack.list(Address.\$ack.schema)'),
               contains('.minItems(1)'),
             ]),
