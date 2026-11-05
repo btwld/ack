@@ -1246,7 +1246,7 @@ final class Address with _\$AddressAck {
   );
 
   test(
-    'rejects invalid @Validate.* constraints on mismatched field types or values',
+    'rejects invalid rule annotations on mismatched field types or values',
     () async {
       await _expectFailure(
         '''

@@ -144,7 +144,7 @@ final class Documented with _\$DocumentedAck {
   });
 
   test(
-    'primary constructor declaring parameters support @description and @Validate',
+    'primary constructor declaring parameters support @description and rule annotations',
     () async {
       await withEnabledExperiments(
         () => _build(
@@ -845,7 +845,7 @@ final class Account with _\$AccountAck {
   });
 
   test(
-    '@Validate.* constraints work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
+    'rule annotations work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
     () async {
       await _build(
         {
