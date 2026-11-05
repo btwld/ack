@@ -192,6 +192,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     }
     _rejectRedirectingFactory(element);
     _validateStaticSchema(element);
+    _validateStaticFromJson(element);
     _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {
       throw InvalidGenerationSource(
@@ -247,6 +248,53 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
       '${runtime?.getDisplayString() ?? 'an untyped value'}.',
       element: getter,
     );
+  }
+
+  /// A model may expose `static final fromJson = XSchema.fromJson;` or a static
+  /// `fromJson` method. Either must accept a JSON map and return the model.
+  ///
+  /// The facade is generated in this build, so the type is checked only once
+  /// it resolves.
+  void _validateStaticFromJson(ClassElement element) {
+    final getter = element.getGetter('fromJson');
+    final method = element.getMethod('fromJson');
+    final (member, type) = switch ((getter, method)) {
+      (final getter?, _) when getter.isStatic => (getter, getter.returnType),
+      (_, final method?) when method.isStatic => (method, method.type),
+      _ => (null, null),
+    };
+    if (member == null || type == null || containsInvalidType(type)) return;
+    if (_isJsonFactory(type, element)) return;
+    throw InvalidGenerationSource(
+      '${element.name}.fromJson must be a ${element.name} '
+      'Function(Map<String, dynamic>); it is ${type.getDisplayString()}.',
+      element: member,
+    );
+  }
+
+  /// Whether [type] can be called as `X Function(Map<String, dynamic>)`, where
+  /// `X` is [element].
+  bool _isJsonFactory(DartType type, ClassElement element) {
+    if (type is! FunctionType || type.typeParameters.isNotEmpty) return false;
+    final typeSystem = element.library.typeSystem;
+    final typeProvider = element.library.typeProvider;
+    final parameters = type.formalParameters;
+    final positional = [
+      for (final parameter in parameters)
+        if (parameter.isPositional) parameter,
+    ];
+    if (positional.isEmpty ||
+        positional.skip(1).any((parameter) => parameter.isRequiredPositional) ||
+        parameters.any((parameter) => parameter.isRequiredNamed)) {
+      return false;
+    }
+    final json = typeProvider.mapType(
+      typeProvider.stringType,
+      typeProvider.dynamicType,
+    );
+
+    return typeSystem.isSubtypeOf(json, positional.first.type) &&
+        typeSystem.isSubtypeOf(type.returnType, element.thisType);
   }
 
   /// json_serializable applies a `JsonConverter` before Ack's runtime bridge,
