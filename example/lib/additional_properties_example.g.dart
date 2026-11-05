@@ -90,7 +90,7 @@ final class UserConfig {
 
   @override
   String toString() =>
-      'UserConfig(username: $username, email: $email, additionalProperties: $additionalProperties)';
+      'UserConfig(username: ${username}, email: ${email}, additionalProperties: ${additionalProperties})';
 
   static UserConfig _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{'username', 'email'};
@@ -224,7 +224,7 @@ final class ApiRequest {
 
   @override
   String toString() =>
-      'ApiRequest(method: $method, url: $url, additionalProperties: $additionalProperties)';
+      'ApiRequest(method: ${method}, url: ${url}, additionalProperties: ${additionalProperties})';
 
   static ApiRequest _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{'method', 'url'};
@@ -359,7 +359,7 @@ final class FeatureFlags {
 
   @override
   String toString() =>
-      'FeatureFlags(appVersion: $appVersion, environment: $environment, additionalProperties: $additionalProperties)';
+      'FeatureFlags(appVersion: ${appVersion}, environment: ${environment}, additionalProperties: ${additionalProperties})';
 
   static FeatureFlags _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{'appVersion', 'environment'};
@@ -481,7 +481,7 @@ final class DynamicData {
 
   @override
   String toString() =>
-      'DynamicData(additionalProperties: $additionalProperties)';
+      'DynamicData(additionalProperties: ${additionalProperties})';
 
   static DynamicData _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{};
