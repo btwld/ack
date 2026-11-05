@@ -134,7 +134,7 @@ final class AckSchemaInference {
       final valueType = value?.type;
       if (value == null || valueType is! InterfaceType) continue;
       if (!_rule.isAssignableFromType(valueType)) continue;
-      final rule = _ruleName(valueType);
+      final rule = valueType.element.name!;
       final annotation = '@$rule';
       switch (rule) {
         case 'IsOptional' || 'IsRequired' || 'IsNotNull':
@@ -169,7 +169,7 @@ final class AckSchemaInference {
         case 'HasMatch':
           _require(declaration, type, annotation, isString, 'String field');
           addScalarConstraint(
-            '.matches(${dartStringLiteral(_field(value, 'pattern')!.toStringValue()!)})',
+            '.matches(${dartStringLiteral(value.getField('pattern')!.toStringValue()!)})',
           );
         case 'IsNotEmpty':
           _require(
@@ -204,7 +204,7 @@ final class AckSchemaInference {
           addScalarConstraint('.datetime()');
         case 'IsIp':
           _require(declaration, type, annotation, isString, 'String field');
-          final version = _field(value, 'version')?.toIntValue();
+          final version = value.getField('version')?.toIntValue();
           if (version != null) {
             if (version != 4 && version != 6) {
               throw InvalidGenerationSource(
@@ -355,28 +355,8 @@ final class AckSchemaInference {
 
   String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
 
-  /// The public rule class of [type]: `IsIp` for the private subclasses that
-  /// back the deprecated `ipv4()` and `ipv6()` aliases.
-  String _ruleName(InterfaceType type) {
-    InterfaceType? current = type;
-    while (current != null && current.element.isPrivate) {
-      current = current.superclass;
-    }
-    return current!.element.name!;
-  }
-
-  /// Reads [name] from [value] or from the rule class it extends.
-  DartObject? _field(DartObject value, String name) {
-    DartObject? current = value;
-    while (current != null) {
-      final field = current.getField(name);
-      if (field != null) return field;
-      current = current.getField('(super)');
-    }
-    return null;
-  }
-
-  int _int(DartObject value, String name) => _field(value, name)!.toIntValue()!;
+  int _int(DartObject value, String name) =>
+      value.getField(name)!.toIntValue()!;
 
   String _number(
     Element declaration,
@@ -384,7 +364,7 @@ final class AckSchemaInference {
     DartObject value,
     String name,
   ) {
-    final field = _field(value, name)!;
+    final field = value.getField(name)!;
     final number = (field.toIntValue() ?? field.toDoubleValue())!;
     if (!number.isFinite) {
       throw InvalidGenerationSource(
