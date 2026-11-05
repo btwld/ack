@@ -54,9 +54,9 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   CodecSchema._({
     required this.inputSchema,
     required this.outputSchema,
-    required Runtime Function(Object value) decoder,
-    required Object Function(Runtime value)? encoder,
-    required Object decoderIdentity,
+    required this._decoder,
+    required this._encoder,
+    required this._decoderIdentity,
     this.projectsConstraintsToBoundary = false,
     this.isGeneratedField = false,
     super.isNullable,
@@ -64,9 +64,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     super.description,
     super.constraints,
     super.refinements,
-  }) : _decoder = decoder,
-       _encoder = encoder,
-       _decoderIdentity = decoderIdentity;
+  });
 
   /// Creates a codec while preserving the input schema's runtime type.
   static CodecSchema<Boundary, Runtime> create<

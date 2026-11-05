@@ -108,10 +108,9 @@ sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
     this.isNullable = false,
     this.isOptional = false,
     this.description,
-    List<Constraint<Runtime>> constraints = const [],
-    List<Refinement<Runtime>> refinements = const [],
-  }) : _constraints = constraints,
-       _refinements = refinements;
+    this._constraints = const [],
+    this._refinements = const [],
+  });
 
   /// Isolates a generated field's presence policy from its custom schema.
   ///

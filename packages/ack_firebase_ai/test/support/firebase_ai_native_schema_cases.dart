@@ -51,10 +51,9 @@ final class FirebaseAiNativeSchemaCase {
     required this.source,
     required this.features,
     required this.comparisonEnum,
-    required Map<String, Object?> Function() buildJsonSchema,
+    required Map<String, Object?> Function() this._buildJsonSchema,
   }) : statusEnum = FirebaseAiNativeSchemaStatus.generated,
-       unsupportedReason = null,
-       _buildJsonSchema = buildJsonSchema;
+       unsupportedReason = null;
 
   const FirebaseAiNativeSchemaCase.unsupported({
     required this.id,

@@ -299,21 +299,20 @@ sealed class AckSchemaModel {
 final class AckRawSchemaModel extends AckSchemaModel {
   const AckRawSchemaModel({
     required this.schema,
-    Set<Map<String, Object?>> indexedSchemas = const {},
+    this._indexedSchemas = const {},
     super.title,
     super.description,
     super.nullable,
     super.defaultValue,
     super.warnings,
     super.extensions,
-  }) : _indexedSchemas = indexedSchemas;
+  });
 
   AckRawSchemaModel._(
     _AckSchemaModelCommon common, {
     required this.schema,
-    required Set<Map<String, Object?>> indexedSchemas,
-  }) : _indexedSchemas = indexedSchemas,
-       super._(common);
+    required this._indexedSchemas,
+  }) : super._(common);
 
   final Map<String, Object?> schema;
   final Set<Map<String, Object?>> _indexedSchemas;
