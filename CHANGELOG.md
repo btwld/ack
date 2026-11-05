@@ -11,8 +11,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   `@Validate.*`, regenerate model parts, and upgrade all five packages together.
 * Include the fixes documented in each package's beta.2 changelog.
 
-## Unreleased
-
 ### Fixed
 
 * Validate internationalized hostnames and email domains against the IDNA2008

@@ -9,6 +9,9 @@
 * **Breaking:** Object encoding substitutes the validated, encoded default for
   missing or null defaulted fields. Nullable fields without defaults retain
   their existing null behavior.
+* **Breaking:** `ConstraintError`, `DurationConstraint`, `AckException`, `Ok`,
+  and `Fail` are now `final`, so code outside Ack can no longer implement or
+  extend them.
 
 ### Fixed
 
