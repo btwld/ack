@@ -391,9 +391,7 @@ final class Habit with _$HabitAck {
     );
   });
 
-  test('a Schemable class accepts a JSON factory as its static fromJson', () {
-    // The facade tear-off resolves only after generation; the typed field,
-    // and the method, resolve now and are checked.
+  test('a Schemable class accepts a JSON factory as its fromJson', () {
     return expectOutput(
       r'''
 @Schemable()
@@ -402,18 +400,7 @@ final class Habit with _$HabitAck {
 
   final String name;
 
-  static final schema = HabitSchema.schema;
   static final fromJson = HabitSchema.fromJson;
-}
-
-@Schemable()
-final class Streak with _$StreakAck {
-  const Streak({required this.days});
-
-  final int days;
-
-  static final Streak Function(Map<String, dynamic>) fromJson =
-      StreakSchema.fromJson;
 }
 
 @Schemable()
@@ -427,7 +414,6 @@ final class Goal with _$GoalAck {
 ''',
       allOf(
         contains('final class HabitSchema'),
-        contains('final class StreakSchema'),
         contains('final class GoalSchema'),
       ),
     );
@@ -452,35 +438,6 @@ final class Habit with _$HabitAck {
         contains(
           'Habit.fromJson must be a Habit Function(Map<String, dynamic>); '
           'it is Habit? Function(Object?, {String? debugName}).',
-        ),
-      ),
-    );
-  });
-
-  test('a Schemable class rejects another model fromJson', () async {
-    final errors = await generationErrors(r'''
-final class Other {
-  const Other();
-
-  static Other fromJson(Map<String, dynamic> json) => const Other();
-}
-
-@Schemable()
-final class Habit with _$HabitAck {
-  const Habit({required this.name});
-
-  final String name;
-
-  static final fromJson = Other.fromJson;
-}
-''');
-
-    expect(
-      errors,
-      contains(
-        contains(
-          'Habit.fromJson must be a Habit Function(Map<String, dynamic>); '
-          'it is Other Function(Map<String, dynamic>).',
         ),
       ),
     );

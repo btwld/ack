@@ -155,120 +155,43 @@ final class Profile with _\$ProfileAck {
 ''';
 
 void main() {
-  test('Validate constructors return the matching rule annotations', () {
-    expect(identical(const Validate.optional(), const IsOptional()), isTrue);
-    expect(identical(const Validate.required(), const IsRequired()), isTrue);
-    expect(identical(const Validate.notNull(), const IsNotNull()), isTrue);
-    expect(identical(const Validate.min(1), const HasMin(1)), isTrue);
-    expect(identical(const Validate.max(9.5), const HasMax(9.5)), isTrue);
-    expect(
-      identical(const Validate.multipleOf(2), const IsMultipleOf(2)),
-      isTrue,
-    );
-    expect(identical(const Validate.positive(), const IsPositive()), isTrue);
-    expect(identical(const Validate.negative(), const IsNegative()), isTrue);
-    expect(
-      identical(const Validate.minLength(1), const HasMinLength(1)),
-      isTrue,
-    );
-    expect(
-      identical(const Validate.maxLength(9), const HasMaxLength(9)),
-      isTrue,
-    );
-    expect(
-      identical(const Validate.matches('^a'), const HasMatch('^a')),
-      isTrue,
-    );
-    expect(identical(const Validate.notEmpty(), const IsNotEmpty()), isTrue);
-    expect(identical(const Validate.email(), const IsEmail()), isTrue);
-    expect(identical(const Validate.url(), const IsUrl()), isTrue);
-    expect(identical(const Validate.uri(), const IsUri()), isTrue);
-    expect(identical(const Validate.uuid(), const IsUuid()), isTrue);
-    expect(identical(const Validate.date(), const IsDate()), isTrue);
-    expect(identical(const Validate.dateTime(), const IsDateTime()), isTrue);
-    expect(identical(const Validate.ip(), const IsIp()), isTrue);
-    expect(
-      identical(const Validate.ip(version: 4), const IsIp(version: 4)),
-      isTrue,
-    );
-    expect(identical(const Validate.minItems(1), const HasMinItems(1)), isTrue);
-    expect(identical(const Validate.maxItems(5), const HasMaxItems(5)), isTrue);
-    expect(
-      identical(const Validate.uniqueItems(), const HasUniqueItems()),
-      isTrue,
-    );
-
-    // ipv4() and ipv6() have no rule class of their own.
-    expect(
-      const Validate.ipv4(),
-      isA<IsIp>().having((rule) => rule.version, 'version', 4),
-    );
-    expect(
-      const Validate.ipv6(),
-      isA<IsIp>().having((rule) => rule.version, 'version', 6),
-    );
-  });
-
-  test('Validate constructors keep their deprecated kind and value', () {
-    const checks = <Validate>[
-      Validate.optional(),
-      Validate.required(),
-      Validate.notNull(),
-      Validate.min(1),
-      Validate.max(9.5),
-      Validate.multipleOf(2),
-      Validate.positive(),
-      Validate.negative(),
-      Validate.minLength(1),
-      Validate.maxLength(100),
-      Validate.matches(r'^[a-z]+$'),
-      Validate.notEmpty(),
-      Validate.email(),
-      Validate.url(),
-      Validate.uri(),
-      Validate.uuid(),
-      Validate.date(),
-      Validate.dateTime(),
-      Validate.ip(),
-      Validate.ip(version: 4),
-      Validate.ipv4(),
-      Validate.ipv6(),
-      Validate.minItems(1),
-      Validate.maxItems(10),
-      Validate.uniqueItems(),
+  test('Validate constructors return the rule annotations', () {
+    // Each old constructor, the rule it returns (null when the rule keeps the
+    // old kind), and the deprecated kind and value it exposed before 2.0.
+    const cases = <(Validate, AckRule?, String, Object?)>[
+      (Validate.optional(), IsOptional(), 'optional', null),
+      (Validate.required(), IsRequired(), 'required', null),
+      (Validate.notNull(), IsNotNull(), 'notNull', null),
+      (Validate.min(1), HasMin(1), 'min', 1),
+      (Validate.max(9.5), HasMax(9.5), 'max', 9.5),
+      (Validate.multipleOf(2), IsMultipleOf(2), 'multipleOf', 2),
+      (Validate.positive(), IsPositive(), 'positive', null),
+      (Validate.negative(), IsNegative(), 'negative', null),
+      (Validate.minLength(1), HasMinLength(1), 'minLength', 1),
+      (Validate.maxLength(9), HasMaxLength(9), 'maxLength', 9),
+      (Validate.matches('^a'), HasMatch('^a'), 'matches', '^a'),
+      (Validate.notEmpty(), IsNotEmpty(), 'notEmpty', null),
+      (Validate.email(), IsEmail(), 'email', null),
+      (Validate.url(), IsUrl(), 'url', null),
+      (Validate.uri(), IsUri(), 'uri', null),
+      (Validate.uuid(), IsUuid(), 'uuid', null),
+      (Validate.date(), IsDate(), 'date', null),
+      (Validate.dateTime(), IsDateTime(), 'dateTime', null),
+      (Validate.ip(), IsIp(), 'ip', null),
+      (Validate.ip(version: 4), IsIp(version: 4), 'ip', 4),
+      (Validate.ipv4(), null, 'ipv4', null),
+      (Validate.ipv6(), null, 'ipv6', null),
+      (Validate.minItems(1), HasMinItems(1), 'minItems', 1),
+      (Validate.maxItems(5), HasMaxItems(5), 'maxItems', 5),
+      (Validate.uniqueItems(), HasUniqueItems(), 'uniqueItems', null),
     ];
 
-    // The same pairs that Validate exposed before it became an alias.
-    expect(
-      checks.map((check) => (check.kind, check.value)).toList(),
-      const <(String, Object?)>[
-        ('optional', null),
-        ('required', null),
-        ('notNull', null),
-        ('min', 1),
-        ('max', 9.5),
-        ('multipleOf', 2),
-        ('positive', null),
-        ('negative', null),
-        ('minLength', 1),
-        ('maxLength', 100),
-        ('matches', r'^[a-z]+$'),
-        ('notEmpty', null),
-        ('email', null),
-        ('url', null),
-        ('uri', null),
-        ('uuid', null),
-        ('date', null),
-        ('dateTime', null),
-        ('ip', null),
-        ('ip', 4),
-        ('ipv4', null),
-        ('ipv6', null),
-        ('minItems', 1),
-        ('maxItems', 10),
-        ('uniqueItems', null),
-      ],
-    );
+    for (final (old, rule, kind, value) in cases) {
+      if (rule != null) expect(identical(old, rule), isTrue, reason: kind);
+      expect((old.kind, old.value), (kind, value));
+    }
+    expect(const Validate.ipv4(), isA<IsIp>().having((r) => r.version, 'v', 4));
+    expect(const Validate.ipv6(), isA<IsIp>().having((r) => r.version, 'v', 6));
   });
 
   test('old and new annotations generate identical code', () async {
