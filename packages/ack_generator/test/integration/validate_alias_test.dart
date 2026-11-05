@@ -207,12 +207,68 @@ void main() {
       const Validate.ipv6(),
       isA<IsIp>().having((rule) => rule.version, 'version', 6),
     );
+  });
 
-    // The deprecated fields still describe the rule.
-    const minLength = Validate.minLength(3);
-    expect((minLength.kind, minLength.value), ('minLength', 3));
-    const ipv4 = Validate.ipv4();
-    expect((ipv4.kind, ipv4.value), ('ip', 4));
+  test('Validate constructors keep their deprecated kind and value', () {
+    const checks = <Validate>[
+      Validate.optional(),
+      Validate.required(),
+      Validate.notNull(),
+      Validate.min(1),
+      Validate.max(9.5),
+      Validate.multipleOf(2),
+      Validate.positive(),
+      Validate.negative(),
+      Validate.minLength(1),
+      Validate.maxLength(100),
+      Validate.matches(r'^[a-z]+$'),
+      Validate.notEmpty(),
+      Validate.email(),
+      Validate.url(),
+      Validate.uri(),
+      Validate.uuid(),
+      Validate.date(),
+      Validate.dateTime(),
+      Validate.ip(),
+      Validate.ip(version: 4),
+      Validate.ipv4(),
+      Validate.ipv6(),
+      Validate.minItems(1),
+      Validate.maxItems(10),
+      Validate.uniqueItems(),
+    ];
+
+    // The same pairs that Validate exposed before it became an alias.
+    expect(
+      checks.map((check) => (check.kind, check.value)).toList(),
+      const <(String, Object?)>[
+        ('optional', null),
+        ('required', null),
+        ('notNull', null),
+        ('min', 1),
+        ('max', 9.5),
+        ('multipleOf', 2),
+        ('positive', null),
+        ('negative', null),
+        ('minLength', 1),
+        ('maxLength', 100),
+        ('matches', r'^[a-z]+$'),
+        ('notEmpty', null),
+        ('email', null),
+        ('url', null),
+        ('uri', null),
+        ('uuid', null),
+        ('date', null),
+        ('dateTime', null),
+        ('ip', null),
+        ('ip', 4),
+        ('ipv4', null),
+        ('ipv6', null),
+        ('minItems', 1),
+        ('maxItems', 10),
+        ('uniqueItems', null),
+      ],
+    );
   });
 
   test('old and new annotations generate identical code', () async {

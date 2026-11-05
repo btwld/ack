@@ -177,14 +177,12 @@ final class IsIp extends AckRule {
   final int? version;
 
   const IsIp({this.version}) : super._('ip', version);
-}
 
-final class _IsIpv4 extends IsIp {
-  const _IsIpv4() : super(version: 4);
-}
+  // Back the deprecated `Validate.ipv4()` and `Validate.ipv6()`, keeping their
+  // original `kind` and `value`.
+  const IsIp._ipv4() : version = 4, super._('ipv4');
 
-final class _IsIpv6 extends IsIp {
-  const _IsIpv6() : super(version: 6);
+  const IsIp._ipv6() : version = 6, super._('ipv6');
 }
 
 /// Adds `.minItems(count)` to an inferred collection schema.
@@ -320,13 +318,13 @@ final class Validate {
   @Deprecated(
     'Use @IsIp(version: 4) instead. Validate is removed before Ack 2.0.0.',
   )
-  const factory Validate.ipv4() = _IsIpv4;
+  const factory Validate.ipv4() = IsIp._ipv4;
 
   /// Returns `IsIp(version: 6)`.
   @Deprecated(
     'Use @IsIp(version: 6) instead. Validate is removed before Ack 2.0.0.',
   )
-  const factory Validate.ipv6() = _IsIpv6;
+  const factory Validate.ipv6() = IsIp._ipv6;
 
   /// Returns [HasMinItems].
   @Deprecated('Use @HasMinItems instead. Validate is removed before Ack 2.0.0.')
