@@ -152,7 +152,7 @@ $_imports
 @Schemable()
 final class User with _\$UserAck {
   const User({this.nickname});
-  @Validate.required()
+  @IsRequired()
   final String? nickname;
 }
 
@@ -192,7 +192,7 @@ $_imports
 final class Normalized with _\$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
-  @Validate.optional()
+  @IsOptional()
   final String value;
 }
 

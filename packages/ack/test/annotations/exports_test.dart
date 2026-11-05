@@ -10,7 +10,7 @@ final class Contact {
 
   /// @description Primary email
   @ack.AckKey('email_address')
-  @ack.Validate.email()
+  @ack.IsEmail()
   final Email email;
 }
 
@@ -20,28 +20,45 @@ final class SingleImportContact {
 
   /// @description Contact email
   @AckKey('email')
-  @Validate.email()
+  @IsEmail()
   final Email email;
 
-  @Validate.uuid()
+  @IsUuid()
   final Uuid id;
 }
 
 void main() {
-  test('package:ack/ack.dart exports the model and Validate annotations', () {
+  test('package:ack/ack.dart exports the model and rule annotations', () {
     const values = <Object>[
       Schemable(caseStyle: AckCaseStyle.snake),
       AckKey('id'),
-      Validate.required(),
-      Validate.optional(),
-      Validate.notNull(),
-      Validate.email(),
-      Validate.minLength(2),
-      Validate.matches(r'^\d+$'),
-      ack.Validate.uuid(),
+      IsOptional(),
+      IsRequired(),
+      IsNotNull(),
+      HasMin(0),
+      HasMax(10),
+      IsMultipleOf(2),
+      IsPositive(),
+      IsNegative(),
+      HasMinLength(2),
+      HasMaxLength(20),
+      HasMatch(r'^\d+$'),
+      IsNotEmpty(),
+      IsEmail(),
+      IsUrl(),
+      IsUri(),
+      IsUuid(),
+      IsDate(),
+      IsDateTime(),
+      IsIp(version: 4),
+      HasMinItems(1),
+      HasMaxItems(5),
+      HasUniqueItems(),
+      ack.IsUuid(),
     ];
 
-    expect(values, hasLength(9));
+    expect(values, hasLength(25));
+    expect(values.skip(2), everyElement(isA<ack.AckRule>()));
     expect(AckUnknownPropertyPolicy.values, hasLength(3));
   });
 
@@ -55,6 +72,8 @@ void main() {
       const min = Min(1);
       const max = Max(10);
       const pattern = Pattern('^a');
+      const required = Required('wire');
+      const optional = Optional(null);
       const contact = SingleImportContact(email, uuid);
 
       expect(
@@ -66,6 +85,8 @@ void main() {
           min.value,
           max.value,
           pattern.source,
+          required.reason,
+          optional.value,
           contact.email.address,
           contact.id.value,
         ],
@@ -77,6 +98,8 @@ void main() {
           1,
           10,
           '^a',
+          'wire',
+          null,
           'ada@example.com',
           '7c9e6679',
         ],
@@ -85,19 +108,41 @@ void main() {
   );
 
   test(
-    'a prefixed annotations import exposes Schemable, AckKey, and Validate',
+    'a prefixed annotations import exposes Schemable, AckKey, and the rules',
     () {
       const contact = Contact(Email('ada@example.com'));
       const schemable = ack.Schemable(name: 'Contact');
       const key = ack.AckKey('email_address');
-      const validate = ack.Validate.matches('^a');
+      const rules = <ack.AckRule>[
+        ack.IsOptional(),
+        ack.IsRequired(),
+        ack.IsNotNull(),
+        ack.HasMin(0),
+        ack.HasMax(10),
+        ack.IsMultipleOf(2),
+        ack.IsPositive(),
+        ack.IsNegative(),
+        ack.HasMinLength(2),
+        ack.HasMaxLength(20),
+        ack.HasMatch('^a'),
+        ack.IsNotEmpty(),
+        ack.IsEmail(),
+        ack.IsUrl(),
+        ack.IsUri(),
+        ack.IsUuid(),
+        ack.IsDate(),
+        ack.IsDateTime(),
+        ack.IsIp(),
+        ack.HasMinItems(1),
+        ack.HasMaxItems(5),
+        ack.HasUniqueItems(),
+      ];
 
       expect(contact.email.address, 'ada@example.com');
       expect(schemable.name, 'Contact');
       expect(key.name, 'email_address');
-      expect(validate, isA<Validate>());
-      expect(validate.kind, 'matches');
-      expect(validate.value, '^a');
+      expect(rules, hasLength(22));
+      expect((rules[10] as ack.HasMatch).pattern, '^a');
     },
   );
 }

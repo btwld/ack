@@ -20,8 +20,8 @@ final class AckSchemaInference {
 
   final String? ackPrefix;
 
-  static const _validate = TypeChecker.typeNamed(
-    annotations.Validate,
+  static const _rule = TypeChecker.typeNamed(
+    annotations.AckRule,
     inPackage: 'ack',
   );
 
@@ -132,234 +132,123 @@ final class AckSchemaInference {
     for (final metadata in declaration.metadata.annotations) {
       final value = metadata.computeConstantValue();
       final valueType = value?.type;
-      if (value == null || valueType == null) continue;
-      if (_validate.isExactlyType(valueType)) {
-        final kind = value.getField('kind')!.toStringValue()!;
-        switch (kind) {
-          case 'optional' || 'required' || 'notNull':
-            break;
-          case 'min':
-            _require(
-              declaration,
-              type,
-              '@Validate.min',
-              isNumeric,
-              '@Validate.minLength',
-            );
-            addScalarConstraint(
-              '.min(${_number(declaration, '@Validate.min', value)})',
-            );
-          case 'max':
-            _require(
-              declaration,
-              type,
-              '@Validate.max',
-              isNumeric,
-              '@Validate.maxLength',
-            );
-            addScalarConstraint(
-              '.max(${_number(declaration, '@Validate.max', value)})',
-            );
-          case 'multipleOf':
-            _require(
-              declaration,
-              type,
-              '@Validate.multipleOf',
-              isNumeric,
-              'numeric field',
-            );
-            addScalarConstraint(
-              '.multipleOf(${_number(declaration, '@Validate.multipleOf', value)})',
-            );
-          case 'positive':
-            _require(
-              declaration,
-              type,
-              '@Validate.positive',
-              isNumeric,
-              'numeric field',
-            );
-            addScalarConstraint('.positive()');
-          case 'negative':
-            _require(
-              declaration,
-              type,
-              '@Validate.negative',
-              isNumeric,
-              'numeric field',
-            );
-            addScalarConstraint('.negative()');
-          case 'minLength':
-            _require(
-              declaration,
-              type,
-              '@Validate.minLength',
-              isString,
-              '@Validate.min',
-            );
-            addScalarConstraint(
-              '.minLength(${value.getField('value')!.toIntValue()})',
-            );
-          case 'maxLength':
-            _require(
-              declaration,
-              type,
-              '@Validate.maxLength',
-              isString,
-              '@Validate.max',
-            );
-            addScalarConstraint(
-              '.maxLength(${value.getField('value')!.toIntValue()})',
-            );
-          case 'matches':
-            _require(
-              declaration,
-              type,
-              '@Validate.matches',
-              isString,
-              'String field',
-            );
-            addScalarConstraint(
-              '.matches(${dartStringLiteral(value.getField('value')!.toStringValue()!)})',
-            );
-          case 'notEmpty':
-            _require(
-              declaration,
-              type,
-              '@Validate.notEmpty',
-              isString || isCollection,
-              'String, List, or Set field',
-            );
-            if (isCollection) {
-              addCollectionConstraint('.notEmpty()');
-            } else {
-              output = '$output.notEmpty()';
+      if (value == null || valueType is! InterfaceType) continue;
+      if (!_rule.isAssignableFromType(valueType)) continue;
+      final rule = _ruleName(valueType);
+      final annotation = '@$rule';
+      switch (rule) {
+        case 'IsOptional' || 'IsRequired' || 'IsNotNull':
+          break;
+        case 'HasMin':
+          _require(declaration, type, annotation, isNumeric, '@HasMinLength');
+          addScalarConstraint(
+            '.min(${_number(declaration, annotation, value, 'min')})',
+          );
+        case 'HasMax':
+          _require(declaration, type, annotation, isNumeric, '@HasMaxLength');
+          addScalarConstraint(
+            '.max(${_number(declaration, annotation, value, 'max')})',
+          );
+        case 'IsMultipleOf':
+          _require(declaration, type, annotation, isNumeric, 'numeric field');
+          addScalarConstraint(
+            '.multipleOf(${_number(declaration, annotation, value, 'divisor')})',
+          );
+        case 'IsPositive':
+          _require(declaration, type, annotation, isNumeric, 'numeric field');
+          addScalarConstraint('.positive()');
+        case 'IsNegative':
+          _require(declaration, type, annotation, isNumeric, 'numeric field');
+          addScalarConstraint('.negative()');
+        case 'HasMinLength':
+          _require(declaration, type, annotation, isString, '@HasMin');
+          addScalarConstraint('.minLength(${_int(value, 'length')})');
+        case 'HasMaxLength':
+          _require(declaration, type, annotation, isString, '@HasMax');
+          addScalarConstraint('.maxLength(${_int(value, 'length')})');
+        case 'HasMatch':
+          _require(declaration, type, annotation, isString, 'String field');
+          addScalarConstraint(
+            '.matches(${dartStringLiteral(_field(value, 'pattern')!.toStringValue()!)})',
+          );
+        case 'IsNotEmpty':
+          _require(
+            declaration,
+            type,
+            annotation,
+            isString || isCollection,
+            'String, List, or Set field',
+          );
+          if (isCollection) {
+            addCollectionConstraint('.notEmpty()');
+          } else {
+            output = '$output.notEmpty()';
+          }
+        case 'IsEmail':
+          _require(declaration, type, annotation, isString, 'String field');
+          addScalarConstraint('.email()');
+        case 'IsUrl':
+          _require(declaration, type, annotation, isString, 'String field');
+          addScalarConstraint('.url()');
+        case 'IsUri':
+          _require(declaration, type, annotation, isString, 'String field');
+          addScalarConstraint('.uri()');
+        case 'IsUuid':
+          _require(declaration, type, annotation, isString, 'String field');
+          addScalarConstraint('.uuid()');
+        case 'IsDate':
+          _require(declaration, type, annotation, isString, 'String field');
+          addScalarConstraint('.date()');
+        case 'IsDateTime':
+          _require(declaration, type, annotation, isString, 'String field');
+          addScalarConstraint('.datetime()');
+        case 'IsIp':
+          _require(declaration, type, annotation, isString, 'String field');
+          final version = _field(value, 'version')?.toIntValue();
+          if (version != null) {
+            if (version != 4 && version != 6) {
+              throw InvalidGenerationSource(
+                '${_qualifiedName(declaration)} has @IsIp(version: '
+                '$version); version must be 4 or 6.',
+                element: declaration,
+              );
             }
-          case 'email':
-            _require(
-              declaration,
-              type,
-              '@Validate.email',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.email()');
-          case 'url':
-            _require(
-              declaration,
-              type,
-              '@Validate.url',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.url()');
-          case 'uri':
-            _require(
-              declaration,
-              type,
-              '@Validate.uri',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.uri()');
-          case 'uuid':
-            _require(
-              declaration,
-              type,
-              '@Validate.uuid',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.uuid()');
-          case 'date':
-            _require(
-              declaration,
-              type,
-              '@Validate.date',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.date()');
-          case 'dateTime':
-            _require(
-              declaration,
-              type,
-              '@Validate.dateTime',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.datetime()');
-          case 'ip':
-            _require(
-              declaration,
-              type,
-              '@Validate.ip',
-              isString,
-              'String field',
-            );
-            final version = value.getField('value')?.toIntValue();
-            if (version != null) {
-              if (version != 4 && version != 6) {
-                throw InvalidGenerationSource(
-                  '${_qualifiedName(declaration)} has @Validate.ip(version: '
-                  '$version); version must be 4 or 6.',
-                  element: declaration,
-                );
-              }
-              addScalarConstraint('.ip(version: $version)');
-            } else {
-              addScalarConstraint('.ip()');
-            }
-          case 'ipv4':
-            _require(
-              declaration,
-              type,
-              '@Validate.ipv4',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.ipv4()');
-          case 'ipv6':
-            _require(
-              declaration,
-              type,
-              '@Validate.ipv6',
-              isString,
-              'String field',
-            );
-            addScalarConstraint('.ipv6()');
-          case 'minItems':
-            _require(
-              declaration,
-              type,
-              '@Validate.minItems',
-              isCollection,
-              'List or Set field',
-            );
-            addCollectionConstraint(
-              '.minItems(${value.getField('value')!.toIntValue()})',
-            );
-          case 'maxItems':
-            _require(
-              declaration,
-              type,
-              '@Validate.maxItems',
-              isCollection,
-              'List or Set field',
-            );
-            addCollectionConstraint(
-              '.maxItems(${value.getField('value')!.toIntValue()})',
-            );
-          case 'uniqueItems':
-            _require(
-              declaration,
-              type,
-              '@Validate.uniqueItems',
-              isCollection,
-              'List or Set field',
-            );
-            addCollectionConstraint('.unique()', isUnique: true);
-        }
+            addScalarConstraint('.ip(version: $version)');
+          } else {
+            addScalarConstraint('.ip()');
+          }
+        case 'HasMinItems':
+          _require(
+            declaration,
+            type,
+            annotation,
+            isCollection,
+            'List or Set field',
+          );
+          addCollectionConstraint('.minItems(${_int(value, 'count')})');
+        case 'HasMaxItems':
+          _require(
+            declaration,
+            type,
+            annotation,
+            isCollection,
+            'List or Set field',
+          );
+          addCollectionConstraint('.maxItems(${_int(value, 'count')})');
+        case 'HasUniqueItems':
+          _require(
+            declaration,
+            type,
+            annotation,
+            isCollection,
+            'List or Set field',
+          );
+          addCollectionConstraint('.unique()', isUnique: true);
+        default:
+          throw InvalidGenerationSource(
+            '${_qualifiedName(declaration)} has unsupported rule $annotation.',
+            element: declaration,
+          );
       }
     }
     if (itemConstraints.isNotEmpty) {
@@ -466,8 +355,36 @@ final class AckSchemaInference {
 
   String _ack(String symbol) => qualifySymbol(ackPrefix, symbol);
 
-  String _number(Element declaration, String annotation, DartObject value) {
-    final field = value.getField('value')!;
+  /// The public rule class of [type]: `IsIp` for the private subclasses that
+  /// back the deprecated `ipv4()` and `ipv6()` aliases.
+  String _ruleName(InterfaceType type) {
+    InterfaceType? current = type;
+    while (current != null && current.element.isPrivate) {
+      current = current.superclass;
+    }
+    return current!.element.name!;
+  }
+
+  /// Reads [name] from [value] or from the rule class it extends.
+  DartObject? _field(DartObject value, String name) {
+    DartObject? current = value;
+    while (current != null) {
+      final field = current.getField(name);
+      if (field != null) return field;
+      current = current.getField('(super)');
+    }
+    return null;
+  }
+
+  int _int(DartObject value, String name) => _field(value, name)!.toIntValue()!;
+
+  String _number(
+    Element declaration,
+    String annotation,
+    DartObject value,
+    String name,
+  ) {
+    final field = _field(value, name)!;
     final number = (field.toIntValue() ?? field.toDoubleValue())!;
     if (!number.isFinite) {
       throw InvalidGenerationSource(

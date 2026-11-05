@@ -61,7 +61,7 @@ import 'package:ack/annotations.dart';
 
 void widget({
   /// The item title.
-  @Validate.minLength(2)
+  @HasMinLength(2)
   required String title,
 }) {}
 ''',
@@ -107,7 +107,7 @@ void widget({required List<Priority> priorities}) {}
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@Validate.minItems(2) required Set<String> tags}) {}
+void widget({@HasMinItems(2) required Set<String> tags}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},
@@ -131,7 +131,7 @@ void widget({@Validate.minItems(2) required Set<String> tags}) {}
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@Validate.maxItems(3) required Set<Set<String>> cells}) {}
+void widget({@HasMaxItems(3) required Set<Set<String>> cells}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},
@@ -161,10 +161,10 @@ void widget({@Validate.maxItems(3) required Set<Set<String>> cells}) {}
 import 'package:ack/annotations.dart';
 
 void widget({
-  @Validate.min(1)
-  @Validate.max(7)
-  @Validate.minItems(1)
-  @Validate.uniqueItems()
+  @HasMin(1)
+  @HasMax(7)
+  @HasMinItems(1)
+  @HasUniqueItems()
   required List<int> weekdays,
 }) {}
 ''',

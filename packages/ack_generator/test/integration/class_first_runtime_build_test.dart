@@ -199,7 +199,7 @@ final class Profile with _$ProfileAck {
   final Uri? website;
   final String? nickname;
   final String role;
-  @Validate.uniqueItems()
+  @HasUniqueItems()
   final Set<String> tags;
   final Color color;
 
@@ -250,7 +250,7 @@ final class Loose with _$LooseAck {
 final class Normalized with _$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
-  @Validate.optional()
+  @IsOptional()
   final String value;
 }
 
@@ -272,7 +272,7 @@ final class NonNullableDefault with _$NonNullableDefaultAck {
 final class NotNullDefault with _$NotNullDefaultAck {
   const NotNullDefault({this.label = 'fallback'});
 
-  @Validate.notNull()
+  @IsNotNull()
   final String? label;
 }
 
@@ -299,7 +299,7 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
   });
 
   final List<List<String>> matrix;
-  @Validate.uniqueItems()
+  @HasUniqueItems()
   final Set<String> labels;
   final Map<String, List<String>> groups;
 }
@@ -308,13 +308,13 @@ final class ImmutableCollections with _$ImmutableCollectionsAck {
 final class Example with _$ExampleAck {
   const Example({this.label, this.title});
 
-  @Validate.optional()
-  @Validate.notNull()
+  @IsOptional()
+  @IsNotNull()
   final String? label;
 
-  @Validate.optional()
-  @Validate.notNull()
-  @Validate.notEmpty()
+  @IsOptional()
+  @IsNotNull()
+  @IsNotEmpty()
   final String? title;
 
   static final fromJson = ExampleSchema.fromJson;
@@ -331,7 +331,7 @@ final class ExampleHolder with _$ExampleHolderAck {
 final class OptionalNullable with _$OptionalNullableAck {
   const OptionalNullable({this.note});
 
-  @Validate.optional()
+  @IsOptional()
   final String? note;
 }
 
@@ -339,7 +339,7 @@ final class OptionalNullable with _$OptionalNullableAck {
 final class InferredNotNull with _$InferredNotNullAck {
   const InferredNotNull({this.label});
 
-  @Validate.notNull()
+  @IsNotNull()
   final String? label;
 }
 
@@ -381,7 +381,7 @@ final class CustomNestedDefault with _$CustomNestedDefaultAck {
 final class InvalidDefault with _$InvalidDefaultAck {
   const InvalidDefault({this.label = 'x'});
 
-  @Validate.minLength(5)
+  @HasMinLength(5)
   final String label;
 }
 
@@ -389,7 +389,7 @@ final class InvalidDefault with _$InvalidDefaultAck {
 final class CustomNotNullDefault with _$CustomNotNullDefaultAck {
   const CustomNotNullDefault({this.name = const NameTag('fallback')});
 
-  @Validate.notNull()
+  @IsNotNull()
   final NameTag? name;
 }
 
@@ -397,7 +397,7 @@ final class CustomNotNullDefault with _$CustomNotNullDefaultAck {
 final class OverrideNotNull with _$OverrideNotNullAck {
   const OverrideNotNull({this.name});
 
-  @Validate.notNull()
+  @IsNotNull()
   final NameTag? name;
 }
 
@@ -405,8 +405,8 @@ final class OverrideNotNull with _$OverrideNotNullAck {
 final class RequiredNotNull with _$RequiredNotNullAck {
   const RequiredNotNull({this.value});
 
-  @Validate.required()
-  @Validate.notNull()
+  @IsRequired()
+  @IsNotNull()
   final String? value;
 }
 
@@ -430,7 +430,7 @@ final class CapabilityBinding with _$CapabilityBindingAck {
 
   final String name;
 
-  @Validate.optional()
+  @IsOptional()
   final Map<String, ParameterEntry> parameters;
 
   static final fromJson = CapabilityBindingSchema.fromJson;
@@ -450,10 +450,10 @@ final class Envelope with _$EnvelopeAck {
   });
 
   final Object kind;
-  @Validate.optional()
+  @IsOptional()
   final Object? payload;
-  @Validate.optional()
-  @Validate.notNull()
+  @IsOptional()
+  @IsNotNull()
   final Object? strict;
 
   final List<Object> items;
@@ -604,8 +604,8 @@ final class UserPatch with _$UserPatchAck {
 
   final JsonMaybe<String> nickname;
 
-  @Validate.notNull()
-  @Validate.notEmpty()
+  @IsNotNull()
+  @IsNotEmpty()
   final JsonMaybe<String> title;
 
 

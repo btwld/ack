@@ -69,8 +69,16 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     inPackage: 'json_annotation',
   );
 
-  static const _validateChecker = TypeChecker.typeNamed(
-    annotations.Validate,
+  static const _isOptionalChecker = TypeChecker.typeNamed(
+    annotations.IsOptional,
+    inPackage: 'ack',
+  );
+  static const _isRequiredChecker = TypeChecker.typeNamed(
+    annotations.IsRequired,
+    inPackage: 'ack',
+  );
+  static const _isNotNullChecker = TypeChecker.typeNamed(
+    annotations.IsNotNull,
     inPackage: 'ack',
   );
 
@@ -599,7 +607,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
       final dartNullable =
           futureType?.runtimeRef is AckNullableTypeRef ||
           isNullableType(field.type);
-      final rejectNull = _hasValidateKind('notNull', field, parameter);
+      final rejectNull = _hasRule(_isNotNullChecker, field, parameter);
 
       final acceptsNull = (dartNullable || isJsonMaybe) && !rejectNull;
       final presence = _effectivePresence(
@@ -923,26 +931,11 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
       checker.firstAnnotationOfExact(field) ??
       (parameter == null ? null : checker.firstAnnotationOfExact(parameter));
 
-  bool _hasValidateKind(
-    String kind,
+  bool _hasRule(
+    TypeChecker rule,
     FieldElement field, [
     FormalParameterElement? parameter,
-  ]) =>
-      _elementHasValidateKind(field, kind) ||
-      (parameter != null && _elementHasValidateKind(parameter, kind));
-
-  bool _elementHasValidateKind(Element element, String kind) {
-    for (final metadata in element.metadata.annotations) {
-      final value = metadata.computeConstantValue();
-      final valueType = value?.type;
-      if (value == null || valueType == null) continue;
-      if (_validateChecker.isExactlyType(valueType) &&
-          value.getField('kind')?.toStringValue() == kind) {
-        return true;
-      }
-    }
-    return false;
-  }
+  ]) => _firstAnnotation(rule, field, parameter) != null;
 
   void _rejectUnsupportedStaticType(FieldElement field, DartType type) {
     if (type is DynamicType || type is TypeParameterType) {
@@ -1089,12 +1082,12 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     bool isJsonMaybe = false,
   }) {
     final inferred = _fieldPresence(parameter);
-    final hasOptional = _hasValidateKind('optional', field, parameter);
-    final hasRequired = _hasValidateKind('required', field, parameter);
+    final hasOptional = _hasRule(_isOptionalChecker, field, parameter);
+    final hasRequired = _hasRule(_isRequiredChecker, field, parameter);
     if (hasOptional && hasRequired) {
       throw InvalidGenerationSource(
         '${field.enclosingElement.name}.${field.name} cannot combine '
-        '@Validate.optional() and @Validate.required().',
+        '@IsOptional() and @IsRequired().',
         element: field,
       );
     }

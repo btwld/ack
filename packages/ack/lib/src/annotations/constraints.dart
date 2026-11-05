@@ -1,115 +1,344 @@
 import 'package:meta/meta_meta.dart';
 
-/// Unified namespace for Ack field and parameter validation annotations.
+/// Base type of the Ack rule annotations, such as [HasMinLength] and
+/// [IsEmail].
 ///
-/// Mirrors the fluent schema constraint methods so model files only need
-/// `import 'package:ack/ack.dart';`:
+/// `ack_generator` reads rules by their type. Write the concrete rule
+/// annotations; do not use this type directly.
 ///
 /// ```dart
 /// @Schemable()
 /// final class User({
-///   @Validate.email() required final String email,
-///   @Validate.minLength(2) required final String name,
+///   @IsEmail() required final String email,
+///   @HasMinLength(2) required final String name,
 /// }) with _$UserAck {
-///   static final schema = _userSchema;
+///   static final schema = UserSchema.schema;
 /// }
 /// ```
+// The rules extend the deprecated `Validate` alias only so that its
+// redirecting factories type-check. Drop the supertype with `Validate`.
+abstract final class AckRule extends Validate {
+  const AckRule._(String kind, [Object? value]) : super._(kind, value);
+}
+
+/// Marks a class-first field as optional on the JSON wire.
+///
+/// The JSON key may be omitted. This does not change whether a present JSON
+/// value may be `null`: a nullable Dart type still accepts JSON `null`, and
+/// [IsNotNull] rejects it. Valid only when the constructor can accept a
+/// missing value, with a discriminator-specific exception for union branches.
+///
+/// On a parameter with a default value, this replaces the inferred
+/// `.withDefault(...)` with `.optional()`: a missing key still receives the
+/// constructor default, but JSON `null` is rejected for a non-nullable type
+/// and the exported JSON Schema has no `default`.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsOptional extends AckRule {
+  const IsOptional() : super._('optional');
+}
+
+/// Marks a class-first field as required on the JSON wire.
+///
+/// The JSON key must be present. This does not change Dart nullability.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsRequired extends AckRule {
+  const IsRequired() : super._('required');
+}
+
+/// Rejects an explicit JSON `null` without requiring the key to exist.
+///
+/// Needed only when the Dart type is nullable (`T?`) or `JsonMaybe<T>` but a
+/// present JSON value must not be `null`. Non-nullable Dart fields already
+/// reject JSON `null`. Dart nullability is unchanged: an omitted optional key
+/// still becomes `null` on a nullable field, and encoding omits a null Dart
+/// value.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsNotNull extends AckRule {
+  const IsNotNull() : super._('notNull');
+}
+
+/// Adds `.min(min)` to an inferred numeric schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasMin extends AckRule {
+  /// The inclusive lower bound.
+  final num min;
+
+  const HasMin(this.min) : super._('min', min);
+}
+
+/// Adds `.max(max)` to an inferred numeric schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasMax extends AckRule {
+  /// The inclusive upper bound.
+  final num max;
+
+  const HasMax(this.max) : super._('max', max);
+}
+
+/// Adds `.multipleOf(divisor)` to an inferred numeric schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsMultipleOf extends AckRule {
+  /// The number that must divide the value.
+  final num divisor;
+
+  const IsMultipleOf(this.divisor) : super._('multipleOf', divisor);
+}
+
+/// Adds `.positive()` to an inferred numeric schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsPositive extends AckRule {
+  const IsPositive() : super._('positive');
+}
+
+/// Adds `.negative()` to an inferred numeric schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsNegative extends AckRule {
+  const IsNegative() : super._('negative');
+}
+
+/// Adds `.minLength(length)` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasMinLength extends AckRule {
+  /// The minimum number of characters.
+  final int length;
+
+  const HasMinLength(this.length) : super._('minLength', length);
+}
+
+/// Adds `.maxLength(length)` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasMaxLength extends AckRule {
+  /// The maximum number of characters.
+  final int length;
+
+  const HasMaxLength(this.length) : super._('maxLength', length);
+}
+
+/// Adds `.matches(pattern)` to an inferred string schema.
+///
+/// Like `.matches()`, the pattern may match anywhere in the value. Anchor it
+/// with `^` and `$` to match the whole value.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasMatch extends AckRule {
+  /// The regular expression source.
+  final String pattern;
+
+  const HasMatch(this.pattern) : super._('matches', pattern);
+}
+
+/// Adds `.notEmpty()` to an inferred string or collection (`List` / `Set`)
+/// schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsNotEmpty extends AckRule {
+  const IsNotEmpty() : super._('notEmpty');
+}
+
+/// Adds `.email()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsEmail extends AckRule {
+  const IsEmail() : super._('email');
+}
+
+/// Adds `.url()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsUrl extends AckRule {
+  const IsUrl() : super._('url');
+}
+
+/// Adds `.uri()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsUri extends AckRule {
+  const IsUri() : super._('uri');
+}
+
+/// Adds `.uuid()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsUuid extends AckRule {
+  const IsUuid() : super._('uuid');
+}
+
+/// Adds `.date()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsDate extends AckRule {
+  const IsDate() : super._('date');
+}
+
+/// Adds `.datetime()` to an inferred string schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsDateTime extends AckRule {
+  const IsDateTime() : super._('dateTime');
+}
+
+/// Adds `.ip()` to an inferred string schema, or `.ip(version: version)`
+/// when [version] is set.
+@Target({TargetKind.field, TargetKind.parameter})
+final class IsIp extends AckRule {
+  /// The IP version, `4` or `6`; `null` accepts either.
+  final int? version;
+
+  const IsIp({this.version}) : super._('ip', version);
+}
+
+final class _IsIpv4 extends IsIp {
+  const _IsIpv4() : super(version: 4);
+}
+
+final class _IsIpv6 extends IsIp {
+  const _IsIpv6() : super(version: 6);
+}
+
+/// Adds `.minItems(count)` to an inferred collection schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasMinItems extends AckRule {
+  /// The minimum number of items.
+  final int count;
+
+  const HasMinItems(this.count) : super._('minItems', count);
+}
+
+/// Adds `.maxItems(count)` to an inferred collection schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasMaxItems extends AckRule {
+  /// The maximum number of items.
+  final int count;
+
+  const HasMaxItems(this.count) : super._('maxItems', count);
+}
+
+/// Adds `.unique()` to an inferred collection schema.
+@Target({TargetKind.field, TargetKind.parameter})
+final class HasUniqueItems extends AckRule {
+  const HasUniqueItems() : super._('uniqueItems');
+}
+
+/// Deprecated namespace for the Ack rule annotations.
+///
+/// Each constructor returns the matching rule annotation, so
+/// `@Validate.minLength(3)` is the same value as `@HasMinLength(3)`. Use the
+/// rule annotations instead. `Validate` is removed before Ack 2.0.0.
 @Target({TargetKind.field, TargetKind.parameter})
 final class Validate {
-  /// The constraint identifier inspected by `ack_generator`.
+  /// The constraint identifier.
+  @Deprecated(
+    'Read the rule annotation type instead. '
+    'Validate is removed before Ack 2.0.0.',
+  )
   final String kind;
 
-  /// Optional constraint argument (`num`, `int`, or `String`).
+  /// The constraint argument (`num`, `int`, or `String`), if any.
+  @Deprecated(
+    'Read the rule annotation field instead. '
+    'Validate is removed before Ack 2.0.0.',
+  )
   final Object? value;
 
-  /// Marks a class-first field as optional on the JSON wire.
-  ///
-  /// The JSON key may be omitted. This does not change whether a present JSON
-  /// value may be `null`: a nullable Dart type still accepts JSON `null`, and
-  /// [Validate.notNull] rejects it. Valid only when the constructor can accept
-  /// a missing value, with a discriminator-specific exception for union
-  /// branches.
-  ///
-  /// On a parameter with a default value, this replaces the inferred
-  /// `.withDefault(...)` with `.optional()`: a missing key still receives the
-  /// constructor default, but JSON `null` is rejected for a non-nullable type
-  /// and the exported JSON Schema has no `default`.
-  const Validate.optional() : kind = 'optional', value = null;
+  const Validate._(this.kind, this.value);
 
-  /// Marks a class-first field as required on the JSON wire.
-  ///
-  /// The JSON key must be present. This does not change Dart nullability.
-  const Validate.required() : kind = 'required', value = null;
+  /// Returns [IsOptional].
+  @Deprecated('Use @IsOptional instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.optional() = IsOptional;
 
-  /// Rejects an explicit JSON `null` without requiring the key to exist.
-  ///
-  /// Needed only when the Dart type is nullable (`T?`) or `JsonMaybe<T>` but a
-  /// present JSON value must not be `null`. Non-nullable Dart fields already
-  /// reject JSON `null`. Dart nullability is unchanged: an omitted optional key
-  /// still becomes `null` on a nullable field, and encoding omits a null Dart
-  /// value.
-  const Validate.notNull() : kind = 'notNull', value = null;
+  /// Returns [IsRequired].
+  @Deprecated('Use @IsRequired instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.required() = IsRequired;
 
-  /// Adds `.min(value)` to an inferred numeric schema.
-  const Validate.min(num this.value) : kind = 'min';
+  /// Returns [IsNotNull].
+  @Deprecated('Use @IsNotNull instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.notNull() = IsNotNull;
 
-  /// Adds `.max(value)` to an inferred numeric schema.
-  const Validate.max(num this.value) : kind = 'max';
+  /// Returns [HasMin].
+  @Deprecated('Use @HasMin instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.min(num value) = HasMin;
 
-  /// Adds `.multipleOf(value)` to an inferred numeric schema.
-  const Validate.multipleOf(num this.value) : kind = 'multipleOf';
+  /// Returns [HasMax].
+  @Deprecated('Use @HasMax instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.max(num value) = HasMax;
 
-  /// Adds `.positive()` to an inferred numeric schema.
-  const Validate.positive() : kind = 'positive', value = null;
+  /// Returns [IsMultipleOf].
+  @Deprecated(
+    'Use @IsMultipleOf instead. Validate is removed before Ack 2.0.0.',
+  )
+  const factory Validate.multipleOf(num value) = IsMultipleOf;
 
-  /// Adds `.negative()` to an inferred numeric schema.
-  const Validate.negative() : kind = 'negative', value = null;
+  /// Returns [IsPositive].
+  @Deprecated('Use @IsPositive instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.positive() = IsPositive;
 
-  /// Adds `.minLength(length)` to an inferred string schema.
-  const Validate.minLength(int length) : kind = 'minLength', value = length;
+  /// Returns [IsNegative].
+  @Deprecated('Use @IsNegative instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.negative() = IsNegative;
 
-  /// Adds `.maxLength(length)` to an inferred string schema.
-  const Validate.maxLength(int length) : kind = 'maxLength', value = length;
+  /// Returns [HasMinLength].
+  @Deprecated(
+    'Use @HasMinLength instead. Validate is removed before Ack 2.0.0.',
+  )
+  const factory Validate.minLength(int length) = HasMinLength;
 
-  /// Adds `.matches(pattern)` to an inferred string schema.
-  const Validate.matches(String pattern) : kind = 'matches', value = pattern;
+  /// Returns [HasMaxLength].
+  @Deprecated(
+    'Use @HasMaxLength instead. Validate is removed before Ack 2.0.0.',
+  )
+  const factory Validate.maxLength(int length) = HasMaxLength;
 
-  /// Adds `.notEmpty()` to an inferred string or collection (`List` / `Set`) schema.
-  const Validate.notEmpty() : kind = 'notEmpty', value = null;
+  /// Returns [HasMatch].
+  @Deprecated('Use @HasMatch instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.matches(String pattern) = HasMatch;
 
-  /// Adds `.email()` to an inferred string schema.
-  const Validate.email() : kind = 'email', value = null;
+  /// Returns [IsNotEmpty].
+  @Deprecated('Use @IsNotEmpty instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.notEmpty() = IsNotEmpty;
 
-  /// Adds `.url()` to an inferred string schema.
-  const Validate.url() : kind = 'url', value = null;
+  /// Returns [IsEmail].
+  @Deprecated('Use @IsEmail instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.email() = IsEmail;
 
-  /// Adds `.uri()` to an inferred string schema.
-  const Validate.uri() : kind = 'uri', value = null;
+  /// Returns [IsUrl].
+  @Deprecated('Use @IsUrl instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.url() = IsUrl;
 
-  /// Adds `.uuid()` to an inferred string schema.
-  const Validate.uuid() : kind = 'uuid', value = null;
+  /// Returns [IsUri].
+  @Deprecated('Use @IsUri instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.uri() = IsUri;
 
-  /// Adds `.date()` to an inferred string schema.
-  const Validate.date() : kind = 'date', value = null;
+  /// Returns [IsUuid].
+  @Deprecated('Use @IsUuid instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.uuid() = IsUuid;
 
-  /// Adds `.datetime()` to an inferred string schema.
-  const Validate.dateTime() : kind = 'dateTime', value = null;
+  /// Returns [IsDate].
+  @Deprecated('Use @IsDate instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.date() = IsDate;
 
-  /// Adds `.ip()` to an inferred string schema.
-  const Validate.ip({int? version}) : kind = 'ip', value = version;
+  /// Returns [IsDateTime].
+  @Deprecated('Use @IsDateTime instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.dateTime() = IsDateTime;
 
-  /// Adds `.ipv4()` to an inferred string schema.
-  const Validate.ipv4() : kind = 'ipv4', value = null;
+  /// Returns [IsIp].
+  @Deprecated('Use @IsIp instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.ip({int? version}) = IsIp;
 
-  /// Adds `.ipv6()` to an inferred string schema.
-  const Validate.ipv6() : kind = 'ipv6', value = null;
+  /// Returns `IsIp(version: 4)`.
+  @Deprecated(
+    'Use @IsIp(version: 4) instead. Validate is removed before Ack 2.0.0.',
+  )
+  const factory Validate.ipv4() = _IsIpv4;
 
-  /// Adds `.minItems(count)` to an inferred collection schema.
-  const Validate.minItems(int count) : kind = 'minItems', value = count;
+  /// Returns `IsIp(version: 6)`.
+  @Deprecated(
+    'Use @IsIp(version: 6) instead. Validate is removed before Ack 2.0.0.',
+  )
+  const factory Validate.ipv6() = _IsIpv6;
 
-  /// Adds `.maxItems(count)` to an inferred collection schema.
-  const Validate.maxItems(int count) : kind = 'maxItems', value = count;
+  /// Returns [HasMinItems].
+  @Deprecated('Use @HasMinItems instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.minItems(int count) = HasMinItems;
 
-  /// Adds `.unique()` to an inferred collection schema.
-  const Validate.uniqueItems() : kind = 'uniqueItems', value = null;
+  /// Returns [HasMaxItems].
+  @Deprecated('Use @HasMaxItems instead. Validate is removed before Ack 2.0.0.')
+  const factory Validate.maxItems(int count) = HasMaxItems;
+
+  /// Returns [HasUniqueItems].
+  @Deprecated(
+    'Use @HasUniqueItems instead. Validate is removed before Ack 2.0.0.',
+  )
+  const factory Validate.uniqueItems() = HasUniqueItems;
 }
