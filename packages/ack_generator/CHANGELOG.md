@@ -14,6 +14,9 @@
   generate `.ip(version: 4)` and `.ip(version: 6)`, the same constraints that
   `.ipv4()` and `.ipv6()` build. `Validate` is removed before Ack 2.0.0.
 * Name the rule annotations, such as `@HasMinLength`, in diagnostics.
+* Reject a static `fromJson` field or method that is not a
+  `Model Function(Map<String, dynamic>)`, such as a `.parse` tear-off or
+  another model's `fromJson`.
 * Show `static final schema = <Name>Schema.schema;` in class-first examples
   instead of the private codec variable. Both forms generate the same code.
 * Write the class-first examples with primary constructors and annotated
