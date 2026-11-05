@@ -315,8 +315,8 @@ Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
 either direction with one annotation, `@Schemable()`: on a top-level schema it
 generates a model, on a class it generates a schema, and on a `library;`
 directive it registers shared custom schemas via `@Schemable(schemas: [...])`.
-`package:ack/ack.dart` exports `@Schemable`, `@AckKey`, and the `@Validate.*`
-validation namespace.
+`package:ack/ack.dart` exports `@Schemable`, `@AckKey`, and the `Is…`/`Has…`
+rule annotations.
 `AckSchema` is the runtime schema type; there is no `@AckSchema()` annotation.
 After adding a `part '<file>.g.dart';` directive, run:
 
@@ -399,13 +399,13 @@ compile-time error.
 **Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, `JsonMaybe<T>`, nested lists, sets, and string-keyed maps
 
-**Validation annotations (`@Validate.*` from `package:ack/ack.dart`):**
+**Rule annotations (from `package:ack/ack.dart`):**
 
-- presence & nullability: `@Validate.required`, `@Validate.optional`, `@Validate.notNull`
-- numeric: `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`
-- strings: `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.email`, `@Validate.notEmpty`
-- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`
-- collections: `@Validate.notEmpty`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems`
+- presence & nullability: `@IsRequired`, `@IsOptional`, `@IsNotNull`
+- numeric: `@HasMin`, `@HasMax`, `@IsMultipleOf`, `@IsPositive`, `@IsNegative`
+- strings: `@HasMinLength`, `@HasMaxLength`, `@HasMatch`, `@IsEmail`, `@IsNotEmpty`
+- string formats: `@IsUrl`, `@IsUri`, `@IsUuid`, `@IsDate`, `@IsDateTime`, `@IsIp` (`version: 4` or `6` for one family)
+- collections: `@IsNotEmpty`, `@HasMinItems`, `@HasMaxItems`, `@HasUniqueItems`
 
 
 **Custom schemas:** a field of custom type `T` resolves through:
@@ -430,11 +430,11 @@ part 'account.g.dart';
 final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
-  @Validate.minLength(2)
+  @HasMinLength(2)
   final String displayName;
   final String role;
 
-  static final schema = _accountSchema;
+  static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
 
@@ -444,10 +444,10 @@ print(Account.schema.toJsonSchema());
 ```
 
 The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`, `fromJson`,
-`encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`. The backing
-`_accountSchema` is library-private (`static final schema = _accountSchema;`
-attaches it directly to `Account.schema`) and no public lower-camel alias is
-generated. Set `schemaName: 'WireAccountSchema'` to choose the exact facade
+`encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`.
+`static final schema = AccountSchema.schema;` attaches the facade's codec to
+`Account.schema`. The backing codec variable is library-private and no public
+lower-camel alias is generated. Set `schemaName: 'WireAccountSchema'` to choose the exact facade
 class name.
 
 Nested class-first fields compose through `AddressSchema.schema` (or

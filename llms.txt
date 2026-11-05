@@ -36,7 +36,9 @@ and dependency constraints.
   still propagate. Use the error-handling guide for the failure contract.
 - `optional` permits an omitted key; `nullable` permits a present null. Use
   `JsonMaybe<T>` when a class must preserve omitted versus explicit-null keys.
-- `@Schemable`, `@AckKey`, and `@Validate.*` come from `package:ack/ack.dart`.
+- `@Schemable`, `@AckKey`, and the `Is…`/`Has…` rule annotations (`@IsRequired`,
+  `@HasMinLength`, `@IsEmail`, …) come from `package:ack/ack.dart`. The
+  `Validate` namespace is deprecated and removed before Ack 2.0.0.
   Generation uses one `part '<file>.g.dart';` and `dart run build_runner build`.
   There is no `@AckSchema` annotation.
 - Generated constructors are unchecked. Use `parse`/`fromJson` for untrusted

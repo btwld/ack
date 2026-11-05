@@ -1,3 +1,16 @@
+## 2.0.0-beta.3 (unreleased)
+
+### Changed
+
+* Read field and parameter rules by their `Is…`/`Has…` annotation type.
+  Deprecated `Validate` constructors evaluate to the same annotations and
+  generate identical code. `Validate.ipv4()` and `Validate.ipv6()` now
+  generate `.ip(version: 4)` and `.ip(version: 6)`, the same constraints that
+  `.ipv4()` and `.ipv6()` build. `Validate` is removed before Ack 2.0.0.
+* Name the rule annotations, such as `@HasMinLength`, in diagnostics.
+* Show `static final schema = <Name>Schema.schema;` in class-first examples
+  instead of the private codec variable. Both forms generate the same code.
+
 ## 2.0.0-beta.2
 
 ### Breaking
