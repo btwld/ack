@@ -8,9 +8,14 @@ const _mappingHeading = '### Validation Annotations';
 
 final _deprecatedAnnotation = RegExp(r'@Validate\.');
 
-/// A `schema` or `fromJson` static assigned from a private identifier, such as
-/// `static final schema = _accountSchema;`.
-final _privateStatic = RegExp(r'\b(?:schema|fromJson)\s*=\s*_[\w$]+\s*;');
+/// A `schema` or `fromJson` static whose value starts with a private
+/// identifier, such as `static final schema = _accountSchema;` or
+/// `static final fromJson = _accountSchema.parse;`. A local variable such as
+/// `final schema = _build();` is not a static line.
+final _privateStatic = RegExp(
+  r'\bstatic\s+(?:late\s+)?(?:final|const)\s+(?:[^=;]*\s)?'
+  r'(?:schema|fromJson)\s*=\s*_[\w$]+\s*[;.]',
+);
 
 /// Docs, README files, every example directory, and `llms.txt`.
 List<File> _guidance() {
@@ -86,6 +91,25 @@ void main() {
           '`static final fromJson = <Name>Schema.fromJson;` instead of '
           'naming a private declaration.',
     );
+  });
+
+  test('the static-line guard matches private values only on statics', () {
+    for (final line in const [
+      'static final schema = _accountSchema;',
+      'static final fromJson = _accountSchema.parse;',
+      r'static final fromJson = _$AccountFromJson;',
+      'static final AckSchema<Object, Account> schema = _accountSchema;',
+    ]) {
+      expect(_privateStatic.hasMatch(line), isTrue, reason: line);
+    }
+    for (final line in const [
+      'static final schema = AccountSchema.schema;',
+      'static final fromJson = AccountSchema.fromJson;',
+      'final schema = _build();',
+      'final schema = _accountSchema;',
+    ]) {
+      expect(_privateStatic.hasMatch(line), isFalse, reason: line);
+    }
   });
 
   test('the scan covers every example directory', () {
