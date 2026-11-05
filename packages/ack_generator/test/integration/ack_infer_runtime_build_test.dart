@@ -30,9 +30,8 @@ Future<void> _expectConsumerSafeParts(
   for (final MapEntry(key: path, value: source) in generated.entries) {
     expect(source, contains(lintSuppression), reason: path);
     expect(source, contains('// coverage:ignore-file\n'), reason: path);
-    File(
-      p.join(project.path, path),
-    ).writeAsStringSync(source.replaceFirst(lintSuppression, ''));
+    File(p.join(project.path, path))
+        .writeAsStringSync(source.replaceFirst(lintSuppression, ''));
   }
   try {
     _expectSuccess(
@@ -63,22 +62,19 @@ Future<void> _expectCopyWithRejects(Directory project, String misuse) async {
 }
 
 void main() {
-  test(
-    'clean generated models compile and preserve the Schemable runtime contract',
-    () async {
-      var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
-        projectRoot = projectRoot.parent;
-      }
-      final temporary = await Directory.systemTemp.createTemp(
-        'ack_ack_infer_runtime_',
-      );
-      try {
-        Directory(p.join(temporary.path, 'lib')).createSync();
-        Directory(p.join(temporary.path, 'test')).createSync();
-        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+  test('clean generated models compile and preserve the Schemable runtime contract', () async {
+    var projectRoot = Directory.current;
+    while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+        .existsSync()) {
+      projectRoot = projectRoot.parent;
+    }
+    final temporary = await Directory.systemTemp.createTemp(
+      'ack_ack_infer_runtime_',
+    );
+    try {
+      Directory(p.join(temporary.path, 'lib')).createSync();
+      Directory(p.join(temporary.path, 'test')).createSync();
+      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_ack_infer_runtime
 publish_to: none
 environment:
@@ -95,16 +91,14 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
-          '''
+      File(p.join(temporary.path, 'analysis_options.yaml'))
+          .writeAsStringSync('''
 linter:
   rules:
     - avoid_redundant_argument_values
     - prefer_null_aware_operators
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
-          r'''
+''');
+      File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 part 'models.g.dart';
@@ -421,10 +415,8 @@ final countedSchema = Ack.object({
     ),
   ),
 });
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
-          r'''
+''');
+      File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 part 'address.g.dart';
@@ -434,13 +426,10 @@ final addressSchema = Ack.object({'city': Ack.string()});
 
 final optionalLabel = Ack.string().optional();
 StringSchema get nullableLabel => Ack.string().nullable();
-''',
-        );
-        File(
-          p.join(temporary.path, 'lib', 'exports.dart'),
-        ).writeAsStringSync("export 'address.dart';\n");
-        File(p.join(temporary.path, 'lib', 'person.dart')).writeAsStringSync(
-          r'''
+''');
+      File(p.join(temporary.path, 'lib', 'exports.dart'))
+          .writeAsStringSync("export 'address.dart';\n");
+      File(p.join(temporary.path, 'lib', 'person.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 import 'address.dart' as direct;
@@ -455,11 +444,9 @@ final personSchema = Ack.object({
   'note': direct.optionalLabel,
   'label': exported.nullableLabel,
 });
-''',
-        );
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+''');
+      File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+          .writeAsStringSync(r'''
 import 'dart:convert';
 
 import 'package:ack/ack.dart';
@@ -1071,63 +1058,59 @@ void main() {
 }
 ''');
 
-        _expectSuccess(
-          await _run(temporary, ['pub', 'get', '--offline']),
-          'dart pub get --offline',
-        );
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'build_runner build',
-        );
+      _expectSuccess(
+        await _run(temporary, ['pub', 'get', '--offline']),
+        'dart pub get --offline',
+      );
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'build_runner build',
+      );
 
-        final generated = {
-          for (final file
-              in temporary
-                  .listSync(recursive: true)
-                  .whereType<File>()
-                  .where((file) => file.path.endsWith('.g.dart')))
-            p.relative(file.path, from: temporary.path): file
-                .readAsStringSync(),
-        };
-        expect(generated.keys, contains('lib/models.g.dart'));
-        expect(
-          generated['lib/models.g.dart'],
-          contains('static Extras _fromAckRuntime'),
-        );
-        expect(
-          generated['lib/models.g.dart'],
-          contains('Map<String, Object?> _toAckRuntime()'),
-        );
+      final generated = {
+        for (final file
+            in temporary
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((file) => file.path.endsWith('.g.dart')))
+          p.relative(file.path, from: temporary.path): file.readAsStringSync(),
+      };
+      expect(generated.keys, contains('lib/models.g.dart'));
+      expect(
+        generated['lib/models.g.dart'],
+        contains('static Extras _fromAckRuntime'),
+      );
+      expect(
+        generated['lib/models.g.dart'],
+        contains('Map<String, Object?> _toAckRuntime()'),
+      );
 
-        _expectSuccess(
-          await _run(temporary, ['analyze', '--fatal-infos']),
-          'dart analyze --fatal-infos',
-        );
-        await _expectConsumerSafeParts(temporary, generated);
-        await _expectCopyWithRejects(temporary, '''
+      _expectSuccess(
+        await _run(temporary, ['analyze', '--fatal-infos']),
+        'dart analyze --fatal-infos',
+      );
+      await _expectConsumerSafeParts(temporary, generated);
+      await _expectCopyWithRejects(temporary, '''
 import 'models.dart';
 
 Extras misuse(Extras extras) => extras.copyWith(nickname: const Object());
 ''');
-        _expectSuccess(await _run(temporary, ['test']), 'dart test');
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'second build_runner build',
-        );
-        final rebuilt = {
-          for (final file
-              in temporary
-                  .listSync(recursive: true)
-                  .whereType<File>()
-                  .where((file) => file.path.endsWith('.g.dart')))
-            p.relative(file.path, from: temporary.path): file
-                .readAsStringSync(),
-        };
-        expect(rebuilt, generated);
-      } finally {
-        temporary.deleteSync(recursive: true);
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+      _expectSuccess(await _run(temporary, ['test']), 'dart test');
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'second build_runner build',
+      );
+      final rebuilt = {
+        for (final file
+            in temporary
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((file) => file.path.endsWith('.g.dart')))
+          p.relative(file.path, from: temporary.path): file.readAsStringSync(),
+      };
+      expect(rebuilt, generated);
+    } finally {
+      temporary.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

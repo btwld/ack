@@ -114,53 +114,49 @@ void main() {
     });
   }
 
-  test(
-    'generated validator agrees with an aliased dynamic-key dialect',
-    () async {
-      final documentUri = Uri.parse('https://example.test/model.schema.json');
-      final document = <String, Object?>{
-        r'$schema': standard.toString(),
-        r'$defs': {
-          'Model': {
-            'type': 'object',
-            'properties': {
-              'name': {'type': 'string'},
-            },
-            'required': ['name'],
+  test('generated validator agrees with an aliased dynamic-key dialect', () async {
+    final documentUri = Uri.parse('https://example.test/model.schema.json');
+    final document = <String, Object?>{
+      r'$schema': standard.toString(),
+      r'$defs': {
+        'Model': {
+          'type': 'object',
+          'properties': {
+            'name': {'type': 'string'},
           },
+          'required': ['name'],
         },
-      };
-      final documents = <Uri, Object>{
-        alias: <dynamic, dynamic>{...meta(standard)},
-      };
-      final oracle = Ack.fromJsonSchema(
-        {r'$ref': documentUri.replace(fragment: r'/$defs/Model').toString()},
-        documents: {...documents, documentUri: document},
-      );
-      final values = <Object?>[
-        null,
-        42,
-        {'name': 42},
-        <String, Object?>{},
-        {'name': 'ok'},
-      ];
-      final expected = [
-        for (final value in values) oracle.safeParse(value).isOk,
-      ];
-      expect(expected, everyElement(isTrue));
-      final library = generateAckSchemaLibrary(
-        document: document,
-        documentUri: documentUri,
-        partStem: 'model.schema',
-        documents: documents,
-        includeParts: false,
-      );
-      final temporary = await Directory.systemTemp.createTemp('ack_dialect_');
-      addTearDown(() => temporary.delete(recursive: true));
-      final generated = File(p.join(temporary.path, 'model.dart'));
-      await generated.writeAsString(library.source);
-      final probe = File(p.join(temporary.path, 'probe.dart'));
-      await probe.writeAsString('''
+      },
+    };
+    final documents = <Uri, Object>{
+      alias: <dynamic, dynamic>{...meta(standard)},
+    };
+    final oracle = Ack.fromJsonSchema(
+      {r'$ref': documentUri.replace(fragment: r'/$defs/Model').toString()},
+      documents: {...documents, documentUri: document},
+    );
+    final values = <Object?>[
+      null,
+      42,
+      {'name': 42},
+      <String, Object?>{},
+      {'name': 'ok'},
+    ];
+    final expected = [for (final value in values) oracle.safeParse(value).isOk];
+    expect(expected, everyElement(isTrue));
+    final library = generateAckSchemaLibrary(
+      document: document,
+      documentUri: documentUri,
+      partStem: 'model.schema',
+      documents: documents,
+      includeParts: false,
+    );
+    final temporary = await Directory.systemTemp.createTemp('ack_dialect_');
+    addTearDown(() => temporary.delete(recursive: true));
+    final generated = File(p.join(temporary.path, 'model.dart'));
+    await generated.writeAsString(library.source);
+    final probe = File(p.join(temporary.path, 'probe.dart'));
+    await probe.writeAsString('''
 import 'dart:convert';
 import 'model.dart';
 
@@ -171,20 +167,18 @@ void main() {
   ]));
 }
 ''');
-      var repository = Directory.current;
-      while (!File(
-        p.join(repository.path, '.dart_tool', 'package_config.json'),
-      ).existsSync()) {
-        repository = repository.parent;
-      }
-      final result = await Process.run(Platform.resolvedExecutable, [
-        '--packages=${p.join(repository.path, '.dart_tool', 'package_config.json')}',
-        probe.path,
-      ]);
-      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
-      expect(jsonDecode(result.stdout as String), expected);
-    },
-  );
+    var repository = Directory.current;
+    while (!File(p.join(repository.path, '.dart_tool', 'package_config.json'))
+        .existsSync()) {
+      repository = repository.parent;
+    }
+    final result = await Process.run(Platform.resolvedExecutable, [
+      '--packages=${p.join(repository.path, '.dart_tool', 'package_config.json')}',
+      probe.path,
+    ]);
+    expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+    expect(jsonDecode(result.stdout as String), expected);
+  });
 
   test('unrelated custom vocabularies retain standard typed models', () {
     final document = <String, Object?>{

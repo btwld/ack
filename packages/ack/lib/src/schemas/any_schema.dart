@@ -38,8 +38,7 @@ final class AnySchema extends AckSchema<Object, Object>
     if (!_isJsonSafe(value)) {
       return SchemaResult.fail(
         SchemaValidationError(
-          message:
-              'Expected a JSON-safe value composed of finite numbers, strings, booleans, lists, and string-keyed maps.',
+          message: 'Expected a JSON-safe value composed of finite numbers, strings, booleans, lists, and string-keyed maps.',
           context: context,
         ),
       );

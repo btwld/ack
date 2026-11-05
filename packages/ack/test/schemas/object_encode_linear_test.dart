@@ -32,10 +32,9 @@ void main() {
     }, message: 'count occurrences');
     final shared = <String, Object?>{'x': 1};
     expect(
-      Ack.object({
-        'a': child,
-        'b': child,
-      }).safeEncode({'a': shared, 'b': shared}).isOk,
+      Ack.object({'a': child, 'b': child})
+          .safeEncode({'a': shared, 'b': shared})
+          .isOk,
       isTrue,
     );
     expect(visits, 2);

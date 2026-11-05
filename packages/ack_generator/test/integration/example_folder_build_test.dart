@@ -59,9 +59,8 @@ void main() {
     'example clean-builds, analyzes, tests, and regenerates deterministically',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final sourceExample = Directory(p.join(projectRoot.path, 'example'));
@@ -74,15 +73,14 @@ void main() {
 
       try {
         _copyDirectory(sourceExample, temporaryExample);
-        File(
-          p.join(temporaryExample.path, 'analysis_options.yaml'),
-        ).writeAsStringSync('''
+        File(p.join(temporaryExample.path, 'analysis_options.yaml'))
+            .writeAsStringSync('''
 analyzer:
   language:
     strict-casts: true
 ''');
-        File(p.join(temporaryExample.path, 'pubspec.yaml')).writeAsStringSync(
-          '''
+        File(p.join(temporaryExample.path, 'pubspec.yaml'))
+            .writeAsStringSync('''
 name: ack_example
 publish_to: none
 environment:
@@ -98,8 +96,7 @@ dev_dependencies:
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
-''',
-        );
+''');
 
         _expectSuccess(
           await _run(temporaryExample, ['pub', 'get', '--offline']),
@@ -159,9 +156,8 @@ dependency_overrides:
 
   test('rebuilds when generated outputs are already present', () async {
     var projectRoot = Directory.current;
-    while (!Directory(
-      p.join(projectRoot.path, 'packages', 'ack_generator'),
-    ).existsSync()) {
+    while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+        .existsSync()) {
       projectRoot = projectRoot.parent;
     }
     final sourceExample = Directory(p.join(projectRoot.path, 'example'));
@@ -174,9 +170,8 @@ dependency_overrides:
 
     try {
       _copyDirectory(sourceExample, temporaryExample, keepGenerated: true);
-      File(
-        p.join(temporaryExample.path, 'analysis_options.yaml'),
-      ).writeAsStringSync('''
+      File(p.join(temporaryExample.path, 'analysis_options.yaml'))
+          .writeAsStringSync('''
 analyzer:
   language:
     strict-casts: true

@@ -21,9 +21,8 @@ void _expectSuccess(ProcessResult result, String command) {
 void main() {
   test('type-owned schemas build, analyze, and round-trip', () async {
     var projectRoot = Directory.current;
-    while (!Directory(
-      p.join(projectRoot.path, 'packages', 'ack_generator'),
-    ).existsSync()) {
+    while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+        .existsSync()) {
       projectRoot = projectRoot.parent;
     }
     final temporary = await Directory.systemTemp.createTemp('ack_type_owned_');
@@ -265,9 +264,8 @@ final panelSchema = Ack.object({
   'habit': Habit.schema.optional(),
 });
 ''');
-      File(
-        p.join(temporary.path, 'test', 'type_owned_test.dart'),
-      ).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'test', 'type_owned_test.dart'))
+          .writeAsStringSync(r'''
 import 'package:ack_type_owned/models.dart';
 import 'package:ack_type_owned/types.dart';
 import 'package:test/test.dart';
@@ -394,9 +392,8 @@ void main() {
         await _run(temporary, ['run', 'build_runner', 'build']),
         'build_runner build',
       );
-      final generated = File(
-        p.join(temporary.path, 'lib', 'models.g.dart'),
-      ).readAsStringSync();
+      final generated = File(p.join(temporary.path, 'lib', 'models.g.dart'))
+          .readAsStringSync();
       expect(generated, contains('Command.schema<CompletionAction>()'));
       expect(generated, contains('Trigger.schema<void>()'));
       expect(generated, contains('Box.schema<Habit>(HabitSchema.schema)'));

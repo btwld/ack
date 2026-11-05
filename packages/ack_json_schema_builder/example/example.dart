@@ -40,9 +40,9 @@ void main() async {
 
   // Example 4: Array Schema
   print('\nExample 4: Array Schema');
-  final tagsSchema = Ack.list(
-    Ack.string().minLength(1),
-  ).minLength(1).maxLength(5);
+  final tagsSchema = Ack.list(Ack.string().minLength(1))
+      .minLength(1)
+      .maxLength(5);
   tagsSchema.toJsonSchemaBuilder();
   print('Converted array schema with constraints');
 

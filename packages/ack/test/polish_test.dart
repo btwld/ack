@@ -85,9 +85,8 @@ void main() {
     });
 
     test('DefaultSchema emits JSON-safe nested map default', () {
-      final schema = Ack.object({
-        'name': Ack.string(),
-      }).withDefault({'name': 'guest'});
+      final schema = Ack.object({'name': Ack.string()})
+          .withDefault({'name': 'guest'});
       final json = schema.toJsonSchema();
       expect(json['default'], {'name': 'guest'});
     });
@@ -145,9 +144,8 @@ void main() {
     });
 
     test('DefaultSchema default survives a jsonEncode round-trip', () {
-      final schema = Ack.object({
-        'name': Ack.string(),
-      }).withDefault({'name': 'guest'});
+      final schema = Ack.object({'name': Ack.string()})
+          .withDefault({'name': 'guest'});
       final json = schema.toJsonSchema();
       // Should not throw.
       final encoded = jsonEncode(json);

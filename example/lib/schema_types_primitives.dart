@@ -58,20 +58,16 @@ final optionalStatusSchema = Ack.literal('active').optional();
 final nullableRoleSchema = Ack.enumString(['admin', 'user']).nullable();
 
 @Schemable()
-final defaultedEnumSchema = Ack.enumValues(
-  UserRole.values,
-).withDefault(UserRole.guest);
+final defaultedEnumSchema = Ack.enumValues(UserRole.values)
+    .withDefault(UserRole.guest);
 
-final optionalNullableLiteralSchema = Ack.literal(
-  'pending',
-).optional().nullable();
+final optionalNullableLiteralSchema = Ack.literal('pending')
+    .optional()
+    .nullable();
 
 @Schemable()
-final chainedEnumStringSchema = Ack.enumString([
-  'read',
-  'write',
-  'execute',
-]).withDefault('read');
+final chainedEnumStringSchema = Ack.enumString(['read', 'write', 'execute'])
+    .withDefault('read');
 
 // Test refine - this should work
 @Schemable()

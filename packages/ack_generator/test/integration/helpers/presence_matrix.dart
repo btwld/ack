@@ -116,10 +116,8 @@ final class $name with _\$${name}Ack {
     }
   }
   tests.writeln('}');
-  File(
-    p.join(project.path, 'lib', 'presence_matrix.dart'),
-  ).writeAsStringSync(models.toString());
-  File(
-    p.join(project.path, 'test', 'presence_matrix_test.dart'),
-  ).writeAsStringSync(tests.toString());
+  File(p.join(project.path, 'lib', 'presence_matrix.dart'))
+      .writeAsStringSync(models.toString());
+  File(p.join(project.path, 'test', 'presence_matrix_test.dart'))
+      .writeAsStringSync(tests.toString());
 }

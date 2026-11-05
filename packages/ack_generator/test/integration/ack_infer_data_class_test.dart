@@ -78,9 +78,11 @@ final class Point with _\$PointAck {
     },
   );
 
-  test('unknown-property modes emit reject, discard, and args capture', () async {
-    await _build(
-      '''
+  test(
+    'unknown-property modes emit reject, discard, and args capture',
+    () async {
+      await _build(
+        '''
 $_imports
 @Schemable()
 final class Strict with _\$StrictAck {
@@ -104,27 +106,28 @@ final class Bag with _\$BagAck {
   final Map<String, Object?> args;
 }
 ''',
-      outputs: {
-        'test_pkg|lib/model.g.dart': decodedMatches(
-          allOf([
-            contains('final _strictObject = Ack.object({'),
-            isNot(
-              contains(
-                "final _strictObject = Ack.object({'name': Ack.string()}, additionalProperties: true)",
+        outputs: {
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            allOf([
+              contains('final _strictObject = Ack.object({'),
+              isNot(
+                contains(
+                  "final _strictObject = Ack.object({'name': Ack.string()}, additionalProperties: true)",
+                ),
               ),
-            ),
-            contains('additionalProperties: true'),
-            contains('args: deepUnmodifiableJsonMap('),
-            contains('Map<String, Object?>.fromEntries('),
-            contains('model.args.entries'),
-            contains('self.args'),
-            isNot(contains('_ackClassImmutableCopyValue')),
-            isNot(contains('_ackClassImmutableCopyMap')),
-          ]),
-        ),
-      },
-    );
-  });
+              contains('additionalProperties: true'),
+              contains('args: deepUnmodifiableJsonMap('),
+              contains('Map<String, Object?>.fromEntries('),
+              contains('model.args.entries'),
+              contains('self.args'),
+              isNot(contains('_ackClassImmutableCopyValue')),
+              isNot(contains('_ackClassImmutableCopyMap')),
+            ]),
+          ),
+        },
+      );
+    },
+  );
 
   test(
     'presence overrides and required mixin collisions are diagnosed',

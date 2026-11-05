@@ -124,9 +124,8 @@ String firebaseAiPackageVersion() {
         break;
       }
 
-      final match = RegExp(
-        r'^\s+version:\s+"?([^"\s]+)"?\s*$',
-      ).firstMatch(line);
+      final match = RegExp(r'^\s+version:\s+"?([^"\s]+)"?\s*$')
+          .firstMatch(line);
       if (match != null) return match.group(1)!;
     }
   }

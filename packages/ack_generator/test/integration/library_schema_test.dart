@@ -3,11 +3,9 @@ import 'package:test/test.dart';
 import 'schema_resolution_support.dart';
 
 void main() {
-  test(
-    'automatically detects a unique top-level schema variable, getter, or function in the library',
-    () async {
-      await expectOutput(
-        r'''
+  test('automatically detects a unique top-level schema variable, getter, or function in the library', () async {
+    await expectOutput(
+      r'''
 final colorSchema = Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.hex,
@@ -48,16 +46,16 @@ final class Theme with _$ThemeAck {
   final Slug slug;
 }
 ''',
-        allOf([
-          containsCode('colorSchema'),
-          containsCode("'palette': Ack.list(colorSchema),"),
-          containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
-          containsCode("'namedColors': Ack.map(colorSchema),"),
-          containsCode('Box.schema<Color>(colorSchema)'),
-          containsCode('centsSchema'),
-          containsCode('slugSchema()'),
-        ]),
-        types: '''
+      allOf([
+        containsCode('colorSchema'),
+        containsCode("'palette': Ack.list(colorSchema),"),
+        containsCode("'swatches': Ack.list(colorSchema).codec<Set<Color>>("),
+        containsCode("'namedColors': Ack.map(colorSchema),"),
+        containsCode('Box.schema<Color>(colorSchema)'),
+        containsCode('centsSchema'),
+        containsCode('slugSchema()'),
+      ]),
+      types: '''
 import 'package:ack/ack.dart';
 
 final class Color {
@@ -84,9 +82,8 @@ final class Box<A extends Object> {
   ) => value.codec<Box<A>>(decode: Box<A>.new, encode: (box) => box.value);
 }
 ''',
-      );
-    },
-  );
+    );
+  });
 
   test(
     'rejects ambiguous auto-detected top-level schemas for the same type',

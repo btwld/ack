@@ -24,11 +24,9 @@ part 'model.g.dart';
 ''';
 
 void main() {
-  test(
-    'class-first runtime mapping uses direct constructor and map literals with pinned case style',
-    () async {
-      await _expectGeneratedPart(
-        '''
+  test('class-first runtime mapping uses direct constructor and map literals with pinned case style', () async {
+    await _expectGeneratedPart(
+      '''
 $_head
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class User with _\$UserAck {
@@ -38,19 +36,18 @@ final class User with _\$UserAck {
   final String? nickname;
 }
 ''',
-        allOf([
-          contains(r'User _$UserFromRuntime(Map<String, Object?> value)'),
-          contains("firstName: value['first_name'] as String"),
-          contains("nickname: value['nickname'] as String?"),
-          contains(r'Map<String, Object?> _$UserToRuntime(User model)'),
-          contains("'first_name': model.firstName"),
-          contains("'nickname': ?model.nickname"),
-          isNot(contains(r'_$UserFromJson')),
-          isNot(contains(r'_$UserToJson')),
-        ]),
-      );
-    },
-  );
+      allOf([
+        contains(r'User _$UserFromRuntime(Map<String, Object?> value)'),
+        contains("firstName: value['first_name'] as String"),
+        contains("nickname: value['nickname'] as String?"),
+        contains(r'Map<String, Object?> _$UserToRuntime(User model)'),
+        contains("'first_name': model.firstName"),
+        contains("'nickname': ?model.nickname"),
+        isNot(contains(r'_$UserFromJson')),
+        isNot(contains(r'_$UserToJson')),
+      ]),
+    );
+  });
 
   test(
     'runtime emission auto-includes unannotated concrete sealed branches',

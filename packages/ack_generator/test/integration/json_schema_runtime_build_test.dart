@@ -23,9 +23,8 @@ void main() {
     'JSON Schema builds into usable models in one deterministic build',
     () async {
       var repository = Directory.current;
-      while (!Directory(
-        p.join(repository.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(repository.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         repository = repository.parent;
       }
       final project = await Directory.systemTemp.createTemp('ack_json_schema_');
@@ -77,26 +76,24 @@ targets:
               },
             }),
           );
-          File(
-            p.join(project.path, 'lib', '$vocabulary.schema.json'),
-          ).writeAsStringSync(
-            jsonEncode({
-              r'$schema': dialectUri,
-              r'$defs': {
-                'Model': {
-                  'type': 'object',
-                  'properties': {
-                    'name': {'type': 'string'},
+          File(p.join(project.path, 'lib', '$vocabulary.schema.json'))
+              .writeAsStringSync(
+                jsonEncode({
+                  r'$schema': dialectUri,
+                  r'$defs': {
+                    'Model': {
+                      'type': 'object',
+                      'properties': {
+                        'name': {'type': 'string'},
+                      },
+                      'required': ['name'],
+                    },
                   },
-                  'required': ['name'],
-                },
-              },
-            }),
-          );
+                }),
+              );
         }
-        File(
-          p.join(project.path, 'test', 'dialects_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(project.path, 'test', 'dialects_test.dart'))
+            .writeAsStringSync(r'''
 import 'dart:convert';
 import 'dart:io';
 
@@ -167,9 +164,8 @@ void main() {
   }
 }
 ''');
-        File(
-          p.join(project.path, 'test', 'models_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(project.path, 'test', 'models_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_json_schema_runtime/contract.schema.dart';
 import 'package:test/test.dart';
 
@@ -195,9 +191,8 @@ void main() {
 }
 ''');
 
-        File(
-          p.join(project.path, 'lib', 'advanced.schema.json'),
-        ).writeAsStringSync(r'''
+        File(p.join(project.path, 'lib', 'advanced.schema.json'))
+            .writeAsStringSync(r'''
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
@@ -228,9 +223,8 @@ void main() {
   ]
 }
 ''');
-        File(
-          p.join(project.path, 'test', 'advanced_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(project.path, 'test', 'advanced_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_json_schema_runtime/advanced.schema.dart';
 import 'package:test/test.dart';
 
@@ -301,13 +295,11 @@ void main() {
           },
         };
         for (final entry in regressions.entries) {
-          File(
-            p.join(project.path, 'lib', '${entry.key}.schema.json'),
-          ).writeAsStringSync(jsonEncode({r'$defs': entry.value}));
+          File(p.join(project.path, 'lib', '${entry.key}.schema.json'))
+              .writeAsStringSync(jsonEncode({r'$defs': entry.value}));
         }
-        File(
-          p.join(project.path, 'test', 'regressions_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(project.path, 'test', 'regressions_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_json_schema_runtime/bounds.schema.dart';
 import 'package:ack_json_schema_runtime/precision.schema.dart';
 import 'package:ack_json_schema_runtime/patterns.schema.dart';
@@ -368,9 +360,8 @@ void main() {
         );
         final outputs = {
           for (final suffix in ['.dart', '.g.dart'])
-            suffix: File(
-              p.join(project.path, 'lib', 'contract.schema$suffix'),
-            ).readAsStringSync(),
+            suffix: File(p.join(project.path, 'lib', 'contract.schema$suffix'))
+                .readAsStringSync(),
         };
         expect(outputs['.dart'], contains('unknown_properties: preserve'));
         expect(outputs['.g.dart'], contains('class Listing'));
@@ -391,14 +382,12 @@ void main() {
         );
         expect({
           for (final suffix in outputs.keys)
-            suffix: File(
-              p.join(project.path, 'lib', 'contract.schema$suffix'),
-            ).readAsStringSync(),
+            suffix: File(p.join(project.path, 'lib', 'contract.schema$suffix'))
+                .readAsStringSync(),
         }, outputs);
         expect(
-          File(
-            p.join(project.path, 'lib', 'advanced.schema.dart'),
-          ).readAsStringSync(),
+          File(p.join(project.path, 'lib', 'advanced.schema.dart'))
+              .readAsStringSync(),
           advancedOutput,
         );
 

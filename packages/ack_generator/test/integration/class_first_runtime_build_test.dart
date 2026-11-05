@@ -50,9 +50,8 @@ Future<void> _expectConsumerSafeParts(
   for (final MapEntry(key: path, value: source) in modern.entries) {
     expect(source, contains(lintSuppression), reason: path);
     expect(source, contains('// coverage:ignore-file\n'), reason: path);
-    File(
-      p.join(project.path, path),
-    ).writeAsStringSync(source.replaceAll(lintSuppression, ''));
+    File(p.join(project.path, path))
+        .writeAsStringSync(source.replaceAll(lintSuppression, ''));
   }
   try {
     _expectSuccess(
@@ -87,9 +86,8 @@ void main() {
     'class-first models compile and preserve the runtime contract',
     () async {
       var projectRoot = Directory.current;
-      while (!Directory(
-        p.join(projectRoot.path, 'packages', 'ack_generator'),
-      ).existsSync()) {
+      while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+          .existsSync()) {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(
@@ -121,22 +119,21 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(p.join(temporary.path, 'analysis_options.yaml')).writeAsStringSync(
-          '''
+        File(p.join(temporary.path, 'analysis_options.yaml'))
+            .writeAsStringSync('''
 linter:
   rules:
     - avoid_redundant_argument_values
     - prefer_null_aware_operators
-''',
-        );
+''');
         File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final String value; }\n',
         );
         File(p.join(temporary.path, 'lib', 'beta.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final int value; }\n',
         );
-        File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
-          r'''
+        File(p.join(temporary.path, 'lib', 'coexist.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
 part 'coexist.g.dart';
@@ -150,10 +147,9 @@ final class Handwritten with _$HandwrittenAck {
 
   final bool enabled;
 }
-''',
-        );
-        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
-          r'''
+''');
+        File(p.join(temporary.path, 'lib', 'models.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
 
@@ -620,11 +616,9 @@ final class PlainJson {
   final String value;
   Map<String, dynamic> toJson() => _$PlainJsonToJson(this);
 }
-''',
-        );
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+''');
+        File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+            .writeAsStringSync(r'''
 import 'dart:convert';
 
 import 'package:ack_class_first_runtime/alpha.dart' as alpha;

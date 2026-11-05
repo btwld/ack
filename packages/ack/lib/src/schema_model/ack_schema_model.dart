@@ -205,9 +205,8 @@ sealed class AckSchemaModel {
       common = common.copyWith(defaultValue: keywords['default']);
     }
 
-    return _rebuildWithCommon(
-      common,
-    )._withJsonSchemaKeywords(keywords, commonHandled);
+    return _rebuildWithCommon(common)
+        ._withJsonSchemaKeywords(keywords, commonHandled);
   }
 
   AckSchemaModel _withJsonSchemaKeywords(

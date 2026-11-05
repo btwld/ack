@@ -37,9 +37,8 @@ void main() {
         ),
         (
           name: 'boundary narrows a nullable object',
-          schema: Ack.preserveBoundary(
-            _record.nullable(),
-          ).nullable(value: false),
+          schema: Ack.preserveBoundary(_record.nullable())
+              .nullable(value: false),
           acceptsNull: false,
           sample: _recordSample,
         ),
@@ -234,9 +233,9 @@ void main() {
     test(
       'a default outside a narrowed boundary still substitutes on parse',
       () {
-        final schema = Ack.preserveBoundary(
-          _record.nullable(),
-        ).nullable(value: false).withDefault(_recordSample);
+        final schema = Ack.preserveBoundary(_record.nullable())
+            .nullable(value: false)
+            .withDefault(_recordSample);
         expect(schema.parse(null), _recordSample);
         expect(schema.safeEncode(null).isFail, isTrue);
         expect(

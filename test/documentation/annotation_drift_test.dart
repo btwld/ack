@@ -14,9 +14,11 @@ List<File> _guidance() {
   const skipped = {'.dart_tool', 'build', 'node_modules', '.git', '.context'};
   bool kept(FileSystemEntity entity) =>
       !entity.uri.pathSegments.any(skipped.contains);
-  Iterable<File> files(String directory) => Directory(
-    directory,
-  ).listSync(recursive: true).whereType<File>().where(kept);
+  Iterable<File> files(String directory) =>
+      Directory(directory)
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where(kept);
 
   return [
     ...files(
