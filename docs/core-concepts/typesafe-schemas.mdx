@@ -56,25 +56,13 @@ final orderSchema = Ack.object({
 
 // Class-first: write Account; Ack generates AccountSchema.
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Account with _$AccountAck {
-  const Account({
-    required this.displayName,
-    required this.email,
-    required this.middleName,
-    this.website,
-    this.role = 'member',
-  });
-
-  @HasMinLength(2)
-  final String displayName;
-
-  @IsEmail()
-  final String email;
-
-  final String? middleName;
-  final Uri? website;
-  final String role;
-
+final class const Account({
+  @HasMinLength(2) required final String displayName,
+  @IsEmail() required final String email,
+  required final String? middleName,
+  final Uri? website,
+  final String role = 'member',
+}) with _$AccountAck {
   static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
@@ -173,8 +161,9 @@ This generates a sealed `Pet` base plus `Cat` and `Dog` branches.
 ## Class-first: `@Schemable()` on a class
 
 Use class-first generation when the Dart class is the primary artifact. Ack
-reads constructor-backed fields (including Dart 3.13+ primary constructors) and
-generates a codec schema whose runtime value is your class:
+reads the fields that the class's constructor declares and generates a codec
+schema whose runtime value is your class. The examples use Dart 3.13 primary
+constructors, so each declaring parameter carries its own annotations:
 
 ```dart
 @Schemable(caseStyle: AckCaseStyle.snake)
@@ -261,14 +250,12 @@ It does not change a nested model's own description.
 ```dart
 /// Tracks one unit of work. This prose is not exported.
 @Schemable(description: 'A task the person can complete.')
-final class Task with _$TaskAck {
-  const Task({required this.id, required this.title});
-
-  final String id;
+final class const Task({
+  required final String id,
 
   /// @description What to do.
-  final String title;
-}
+  required final String title,
+}) with _$TaskAck;
 
 TaskSchema.toJsonSchema()['description']; // 'A task the person can complete.'
 ```
@@ -277,6 +264,33 @@ Use `@Schemable(schemaName: 'WireProfileSchema')` to override the exact public
 facade name. It must be a public UpperCamel identifier. The private backing
 name remains derived from the model class, and no public lower-camel alias is
 generated.
+
+### Classic constructors
+
+A classic constructor works the same and generates identical code. Put the
+annotations on the fields it initializes:
+
+```dart
+@Schemable(caseStyle: AckCaseStyle.snake)
+final class Profile with _$ProfileAck {
+  Profile({
+    required this.displayName,
+    required this.email,
+    this.role = 'member',
+  });
+
+  @HasMinLength(2)
+  final String displayName;
+
+  @IsEmail()
+  final String email;
+
+  final String role;
+
+  static final schema = ProfileSchema.schema;
+  static final fromJson = ProfileSchema.fromJson;
+}
+```
 
 ### Presence comes from the constructor
 
@@ -324,13 +338,8 @@ carries no `default`.
 
 ```dart
 @Schemable()
-final class Example with _$ExampleAck {
-  const Example({this.label});
-
-  @IsOptional()
-  @IsNotNull()
-  final String? label;
-}
+final class const Example({@IsOptional() @IsNotNull() final String? label})
+    with _$ExampleAck;
 ```
 
 `ExampleSchema.parse({})` yields `label: null`, `{"label": "hello"}` succeeds,
@@ -356,13 +365,9 @@ Use `JsonMaybe<T>` when a `PATCH` request needs to distinguish an omitted field
 
 ```dart
 @Schemable()
-final class ProfilePatch with _$ProfilePatchAck {
-  const ProfilePatch({
-    this.bio = const JsonMaybe.absent(),
-  });
-
-  final JsonMaybe<String> bio;
-
+final class const ProfilePatch({
+  final JsonMaybe<String> bio = const JsonMaybe.absent(),
+}) with _$ProfilePatchAck {
   static final schema = ProfilePatchSchema.schema;
   static final fromJson = ProfilePatchSchema.fromJson;
 }
@@ -433,13 +438,11 @@ final class Slot {
 }
 
 @Schemable()
-final class Section with _$SectionAck {
-  const Section({required this.header, this.footer, required this.children});
-
-  final Slot header;          // Slot.schema
-  final Slot? footer;         // Slot.schema, optional and nullable
-  final List<Slot> children;  // Ack.list(Slot.schema)
-}
+final class const Section({
+  required final Slot header,          // Slot.schema
+  final Slot? footer,                  // Slot.schema, optional and nullable
+  required final List<Slot> children,  // Ack.list(Slot.schema)
+}) with _$SectionAck;
 ```
 
 The static can be a field or a getter typed `AckSchema<Boundary, Slot>`. It
@@ -535,11 +538,7 @@ AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
 );
 
 @Schemable()
-final class Theme with _$ThemeAck {
-  const Theme({required this.primary});
-
-  final Color primary;
-}
+final class const Theme({required final Color primary}) with _$ThemeAck;
 ```
 
 Non-String map keys and `dynamic` are rejected because they do not provide a
@@ -555,21 +554,16 @@ super parameters:
 
 ```dart
 @Schemable(discriminatorKey: 'type')
-sealed class Pet with _$PetAck {
-  const Pet({required this.id});
-  final String id;
-}
+sealed class const Pet({required final String id}) with _$PetAck;
 
 @Schemable(discriminatorValue: 'cat')
-final class Cat extends Pet with _$CatAck {
-  const Cat({required super.id, required this.lives});
-  final int lives;
-}
+final class const Cat({required super.id, required final int lives})
+    extends Pet
+    with _$CatAck;
 
-final class Dog extends Pet with _$DogAck {
-  const Dog({required super.id, required this.breed});
-  final String breed;
-}
+final class const Dog({required super.id, required final String breed})
+    extends Pet
+    with _$DogAck;
 ```
 
 The base and every concrete branch receive facades (`PetSchema`, `CatSchema`,
@@ -611,10 +605,8 @@ when declared on the class) automatically:
 import 'address.dart' as address;
 
 @Schemable()
-final class Order with _$OrderAck {
-  const Order({required this.shipping});
-  final address.Address shipping;
-}
+final class const Order({required final address.Address shipping})
+    with _$OrderAck;
 
 // Generated field schema: address.AddressSchema.schema
 ```

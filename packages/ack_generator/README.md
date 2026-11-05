@@ -153,12 +153,8 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable()
-final class Account with _$AccountAck {
-  const Account({required this.name});
-
-  @HasMinLength(2)
-  final String name;
-
+final class const Account({@HasMinLength(2) required final String name})
+    with _$AccountAck {
   static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
