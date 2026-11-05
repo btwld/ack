@@ -14,15 +14,10 @@ has:
 
 ```dart
 @Schemable()
-final class Account with _$AccountAck {
-  const Account({required this.name, required this.email});
-
-  @HasMinLength(2)
-  final String name;
-
-  @IsEmail()
-  final String email;
-
+final class const Account({
+  @HasMinLength(2) required final String name,
+  @IsEmail() required final String email,
+}) with _$AccountAck {
   static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
@@ -40,6 +35,16 @@ Class-first examples now attach the generated facade with
 `static final schema = AccountSchema.schema;` instead of naming the private
 codec variable. Both forms generate the same code, so existing classes keep
 working.
+
+### Dart 3.13 and primary constructors
+
+2.0.0-beta.3 requires Dart `>=3.13.0`, and Flutter `>=3.47.0` (the first
+release that bundles Dart 3.13.0). Apps on Flutter 3.41 to 3.46 must upgrade
+Flutter to use Ack 2.0. Class-first examples now use Dart 3.13 primary
+constructors, with the rule annotations and `@AckKey` on the declaring
+parameters, as in the `Account` example above. A classic constructor with
+annotated fields still works and generates identical code, so existing models
+need no change.
 
 ## Beta.1 to beta.2: defaults and explicit null
 
@@ -206,17 +211,13 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Account with _$AccountAck {
-  const Account({required this.userName, required this.createdAt});
-
+final class const Account({
   @AckKey('username')
   @HasMinLength(3)
   @HasMatch(r'^[a-z0-9_]+$')
-  final String userName;
-
-  @IsDateTime()
-  final String createdAt;
-
+  required final String userName,
+  @IsDateTime() required final String createdAt,
+}) with _$AccountAck {
   static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
