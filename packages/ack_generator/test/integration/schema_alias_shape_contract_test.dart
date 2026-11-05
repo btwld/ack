@@ -3,6 +3,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 const _source = r'''
 import 'package:ack/ack.dart';
 part 'models.g.dart';
@@ -17,8 +19,7 @@ Future<void> _build(
   Map<String, Object> outputs, {
   void Function(String)? onError,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/models.dart': '$_source\n$suffix'},

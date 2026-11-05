@@ -4,6 +4,8 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 const _head = '''
 import 'package:ack/ack.dart';
 import 'types.dart';
@@ -109,8 +111,7 @@ Future<void> expectOutput(
   String head = _head,
   String types = _types,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {
@@ -128,8 +129,7 @@ Future<List<String>> generationErrors(
   String head = _head,
   String types = _types,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   final errors = <String>[];
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),

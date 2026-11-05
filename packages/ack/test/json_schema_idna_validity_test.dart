@@ -1,8 +1,5 @@
-import 'package:ack/ack.dart';
-import 'package:punycoder/punycoder.dart' as pc;
-import 'package:test/test.dart';
-
 import 'fixtures/idna/iana_12_sample.dart';
+import 'support/idna_labels.dart';
 
 void main() {
   final examples = [
@@ -56,36 +53,7 @@ void main() {
         name: 'IANA ${sample.property} U+${sample.codePoint.toRadixString(16)}',
       ),
   ];
-  for (final format in ['idn-hostname', 'idn-email', 'hostname', 'email']) {
-    for (final operation in ['parse', 'encode']) {
-      for (final example in examples) {
-        test('$format $operation ${example.name}', () {
-          final schema = Ack.fromJsonSchema({
-            'type': 'string',
-            'format': format,
-          }, assertFormats: true);
-          final restored = Ack.fromJsonSchema(schema.toJsonSchema());
-          for (final label in [
-            if (format.startsWith('idn-')) example.label,
-            'xn--${pc.punycode.encode(example.label)}',
-          ]) {
-            final host = '$label.example';
-            final input = format.endsWith('email') ? 'user@$host' : host;
-            for (final candidate in [schema, restored]) {
-              final result = operation == 'parse'
-                  ? candidate.safeParse(input)
-                  : candidate.safeEncode(input);
-              // A decomposed Unicode input is mapped before validation. Its
-              // noncanonical ACE representation must still fail round-trip.
-              final valid =
-                  example.label == 'a\u0301' && label.startsWith('xn--')
-                  ? false
-                  : example.valid;
-              expect(result.isOk, valid, reason: input);
-            }
-          }
-        });
-      }
-    }
-  }
+  // A decomposed Unicode input is mapped before validation. Its
+  // noncanonical ACE representation must still fail round-trip.
+  testIdnaLabels(examples, invalidAceLabels: {'a\u0301'});
 }

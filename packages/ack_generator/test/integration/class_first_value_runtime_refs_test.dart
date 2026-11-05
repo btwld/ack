@@ -3,9 +3,10 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<void> _expectOutput(String source, Matcher matcher) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/models.dart': source},
