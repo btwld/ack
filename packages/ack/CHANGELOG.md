@@ -16,7 +16,8 @@
 ### Fixed
 
 * Validate nested objects as they encode, avoiding repeated subtree checks
-  while observing nested changes made by earlier sibling encoders.
+  between directly nested objects while observing nested changes made by
+  earlier sibling encoders.
 * Build imported schema locations from shared pointer segments, avoiding
   repeated ancestor-string copies during deeply nested compilation.
 * Reuse the standard meta-schema index across imports while keeping compiled
