@@ -3,10 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## Unreleased
+## 1.7.1
 
 * Keep the generator's JSON dependencies compatible with the supported Dart 3.9
   SDK, including clean builds in consumer packages.
+* Align all five publishable packages at 1.7.1 without changing the public Dart
+  API. Existing hosted dependency minimums remain compatible.
 
 ## 1.7.0
 
