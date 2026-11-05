@@ -469,6 +469,14 @@ final class Declined with _$DeclinedAck {
 }
 
 @Schemable()
+final class DollarNames with _$DollarNamesAck {
+  const DollarNames({required this.$id, required this.cost$usd});
+
+  final String $id;
+  final int cost$usd;
+}
+
+@Schemable()
 final class OptionalCollections with _$OptionalCollectionsAck {
   const OptionalCollections({this.headers, this.aliases, this.tags});
 
@@ -1146,6 +1154,11 @@ void main() {
     expect(const Declined().hashCode, const Declined().hashCode);
     expect(const Declined().toString(), 'Declined()');
     expect(const Declined().toJson(), isEmpty);
+  });
+
+  test('toString keeps dollar signs in field names literal', () {
+    const names = DollarNames($id: 'a', cost$usd: 2);
+    expect(names.toString(), r'DollarNames($id: a, cost$usd: 2)');
   });
 
   test('optional collections round-trip through null-aware bridges', () {

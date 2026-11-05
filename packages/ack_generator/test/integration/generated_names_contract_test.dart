@@ -3,9 +3,10 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<void> _expectFailure(String source, List<String> messages) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   final errors = <String>[];
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
@@ -95,8 +96,7 @@ $alias
     '.copyWith(additionalProperties: true).copyWith(additionalProperties: false)',
   ]) {
     test('permits inherited additionalProperties after $overrides', () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
+      final readerWriter = await createTestReaderWriter();
       await testBuilder(
         ackModelBuilder(BuilderOptions.empty),
         {

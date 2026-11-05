@@ -249,6 +249,12 @@ final keywordFieldsSchema = Ack.object({
   'yield': Ack.string(),
 });
 
+@Schemable()
+final dollarNamesSchema = Ack.object({
+  r'$id': Ack.string(),
+  r'cost$usd': Ack.integer(),
+});
+
 final nonEmptyText = Ack.string().minLength(1);
 final choiceOptionSchema = Ack.anyOf([
   nonEmptyText,
@@ -491,6 +497,11 @@ void main() {
     expect(fields.toJson(), json);
     expect(fields.copyWith(required: false).toJson(), {...json, 'required': false});
     expect(KeywordFields.parse({...json}..remove('required')).required, isFalse);
+  });
+
+  test('toString keeps dollar signs in field names literal', () {
+    final names = DollarNames.parse({r'$id': 'a', r'cost$usd': 2});
+    expect(names.toString(), r'DollarNames($id: a, cost$usd: 2)');
   });
 
   test('constructor snapshots Object-valued option maps without validating them', () {

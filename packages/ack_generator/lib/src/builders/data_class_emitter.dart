@@ -271,15 +271,11 @@ int get hashCode => ${_hashExpression(fields)};''';
     bool castSelf = false,
   }) {
     if (castSelf && fields.isNotEmpty) {
-      final parts = [
-        for (final field in fields)
-          '${field.dartName}: \${self.${field.dartName}}',
-      ];
       return '''
 @override
 String toString() {
   final self = this as $className;
-  return '$className(${parts.join(', ')})';
+  return '${_toStringPreview(className, fields, receiver: 'self')}';
 }''';
     }
     return '''
@@ -331,11 +327,20 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
     return 'Object.hashAll([${hashes.join(', ')}])';
   }
 
-  String _toStringPreview(String className, List<AckFieldNode> fields) {
+  /// The contents of a single-quoted `toString` literal. Dart names may
+  /// contain `$`, so literal names escape it and values use braces.
+  String _toStringPreview(
+    String className,
+    List<AckFieldNode> fields, {
+    String? receiver,
+  }) {
+    String text(String name) => name.replaceAll(r'$', r'\$');
+    final prefix = receiver == null ? '' : '$receiver.';
     final parts = [
-      for (final field in fields) '${field.dartName}: \$${field.dartName}',
+      for (final field in fields)
+        '${text(field.dartName)}: \${$prefix${field.dartName}}',
     ];
-    return '$className(${parts.join(', ')})';
+    return '${text(className)}(${parts.join(', ')})';
   }
 
   String _optional(String type) => type.endsWith('?') ? type : '$type?';

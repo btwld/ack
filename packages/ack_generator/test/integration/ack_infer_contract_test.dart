@@ -5,13 +5,14 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<TestBuilderResult> _generate(
   String source, {
   void Function(LogRecord log)? onLog,
   Map<String, Object>? outputs,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   return testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
