@@ -190,6 +190,13 @@
   nullability and constraints (including source `allOf` when layering
   conflicting constraints), and reject conflicting resource definitions.
 
+## 1.7.1
+
+### Changed
+
+* Align with the coordinated Ack 1.7.1 release. This package has no source or
+  public API changes from 1.7.0; compatible dependency minimums are preserved.
+
 ## 1.7.0
 
 ### Breaking

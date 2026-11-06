@@ -169,6 +169,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   and use validated value models for Unicode regex patterns and named scalar
   unions.
 
+## 1.7.1
+
+* Keep the generator's JSON dependencies compatible with the supported Dart 3.9
+  SDK, including clean builds in consumer packages.
+* Align all five publishable packages at 1.7.1 without changing the public Dart
+  API. Existing hosted dependency minimums remain compatible.
+
 ## 1.7.0
 
 * Remove `ack_annotations`; annotations now ship in `ack` (`package:ack/ack.dart`,

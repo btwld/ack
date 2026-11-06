@@ -5,7 +5,11 @@ on:
     branches: [main, 'release/**']
   # No `branches:` filter. A stacked pull request targets its parent
   # branch, not main, and would otherwise run no checks at all.
+  # Include `ready_for_review` so marking a draft ready runs CI.
+  # Every job below skips while the pull request is a draft.
+  # Pushes to main still run every job.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -21,6 +25,7 @@ jobs:
     # into a shell, so every run could execute code that nobody reviewed here.
     # The checks now live in this repository and pin every dependency.
     name: Run tests for all packages
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
