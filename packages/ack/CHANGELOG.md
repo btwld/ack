@@ -5,6 +5,9 @@
 * Report a nonproductive JSON Schema reference cycle at the `$ref` that
   closes it. The diagnostic pointer no longer names a `$ref` on the schema
   the reference points to when that schema does not contain one.
+* Keep an empty-string member key in error paths as the JSON Pointer `#/`.
+  Wrapper contexts such as anyOf, lazy, boundary, and discriminated objects
+  still add no path segment.
 
 ## 2.0.0-beta.3
 

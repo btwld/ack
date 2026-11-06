@@ -50,7 +50,7 @@ final class BoundarySchema extends AckSchema<JsonMap, JsonMap>
             name: context.name,
             schema: inner,
             value: value,
-            pathSegment: '',
+            omitPathSegment: true,
             operation: SchemaOperation.parse,
           );
     final result = inner.parseWithContext(value, parseContext);
