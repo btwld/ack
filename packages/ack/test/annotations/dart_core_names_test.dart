@@ -1,11 +1,40 @@
 import 'package:ack/ack.dart';
+import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
 
+@Schemable(name: 'Endpoint')
+final class _Endpoint {
+  const _Endpoint({
+    required this.uri,
+    required this.createdAt,
+    required this.path,
+  });
+
+  @AckKey('endpoint_uri')
+  @IsUri()
+  final Uri uri;
+
+  @IsDateTime()
+  final DateTime createdAt;
+
+  @IsRequired()
+  @HasMatch('^/')
+  final String path;
+}
+
 void main() {
-  test('package:ack/ack.dart leaves dart:core Pattern visible', () {
+  test('package:ack/ack.dart and annotations.dart leave dart:core Pattern, Uri, and DateTime visible', () {
     final Pattern pattern = RegExp('a');
     const annotation = Schemable(name: 'Banana');
+    final endpoint = _Endpoint(
+      uri: Uri.parse('https://example.com'),
+      createdAt: DateTime.utc(2026, 10, 1),
+      path: '/v1',
+    );
 
     expect(pattern.allMatches(annotation.name!.toLowerCase()), hasLength(3));
+    expect(endpoint.uri.host, 'example.com');
+    expect(endpoint.createdAt.year, 2026);
+    expect('/'.allMatches(endpoint.path), hasLength(1));
   });
 }

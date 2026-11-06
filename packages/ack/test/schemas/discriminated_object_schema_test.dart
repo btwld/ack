@@ -417,9 +417,8 @@ void main() {
           final defaultOnlySchema = Ack.discriminated<Map<String, Object?>>(
             discriminatorKey: 'type',
             schemas: {
-              'cat': Ack.object({
-                'name': Ack.string(),
-              }).withDefault(const {'name': 'Default'}),
+              'cat': Ack.object({'name': Ack.string()})
+                  .withDefault(const {'name': 'Default'}),
             },
           );
 
@@ -779,7 +778,7 @@ void main() {
         final properties = (branch['properties'] as Map)
             .cast<String, Object?>();
 
-        expect(branch['x-transformed'], isTrue);
+        expect(branch.containsKey('x-transformed'), isFalse);
         expect(properties['type'], equals({'type': 'string', 'const': 'cat'}));
         expect(branch['required'], equals(['type', 'name']));
       });

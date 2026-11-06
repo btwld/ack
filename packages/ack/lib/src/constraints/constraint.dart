@@ -39,7 +39,7 @@ abstract class Constraint<T> {
 /// It holds the [constraint] that failed, a descriptive [message],
 /// and optional [context] providing more details about the failure.
 @immutable
-class ConstraintError {
+final class ConstraintError {
   final Constraint constraint;
   final String message;
   final Map<String, Object?>? context;

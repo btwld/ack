@@ -2,6 +2,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 /// Writes the annotation names that `package:ack/ack.dart` exports.
 final class _ExportProbe implements Builder {
   const _ExportProbe();
@@ -31,8 +33,7 @@ final class _ExportProbe implements Builder {
 
 void main() {
   test('package:ack/ack.dart exports only the model annotations', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _ExportProbe(),
       {'test_pkg|lib/probe.dart': "import 'package:ack/ack.dart';"},
@@ -40,8 +41,35 @@ void main() {
       readerWriter: readerWriter,
       outputs: {
         'test_pkg|lib/probe.exports': decodedMatches(
-          'AckCaseStyle,AckField,AckFieldPresence,AckUnknownPropertyPolicy,'
-          'NotNull,Optional,Required,Schemable',
+          [
+            'AckCaseStyle',
+            'AckKey',
+            'AckUnknownPropertyPolicy',
+            'HasMatch',
+            'HasMax',
+            'HasMaxItems',
+            'HasMaxLength',
+            'HasMin',
+            'HasMinItems',
+            'HasMinLength',
+            'HasUniqueItems',
+            'IsDate',
+            'IsDateTime',
+            'IsEmail',
+            'IsIp',
+            'IsMultipleOf',
+            'IsNegative',
+            'IsNotEmpty',
+            'IsNotNull',
+            'IsOptional',
+            'IsPositive',
+            'IsRequired',
+            'IsUri',
+            'IsUrl',
+            'IsUuid',
+            'Schemable',
+            'Validate',
+          ].join(','),
         ),
       },
     );

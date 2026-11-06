@@ -50,9 +50,9 @@ void main() {
           meta: {'app': 'ack'},
           callback: (args, extra) => textResult('ok'),
         );
-        server.registerAckModelTool(
+        server.registerAckTool(
           'model',
-          model: searchModel,
+          input: SearchInput.schema,
           title: 'Model',
           description: 'Typed search',
           annotations: const ToolAnnotations(readOnlyHint: true),
@@ -119,9 +119,9 @@ void main() {
 
       test('model callback receives a typed model and defaults', () async {
         SearchInput? received;
-        server.registerAckModelTool(
+        server.registerAckTool(
           'search',
-          model: searchModel,
+          input: SearchInput.schema,
           callback: (args, extra) {
             received = args;
             return textResult(args.query);
@@ -165,13 +165,13 @@ void main() {
         'model conversion exceptions are redacted and session recovers',
         () async {
           var calls = 0;
-          server.registerAckModelTool(
+          server.registerAckTool(
             'number',
-            model: AckModelAdapter<JsonMap, JsonMap, int>(
+            input: AckModelAdapter<JsonMap, JsonMap, int>(
               schema: () => Ack.object({'value': Ack.string()}),
               fromRuntime: (args) => int.parse(args['value'] as String),
               toRuntime: (value) => {'value': '$value'},
-            ),
+            ).modelSchema,
             callback: (args, extra) {
               calls++;
               return textResult('$args');
@@ -200,13 +200,13 @@ void main() {
         'custom invalid handler receives the original exception details',
         () async {
           SchemaError? received;
-          server.registerAckModelTool(
+          server.registerAckTool(
             'number',
-            model: AckModelAdapter<JsonMap, JsonMap, int>(
+            input: AckModelAdapter<JsonMap, JsonMap, int>(
               schema: () => Ack.object({'value': Ack.string()}),
               fromRuntime: (args) => int.parse(args['value'] as String),
               toRuntime: (value) => {'value': '$value'},
-            ),
+            ).modelSchema,
             onInvalidArguments: (error) {
               received = error;
               return textResult('Use digits only.');
@@ -238,13 +238,13 @@ void main() {
               message: 'Query is unavailable',
             );
             if (useModel) {
-              server.registerAckModelTool(
+              server.registerAckTool(
                 'search',
-                model: AckModelAdapter<JsonMap, JsonMap, SearchInput>(
+                input: AckModelAdapter<JsonMap, JsonMap, SearchInput>(
                   schema: () => input,
                   fromRuntime: searchModel.fromRuntime,
                   toRuntime: searchModel.toRuntime,
-                ),
+                ).modelSchema,
                 callback: (args, extra) {
                   calls++;
                   return textResult(args.query);
@@ -303,13 +303,13 @@ void main() {
             }
 
             if (useModel) {
-              server.registerAckModelTool(
+              server.registerAckTool(
                 'search',
-                model: AckModelAdapter<JsonMap, JsonMap, SearchInput>(
+                input: AckModelAdapter<JsonMap, JsonMap, SearchInput>(
                   schema: () => input,
                   fromRuntime: searchModel.fromRuntime,
                   toRuntime: searchModel.toRuntime,
-                ),
+                ).modelSchema,
                 onInvalidArguments: invalid,
                 callback: (args, extra) {
                   calls++;
@@ -401,13 +401,13 @@ void main() {
             throwsArgumentError,
           );
           expect(
-            () => server.registerAckModelTool(
+            () => server.registerAckTool(
               'badModel',
-              model: AckModelAdapter<JsonMap, JsonMap, JsonMap>(
+              input: AckModelAdapter<JsonMap, JsonMap, JsonMap>(
                 schema: () => input,
                 fromRuntime: (args) => args,
                 toRuntime: (args) => args,
-              ),
+              ).modelSchema,
               callback: (args, extra) => textResult('wrong'),
             ),
             throwsArgumentError,

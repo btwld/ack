@@ -5,7 +5,7 @@ import '../context.dart';
 import '../schemas/schema.dart';
 
 @immutable
-abstract class SchemaError {
+sealed class SchemaError {
   final String message;
   final SchemaContext context;
   final Object? cause;
@@ -50,7 +50,7 @@ abstract class SchemaError {
 }
 
 @immutable
-class TypeMismatchError extends SchemaError {
+final class TypeMismatchError extends SchemaError {
   final SchemaType _expectedJsonType;
 
   final SchemaType _actualJsonType;
@@ -83,7 +83,7 @@ class TypeMismatchError extends SchemaError {
   }
 }
 
-class SchemaConstraintsError extends SchemaError {
+final class SchemaConstraintsError extends SchemaError {
   final List<ConstraintError> constraints;
 
   SchemaConstraintsError({required this.constraints, required super.context})
@@ -111,7 +111,7 @@ class SchemaConstraintsError extends SchemaError {
 }
 
 @immutable
-class SchemaNestedError extends SchemaError {
+final class SchemaNestedError extends SchemaError {
   final List<SchemaError> errors;
 
   const SchemaNestedError({required this.errors, required super.context})
@@ -127,7 +127,7 @@ class SchemaNestedError extends SchemaError {
 }
 
 @immutable
-class SchemaValidationError extends SchemaError {
+base class SchemaValidationError extends SchemaError {
   SchemaValidationError({
     required String message,
     required super.context,

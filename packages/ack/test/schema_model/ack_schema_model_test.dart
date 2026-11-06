@@ -164,15 +164,6 @@ void main() {
 
       expect(ordered.toJsonSchema(), unordered.toJsonSchema());
       expect(ordered, isNot(unordered));
-
-      const dateBounded = AckStringSchemaModel(
-        format: 'date',
-        formatMinimum: '2026-01-01',
-      );
-      const dateUnbounded = AckStringSchemaModel(format: 'date');
-
-      expect(dateBounded.toJsonSchema(), dateUnbounded.toJsonSchema());
-      expect(dateBounded, isNot(dateUnbounded));
     });
   });
 }

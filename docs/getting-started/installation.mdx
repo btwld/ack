@@ -10,17 +10,19 @@ Add Ack to your project using the Dart CLI:
 
 ```bash
 # For Dart projects
-dart pub add ack
+dart pub add ack:^2.0.0-beta.3
 
 # For Flutter projects
-flutter pub add ack
+flutter pub add ack:^2.0.0-beta.3
 ```
 
-Or add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for the latest version):
+These docs describe the 2.0.0-beta.3 prerelease. An unversioned
+`dart pub add ack` selects the latest stable release instead. You can also add
+the constraint to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^1.7.1
+  ack: ^2.0.0-beta.3
 ```
 
 ## Optional code generator
@@ -29,33 +31,31 @@ To generate models from Ack schemas or Ack schemas from hand-written models,
 add `ack` and the generator package:
 
 ```bash
-dart pub add ack
-dart pub add --dev ack_generator build_runner
+dart pub add ack:^2.0.0-beta.3 dev:ack_generator:^2.0.0-beta.3 dev:build_runner
 ```
 
 Or add them to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^1.7.1
+  ack: ^2.0.0-beta.3
 
 dev_dependencies:
-  ack_generator: ^1.7.1
+  ack_generator: ^2.0.0-beta.3
   build_runner: ^2.4.0
 ```
 
 The generator works in both directions with one annotation, `@Schemable()`,
-from `package:ack/ack.dart`. Constraint annotations such as `@MinLength()` come
-from `package:ack/annotations.dart`. `@Schemable()` on a top-level schema generates an
-immutable model. `@Schemable()` on a hand-written class generates a public
-`<ClassName>Schema` facade, a private Ack codec, and JSON helpers.
-There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
+and a set of `Is…`/`Has…` rule annotations such as `@HasMinLength(2)`, all
+exported from `package:ack/ack.dart`. `@Schemable()` on a top-level schema
+generates an immutable model. `@Schemable()` on a hand-written class generates
+a public `<ClassName>Schema` facade and JSON helpers. There is no `@AckSchema()` annotation; `AckSchema` is the runtime
+schema type.
 
 ```dart
 import 'package:ack/ack.dart';
 
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -64,10 +64,9 @@ final userSchema = Ack.object({
 });
 
 @Schemable()
-final class Account with _$AccountAck {
-  const Account({required this.name});
-  final String name;
-
+final class const Account({@HasMinLength(2) required final String name})
+    with _$AccountAck {
+  static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
@@ -83,8 +82,11 @@ tutorials, supported shapes, and guidance on choosing a direction.
 
 ## Next step
 
-Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./quickstart-tutorial.mdx) takes you from your first schema to handling every validation outcome.
+Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./quickstart-tutorial.mdx) takes you from your first schema to handling every validation outcome. Upgrading from Ack 1.x? See the [What's New & Migration Guide](./migration-guide.mdx) for a complete table of changes and drop-in substitutions.
 
 ## Requirements
 
-- Dart SDK: `>=3.9.0 <4.0.0` for `ack` and `ack_generator`
+- Dart SDK: `>=3.13.0 <4.0.0` for all Ack packages. Dart 3.13 adds the
+  primary constructors that the class-first examples use.
+- Flutter: `>=3.47.0` (which bundles Dart 3.13.0) for Flutter apps and when
+  using `ack_firebase_ai`.

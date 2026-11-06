@@ -5,13 +5,14 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<void> _build(
   Map<String, String> sources, {
   required Map<String, Object> outputs,
   void Function(LogRecord log)? onLog,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {
@@ -39,20 +40,19 @@ void main() {
           'empty.dart':
               '''
 $_imports
-part 'empty.ack.dart';
-part 'empty.ack.g.dart';
+part 'empty.g.dart';
 
 @Schemable()
 final emptySchema = Ack.object({});
 ''',
         },
         outputs: {
-          'test_pkg|lib/empty.ack.dart': decodedMatches(
+          'test_pkg|lib/empty.g.dart': decodedMatches(
             allOf([
               contains('Empty()'),
-              contains('@Schemable.generatedJson'),
-              contains(r'_$EmptyFromJson'),
-              contains(r'_$EmptyToJson'),
+              isNot(contains('generatedJson')),
+              contains('static Empty _fromAckRuntime'),
+              contains('Map<String, Object?> _toAckRuntime()'),
               isNot(contains('\n  ,')),
             ]),
           ),
@@ -67,8 +67,7 @@ final emptySchema = Ack.object({});
         'user.dart':
             '''
 $_imports
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 const allowExtras = true;
 
@@ -80,7 +79,7 @@ final userSchema = Ack.object(
 ''',
       },
       outputs: {
-        'test_pkg|lib/user.ack.dart': decodedMatches(
+        'test_pkg|lib/user.g.dart': decodedMatches(
           allOf([
             contains('final Map<String, Object?> additionalProperties'),
             contains('additionalProperties.entries'),
@@ -102,8 +101,7 @@ final userSchema = Ack.object(
         'user.dart':
             '''
 $_imports
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -113,7 +111,7 @@ final userSchema = Ack.object({
 ''',
       },
       outputs: {
-        'test_pkg|lib/user.ack.dart': decodedMatches(
+        'test_pkg|lib/user.g.dart': decodedMatches(
           allOf([
             contains('final class _UserCopyWithUnset'),
             contains('const _UserCopyWithUnset()'),
@@ -136,8 +134,7 @@ final userSchema = Ack.object({
           'values.dart':
               '''
 $_imports
-part 'values.ack.dart';
-part 'values.ack.g.dart';
+part 'values.g.dart';
 
 enum Role { admin, member }
 
@@ -151,7 +148,7 @@ final metricsSchema = Ack.object({
 ''',
         },
         outputs: {
-          'test_pkg|lib/values.ack.dart': decodedMatches(
+          'test_pkg|lib/values.g.dart': decodedMatches(
             allOf([
               contains('required this.amount'),
               contains('required this.state'),
@@ -171,8 +168,7 @@ final metricsSchema = Ack.object({
         'address.dart':
             '''
 $_imports
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -183,8 +179,7 @@ final addressSchema = Ack.object({'city': Ack.string()});
 $_imports
 import 'address.dart' as direct;
 import 'exports.dart' as exported;
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({
@@ -194,15 +189,14 @@ final personSchema = Ack.object({
 ''',
       },
       outputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(
+        'test_pkg|lib/address.g.dart': decodedMatches(
           contains('final class Address'),
         ),
-        'test_pkg|lib/person.ack.dart': decodedMatches(
+        'test_pkg|lib/person.g.dart': decodedMatches(
           allOf([
             contains('required this.home'),
             contains('required List<exported.Address> history'),
-            contains(r'_$PersonFromJson'),
-            contains('_ackFromRuntimeHome'),
+            contains('static Person _fromAckRuntime'),
             contains(r'direct.Address.$ack.fromRuntime'),
             contains(r'exported.Address.$ack.toRuntime'),
           ]),
@@ -220,8 +214,7 @@ final personSchema = Ack.object({
             '''
 $_imports
 import 'types.dart' as types;
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -230,7 +223,7 @@ final userSchema = Ack.object({
 ''',
       },
       outputs: {
-        'test_pkg|lib/user.ack.dart': decodedMatches(
+        'test_pkg|lib/user.g.dart': decodedMatches(
           contains('final types.Role role;'),
         ),
       },
@@ -243,8 +236,7 @@ final userSchema = Ack.object({
         'address.dart':
             '''
 $_imports
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -254,18 +246,17 @@ final addressSchema = Ack.object({'city': Ack.string()});
 $_imports
 import 'address.dart' show addressSchema;
 import 'address.dart' show Address;
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({'address': addressSchema});
 ''',
       },
       outputs: {
-        'test_pkg|lib/address.ack.dart': decodedMatches(
+        'test_pkg|lib/address.g.dart': decodedMatches(
           contains('final class Address'),
         ),
-        'test_pkg|lib/person.ack.dart': decodedMatches(
+        'test_pkg|lib/person.g.dart': decodedMatches(
           allOf([
             contains('final Address address'),
             contains(r'Address.$ack.fromRuntime'),
@@ -283,8 +274,7 @@ final personSchema = Ack.object({'address': addressSchema});
           'address.dart':
               '''
 $_imports
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -298,18 +288,17 @@ final class Address with _\$AddressAck {
 $_imports
 import 'address.dart' show Address;
 import 'address.dart' show AddressSchema;
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({'address': AddressSchema.schema});
 ''',
         },
         outputs: {
-          'test_pkg|lib/address.ack.dart': decodedMatches(
+          'test_pkg|lib/address.g.dart': decodedMatches(
             contains('abstract final class AddressSchema'),
           ),
-          'test_pkg|lib/person.ack.dart': decodedMatches(
+          'test_pkg|lib/person.g.dart': decodedMatches(
             contains('final Address address'),
           ),
         },
@@ -324,8 +313,7 @@ final personSchema = Ack.object({'address': AddressSchema.schema});
         'address.dart':
             '''
 $_imports
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final class Address with _\$AddressAck {
@@ -339,14 +327,13 @@ final class Address with _\$AddressAck {
             '''
 $_imports
 import 'exports.dart';
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({'address': AddressSchema.schema});
 ''',
       },
-      outputs: {'test_pkg|lib/address.ack.dart': anything},
+      outputs: {'test_pkg|lib/address.g.dart': anything},
       onLog: (log) {
         if (log.level.name != 'SEVERE') return;
         for (final message in ['AddressSchema', 'export combinator']) {
@@ -366,8 +353,7 @@ final personSchema = Ack.object({'address': AddressSchema.schema});
           'address.dart':
               '''
 $_imports
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -376,14 +362,13 @@ final addressSchema = Ack.object({'city': Ack.string()});
               '''
 $_imports
 import 'address.dart' show addressSchema;
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({'address': addressSchema});
 ''',
         },
-        outputs: {'test_pkg|lib/address.ack.dart': anything},
+        outputs: {'test_pkg|lib/address.g.dart': anything},
         onLog: (log) {
           if (log.level.name != 'SEVERE') return;
           for (final message in ['Address', 'import combinator']) {
@@ -402,8 +387,7 @@ final personSchema = Ack.object({'address': addressSchema});
         'address.dart':
             '''
 $_imports
-part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @Schemable()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -413,14 +397,13 @@ final addressSchema = Ack.object({'city': Ack.string()});
             '''
 $_imports
 import 'exports.dart';
-part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @Schemable()
 final personSchema = Ack.object({'address': addressSchema});
 ''',
       },
-      outputs: {'test_pkg|lib/address.ack.dart': anything},
+      outputs: {'test_pkg|lib/address.g.dart': anything},
       onLog: (log) {
         if (log.level.name != 'SEVERE') return;
         for (final message in ['Address', 'export combinator']) {
@@ -437,8 +420,7 @@ final personSchema = Ack.object({'address': addressSchema});
         'pet.dart':
             '''
 $_imports
-part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 @Schemable()
 final catSchema = Ack.object({'kind': Ack.literal('cat'), 'lives': Ack.integer()});
@@ -454,18 +436,17 @@ final petSchema = Ack.discriminated(
 ''',
       },
       outputs: {
-        'test_pkg|lib/pet.ack.dart': decodedMatches(
+        'test_pkg|lib/pet.g.dart': decodedMatches(
           allOf([
             contains('sealed class Pet'),
             contains('final class Cat extends Pet'),
             contains('final class Dog extends Pet'),
-            isNot(contains('@Schemable.generatedJson\nsealed class Pet')),
-            contains('@Schemable.generatedJson\nfinal class Cat extends Pet'),
+            isNot(contains('generatedJson')),
             contains("String get kind => 'cat';"),
             contains("'kind': 'dog'"),
             contains('additionalProperties.entries'),
-            contains(r'_$CatFromJson'),
-            contains(r'_$DogToJson'),
+            contains('static Cat _fromAckRuntime'),
+            contains('static Dog _fromAckRuntime'),
           ]),
         ),
       },
@@ -479,8 +460,7 @@ final petSchema = Ack.discriminated(
         'bad.dart':
             '''
 $_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @Schemable()
 final badSchema = Ack.object({'toJson': Ack.string()});
@@ -503,8 +483,7 @@ final badSchema = Ack.object({'toJson': Ack.string()});
           'bad.dart':
               '''
 $_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -524,6 +503,32 @@ final class \$UserCopyWith {}
     },
   );
 
+  test('rejects a field that shadows the generated dynamic type', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'bad.dart':
+            '''
+$_imports
+part 'bad.g.dart';
+
+@Schemable()
+final badSchema = Ack.object({'dynamic': Ack.string()});
+''',
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(
+      messages.single,
+      contains(
+        'badSchema.dynamic shadows the dynamic type used by generated JSON methods',
+      ),
+    );
+  });
+
   test('rejects Dart keywords used as generated field names', () async {
     final messages = <String>{};
     await _build(
@@ -531,8 +536,7 @@ final class \$UserCopyWith {}
         'bad.dart':
             '''
 $_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @Schemable()
 final badSchema = Ack.object({'class': Ack.string()});
@@ -555,8 +559,7 @@ final badSchema = Ack.object({'class': Ack.string()});
           'bad.dart':
               '''
 $_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @Schemable()
 final catSchema = Ack.object({'lives': Ack.integer()});
@@ -584,8 +587,7 @@ final petSchema = Ack.discriminated(
         'bad.dart':
             '''
 $_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @Schemable()
 final catSchema = Ack.object({
@@ -614,8 +616,7 @@ final petSchema = Ack.discriminated(
         'bad.dart':
             '''
 $_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 Object? _ackImmutableCopyValue(Object? value) => value;
 
@@ -624,7 +625,7 @@ final bagSchema = Ack.object({}).passthrough();
 ''',
       },
       outputs: {
-        'test_pkg|lib/bad.ack.dart': decodedMatches(
+        'test_pkg|lib/bad.g.dart': decodedMatches(
           allOf([
             contains('deepUnmodifiableJsonMap(additionalProperties)'),
             isNot(contains('Object? _ackImmutableCopyValue')),
@@ -633,127 +634,6 @@ final bagSchema = Ack.object({}).passthrough();
       },
     );
   });
-
-  test('preserves a prefixed Schemable qualifier on the JSON marker', () async {
-    await _build(
-      {
-        'schema.dart': '''
-import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart' as annotations;
-
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
-
-@annotations.Schemable()
-final userSchema = Ack.object({'name': Ack.string()});
-''',
-      },
-      outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
-          contains('@annotations.Schemable.generatedJson'),
-        ),
-      },
-    );
-  });
-
-  test('preserves a direct Schemable qualifier on the JSON marker', () async {
-    await _build(
-      {
-        'schema.dart':
-            '''
-$_imports
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
-
-@Schemable()
-final userSchema = Ack.object({'name': Ack.string()});
-''',
-      },
-      outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
-          contains('@Schemable.generatedJson'),
-        ),
-      },
-    );
-  });
-
-  test(
-    'preserves an unprefixed barrel Schemable qualifier on the JSON marker',
-    () async {
-      await _build(
-        {
-          'annotations.dart': "export 'package:ack/annotations.dart';",
-          'schema.dart': '''
-import 'package:ack/ack.dart';
-import 'annotations.dart';
-
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
-
-@Schemable()
-final userSchema = Ack.object({'name': Ack.string()});
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@Schemable.generatedJson'),
-          ),
-        },
-      );
-    },
-  );
-
-  test(
-    'prefers a prefixed Schemable qualifier when both imports are visible',
-    () async {
-      await _build(
-        {
-          'schema.dart': '''
-import 'package:ack/ack.dart';
-import 'package:ack/annotations.dart';
-import 'package:ack/annotations.dart' as annotations;
-
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
-
-@Schemable()
-final userSchema = Ack.object({'name': Ack.string()});
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@annotations.Schemable.generatedJson'),
-          ),
-        },
-      );
-    },
-  );
-
-  test(
-    'preserves a prefixed barrel Schemable qualifier on the JSON marker',
-    () async {
-      await _build(
-        {
-          'annotations.dart': "export 'package:ack/annotations.dart';",
-          'schema.dart': '''
-import 'package:ack/ack.dart';
-import 'annotations.dart' as annotations show Schemable;
-
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
-
-@annotations.Schemable()
-final userSchema = Ack.object({'name': Ack.string()});
-''',
-        },
-        outputs: {
-          'test_pkg|lib/schema.ack.dart': decodedMatches(
-            contains('@annotations.Schemable.generatedJson'),
-          ),
-        },
-      );
-    },
-  );
 
   test('preserves Ack runtime qualifiers through prefixed barrels', () async {
     await _build(
@@ -765,15 +645,14 @@ export 'package:ack/annotations.dart';
         'schema.dart': '''
 import 'support.dart' as support;
 
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @support.Schemable()
 final userSchema = support.Ack.object({'name': support.Ack.string()});
 ''',
       },
       outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
+        'test_pkg|lib/schema.g.dart': decodedMatches(
           allOf([
             contains('support.AckModelAdapter'),
             contains('support.SchemaResult<User>'),
@@ -790,8 +669,7 @@ final userSchema = support.Ack.object({'name': support.Ack.string()});
         'bad.dart':
             '''
 $_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @Schemable()
 final valuesSchema = Ack.string().codec<Map<int, String>>(
@@ -808,56 +686,6 @@ final valuesSchema = Ack.string().codec<Map<int, String>>(
     expect(messages.single, contains('Map<String, T>'));
   });
 
-  test('rejects field names that collide after bridge derivation', () async {
-    final messages = <String>{};
-    await _build(
-      {
-        'bad.dart':
-            '''
-$_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
-
-@Schemable()
-final badSchema = Ack.object({
-  'name': Ack.string(),
-  'Name': Ack.string(),
-});
-''',
-      },
-      outputs: const {},
-      onLog: (log) {
-        if (log.level.name == 'SEVERE') messages.add(log.message);
-      },
-    );
-    expect(messages.single, contains('badSchema.Name'));
-    expect(messages.single, contains('_ackFromRuntimeName'));
-  });
-
-  test('rejects top-level JSON helper name collisions', () async {
-    final messages = <String>{};
-    await _build(
-      {
-        'bad.dart':
-            '''
-$_imports
-part 'bad.ack.dart';
-part 'bad.ack.g.dart';
-
-void _\$UserFromJson() {}
-
-@Schemable()
-final userSchema = Ack.object({'name': Ack.string()});
-''',
-      },
-      outputs: const {},
-      onLog: (log) {
-        if (log.level.name == 'SEVERE') messages.add(log.message);
-      },
-    );
-    expect(messages.single, contains(r'_$UserFromJson'));
-  });
-
   test(
     'rejects an unsupported cross-library unannotated schema variable',
     () async {
@@ -867,14 +695,13 @@ final userSchema = Ack.object({'name': Ack.string()});
           'other.dart': '''
 import 'package:ack/ack.dart';
 
-final payloadUnion = Ack.anyOf([Ack.string(), Ack.integer()]);
+final payloadUnion = Ack.anyOf([Ack.datetime(), Ack.integer()]);
 ''',
           'user.dart':
               '''
 $_imports
 import 'other.dart';
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -894,6 +721,37 @@ final userSchema = Ack.object({
   );
 
   test(
+    'follows a cross-library native union variable to an Object field',
+    () async {
+      await _build(
+        {
+          'other.dart': '''
+import 'package:ack/ack.dart';
+
+final payloadUnion = Ack.anyOf([Ack.string(), Ack.integer()]);
+''',
+          'user.dart':
+              '''
+$_imports
+import 'other.dart';
+part 'user.g.dart';
+
+@Schemable()
+final userSchema = Ack.object({
+  'payload': payloadUnion,
+});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/user.g.dart': decodedMatches(
+            contains('final Object payload;'),
+          ),
+        },
+      );
+    },
+  );
+
+  test(
     'follows a cross-library Ack.any() variable to an Object field',
     () async {
       await _build(
@@ -907,8 +765,7 @@ final payloadAny = Ack.any();
               '''
 $_imports
 import 'other.dart';
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -917,7 +774,7 @@ final userSchema = Ack.object({
 ''',
         },
         outputs: {
-          'test_pkg|lib/user.ack.dart': decodedMatches(
+          'test_pkg|lib/user.g.dart': decodedMatches(
             contains('final Object? payload;'),
           ),
         },
@@ -932,8 +789,7 @@ final userSchema = Ack.object({
         'user.dart':
             '''
 $_imports
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -942,15 +798,14 @@ final userSchema = Ack.object({'name': Ack.string()});
             '''
 $_imports
 import 'user.dart' as other;
-part 'admin.ack.dart';
-part 'admin.ack.g.dart';
+part 'admin.g.dart';
 
 @Schemable()
 final adminSchema = other.userSchema;
 ''',
       },
       outputs: {
-        'test_pkg|lib/user.ack.dart': decodedMatches(
+        'test_pkg|lib/user.g.dart': decodedMatches(
           contains('final class User'),
         ),
       },
@@ -970,8 +825,7 @@ final adminSchema = other.userSchema;
         'cat.dart':
             '''
 $_imports
-part 'cat.ack.dart';
-part 'cat.ack.g.dart';
+part 'cat.g.dart';
 
 @Schemable()
 final catSchema = Ack.object({
@@ -983,8 +837,7 @@ final catSchema = Ack.object({
             '''
 $_imports
 import 'cat.dart';
-part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 @Schemable()
 final petSchema = Ack.discriminated(
@@ -994,9 +847,7 @@ final petSchema = Ack.discriminated(
 ''',
       },
       outputs: {
-        'test_pkg|lib/cat.ack.dart': decodedMatches(
-          contains('final class Cat'),
-        ),
+        'test_pkg|lib/cat.g.dart': decodedMatches(contains('final class Cat')),
       },
       onLog: (log) {
         if (log.level.name == 'SEVERE') messages.add(log.message);
@@ -1005,5 +856,34 @@ final petSchema = Ack.discriminated(
     expect(messages, isNotEmpty);
     expect(messages.join('\n'), contains('petSchema.cat'));
     expect(messages.join('\n'), contains('cross-library'));
+  });
+
+  test('emits multi-line descriptions as one doc line each', () async {
+    await _build(
+      {
+        'doc.dart':
+            '''
+$_imports
+part 'doc.g.dart';
+
+@Schemable()
+final docSchema = Ack.object({
+  'note': Ack.string().describe('First line.\\nSecond line.'),
+}).describe('Model line one.\\r\\nModel line two.');
+''',
+      },
+      outputs: {
+        'test_pkg|lib/doc.g.dart': decodedMatches(
+          allOf(
+            contains(
+              '/// Model line one.\n/// Model line two.\nfinal class Doc',
+            ),
+            contains(
+              '/// First line.\n  /// Second line.\n  final String note;',
+            ),
+          ),
+        ),
+      },
+    );
   });
 }

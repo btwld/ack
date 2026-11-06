@@ -98,8 +98,6 @@ double _calculateStringSimilarity(String a, String b) {
   if (a.isEmpty || b.isEmpty) return 0.0;
 
   final maxLength = max(a.length, b.length);
-  if (maxLength == 0) return 1.0; // Both empty
-
   final distance = _levenshteinDistance(a, b);
 
   return 1.0 - (distance / maxLength);

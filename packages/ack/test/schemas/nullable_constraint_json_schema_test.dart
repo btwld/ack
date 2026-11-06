@@ -102,10 +102,8 @@ void main() {
 
     group('AnyOfSchema', () {
       test('non-nullable merges constraints in JSON Schema', () {
-        final schema = Ack.anyOf([
-          Ack.string(),
-          Ack.integer(),
-        ]).withConstraint(const _TestAckSchemaModelConstraint());
+        final schema = Ack.anyOf([Ack.string(), Ack.integer()])
+            .withConstraint(const _TestAckSchemaModelConstraint());
 
         final jsonSchema = schema.toJsonSchema();
 
@@ -115,10 +113,9 @@ void main() {
       });
 
       test('nullable merges constraints at composition level', () {
-        final schema = Ack.anyOf([
-          Ack.string(),
-          Ack.integer(),
-        ]).nullable().withConstraint(const _TestAckSchemaModelConstraint());
+        final schema = Ack.anyOf([Ack.string(), Ack.integer()])
+            .nullable()
+            .withConstraint(const _TestAckSchemaModelConstraint());
 
         final jsonSchema = schema.toJsonSchema();
 

@@ -33,6 +33,10 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   @internal
   final bool projectsConstraintsToBoundary;
 
+  /// Whether field declarations replace inherited presence and defaults.
+  @internal
+  final bool isGeneratedField;
+
   final Runtime Function(Object value) _decoder;
   final Object Function(Runtime value)? _encoder;
   final Object _decoderIdentity;
@@ -50,18 +54,17 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   CodecSchema._({
     required this.inputSchema,
     required this.outputSchema,
-    required Runtime Function(Object value) decoder,
-    required Object Function(Runtime value)? encoder,
-    required Object decoderIdentity,
+    required this._decoder,
+    required this._encoder,
+    required this._decoderIdentity,
     this.projectsConstraintsToBoundary = false,
+    this.isGeneratedField = false,
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
-  }) : _decoder = decoder,
-       _encoder = encoder,
-       _decoderIdentity = decoderIdentity;
+  });
 
   /// Creates a codec while preserving the input schema's runtime type.
   static CodecSchema<Boundary, Runtime> create<
@@ -109,6 +112,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     try {
       runtime = _decoder(intermediate);
     } catch (e, st) {
+      _rethrowIfError(e, st);
       return SchemaResult.fail(
         SchemaTransformError(
           message: 'Codec decode failed: ${e.toString()}',
@@ -165,9 +169,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     try {
       intermediate = encode(runtime);
     } catch (e, st) {
-      if (e is Error) {
-        Error.throwWithStackTrace(e, st);
-      }
+      _rethrowIfError(e, st);
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
           message: 'Codec encode failed: ${e.toString()}',
@@ -182,14 +184,21 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   }
 
   @override
-  CodecSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) {
+  CodecSchema<Boundary, Runtime> copyWithInner(AnyAckSchema newInner) =>
+      _copyWithSchemas(input: newInner as AckSchema<Boundary, Object>);
+
+  CodecSchema<Boundary, Runtime> _copyWithSchemas({
+    AckSchema<Boundary, Object>? input,
+    AckSchema<dynamic, Runtime>? output,
+  }) {
     return CodecSchema._(
-      inputSchema: newInner as AckSchema<Boundary, Object>,
-      outputSchema: outputSchema,
+      inputSchema: input ?? inputSchema,
+      outputSchema: output ?? outputSchema,
       decoder: _decoder,
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
       projectsConstraintsToBoundary: projectsConstraintsToBoundary,
+      isGeneratedField: isGeneratedField,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -213,6 +222,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
       projectsConstraintsToBoundary: projectsConstraintsToBoundary,
+      isGeneratedField: isGeneratedField,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -230,6 +240,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema &&
         projectsConstraintsToBoundary == other.projectsConstraintsToBoundary &&
+        isGeneratedField == other.isGeneratedField &&
         _decoderIdentity == other._decoderIdentity &&
         _encoder == other._encoder;
   }
@@ -246,6 +257,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     inputSchema,
     outputSchema,
     projectsConstraintsToBoundary,
+    isGeneratedField,
     _decoderIdentity,
     _encoder,
   );

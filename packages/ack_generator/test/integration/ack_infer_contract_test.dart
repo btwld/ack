@@ -5,13 +5,14 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<TestBuilderResult> _generate(
   String source, {
   void Function(LogRecord log)? onLog,
   Map<String, Object>? outputs,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   return testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
@@ -26,8 +27,7 @@ const _imports = '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 ''';
 
 const _schemaShorthand = r'static final schema = $ack.modelSchema;';
@@ -36,9 +36,9 @@ const _schemaShorthand = r'static final schema = $ack.modelSchema;';
 /// static `schema` shorthand.
 Matcher _schemaShorthandOn(String className, {required bool present}) =>
     predicate<String>((source) {
-      final start = RegExp(
-        'class ${RegExp.escape(className)}\\b',
-      ).firstMatch(source)?.start;
+      final start = RegExp('class ${RegExp.escape(className)}\\b')
+          .firstMatch(source)
+          ?.start;
       if (start == null) return false;
       final end = source.indexOf('\n}\n', start);
       final body = source.substring(start, end == -1 ? null : end);
@@ -61,10 +61,10 @@ final userSchema = Ack.object({
 });
 ''',
         outputs: {
-          'test_pkg|lib/schema.ack.dart': decodedMatches(
+          'test_pkg|lib/schema.g.dart': decodedMatches(
             allOf([
               contains('final class User'),
-              contains('@Schemable.generatedJson'),
+              isNot(contains('generatedJson')),
               contains('factory User.parse(Object? input)'),
               contains('factory User.fromJson(Map<String, dynamic> json)'),
               contains(r'static final $ack = AckModelAdapter'),
@@ -80,14 +80,18 @@ final userSchema = Ack.object({
               contains('this.nickname'),
               contains('required this.middleName'),
               contains('required this.role'),
-              contains(r'_$UserFromJson'),
-              contains(r'_$UserToJson'),
-              contains('_ackFromRuntimeName'),
-              contains('_ackToRuntimeName'),
-              contains('if (middleName == null)'),
-              contains("result['middleName'] = null"),
-              isNot(contains("if (nickname != null) 'nickname': nickname")),
-              isNot(contains("value['name']")),
+              contains('_fromAckRuntime'),
+              contains('_toAckRuntime'),
+              contains("value['name'] as String"),
+              contains("value['nickname'] as String?"),
+              contains("value['middleName'] as String?"),
+              contains("value['role'] as String"),
+              contains("'nickname': ?nickname"),
+              contains("'middleName': middleName"),
+              isNot(contains(r'_$UserFromJson')),
+              isNot(contains(r'_$UserToJson')),
+              isNot(contains('_ackFromRuntimeName')),
+              isNot(contains('_ackToRuntimeName')),
             ]),
           ),
         },
@@ -103,17 +107,19 @@ $_imports
 final occurredAtSchema = Ack.datetime();
 ''',
       outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
+        'test_pkg|lib/schema.g.dart': decodedMatches(
           allOf([
             contains('final DateTime value;'),
-            contains('@Schemable.generatedJson'),
+            isNot(contains('generatedJson')),
             contains('factory OccurredAt.fromJson(String json)'),
             contains('String toJson()'),
             contains('SchemaResult<String> safeToJson()'),
             contains(
-              r"_$OccurredAtFromJson(<String, dynamic>{'value': value})",
+              'static OccurredAt _fromAckRuntime(DateTime value) => OccurredAt(value);',
             ),
-            contains(r"_$OccurredAtToJson(this)['value'] as DateTime"),
+            contains('DateTime _toAckRuntime() => value;'),
+            isNot(contains(r'_$OccurredAtFromJson')),
+            isNot(contains(r'_$OccurredAtToJson')),
           ]),
         ),
       },
@@ -131,7 +137,7 @@ final memberTypeSchema = Ack.string();
 final customSchema = Ack.string();
 ''',
       outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
+        'test_pkg|lib/schema.g.dart': decodedMatches(
           allOf([
             contains('final class MemberType'),
             contains('final class IntentionalType'),
@@ -162,7 +168,7 @@ final petSchema = Ack.discriminated(
 );
 ''',
       outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
+        'test_pkg|lib/schema.g.dart': decodedMatches(
           allOf([
             _schemaShorthandOn('User', present: true),
             _schemaShorthandOn('OccurredAt', present: true),
@@ -207,7 +213,7 @@ final shapeSchema = Ack.discriminated(
 );
 ''',
       outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
+        'test_pkg|lib/schema.g.dart': decodedMatches(
           allOf([
             // A field named `schema`.
             _schemaShorthandOn('Document', present: false),
@@ -232,14 +238,13 @@ final shapeSchema = Ack.discriminated(
 import 'package:ack/ack.dart' as schema;
 import 'package:ack/annotations.dart';
 
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @Schemable()
 final userSchema = schema.Ack.object({'name': schema.Ack.string()});
 ''',
       outputs: {
-        'test_pkg|lib/schema.ack.dart': decodedMatches(
+        'test_pkg|lib/schema.g.dart': decodedMatches(
           allOf([
             contains('schema.AckModelAdapter'),
             _schemaShorthandOn('User', present: false),

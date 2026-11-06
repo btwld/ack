@@ -5,12 +5,13 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<void> _build(
   String source, {
   required Map<String, Object> outputs,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/model.dart': source},
@@ -21,8 +22,7 @@ Future<void> _build(
 }
 
 Future<void> _expectFailure(String body, List<String> messages) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   final seen = <String>{};
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
@@ -43,8 +43,7 @@ const _imports = '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 void main() {
@@ -63,7 +62,7 @@ final class Point with _\$PointAck {
 }
 ''',
         outputs: {
-          'test_pkg|lib/model.ack.dart': decodedMatches(
+          'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
               contains(r'mixin _$PointAck'),
               contains(r'$PointCopyWith<Point> get copyWith'),
@@ -79,9 +78,11 @@ final class Point with _\$PointAck {
     },
   );
 
-  test('unknown-property modes emit reject, discard, and args capture', () async {
-    await _build(
-      '''
+  test(
+    'unknown-property modes emit reject, discard, and args capture',
+    () async {
+      await _build(
+        '''
 $_imports
 @Schemable()
 final class Strict with _\$StrictAck {
@@ -105,28 +106,28 @@ final class Bag with _\$BagAck {
   final Map<String, Object?> args;
 }
 ''',
-      outputs: {
-        'test_pkg|lib/model.ack.dart': decodedMatches(
-          allOf([
-            contains('final _strictObject = Ack.object({'),
-            isNot(
-              contains(
-                "final _strictObject = Ack.object({'name': Ack.string()}, additionalProperties: true)",
+        outputs: {
+          'test_pkg|lib/model.g.dart': decodedMatches(
+            allOf([
+              contains('final _strictObject = Ack.object({'),
+              isNot(
+                contains(
+                  "final _strictObject = Ack.object({'name': Ack.string()}, additionalProperties: true)",
+                ),
               ),
-            ),
-            contains('additionalProperties: true'),
-            contains("'args': Map<String, Object?>.fromEntries"),
-            contains('result.remove(\'args\')'),
-            contains('model.args.entries'),
-            contains('self.args'),
-            contains('deepUnmodifiableJsonMap(value as Map<String, Object?>)'),
-            isNot(contains('_ackClassImmutableCopyValue')),
-            isNot(contains('_ackClassImmutableCopyMap')),
-          ]),
-        ),
-      },
-    );
-  });
+              contains('additionalProperties: true'),
+              contains('args: deepUnmodifiableJsonMap('),
+              contains('Map<String, Object?>.fromEntries('),
+              contains('model.args.entries'),
+              contains('self.args'),
+              isNot(contains('_ackClassImmutableCopyValue')),
+              isNot(contains('_ackClassImmutableCopyMap')),
+            ]),
+          ),
+        },
+      );
+    },
+  );
 
   test(
     'presence overrides and required mixin collisions are diagnosed',
@@ -154,7 +155,7 @@ $_imports
 @Schemable()
 final class User with _\$UserAck {
   const User({this.nickname});
-  @AckField(presence: AckFieldPresence.required)
+  @IsRequired()
   final String? nickname;
 }
 
@@ -170,7 +171,7 @@ final class Cat extends Pet with _\$CatAck {
 }
 ''',
         outputs: {
-          'test_pkg|lib/model.ack.dart': decodedMatches(
+          'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
               contains("'nickname': Ack.string().nullable()"),
               isNot(contains("'nickname': Ack.string().nullable().optional()")),
@@ -194,12 +195,13 @@ $_imports
 final class Normalized with _\$NormalizedAck {
   const Normalized(String? value) : value = value ?? '';
 
-  @AckField(presence: AckFieldPresence.optional)
+  @IsOptional()
   final String value;
 }
+
 ''',
         outputs: {
-          'test_pkg|lib/model.ack.dart': decodedMatches(
+          'test_pkg|lib/model.g.dart': decodedMatches(
             allOf([
               contains("'value': Ack.string().optional()"),
               contains('Normalized call({Object? value = _ackCopyWithUnset})'),
@@ -226,7 +228,7 @@ final userSchema = Ack.object({
 });
 ''',
       outputs: {
-        'test_pkg|lib/model.ack.dart': decodedMatches(
+        'test_pkg|lib/model.g.dart': decodedMatches(
           allOf([
             contains('// ignore_for_file: type=lint'),
             contains('// coverage:ignore-file'),
@@ -244,7 +246,7 @@ final userSchema = Ack.object({
             contains('User call({'),
             contains('deepEquals(name, other.name)'),
             contains('deepHashCode(tags)'),
-            contains("toString() => 'User("),
+            contains(r"toString() => 'User(name: ${name}, tags: ${tags})'"),
             isNot(contains('class UserType')),
           ]),
         ),

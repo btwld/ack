@@ -1,3 +1,5 @@
+import 'package:analyzer/dart/ast/token.dart' show Keyword;
+
 /// Returns [value] as a single-quoted Dart string literal.
 ///
 /// Escapes backslashes, quotes, and `$`, and writes control characters and
@@ -14,3 +16,18 @@ String dartStringLiteral(String value) {
       });
   return "'$escaped'";
 }
+
+/// Qualifies [symbol] with [prefix] when [prefix] is non-null and non-empty.
+String qualifySymbol(String? prefix, String symbol) =>
+    prefix == null || prefix.isEmpty ? symbol : '$prefix.$symbol';
+
+/// Whether [value] is a Dart keyword, including built-in identifiers and
+/// contextual keywords. Type-name guards have stricter rules than members.
+bool isDartKeyword(String value) => Keyword.keywords.containsKey(value);
+
+/// Whether [value] is reserved in every Dart identifier context.
+///
+/// Built-in identifiers and contextual keywords remain valid member names in
+/// the synchronous constructors, getters, and methods emitted by the generator.
+bool isDartReservedWord(String value) =>
+    Keyword.keywords[value]?.isReservedWord ?? false;

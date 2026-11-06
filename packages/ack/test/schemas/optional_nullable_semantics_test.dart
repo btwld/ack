@@ -103,6 +103,79 @@ void main() {
           reason: 'Should return default value, not null',
         );
       });
+
+      test('an object property default fills a missing key, not a null', () {
+        final schema = Ack.object({'role': Ack.string().withDefault('member')});
+
+        expect(Ack.string().withDefault('member').parse(null), 'member');
+        expect(schema.parse({}), {'role': 'member'});
+        expect(schema.parse({'role': 'admin'}), {'role': 'admin'});
+        final result = schema.safeParse({'role': null});
+        expect(result.isFail, isTrue);
+        expect(
+          (result.getError() as SchemaNestedError).errors.single,
+          isA<SchemaConstraintsError>(),
+        );
+        expect(schema.toJsonSchema()['properties'], {
+          'role': {'type': 'string', 'default': 'member'},
+        }, reason: 'The exported schema rejects null, so parsing does too.');
+      });
+
+      test('a nullable object property default also fills a null', () {
+        for (final property in [
+          Ack.string().nullable().withDefault('member'),
+          Ack.string().withDefault('member').nullable(),
+        ]) {
+          final schema = Ack.object({'role': property});
+
+          expect(schema.parse({}), {'role': 'member'});
+          expect(schema.parse({'role': null}), {'role': 'member'});
+        }
+      });
+    });
+
+    group('Object default encoding', () {
+      test('missing and null defaulted properties encode as the default', () {
+        for (final property in [
+          Ack.string().withDefault('member'),
+          Ack.string().nullable().withDefault('member'),
+          Ack.string().withDefault('member').nullable(),
+          Ack.string().optional().withDefault('member'),
+        ]) {
+          final schema = Ack.object({'role': property});
+          expect(schema.encode({}), {'role': 'member'});
+          expect(schema.encode({'role': null}), {'role': 'member'});
+          expect(schema.encode({'role': 'admin'}), {'role': 'admin'});
+        }
+      });
+
+      test('defaults are runtime values and use the property encoder', () {
+        final date = DateTime.utc(2026, 11, 3);
+        final schema = Ack.object({
+          'created': Ack.datetime().nullable().withDefault(date),
+        });
+        final expected = {'created': date.toIso8601String()};
+        expect(schema.encode({}), expected);
+        expect(schema.encode({'created': null}), expected);
+      });
+
+      test('invalid defaults still fail when encoding null', () {
+        final schema = Ack.object({
+          'role': Ack.string().minLength(5).nullable().withDefault('x'),
+        });
+        expect(schema.safeEncode({'role': null}).isFail, isTrue);
+      });
+
+      test('ordinary null properties retain their nullability contract', () {
+        expect(
+          Ack.object({'role': Ack.string()}).safeEncode({'role': null}).isFail,
+          isTrue,
+        );
+        expect(
+          Ack.object({'role': Ack.string().nullable()}).encode({'role': null}),
+          {'role': null},
+        );
+      });
     });
 
     group('ObjectSchema field validation', () {
@@ -252,8 +325,7 @@ void main() {
         expect(
           ageType,
           equals('integer'),
-          reason:
-              'Optional field should NOT include "null" unless also marked nullable',
+          reason: 'Optional field should NOT include "null" unless also marked nullable',
         );
 
         // But it should NOT be in the required array
@@ -272,8 +344,7 @@ void main() {
         expect(
           jsonSchema['type'],
           equals('string'),
-          reason:
-              'Optional schema should NOT include null type unless also nullable',
+          reason: 'Optional schema should NOT include null type unless also nullable',
         );
       });
 
@@ -366,21 +437,18 @@ void main() {
       );
     });
 
-    test(
-      'should return SchemaConstraintsError for direct constraint violation',
-      () {
-        final schema = Ack.string().minLength(5);
+    test('should return SchemaConstraintsError for direct constraint violation', () {
+      final schema = Ack.string().minLength(5);
 
-        final result = schema.safeParse('hi');
+      final result = schema.safeParse('hi');
 
-        expect(result.isFail, isTrue);
-        expect(
-          result.getError(),
-          isA<SchemaConstraintsError>(),
-          reason:
-              'Direct constraint violation should return SchemaConstraintsError',
-        );
-      },
-    );
+      expect(result.isFail, isTrue);
+      expect(
+        result.getError(),
+        isA<SchemaConstraintsError>(),
+        reason:
+            'Direct constraint violation should return SchemaConstraintsError',
+      );
+    });
   });
 }

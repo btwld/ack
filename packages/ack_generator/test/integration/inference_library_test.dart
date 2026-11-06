@@ -3,6 +3,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 final class _InferenceProbe implements Builder {
   const _InferenceProbe({this.parameterName = 'title', this.sourceComment});
 
@@ -48,12 +50,10 @@ final class _InferenceProbe implements Builder {
 
 void main() {
   test('a second generator infers an annotated parameter', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(
-        sourceComment:
-            '/// The item title.\r\n/// @description It appears on screen.\r\n/// More prose.',
+        sourceComment: '/// The item title.\r\n/// @description It appears on screen.\r\n/// More prose.',
       ),
       {
         'test_pkg|lib/widget.dart': '''
@@ -61,7 +61,7 @@ import 'package:ack/annotations.dart';
 
 void widget({
   /// The item title.
-  @MinLength(2)
+  @HasMinLength(2)
   required String title,
 }) {}
 ''',
@@ -76,36 +76,8 @@ void widget({
     );
   });
 
-  test('an explicit parameter description overrides its source tag', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
-    await testBuilder(
-      const _InferenceProbe(
-        sourceComment: '/// @description Tag text.\n/// Following prose.',
-      ),
-      {
-        'test_pkg|lib/widget.dart': '''
-import 'package:ack/annotations.dart';
-
-void widget({
-  @AckField(description: 'Explicit text.')
-  required String title,
-}) {}
-''',
-      },
-      generateFor: const {'test_pkg|lib/widget.dart'},
-      readerWriter: readerWriter,
-      outputs: {
-        'test_pkg|lib/widget.probe': decodedMatches(
-          "Ack.string().describe('Explicit text.')",
-        ),
-      },
-    );
-  });
-
   test('a second generator infers a list of Dart enums', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(parameterName: 'priorities'),
       {
@@ -126,15 +98,14 @@ void widget({required List<Priority> priorities}) {}
   });
 
   test('a second generator constrains a Set before its codec', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(parameterName: 'tags'),
       {
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@MinItems(2) required Set<String> tags}) {}
+void widget({@HasMinItems(2) required Set<String> tags}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},
@@ -150,15 +121,14 @@ void widget({@MinItems(2) required Set<String> tags}) {}
   });
 
   test('a second generator constrains the outer Set of a nested Set', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(parameterName: 'cells'),
       {
         'test_pkg|lib/widget.dart': '''
 import 'package:ack/annotations.dart';
 
-void widget({@MaxItems(3) required Set<Set<String>> cells}) {}
+void widget({@HasMaxItems(3) required Set<Set<String>> cells}) {}
 ''',
       },
       generateFor: const {'test_pkg|lib/widget.dart'},
@@ -171,6 +141,33 @@ void widget({@MaxItems(3) required Set<Set<String>> cells}) {}
           '.maxItems(3).unique().codec<Set<Set<String>>>('
           'decode: (list) => list.toSet(), '
           'encode: (set) => set.toList(growable: false),)',
+        ),
+      },
+    );
+  });
+
+  test('a second generator applies scalar item constraints and collection constraints on List<int>', () async {
+    final readerWriter = await createTestReaderWriter();
+    await testBuilder(
+      const _InferenceProbe(parameterName: 'weekdays'),
+      {
+        'test_pkg|lib/widget.dart': '''
+import 'package:ack/annotations.dart';
+
+void widget({
+  @HasMin(1)
+  @HasMax(7)
+  @HasMinItems(1)
+  @HasUniqueItems()
+  required List<int> weekdays,
+}) {}
+''',
+      },
+      generateFor: const {'test_pkg|lib/widget.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/widget.probe': decodedMatches(
+          'Ack.list(Ack.integer().min(1).max(7)).minItems(1).unique()',
         ),
       },
     );

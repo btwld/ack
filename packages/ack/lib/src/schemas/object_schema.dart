@@ -13,12 +13,15 @@ part of 'schema.dart';
 /// * **Parse**: `optional` means the key may be absent. If the key IS
 ///   present with a null value, the property schema must also be
 ///   `nullable` or the parse fails with a non-nullable constraint error.
+///   This includes a `withDefault` property: its default fills a missing
+///   key, and fills a present `null` only when the property is `nullable`.
 /// * **Encode**: a key present with `null` whose schema is `optional`
 ///   (but not `nullable`) is omitted from the encoded output rather than
 ///   emitted as `null`. This is so a model encoder can simply write
 ///   `'color': value.color` and let optional nulls disappear.
 ///
-/// If you need to emit an explicit `null`, mark the property `nullable`.
+/// A default-wrapped property encodes a missing or null value as its validated
+/// default. To emit an explicit `null`, use a nullable property without a default.
 @immutable
 final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     with FluentSchema<JsonMap, JsonMap, ObjectSchema> {
@@ -77,9 +80,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
                 onFail: errors.add,
               );
         } else if (!schema.isOptional) {
-          final ce = ObjectRequiredPropertiesConstraint(
-            missingPropertyKey: key,
-          ).validate(mapValue);
+          final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
+              .validate(mapValue);
           if (ce != null) {
             errors.add(
               SchemaConstraintsError(
@@ -104,6 +106,15 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         value: propertyValue,
         pathSegment: key,
       );
+      // A default fills a missing key. A present `null` is a value, so a
+      // default-wrapped property applies its default to it only when the
+      // property also accepts `null`.
+      if (propertyValue == null &&
+          schema is DefaultSchema &&
+          !schema.acceptsNull) {
+        errors.add(schema.failNonNullable(propertyCtx).getError());
+        continue;
+      }
       schema
           .parseWithContext(propertyValue, propertyCtx)
           .match(
@@ -114,31 +125,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
           );
     }
 
-    for (final key in mapValue.keys) {
-      if (properties.containsKey(key)) continue;
-      if (additionalProperties) {
-        validatedMap[key] = mapValue[key];
-      } else {
-        errors.add(
-          SchemaConstraintsError(
-            constraints: [
-              ConstraintError(
-                constraint: ObjectNoAdditionalPropertiesConstraint(
-                  unexpectedPropertyKey: key,
-                ),
-                message: 'Property "$key" is not allowed.',
-              ),
-            ],
-            context: context.createChild(
-              name: key,
-              schema: this,
-              value: mapValue[key],
-              pathSegment: key,
-            ),
-          ),
-        );
-      }
-    }
+    _checkAdditionalProperties(mapValue, context, errors, parsed: validatedMap);
 
     if (errors.isNotEmpty) {
       return SchemaResult.fail(
@@ -198,9 +185,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
             ),
           );
         } else {
-          final ce = ObjectRequiredPropertiesConstraint(
-            missingPropertyKey: key,
-          ).validate(mapValue);
+          final ce = ObjectRequiredPropertiesConstraint(missingPropertyKey: key)
+              .validate(mapValue);
           if (ce != null) {
             errors.add(
               SchemaConstraintsError(constraints: [ce], context: propertyCtx),
@@ -219,7 +205,10 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
 
       if (propertyValue == null) {
-        if (schema.acceptsNull || (isEncode && schema.isOptional)) continue;
+        if (schema.acceptsNull ||
+            (isEncode && (schema.isOptional || schema is DefaultSchema))) {
+          continue;
+        }
         if (isEncode) {
           errors.add(SchemaEncodeError.nonNullable(context: propertyCtx));
         } else {
@@ -237,38 +226,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       if (r.isFail) errors.add(r.getError());
     }
 
-    for (final key in mapValue.keys) {
-      if (properties.containsKey(key)) continue;
-      if (additionalProperties) continue;
-      final extraCtx = context.createChild(
-        name: key,
-        schema: this,
-        value: mapValue[key],
-        pathSegment: key,
-      );
-      if (isEncode) {
-        errors.add(
-          SchemaEncodeError.unexpectedProperty(
-            propertyKey: key,
-            context: extraCtx,
-          ),
-        );
-      } else {
-        errors.add(
-          SchemaConstraintsError(
-            constraints: [
-              ConstraintError(
-                constraint: ObjectNoAdditionalPropertiesConstraint(
-                  unexpectedPropertyKey: key,
-                ),
-                message: 'Property "$key" is not allowed.',
-              ),
-            ],
-            context: extraCtx,
-          ),
-        );
-      }
-    }
+    _checkAdditionalProperties(mapValue, context, errors, isEncode: isEncode);
 
     if (errors.isNotEmpty) {
       return SchemaResult.fail(
@@ -279,15 +237,52 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     return applyConstraintsAndRefinements(mapValue, context);
   }
 
+  void _checkAdditionalProperties(
+    JsonMap value,
+    SchemaContext context,
+    List<SchemaError> errors, {
+    JsonMap? parsed,
+    bool isEncode = false,
+  }) {
+    for (final key in value.keys) {
+      if (properties.containsKey(key)) continue;
+      if (additionalProperties) {
+        if (parsed != null) parsed[key] = value[key];
+        continue;
+      }
+      final extraCtx = context.createChild(
+        name: key,
+        schema: this,
+        value: value[key],
+        pathSegment: key,
+      );
+      errors.add(
+        isEncode
+            ? SchemaEncodeError.unexpectedProperty(
+                propertyKey: key,
+                context: extraCtx,
+              )
+            : SchemaConstraintsError(
+                constraints: [
+                  ConstraintError(
+                    constraint: ObjectNoAdditionalPropertiesConstraint(
+                      unexpectedPropertyKey: key,
+                    ),
+                    message: 'Property "$key" is not allowed.',
+                  ),
+                ],
+                context: extraCtx,
+              ),
+      );
+    }
+  }
+
   @override
   @protected
   SchemaResult<JsonMap> encodeWithContext(
     JsonMap value,
     SchemaContext context,
   ) {
-    final validated = validateRuntimeWithContext(value, context);
-    if (validated.isFail) return SchemaResult.fail(validated.getError());
-
     final encoded = <String, Object?>{};
     final errors = <SchemaError>[];
 
@@ -303,49 +298,92 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
         operation: SchemaOperation.encode,
       );
       final Object? propertyValue;
-      if (hasValue) {
-        propertyValue = value[key];
-      } else if (schema is DefaultSchema) {
+      if (schema is DefaultSchema && value[key] == null) {
         final defaultResult = schema.resolveDefaultWithContext(propertyCtx);
         if (defaultResult.isFail) {
           errors.add(defaultResult.getError());
           continue;
         }
         propertyValue = defaultResult.getOrNull();
+      } else if (hasValue) {
+        propertyValue = value[key];
       } else {
+        if (!schema.isOptional) {
+          errors.add(
+            SchemaEncodeError.missingRequiredProperty(
+              propertyKey: key,
+              context: propertyCtx,
+            ),
+          );
+        }
         continue;
       }
       if (propertyValue == null) {
-        if (schema.acceptsNull) encoded[key] = null;
+        if (schema.acceptsNull) {
+          encoded[key] = null;
+        } else if (!schema.isOptional) {
+          errors.add(SchemaEncodeError.nonNullable(context: propertyCtx));
+        }
         continue;
       }
-      try {
-        final r = schema.encodeWithContext(propertyValue, propertyCtx);
-        if (r.isFail) {
-          errors.add(r.getError());
-        } else {
-          encoded[key] = r.getOrNull();
+      // Objects validate their children and refinements as they encode. Do not
+      // prevalidate subtrees or reuse checks across sibling encoder callbacks.
+      var valueSchema = schema;
+      while (valueSchema is DefaultSchema) {
+        valueSchema = valueSchema.inner;
+      }
+      final SchemaResult<Object> r;
+      if (valueSchema is ObjectSchema) {
+        final mapValue = jsonMapOrNull(propertyValue);
+        if (mapValue == null) {
+          errors.add(
+            _buildTypeMismatch(
+              expectedType: valueSchema.schemaType,
+              actualValue: propertyValue,
+              context: propertyCtx,
+            ),
+          );
+          continue;
         }
-      } catch (e, st) {
-        _rethrowIfError(e, st);
-        errors.add(
-          SchemaEncodeError.encoderThrew(
-            message: 'Property "$key" encoder threw: $e',
-            context: propertyCtx,
-            cause: e,
-            stackTrace: st,
-          ),
+        r = valueSchema.encodeWithContext(mapValue, propertyCtx);
+      } else {
+        final validated = schema.validateRuntimeWithContext(
+          propertyValue,
+          propertyCtx,
         );
+        if (validated.isFail) {
+          errors.add(validated.getError());
+          continue;
+        }
+        try {
+          r = schema.encodeWithContext(propertyValue, propertyCtx);
+        } catch (e, st) {
+          _rethrowIfError(e, st);
+          errors.add(
+            SchemaEncodeError.encoderThrew(
+              message: 'Property "$key" encoder threw: $e',
+              context: propertyCtx,
+              cause: e,
+              stackTrace: st,
+            ),
+          );
+          continue;
+        }
+      }
+      if (r.isFail) {
+        errors.add(r.getError());
+      } else {
+        encoded[key] = r.getOrNull();
       }
     }
 
-    if (additionalProperties) {
-      for (final key in value.keys) {
-        if (!properties.containsKey(key)) {
-          encoded[key] = value[key];
-        }
-      }
-    }
+    _checkAdditionalProperties(
+      value,
+      context,
+      errors,
+      parsed: encoded,
+      isEncode: true,
+    );
 
     if (errors.isNotEmpty) {
       return SchemaResult.fail(
@@ -353,6 +391,8 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       );
     }
 
+    final validated = applyConstraintsAndRefinements(value, context);
+    if (validated.isFail) return SchemaResult.fail(validated.getError());
     return SchemaResult.ok(UnmodifiableMapView(encoded));
   }
 
@@ -375,18 +415,6 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
-  }
-
-  @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'properties': properties.length,
-      'additionalProperties': additionalProperties,
-    };
   }
 
   @override

@@ -49,16 +49,14 @@ void main() {
     );
 
     test(
-      'should error when transformer returns null for non-nullable output',
+      'should propagate TypeError when a non-nullable transform returns null',
       () {
         final schema = Ack.string().transform<int>((val) {
           return (null as dynamic);
         });
 
-        final result = schema.safeParse('value');
-
-        expect(result.isFail, isTrue);
-        expect(result.getError(), isA<SchemaTransformError>());
+        expect(() => schema.safeParse('value'), throwsA(isA<TypeError>()));
+        expect(() => schema.parse('value'), throwsA(isA<TypeError>()));
       },
     );
 

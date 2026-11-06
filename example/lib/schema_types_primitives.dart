@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 
-part 'schema_types_primitives.ack.dart';
-part 'schema_types_primitives.ack.g.dart';
+part 'schema_types_primitives.g.dart';
 
 // Primitive schemas generate immutable value models while the schema remains
 // available directly for parse() and safeParse().
@@ -59,20 +58,16 @@ final optionalStatusSchema = Ack.literal('active').optional();
 final nullableRoleSchema = Ack.enumString(['admin', 'user']).nullable();
 
 @Schemable()
-final defaultedEnumSchema = Ack.enumValues(
-  UserRole.values,
-).withDefault(UserRole.guest);
+final defaultedEnumSchema = Ack.enumValues(UserRole.values)
+    .withDefault(UserRole.guest);
 
-final optionalNullableLiteralSchema = Ack.literal(
-  'pending',
-).optional().nullable();
+final optionalNullableLiteralSchema = Ack.literal('pending')
+    .optional()
+    .nullable();
 
 @Schemable()
-final chainedEnumStringSchema = Ack.enumString([
-  'read',
-  'write',
-  'execute',
-]).withDefault('read');
+final chainedEnumStringSchema = Ack.enumString(['read', 'write', 'execute'])
+    .withDefault('read');
 
 // Test refine - this should work
 @Schemable()

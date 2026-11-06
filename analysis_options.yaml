@@ -36,7 +36,7 @@ dart_code_metrics:
     prefer-prefixed-global-constants: false
     avoid-returning-widgets: false
     prefer-trailing-comma: false
-    # Enum dot-shorthands require Dart 3.10; the workspace SDK floor is 3.9.
+    # Keep explicit enum qualification as the workspace style.
     prefer-shorthands-with-enums: false
     # Schema classes extend a non-const AckSchema base, so they cannot declare
     # const constructors.

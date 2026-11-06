@@ -8,6 +8,10 @@ jsb.Schema _schemaFrom(Object? value) {
   return jsb.Schema.fromMap((value as Map).cast<String, Object?>());
 }
 
+extension on AckSchemaModel {
+  jsb.Schema toJsonSchemaBuilder() => jsb.Schema.fromMap(toJsonSchema());
+}
+
 void main() {
   group('toJsonSchemaBuilder()', () {
     group('Primitives', () {
@@ -311,7 +315,7 @@ void main() {
           },
         );
 
-        final result = convertAckSchemaModelToBuilder(schema);
+        final result = schema.toJsonSchemaBuilder();
 
         expect(result.value['type'], 'boolean');
         expect(result.value['const'], true);
@@ -528,10 +532,12 @@ void main() {
       });
 
       test('wraps property conversion errors with path', () {
-        final schema = Ack.object({'bad': const TestUnsupportedAckSchema()});
+        final schema = Ack.object({
+          'bad': Ack.fromJsonSchema({'type': 'string', 'format': 'email'}),
+        });
 
         expect(
-          () => schema.toJsonSchemaBuilder(),
+          () => schema.toJsonSchemaBuilderDraft7(),
           throwsA(
             isA<UnsupportedError>().having(
               (e) => e.message,
@@ -571,7 +577,7 @@ void main() {
           ),
         );
 
-        final result = convertAckSchemaModelToBuilder(schema);
+        final result = schema.toJsonSchemaBuilder();
         final additional = _schemaFrom(result.value['additionalProperties']);
 
         expect(additional.value['type'], 'string');
@@ -588,8 +594,7 @@ void main() {
           ],
         );
 
-        // Convert using the public helper
-        final result = convertAckSchemaModelToBuilder(jsonSchema);
+        final result = jsonSchema.toJsonSchemaBuilder();
 
         // Verify allOf is in the output
         expect(
@@ -615,7 +620,7 @@ void main() {
           ],
         );
 
-        final result = convertAckSchemaModelToBuilder(jsonSchema);
+        final result = jsonSchema.toJsonSchemaBuilder();
         final allOf = (result.value['allOf'] as List).map(_schemaFrom).toList();
 
         expect(allOf, hasLength(2));
@@ -632,7 +637,7 @@ void main() {
           minProperties: 2,
         );
 
-        final result = convertAckSchemaModelToBuilder(jsonSchema);
+        final result = jsonSchema.toJsonSchemaBuilder();
 
         expect(result.value['minProperties'], 2);
       });
@@ -643,7 +648,7 @@ void main() {
           maxProperties: 5,
         );
 
-        final result = convertAckSchemaModelToBuilder(jsonSchema);
+        final result = jsonSchema.toJsonSchemaBuilder();
 
         expect(result.value['maxProperties'], 5);
       });
@@ -655,7 +660,7 @@ void main() {
           maxProperties: 10,
         );
 
-        final result = convertAckSchemaModelToBuilder(jsonSchema);
+        final result = jsonSchema.toJsonSchemaBuilder();
 
         expect(result.value['minProperties'], 1);
         expect(result.value['maxProperties'], 10);

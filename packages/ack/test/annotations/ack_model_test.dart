@@ -1,10 +1,5 @@
-// These tests also cover the deprecated AckField.presence API.
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:ack/annotations.dart';
 import 'package:test/test.dart';
-
-Object _customSchema() => Object();
 
 void main() {
   test(
@@ -20,6 +15,7 @@ void main() {
       expect(defaults.captureField, 'additionalProperties');
 
       const configured = Schemable(
+        name: 'WireUser',
         schemaName: 'WireUserSchema',
         caseStyle: AckCaseStyle.snake,
         discriminatorKey: 'type',
@@ -27,6 +23,7 @@ void main() {
         unknownProperties: AckUnknownPropertyPolicy.capture,
         captureField: 'args',
       );
+      expect(configured.name, 'WireUser');
       expect(configured.schemaName, 'WireUserSchema');
       expect(configured.caseStyle, AckCaseStyle.snake);
       expect(configured.discriminatorKey, 'type');
@@ -48,54 +45,37 @@ void main() {
     },
   );
 
-  test('AckField accepts a schema tear-off and a presence override', () {
-    const inferred = AckField(schema: _customSchema);
-    expect(inferred.schema, same(_customSchema));
-    expect(inferred.presence, AckFieldPresence.inferred);
-
-    const optional = AckField(presence: AckFieldPresence.optional);
-    expect(optional.schema, isNull);
-    expect(optional.presence, AckFieldPresence.optional);
-    expect(AckFieldPresence.values, const [
-      AckFieldPresence.inferred,
-      AckFieldPresence.required,
-      AckFieldPresence.optional,
-    ]);
+  test('AckKey accepts a positional wire key name', () {
+    const key = AckKey('wire_key');
+    expect(key.name, 'wire_key');
   });
 
-  test('presence and null annotations are const', () {
-    const optional = Optional();
-    const required = Required();
-    const notNull = NotNull();
-    expect(optional, isA<Optional>());
-    expect(required, isA<Required>());
-    expect(notNull, isA<NotNull>());
-  });
-
-  test('constraint sugar annotations are const data', () {
-    const annotations = <Object>[
-      Min(1),
-      Max(9),
-      MultipleOf(2),
-      Positive(),
-      Negative(),
-      MinLength(1),
-      MaxLength(100),
-      Pattern(r'^[a-z]+$'),
-      Email(),
-      NotEmpty(),
-      MinItems(1),
-      MaxItems(10),
-      UniqueItems(),
+  test('rule annotations are const and expose their arguments', () {
+    const presence = <Object>[IsOptional(), IsRequired(), IsNotNull()];
+    const flags = <Object>[
+      IsPositive(),
+      IsNegative(),
+      IsNotEmpty(),
+      IsEmail(),
+      IsUrl(),
+      IsUri(),
+      IsUuid(),
+      IsDate(),
+      IsDateTime(),
+      HasUniqueItems(),
     ];
 
-    expect((annotations[0] as Min).value, 1);
-    expect((annotations[1] as Max).value, 9);
-    expect((annotations[2] as MultipleOf).value, 2);
-    expect((annotations[5] as MinLength).length, 1);
-    expect((annotations[6] as MaxLength).length, 100);
-    expect((annotations[7] as Pattern).pattern, r'^[a-z]+$');
-    expect((annotations[10] as MinItems).count, 1);
-    expect((annotations[11] as MaxItems).count, 10);
+    expect([...presence, ...flags], everyElement(isA<AckRule>()));
+    expect(const HasMin(1).min, 1);
+    expect(const HasMax(9.5).max, 9.5);
+    expect(const IsMultipleOf(2).divisor, 2);
+    expect(const HasMinLength(1).length, 1);
+    expect(const HasMaxLength(100).length, 100);
+    expect(const HasMatch(r'^[a-z]+$').pattern, r'^[a-z]+$');
+    expect(const IsIp().version, isNull);
+    expect(const IsIp(version: 4).version, 4);
+    expect(const IsIp(version: 6).version, 6);
+    expect(const HasMinItems(1).count, 1);
+    expect(const HasMaxItems(10).count, 10);
   });
 }

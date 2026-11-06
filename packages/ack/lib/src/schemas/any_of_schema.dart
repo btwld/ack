@@ -44,7 +44,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         name: 'anyOf:$index',
         schema: schema,
         value: value,
-        pathSegment: '',
+        omitPathSegment: true,
       );
       final result = parse
           ? schema.parseWithContext(value, childContext)
@@ -99,7 +99,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
         name: 'anyOf:$index',
         schema: schema,
         value: runtime,
-        pathSegment: '',
+        omitPathSegment: true,
         operation: SchemaOperation.encode,
       );
       try {
@@ -156,17 +156,6 @@ final class AnyOfSchema extends AckSchema<Object, Object>
       constraints: constraints ?? this.constraints,
       refinements: refinements ?? this.refinements,
     );
-  }
-
-  @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'schemas': schemas.length,
-    };
   }
 
   @override

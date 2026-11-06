@@ -7,7 +7,7 @@ library;
 
 import 'package:ack/ack.dart';
 
-/// Priority levels, used with `Ack.enumCodec`.
+/// Priority levels, used with `Ack.enumValues`.
 enum Priority { low, medium, high }
 
 /// An event whose fields use built-in codecs:
@@ -16,14 +16,14 @@ enum Priority { low, medium, high }
 /// - `due`: `YYYY-MM-DD` string <-> local-midnight `DateTime` (`Ack.date`)
 /// - `website`: string <-> `Uri` (`Ack.uri`)
 /// - `timeout`: milliseconds `int` <-> `Duration` (`Ack.duration`)
-/// - `priority`: enum-name string <-> `Priority` (`Ack.enumCodec`)
+/// - `priority`: enum-name string <-> `Priority` (`Ack.enumValues`)
 final eventSchema = Ack.object({
   'name': Ack.string(),
   'startsAt': Ack.datetime(),
   'due': Ack.date(),
   'website': Ack.uri(),
   'timeout': Ack.duration(),
-  'priority': Ack.enumCodec(Priority.values),
+  'priority': Ack.enumValues(Priority.values),
 });
 
 /// A custom bidirectional codec: comma-separated string <-> `List<String>`.

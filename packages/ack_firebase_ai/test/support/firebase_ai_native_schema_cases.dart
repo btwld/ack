@@ -51,10 +51,9 @@ final class FirebaseAiNativeSchemaCase {
     required this.source,
     required this.features,
     required this.comparisonEnum,
-    required Map<String, Object?> Function() buildJsonSchema,
+    required Map<String, Object?> Function() this._buildJsonSchema,
   }) : statusEnum = FirebaseAiNativeSchemaStatus.generated,
-       unsupportedReason = null,
-       _buildJsonSchema = buildJsonSchema;
+       unsupportedReason = null;
 
   const FirebaseAiNativeSchemaCase.unsupported({
     required this.id,
@@ -124,9 +123,8 @@ String firebaseAiPackageVersion() {
         break;
       }
 
-      final match = RegExp(
-        r'^\s+version:\s+"?([^"\s]+)"?\s*$',
-      ).firstMatch(line);
+      final match = RegExp(r'^\s+version:\s+"?([^"\s]+)"?\s*$')
+          .firstMatch(line);
       if (match != null) return match.group(1)!;
     }
   }
@@ -418,22 +416,22 @@ FirebaseAiNativeSchemaCase _nativeJsonSchemaCase(
     ),
     'ack_schema_date_transform_constraints' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.string(format: 'date'),
     ),
     'ack_schema_datetime_transform' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.string(format: 'date-time'),
     ),
     'ack_schema_uri_transform' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.string(format: 'uri'),
     ),
     'ack_schema_duration_transform_constraints' => _generatedJsonSchema(
       schemaCase,
-      FirebaseAiSchemaComparison.adapterTransformNeeded,
+      FirebaseAiSchemaComparison.exact,
       firebase_ai.JSONSchema.integer(minimum: 1000, maximum: 2000),
     ),
     'ack_schema_discriminated_union' => _generatedJsonSchema(

@@ -8,9 +8,8 @@ import 'package:test/test.dart';
 
 Directory _projectRoot() {
   var projectRoot = Directory.current;
-  while (!Directory(
-    p.join(projectRoot.path, 'packages', 'ack_generator'),
-  ).existsSync()) {
+  while (!Directory(p.join(projectRoot.path, 'packages', 'ack_generator'))
+      .existsSync()) {
     projectRoot = projectRoot.parent;
   }
   return projectRoot;
@@ -37,16 +36,14 @@ int _helperDefinitionCount(String source, String className, String suffix) {
 }
 
 void main() {
-  test(
-    'ack_generator alone generates json_serializable Ack helpers',
-    () async {
-      final projectRoot = _projectRoot();
-      final temporary = await Directory.systemTemp.createTemp(
-        'ack_json_ack_only_',
-      );
-      try {
-        Directory(p.join(temporary.path, 'lib')).createSync();
-        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+  test('ack_generator alone generates direct runtime helpers in .g.dart without json_serializable', () async {
+    final projectRoot = _projectRoot();
+    final temporary = await Directory.systemTemp.createTemp(
+      'ack_json_ack_only_',
+    );
+    try {
+      Directory(p.join(temporary.path, 'lib')).createSync();
+      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_json_ack_only
 publish_to: none
 environment:
@@ -62,11 +59,10 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({
@@ -75,50 +71,37 @@ final userSchema = Ack.object({
 });
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'clean build_runner build',
-        );
-
-        final ackPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.dart'),
-        ).readAsStringSync();
-        final jsonPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.g.dart'),
-        ).readAsStringSync();
-
-        expect(ackPart, contains('@Schemable.generatedJson'));
-        expect(ackPart, contains(r'_$UserFromJson'));
-        expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
-        expect(jsonPart, contains('JsonSerializableGenerator'));
-        expect(jsonPart, contains('User._ackFromRuntimeName(json[\'name\'])'));
-        expect(
-          jsonPart,
-          contains('User._ackFromRuntimeCreatedAt(json[\'createdAt\'])'),
-        );
-        expect(jsonPart, contains('User._ackToRuntimeName(instance.name)'));
-        expect(_helperDefinitionCount(jsonPart, 'User', 'FromJson'), 1);
-        expect(_helperDefinitionCount(jsonPart, 'User', 'ToJson'), 1);
-        expect(jsonPart, isNot(contains("value['name']")));
-      } finally {
-        temporary.deleteSync(recursive: true);
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
-
-  test(
-    'ordinary json_serializable coexists without duplicate Ack helpers',
-    () async {
-      final projectRoot = _projectRoot();
-      final temporary = await Directory.systemTemp.createTemp(
-        'ack_json_coexist_',
+      _expectSuccess(
+        await _run(temporary, ['pub', 'get', '--offline']),
+        'dart pub get --offline',
       );
-      try {
-        Directory(p.join(temporary.path, 'lib')).createSync();
-        Directory(p.join(temporary.path, 'test')).createSync();
-        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'clean build_runner build',
+      );
+
+      final generatedPart = File(p.join(temporary.path, 'lib', 'user.g.dart'))
+          .readAsStringSync();
+
+      expect(generatedPart, contains('AckModelGenerator'));
+      expect(generatedPart, contains('User._fromAckRuntime'));
+      expect(generatedPart, contains('model._toAckRuntime()'));
+      expect(generatedPart, isNot(contains('generatedJson')));
+      expect(generatedPart, isNot(contains('JsonSerializableGenerator')));
+    } finally {
+      temporary.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  test('ordinary json_serializable coexists in the same .g.dart part via combining_builder', () async {
+    final projectRoot = _projectRoot();
+    final temporary = await Directory.systemTemp.createTemp(
+      'ack_json_coexist_',
+    );
+    try {
+      Directory(p.join(temporary.path, 'lib')).createSync();
+      Directory(p.join(temporary.path, 'test')).createSync();
+      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_json_coexist
 publish_to: none
 environment:
@@ -132,30 +115,26 @@ dev_dependencies:
     path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
   build_runner: ^2.15.0
   json_serializable: ^6.14.1
+  # json_serializable 6.14.1 does not compile against source_helper 1.4.0.
+  # 6.15.1 fixes that and requires Dart 3.12.
+  source_helper: '>=1.3.10 <1.4.0'
   test: ^1.29.0
 dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
+      File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
 targets:
   \$default:
     builders:
-      # Both legacy AckType and source_gen own `.g.dart` by contract. This
-      # modern-only library disables the unused legacy builder so the ordinary
-      # combining builder remains the sole `.g.dart` owner.
-      ack_generator:ack_generator:
-        enabled: false
       json_serializable:
         options:
           include_if_null: true
 ''');
-        File(p.join(temporary.path, 'lib', 'same.dart')).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'lib', 'same.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'same.ack.dart';
-part 'same.ack.g.dart';
 part 'same.g.dart';
 
 @Schemable()
@@ -174,9 +153,8 @@ final class SameEnvelope {
   Map<String, dynamic> toJson() => _$SameEnvelopeToJson(this);
 }
 ''');
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+          .writeAsStringSync(r'''
 import 'package:ack_json_coexist/same.dart';
 import 'package:test/test.dart';
 
@@ -191,46 +169,38 @@ void main() {
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'build_runner build',
-        );
-        _expectSuccess(
-          await _run(temporary, ['analyze', '--fatal-infos']),
-          'dart analyze --fatal-infos',
-        );
+      _expectSuccess(
+        await _run(temporary, ['pub', 'get', '--offline']),
+        'dart pub get --offline',
+      );
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'build_runner build',
+      );
+      _expectSuccess(
+        await _run(temporary, ['analyze', '--fatal-infos']),
+        'dart analyze --fatal-infos',
+      );
 
-        final ackJson = File(
-          p.join(temporary.path, 'lib', 'same.ack.g.dart'),
-        ).readAsStringSync();
-        final ordinaryJson = File(
-          p.join(temporary.path, 'lib', 'same.g.dart'),
-        ).readAsStringSync();
-        expect(_helperDefinitionCount(ackJson, 'User', 'FromJson'), 1);
-        expect(_helperDefinitionCount(ackJson, 'User', 'ToJson'), 1);
-        expect(_helperDefinitionCount(ordinaryJson, 'User', 'FromJson'), 0);
-        expect(_helperDefinitionCount(ordinaryJson, 'User', 'ToJson'), 0);
-        expect(
-          _helperDefinitionCount(ordinaryJson, 'SameEnvelope', 'FromJson'),
-          1,
-        );
-        expect(
-          _helperDefinitionCount(ordinaryJson, 'SameEnvelope', 'ToJson'),
-          1,
-        );
-        expect(ackJson, contains('User._ackFromRuntimeName(json[\'name\'])'));
-        expect(ackJson, contains('JsonSerializableGenerator'));
-        _expectSuccess(await _run(temporary, ['test']), 'dart test');
-      } finally {
-        temporary.deleteSync(recursive: true);
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+      final combinedJson = File(p.join(temporary.path, 'lib', 'same.g.dart'))
+          .readAsStringSync();
+      expect(_helperDefinitionCount(combinedJson, 'User', 'FromJson'), 0);
+      expect(_helperDefinitionCount(combinedJson, 'User', 'ToJson'), 0);
+      expect(
+        _helperDefinitionCount(combinedJson, 'SameEnvelope', 'FromJson'),
+        1,
+      );
+      expect(_helperDefinitionCount(combinedJson, 'SameEnvelope', 'ToJson'), 1);
+      expect(combinedJson, contains('User._fromAckRuntime'));
+      expect(combinedJson, contains('JsonSerializableGenerator'));
+      _expectSuccess(await _run(temporary, ['test']), 'dart test');
+    } finally {
+      temporary.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
 
   test(
-    'prefixed barrel Schemable imports compile through the JSON phase',
+    'prefixed barrel Schemable imports compile cleanly into .g.dart',
     () async {
       final projectRoot = _projectRoot();
       final temporary = await Directory.systemTemp.createTemp(
@@ -256,9 +226,8 @@ dependency_overrides:
   ack:
     path: ${p.join(projectRoot.path, 'packages', 'ack')}
 ''');
-        File(
-          p.join(temporary.path, 'lib', 'role.dart'),
-        ).writeAsStringSync('enum Role { admin, member }\n');
+        File(p.join(temporary.path, 'lib', 'role.dart'))
+            .writeAsStringSync('enum Role { admin, member }\n');
         File(p.join(temporary.path, 'lib', 'support.dart')).writeAsStringSync(
           "export 'package:ack/ack.dart';\n"
           "export 'package:ack/annotations.dart';\n"
@@ -267,8 +236,7 @@ dependency_overrides:
         File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
 import 'support.dart' as support;
 
-part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @support.Schemable()
 final userSchema = support.Ack.object({
@@ -276,9 +244,8 @@ final userSchema = support.Ack.object({
   'role': support.Ack.enumValues(support.Role.values),
 });
 ''');
-        File(
-          p.join(temporary.path, 'test', 'runtime_test.dart'),
-        ).writeAsStringSync(r'''
+        File(p.join(temporary.path, 'test', 'runtime_test.dart'))
+            .writeAsStringSync(r'''
 import 'package:ack_json_barrel/user.dart';
 import 'package:test/test.dart';
 
@@ -292,7 +259,10 @@ void main() {
 }
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['pub', 'get', '--offline']),
+          'dart pub get --offline',
+        );
         _expectSuccess(
           await _run(temporary, ['run', 'build_runner', 'build']),
           'clean build_runner build',
@@ -302,12 +272,10 @@ void main() {
           'dart analyze --fatal-infos',
         );
 
-        final ackPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.dart'),
-        ).readAsStringSync();
-        expect(ackPart, contains('@support.Schemable.generatedJson'));
-        expect(ackPart, contains('support.AckModelAdapter'));
-        expect(ackPart, contains('final support.Role role;'));
+        final generatedPart = File(p.join(temporary.path, 'lib', 'user.g.dart'))
+            .readAsStringSync();
+        expect(generatedPart, contains('support.AckModelAdapter'));
+        expect(generatedPart, contains('final support.Role role;'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
       } finally {
         temporary.deleteSync(recursive: true);
