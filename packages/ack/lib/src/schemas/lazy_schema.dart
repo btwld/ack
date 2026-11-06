@@ -244,7 +244,7 @@ final class _LazyRecursionContext extends SchemaContext {
          schema: schema,
          value: value,
          parent: parent,
-         pathSegment: '',
+         omitPathSegment: true,
          operation: parent.operation,
        );
 

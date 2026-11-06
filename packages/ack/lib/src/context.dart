@@ -10,6 +10,15 @@ class SchemaContext {
   final AnyAckSchema schema;
   final SchemaContext? parent;
   final String? pathSegment;
+
+  /// When true, [path] does not append a segment for this context.
+  ///
+  /// Wrapper contexts such as anyOf branches, lazy recursion, boundary
+  /// re-parse, and discriminated-object routing set this so they add no JSON
+  /// Pointer token. An empty [pathSegment] is a real member key and stays in
+  /// [path] as an empty reference token (`#/`), per RFC 6901.
+  final bool omitPathSegment;
+
   final SchemaOperation operation;
 
   const SchemaContext({
@@ -18,6 +27,7 @@ class SchemaContext {
     required this.value,
     this.parent,
     this.pathSegment,
+    this.omitPathSegment = false,
     this.operation = SchemaOperation.parse,
   });
 
@@ -34,7 +44,7 @@ class SchemaContext {
 
     final parentPath = parent!.path;
 
-    if (pathSegment == '') {
+    if (omitPathSegment) {
       return parentPath;
     }
 
@@ -54,6 +64,7 @@ class SchemaContext {
     required AnyAckSchema schema,
     required Object? value,
     String? pathSegment,
+    bool omitPathSegment = false,
     SchemaOperation? operation,
   }) {
     return SchemaContext(
@@ -62,6 +73,7 @@ class SchemaContext {
       value: value,
       parent: this,
       pathSegment: pathSegment,
+      omitPathSegment: omitPathSegment,
       operation: operation ?? this.operation,
     );
   }

@@ -372,7 +372,7 @@ final class DiscriminatedObjectSchema<T extends Object>
       name: 'when $discriminatorKey="$discValue"',
       schema: effective,
       value: mapValue,
-      pathSegment: '',
+      omitPathSegment: true,
     );
 
     final result = effective.parseWithContext(mapValue, subSchemaContext);
@@ -413,7 +413,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         name: 'when $discriminatorKey="$discValue"',
         schema: effective,
         value: runtime,
-        pathSegment: '',
+        omitPathSegment: true,
       );
       final result = effective.validateRuntimeWithContext(
         runtime,
@@ -430,7 +430,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         name: 'when $discriminatorKey="$discValue"',
         schema: effective,
         value: runtime,
-        pathSegment: '',
+        omitPathSegment: true,
       );
       final result = effective.validateRuntimeWithContext(
         runtime,
@@ -495,7 +495,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         name: 'when $discriminatorKey="$discValue"',
         schema: effective,
         value: runtime,
-        pathSegment: '',
+        omitPathSegment: true,
         operation: SchemaOperation.encode,
       );
 
@@ -529,7 +529,7 @@ final class DiscriminatedObjectSchema<T extends Object>
         name: 'when $discriminatorKey="$discValue"',
         schema: effective,
         value: runtime,
-        pathSegment: '',
+        omitPathSegment: true,
         operation: SchemaOperation.encode,
       );
 
