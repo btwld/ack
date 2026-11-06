@@ -1,6 +1,5 @@
 import 'package:ack_generator/src/builder.dart';
 import 'package:build/build.dart';
-import 'package:build/experiments.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
@@ -145,11 +144,10 @@ final class Documented with _\$DocumentedAck {
   });
 
   test('primary constructor declaring parameters support @description and rule annotations', () async {
-    await withEnabledExperiments(
-      () => _build(
-        {
-          'primary_doc.dart':
-              '''
+    await _build(
+      {
+        'primary_doc.dart':
+            '''
 // @dart=3.13
 $_imports
 part 'primary_doc.g.dart';
@@ -168,19 +166,17 @@ final class const PrimaryTask({
   static final schema = _primaryTaskSchema;
 }
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/primary_doc.g.dart': decodedMatches(
-            allOf(
-              _containsCode(
-                "'title': Ack.string().minLength(1).describe('The item title.')",
-              ),
-              _containsCode(".withDefault('general')"),
+      },
+      outputs: {
+        'test_pkg|lib/primary_doc.g.dart': decodedMatches(
+          allOf(
+            _containsCode(
+              "'title': Ack.string().minLength(1).describe('The item title.')",
             ),
+            _containsCode(".withDefault('general')"),
           ),
-        },
-      ),
-      const ['primary-constructors'],
+        ),
+      },
     );
   });
 

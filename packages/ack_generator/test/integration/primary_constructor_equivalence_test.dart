@@ -1,31 +1,6 @@
-import 'package:ack_generator/src/builder.dart';
-import 'package:build/build.dart';
-import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
-/// Builds [source] as `lib/model.dart` and returns the generated part.
-Future<String> _generate(String source) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
-  String? generated;
-  await testBuilder(
-    ackModelBuilder(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': source},
-    generateFor: const {'test_pkg|lib/model.dart'},
-    readerWriter: readerWriter,
-    outputs: {
-      'test_pkg|lib/model.g.dart': decodedMatches(
-        predicate<String>((output) {
-          generated = output;
-
-          return true;
-        }),
-      ),
-    },
-  );
-
-  return generated!;
-}
+import 'schema_resolution_support.dart';
 
 const _header = r'''
 // @dart=3.13
@@ -141,8 +116,8 @@ final class Dog extends Pet with _\$DogAck {
 
 void main() {
   test('primary and classic constructors generate identical code', () async {
-    final primary = await _generate(_primaryModels);
-    final classic = await _generate(_classicModels);
+    final primary = await generatedPart(_primaryModels);
+    final classic = await generatedPart(_classicModels);
 
     expect(primary, classic);
     // The rules, wire key, and description reached the generated schema.
