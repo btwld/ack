@@ -3,12 +3,13 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 void main() {
   test(
     'class-first fields resolve same-build getter-generated models',
     () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
+      final readerWriter = await createTestReaderWriter();
       await testBuilder(
         ackModelBuilder(BuilderOptions.empty),
         {

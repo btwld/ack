@@ -96,7 +96,7 @@ final class Product {
 
   @override
   String toString() =>
-      'Product(name: $name, tags: $tags, scores: $scores, flags: $flags)';
+      'Product(name: ${name}, tags: ${tags}, scores: ${scores}, flags: ${flags})';
 
   static Product _fromAckRuntime(Map<String, Object?> value) => Product(
     name: value['name'] as String,
@@ -215,7 +215,7 @@ final class Grid {
       Object.hashAll([runtimeType, deepHashCode(name), deepHashCode(matrix)]);
 
   @override
-  String toString() => 'Grid(name: $name, matrix: $matrix)';
+  String toString() => 'Grid(name: ${name}, matrix: ${matrix})';
 
   static Grid _fromAckRuntime(Map<String, Object?> value) => Grid(
     name: value['name'] as String,
@@ -335,7 +335,7 @@ final class Address {
 
   @override
   String toString() =>
-      'Address(street: $street, city: $city, zipCode: $zipCode, country: $country)';
+      'Address(street: ${street}, city: ${city}, zipCode: ${zipCode}, country: ${country})';
 
   static Address _fromAckRuntime(Map<String, Object?> value) => Address(
     street: value['street'] as String,
@@ -468,7 +468,7 @@ final class Person {
 
   @override
   String toString() =>
-      'Person(name: $name, email: $email, address: $address, age: $age)';
+      'Person(name: ${name}, email: ${email}, address: ${address}, age: ${age})';
 
   static Person _fromAckRuntime(Map<String, Object?> value) => Person(
     name: value['name'] as String,
@@ -593,7 +593,7 @@ final class Employee {
 
   @override
   String toString() =>
-      'Employee(name: $name, employeeId: $employeeId, homeAddress: $homeAddress, workAddress: $workAddress)';
+      'Employee(name: ${name}, employeeId: ${employeeId}, homeAddress: ${homeAddress}, workAddress: ${workAddress})';
 
   static Employee _fromAckRuntime(Map<String, Object?> value) => Employee(
     name: value['name'] as String,
@@ -736,7 +736,7 @@ final class Modifier {
 
   @override
   String toString() =>
-      'Modifier(requiredField: $requiredField, optionalField: $optionalField, nullableField: $nullableField, optionalNullable: $optionalNullable, nullableOptional: $nullableOptional)';
+      'Modifier(requiredField: ${requiredField}, optionalField: ${optionalField}, nullableField: ${nullableField}, optionalNullable: ${optionalNullable}, nullableOptional: ${nullableOptional})';
 
   static Modifier _fromAckRuntime(Map<String, Object?> value) => Modifier(
     requiredField: value['requiredField'] as String,
@@ -904,7 +904,7 @@ final class TaggedItem {
 
   @override
   String toString() =>
-      'TaggedItem(name: $name, requiredTags: $requiredTags, optionalTags: $optionalTags, nullableTags: $nullableTags)';
+      'TaggedItem(name: ${name}, requiredTags: ${requiredTags}, optionalTags: ${optionalTags}, nullableTags: ${nullableTags})';
 
   static TaggedItem _fromAckRuntime(Map<String, Object?> value) => TaggedItem(
     name: value['name'] as String,
@@ -1042,7 +1042,7 @@ final class ContactList {
   ]);
 
   @override
-  String toString() => 'ContactList(name: $name, addresses: $addresses)';
+  String toString() => 'ContactList(name: ${name}, addresses: ${addresses})';
 
   static ContactList _fromAckRuntime(Map<String, Object?> value) => ContactList(
     name: value['name'] as String,
@@ -1224,7 +1224,7 @@ final class Minimal {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(id)]);
 
   @override
-  String toString() => 'Minimal(id: $id)';
+  String toString() => 'Minimal(id: ${id})';
 
   static Minimal _fromAckRuntime(Map<String, Object?> value) =>
       Minimal(id: value['id'] as String);
@@ -1313,7 +1313,7 @@ final class NamedItem {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(name)]);
 
   @override
-  String toString() => 'NamedItem(name: $name)';
+  String toString() => 'NamedItem(name: ${name})';
 
   static NamedItem _fromAckRuntime(Map<String, Object?> value) =>
       NamedItem(name: value['name'] as String);
@@ -1401,7 +1401,7 @@ final class Item {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(id)]);
 
   @override
-  String toString() => 'Item(id: $id)';
+  String toString() => 'Item(id: ${id})';
 
   static Item _fromAckRuntime(Map<String, Object?> value) =>
       Item(id: value['id'] as String);
@@ -1491,7 +1491,7 @@ final class MyCustomSchema123 {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'MyCustomSchema123(value: $value)';
+  String toString() => 'MyCustomSchema123(value: ${value})';
 
   static MyCustomSchema123 _fromAckRuntime(Map<String, Object?> value) =>
       MyCustomSchema123(value: value['value'] as String);

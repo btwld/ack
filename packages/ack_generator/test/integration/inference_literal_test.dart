@@ -6,6 +6,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 final class _PatternProbe implements Builder {
   const _PatternProbe();
 
@@ -68,8 +70,7 @@ void main() {
 
   for (final example in cases) {
     test('pattern literal preserves ${example.name}', () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
+      final readerWriter = await createTestReaderWriter();
       await testBuilder(
         const _PatternProbe(),
         {

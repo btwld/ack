@@ -272,29 +272,24 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     );
   }
 
-  /// Whether [type] can be called as `X Function(Map<String, dynamic>)`, where
-  /// `X` is [element].
+  /// Whether [type] is exactly `X Function(Map<String, dynamic>)`, where `X`
+  /// is [element].
   bool _isJsonFactory(DartType type, ClassElement element) {
-    if (type is! FunctionType || type.typeParameters.isNotEmpty) return false;
-    final typeSystem = element.library.typeSystem;
-    final typeProvider = element.library.typeProvider;
-    final parameters = type.formalParameters;
-    final positional = [
-      for (final parameter in parameters)
-        if (parameter.isPositional) parameter,
-    ];
-    if (positional.isEmpty ||
-        positional.skip(1).any((parameter) => parameter.isRequiredPositional) ||
-        parameters.any((parameter) => parameter.isRequiredNamed)) {
+    if (type is! FunctionType || type.typeParameters.isNotEmpty) {
       return false;
     }
+    final parameters = type.formalParameters;
+    if (parameters.length != 1 || !parameters.single.isRequiredPositional) {
+      return false;
+    }
+    final typeProvider = element.library.typeProvider;
     final json = typeProvider.mapType(
       typeProvider.stringType,
       typeProvider.dynamicType,
     );
 
-    return typeSystem.isSubtypeOf(json, positional.first.type) &&
-        typeSystem.isSubtypeOf(type.returnType, element.thisType);
+    return parameters.single.type == json &&
+        type.returnType == element.thisType;
   }
 
   /// json_serializable applies a `JsonConverter` before Ack's runtime bridge,

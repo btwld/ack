@@ -3,6 +3,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 final class _InferenceProbe implements Builder {
   const _InferenceProbe({this.parameterName = 'title', this.sourceComment});
 
@@ -48,8 +50,7 @@ final class _InferenceProbe implements Builder {
 
 void main() {
   test('a second generator infers an annotated parameter', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(
         sourceComment: '/// The item title.\r\n/// @description It appears on screen.\r\n/// More prose.',
@@ -76,8 +77,7 @@ void widget({
   });
 
   test('a second generator infers a list of Dart enums', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(parameterName: 'priorities'),
       {
@@ -98,8 +98,7 @@ void widget({required List<Priority> priorities}) {}
   });
 
   test('a second generator constrains a Set before its codec', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(parameterName: 'tags'),
       {
@@ -122,8 +121,7 @@ void widget({@HasMinItems(2) required Set<String> tags}) {}
   });
 
   test('a second generator constrains the outer Set of a nested Set', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(parameterName: 'cells'),
       {
@@ -149,8 +147,7 @@ void widget({@HasMaxItems(3) required Set<Set<String>> cells}) {}
   });
 
   test('a second generator applies scalar item constraints and collection constraints on List<int>', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       const _InferenceProbe(parameterName: 'weekdays'),
       {

@@ -4,6 +4,8 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 const _head = '''
 import 'package:ack/ack.dart';
 import 'types.dart';
@@ -103,14 +105,30 @@ Matcher containsCode(String code) => predicate<String>(
 String _compact(String code) =>
     code.replaceAll(RegExp(r'\s+'), '').replaceAll(',)', ')');
 
+/// Builds [source] as `lib/model.dart` and returns the generated part.
+Future<String> generatedPart(String source) async {
+  final readerWriter = await createTestReaderWriter();
+  final result = await testBuilder(
+    ackModelBuilder(BuilderOptions.empty),
+    {'test_pkg|lib/model.dart': source},
+    generateFor: const {'test_pkg|lib/model.dart'},
+    readerWriter: readerWriter,
+    flattenOutput: true,
+  );
+  expect(result.succeeded, isTrue);
+
+  return readerWriter.testing.readString(
+    AssetId('test_pkg', 'lib/model.g.dart'),
+  );
+}
+
 Future<void> expectOutput(
   String body,
   Matcher matcher, {
   String head = _head,
   String types = _types,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {
@@ -128,8 +146,7 @@ Future<List<String>> generationErrors(
   String head = _head,
   String types = _types,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   final errors = <String>[];
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),

@@ -28,6 +28,18 @@ schema authors must choose presence, nullability, and capture policies explicitl
 Contract: [configuration](docs/core-concepts/configuration.mdx) and
 [class projection](docs/core-concepts/typesafe-schemas.mdx#additional-properties).
 
+## Object defaults and explicit null
+
+Date: 2026-11-03. Status: current. History: [missing-key defaults](https://github.com/btwld/ack/commit/c010a9c) and [null default encoding](https://github.com/btwld/ack/commit/f34a0b2).
+
+Object property defaults fill only omitted keys, and an explicit JSON null
+requires a nullable property; encoding writes the default for a missing or
+null defaulted field. This keeps omission and null distinct on the wire, at the
+cost of a beta.2 break for schemas that relied on null selecting the default.
+
+Refines: [field presence and unknown keys](#field-presence-and-unknown-keys).
+Contract: [default values](docs/core-concepts/configuration.mdx#default-values).
+
 ## Is/Has rule annotations
 
 Date: 2026-11-05. Status: current. History: [#254](https://github.com/btwld/ack/pull/254).

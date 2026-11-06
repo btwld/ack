@@ -1,4 +1,4 @@
-// Shared timing for scaling regressions and the cleanup benchmark.
+// Shared timing for scaling regressions.
 double measure(Object? Function() action) {
   for (var i = 0; i < 3; i++) {
     action();

@@ -440,6 +440,65 @@ final class Habit with _$HabitAck {
     );
   });
 
+  test('a Schemable class rejects a fromJson that accepts Object?', () async {
+    final errors = await generationErrors(r'''
+@Schemable()
+final class Habit with _$HabitAck {
+  const Habit({required this.name});
+
+  final String name;
+
+  static Habit fromJson(Object? json) =>
+      HabitSchema.fromJson(json as Map<String, dynamic>);
+}
+''');
+
+    expect(
+      errors,
+      contains(
+        contains(
+          'Habit.fromJson must be a Habit Function(Map<String, dynamic>); '
+          'it is Habit Function(Object?).',
+        ),
+      ),
+    );
+  });
+
+  test("a Schemable class rejects another model's fromJson", () async {
+    final errors = await generationErrors(
+      r'''
+@Schemable()
+final class Habit with _$HabitAck {
+  const Habit({required this.name});
+
+  final String name;
+
+  static final fromJson = Note.fromJson;
+}
+''',
+      types: r'''
+final class Note {
+  const Note({required this.text});
+
+  final String text;
+
+  static Note fromJson(Map<String, dynamic> json) =>
+      Note(text: json['text'] as String);
+}
+''',
+    );
+
+    expect(
+      errors,
+      contains(
+        contains(
+          'Habit.fromJson must be a Habit Function(Map<String, dynamic>); '
+          'it is Note Function(Map<String, dynamic>).',
+        ),
+      ),
+    );
+  });
+
   test('a schema-first model references a type-owned schema', () async {
     await expectOutput(
       '''

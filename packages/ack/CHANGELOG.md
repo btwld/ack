@@ -19,8 +19,9 @@
 
 ### Deprecated
 
-* Deprecate `Validate`. Each constructor redirects to its rule annotation, and
-  its warning names the replacement. `Validate` is removed before Ack 2.0.0.
+* Deprecate `Validate`, including the class. Each constructor redirects to
+  its rule annotation and names that replacement. `kind` and `value` stay
+  visible on those rules until `Validate` is removed before Ack 2.0.0.
 
 ## 2.0.0-beta.2
 
@@ -33,11 +34,15 @@
 * **Breaking:** Object encoding substitutes the validated, encoded default for
   missing or null defaulted fields. Nullable fields without defaults retain
   their existing null behavior.
+* **Breaking:** `ConstraintError`, `DurationConstraint`, `AckException`, `Ok`,
+  and `Fail` are now `final`, so code outside Ack can no longer implement or
+  extend them.
 
 ### Fixed
 
 * Validate nested objects as they encode, avoiding repeated subtree checks
-  while observing nested changes made by earlier sibling encoders.
+  between directly nested objects while observing nested changes made by
+  earlier sibling encoders.
 * Build imported schema locations from shared pointer segments, avoiding
   repeated ancestor-string copies during deeply nested compilation.
 * Reuse the standard meta-schema index across imports while keeping compiled

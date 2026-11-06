@@ -123,7 +123,7 @@ final class Cat extends Pet {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(lives)]);
 
   @override
-  String toString() => 'Cat(lives: $lives)';
+  String toString() => 'Cat(lives: ${lives})';
 
   static Cat _fromAckRuntime(Map<String, Object?> value) =>
       Cat(lives: value['lives'] as int);
@@ -221,7 +221,7 @@ final class Dog extends Pet {
 
   @override
   String toString() =>
-      'Dog(bark: $bark, additionalProperties: $additionalProperties)';
+      'Dog(bark: ${bark}, additionalProperties: ${additionalProperties})';
 
   static Dog _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{'kind', 'bark'};

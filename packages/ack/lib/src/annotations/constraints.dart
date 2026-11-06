@@ -15,8 +15,11 @@ import 'package:meta/meta_meta.dart';
 ///   static final schema = UserSchema.schema;
 /// }
 /// ```
-// The rules extend the deprecated `Validate` alias only so that its
-// redirecting factories type-check. Drop the supertype with `Validate`.
+///
+/// [Validate.kind] and [Validate.value] stay visible on every rule until
+/// [Validate] is deleted. Redirecting factories require this subtype, so
+/// those fields cannot be dropped earlier.
+// ignore: deprecated_member_use_from_same_package
 abstract final class AckRule extends Validate {
   const AckRule._(String kind, [Object? value]) : super._(kind, value);
 }
@@ -214,6 +217,10 @@ final class HasUniqueItems extends AckRule {
 /// Each constructor returns the matching rule annotation, so
 /// `@Validate.minLength(3)` is the same value as `@HasMinLength(3)`. Use the
 /// rule annotations instead. `Validate` is removed before Ack 2.0.0.
+@Deprecated(
+  'Use the Is and Has rule annotations instead. '
+  'Validate is removed before Ack 2.0.0.',
+)
 @Target({TargetKind.field, TargetKind.parameter})
 final class Validate {
   /// The constraint identifier.

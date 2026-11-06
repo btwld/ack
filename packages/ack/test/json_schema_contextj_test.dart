@@ -1,6 +1,4 @@
-import 'package:ack/ack.dart';
-import 'package:punycoder/punycoder.dart' as pc;
-import 'package:test/test.dart';
+import 'support/idna_labels.dart';
 
 void main() {
   // RFC 5892 Appendix A.1/A.2. Exercise both U-labels and decoded A-labels,
@@ -93,30 +91,5 @@ void main() {
     (label: 'क्\u200d', valid: true, name: 'allows terminal ZWJ after Virama'),
     (label: 'क्\u200c', valid: true, name: 'allows terminal ZWNJ after Virama'),
   ];
-  for (final format in ['idn-hostname', 'idn-email', 'hostname', 'email']) {
-    for (final operation in ['parse', 'encode']) {
-      for (final example in examples) {
-        test('$format $operation ${example.name}', () {
-          final schema = Ack.fromJsonSchema({
-            'type': 'string',
-            'format': format,
-          }, assertFormats: true);
-          final restored = Ack.fromJsonSchema(schema.toJsonSchema());
-          final ace = 'xn--${pc.punycode.encode(example.label)}';
-          for (final host in [
-            if (format.startsWith('idn-')) '${example.label}.example',
-            '$ace.example',
-          ]) {
-            final input = format.endsWith('email') ? 'user@$host' : host;
-            for (final candidate in [schema, restored]) {
-              final result = operation == 'parse'
-                  ? candidate.safeParse(input)
-                  : candidate.safeEncode(input);
-              expect(result.isOk, example.valid, reason: input);
-            }
-          }
-        });
-      }
-    }
-  }
+  testIdnaLabels(examples);
 }

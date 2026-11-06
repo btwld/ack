@@ -377,15 +377,13 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
       }
     }
 
-    _checkAdditionalProperties(value, context, errors, isEncode: true);
-
-    if (additionalProperties) {
-      for (final key in value.keys) {
-        if (!properties.containsKey(key)) {
-          encoded[key] = value[key];
-        }
-      }
-    }
+    _checkAdditionalProperties(
+      value,
+      context,
+      errors,
+      parsed: encoded,
+      isEncode: true,
+    );
 
     if (errors.isNotEmpty) {
       return SchemaResult.fail(

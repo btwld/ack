@@ -83,7 +83,7 @@ final class User {
   ]);
 
   @override
-  String toString() => 'User(name: $name, age: $age, active: $active)';
+  String toString() => 'User(name: ${name}, age: ${age}, active: ${active})';
 
   static User _fromAckRuntime(Map<String, Object?> value) => User(
     name: value['name'] as String,

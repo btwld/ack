@@ -5,12 +5,13 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 Future<void> _build(
   String source, {
   required Map<String, Object> outputs,
 }) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/model.dart': source},
@@ -21,8 +22,7 @@ Future<void> _build(
 }
 
 Future<void> _expectFailure(String body, List<String> messages) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
+  final readerWriter = await createTestReaderWriter();
   final seen = <String>{};
   await testBuilder(
     ackModelBuilder(BuilderOptions.empty),
@@ -246,7 +246,7 @@ final userSchema = Ack.object({
             contains('User call({'),
             contains('deepEquals(name, other.name)'),
             contains('deepHashCode(tags)'),
-            contains(r"toString() => 'User(name: $name, tags: $tags)'"),
+            contains(r"toString() => 'User(name: ${name}, tags: ${tags})'"),
             isNot(contains('class UserType')),
           ]),
         ),
