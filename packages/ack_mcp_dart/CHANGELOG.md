@@ -1,4 +1,4 @@
-## 2.0.0-beta.3 (unreleased)
+## 2.0.0-beta.3
 
 ### Breaking
 

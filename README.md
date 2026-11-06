@@ -3,7 +3,7 @@
 [![CI](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
 
-Ack validates data in Dart and Flutter. This branch documents **2.0.0-beta.2**;
+Ack validates data in Dart and Flutter. This branch documents **2.0.0-beta.3**;
 see the [migration guide](docs/getting-started/migration-guide.mdx) for 1.x changes.
 
 ## Core concepts
@@ -27,7 +27,7 @@ see the [migration guide](docs/getting-started/migration-guide.mdx) for 1.x chan
 Install the version documented on this branch:
 
 ```bash
-dart pub add ack:^2.0.0-beta.2
+dart pub add ack:^2.0.0-beta.3
 ```
 
 ```dart

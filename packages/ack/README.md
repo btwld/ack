@@ -18,7 +18,7 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 ## Quick Start
 
 ```bash
-dart pub add ack:^2.0.0-beta.2
+dart pub add ack:^2.0.0-beta.3
 ```
 
 ```dart

@@ -53,7 +53,7 @@ for the complete support matrix and reference/diagnostic behavior.
 ```yaml
 dependencies:
   ack: ^2.0.0-beta.2
-  ack_json_schema_builder: ^2.0.0-beta.2
+  ack_json_schema_builder: ^2.0.0-beta.3
   json_schema_builder: ^0.1.3
 ```
 

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2.0.0-beta.3
+
+* **Breaking:** Require Dart `>=3.13.0` and Flutter `>=3.47.0`.
+* **Breaking:** `Is…`/`Has…` rule annotations replace the `Validate` namespace.
+  `Validate` remains as deprecated redirects and is removed before Ack 2.0.0.
+* Regenerate model parts with `ack` and `ack_generator` at 2.0.0-beta.3.
+  Upgrade the five packages together.
+* Include the notes in each package's beta.3 changelog.
+
 ## 2.0.0-beta.2
 
 * **Breaking:** Object defaults fill omitted keys; explicit JSON null requires
