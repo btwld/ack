@@ -2,50 +2,9 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:ack/annotations.dart';
-import 'package:ack_generator/src/builder.dart';
-import 'package:build/build.dart';
-import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
-/// Builds [source] as `lib/model.dart` and returns the generated part.
-Future<String> _generate(String source) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
-  String? generated;
-  await testBuilder(
-    ackModelBuilder(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': source},
-    generateFor: const {'test_pkg|lib/model.dart'},
-    readerWriter: readerWriter,
-    outputs: {
-      'test_pkg|lib/model.g.dart': decodedMatches(
-        predicate<String>((output) {
-          generated = output;
-
-          return true;
-        }),
-      ),
-    },
-  );
-
-  return generated!;
-}
-
-/// Builds [source] as `lib/model.dart`, which must fail, and returns the
-/// build errors.
-Future<List<String>> _errors(String source) async {
-  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-  await readerWriter.testing.loadIsolateSources();
-  final result = await testBuilder(
-    ackModelBuilder(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': source},
-    generateFor: const {'test_pkg|lib/model.dart'},
-    readerWriter: readerWriter,
-  );
-  expect(result.succeeded, isFalse);
-
-  return result.errors.toList();
-}
+import 'schema_resolution_support.dart';
 
 /// One model that uses every rule, written with [rule] for each annotation.
 String _model(String Function(String oldName, String newName) rule) =>
@@ -195,8 +154,8 @@ void main() {
   });
 
   test('old and new annotations generate identical code', () async {
-    final legacy = await _generate(_model((oldName, _) => '@$oldName'));
-    final current = await _generate(_model((_, newName) => '@$newName'));
+    final legacy = await generatedPart(_model((oldName, _) => '@$oldName'));
+    final current = await generatedPart(_model((_, newName) => '@$newName'));
 
     expect(legacy, current);
     expect(legacy, isNot(contains(RegExp(r'\bValidate\b'))));
@@ -204,11 +163,7 @@ void main() {
   });
 
   test('a misplaced old annotation reports the new name', () async {
-    final errors = await _errors(r'''
-import 'package:ack/ack.dart';
-
-part 'model.g.dart';
-
+    final errors = await generationErrors(r'''
 @Schemable()
 final class Profile with _$ProfileAck {
   const Profile(this.age);

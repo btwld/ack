@@ -105,6 +105,23 @@ Matcher containsCode(String code) => predicate<String>(
 String _compact(String code) =>
     code.replaceAll(RegExp(r'\s+'), '').replaceAll(',)', ')');
 
+/// Builds [source] as `lib/model.dart` and returns the generated part.
+Future<String> generatedPart(String source) async {
+  final readerWriter = await createTestReaderWriter();
+  final result = await testBuilder(
+    ackModelBuilder(BuilderOptions.empty),
+    {'test_pkg|lib/model.dart': source},
+    generateFor: const {'test_pkg|lib/model.dart'},
+    readerWriter: readerWriter,
+    flattenOutput: true,
+  );
+  expect(result.succeeded, isTrue);
+
+  return readerWriter.testing.readString(
+    AssetId('test_pkg', 'lib/model.g.dart'),
+  );
+}
+
 Future<void> expectOutput(
   String body,
   Matcher matcher, {

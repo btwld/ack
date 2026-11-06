@@ -13,8 +13,9 @@
 
 ### Deprecated
 
-* Deprecate `Validate`. Each constructor redirects to its rule annotation, and
-  its warning names the replacement. `Validate` is removed before Ack 2.0.0.
+* Deprecate `Validate`, including the class. Each constructor redirects to
+  its rule annotation and names that replacement. `kind` and `value` stay
+  visible on those rules until `Validate` is removed before Ack 2.0.0.
 
 ## 2.0.0-beta.2
 
