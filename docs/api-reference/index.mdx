@@ -427,13 +427,10 @@ import 'package:ack/ack.dart';
 part 'account.g.dart';
 
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Account with _$AccountAck {
-  const Account({required this.displayName, this.role = 'member'});
-
-  @HasMinLength(2)
-  final String displayName;
-  final String role;
-
+final class const Account({
+  @HasMinLength(2) required final String displayName,
+  final String role = 'member',
+}) with _$AccountAck {
   static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }

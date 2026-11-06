@@ -1,4 +1,11 @@
-## 2.0.0-beta.3 (unreleased)
+## 2.0.0-beta.3
+
+### Breaking
+
+* **Breaking:** Require Dart `>=3.13.0` (Flutter `>=3.47.0`, which bundles
+  Dart 3.13.0). Dart 3.13 adds the primary constructors that the class-first
+  examples use. Apps on Flutter 3.41 to 3.46 cannot use Ack 2.0.
+* Require `ack: ^2.0.0-beta.3`. Generation reads the `AckRule` types.
 
 ### Changed
 
@@ -13,6 +20,8 @@
   another model's `fromJson`.
 * Show `static final schema = <Name>Schema.schema;` in class-first examples
   instead of the private codec variable. Both forms generate the same code.
+* Write the class-first examples with primary constructors and annotated
+  declaring parameters. Classic constructors generate identical code.
 
 ## 2.0.0-beta.2
 

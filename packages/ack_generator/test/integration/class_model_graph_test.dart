@@ -1195,14 +1195,12 @@ final class User with _\$UserAck {
     );
   });
 
-  test(
-    'allows an imported class-first model with hidden facade when it exposes static schema',
-    () async {
-      final readerWriter = await createTestReaderWriter();
-      await testBuilder(
-        ackModelBuilder(BuilderOptions.empty),
-        {
-          'test_pkg|lib/model.dart': '''
+  test('allows an imported class-first model with hidden facade when it exposes static schema', () async {
+    final readerWriter = await createTestReaderWriter();
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
 import 'address.dart' show Address;
 
@@ -1215,7 +1213,7 @@ final class Order with _\$OrderAck {
   final Address address;
 }
 ''',
-          'test_pkg|lib/address.dart': '''
+        'test_pkg|lib/address.dart': '''
 import 'package:ack/ack.dart';
 
 part 'address.g.dart';
@@ -1229,21 +1227,18 @@ final class Address with _\$AddressAck {
   static final schema = _addressSchema;
 }
 ''',
-        },
-        generateFor: const {
-          'test_pkg|lib/model.dart',
-          'test_pkg|lib/address.dart',
-        },
-        readerWriter: readerWriter,
-        outputs: {
-          'test_pkg|lib/address.g.dart': decodedMatches(anything),
-          'test_pkg|lib/model.g.dart': decodedMatches(
-            contains('Address.schema'),
-          ),
-        },
-      );
-    },
-  );
+      },
+      generateFor: const {
+        'test_pkg|lib/model.dart',
+        'test_pkg|lib/address.dart',
+      },
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/address.g.dart': decodedMatches(anything),
+        'test_pkg|lib/model.g.dart': decodedMatches(contains('Address.schema')),
+      },
+    );
+  });
 
   test(
     'rejects invalid rule annotations on mismatched field types or values',
@@ -1286,14 +1281,12 @@ final class User with _\$UserAck {
     },
   );
 
-  test(
-    'resolves constructor parameter annotations alongside same-build schema-first generated model',
-    () async {
-      final readerWriter = await createTestReaderWriter();
-      await testBuilder(
-        ackModelBuilder(BuilderOptions.empty),
-        {
-          'test_pkg|lib/model.dart': '''
+  test('resolves constructor parameter annotations alongside same-build schema-first generated model', () async {
+    final readerWriter = await createTestReaderWriter();
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': '''
 import 'package:ack/ack.dart';
 
 part 'model.g.dart';
@@ -1314,19 +1307,18 @@ final class Order with _\$OrderAck {
   static final schema = _orderSchema;
 }
 ''',
-        },
-        generateFor: const {'test_pkg|lib/model.dart'},
-        readerWriter: readerWriter,
-        outputs: {
-          'test_pkg|lib/model.g.dart': decodedMatches(
-            allOf([
-              contains("'shipping_address':"),
-              contains('Ack.list(Address.\$ack.schema)'),
-              contains('.minItems(1)'),
-            ]),
-          ),
-        },
-      );
-    },
-  );
+      },
+      generateFor: const {'test_pkg|lib/model.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/model.g.dart': decodedMatches(
+          allOf([
+            contains("'shipping_address':"),
+            contains('Ack.list(Address.\$ack.schema)'),
+            contains('.minItems(1)'),
+          ]),
+        ),
+      },
+    );
+  });
 }

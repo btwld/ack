@@ -265,15 +265,14 @@ void main() {
       'type': 'string',
       'properties': annotation,
     }).nullable();
-    final resource = _maps(
-      schema.toJsonSchema(),
-    ).where((map) => map[r'$id'] == id).single;
+    final resource = _maps(schema.toJsonSchema())
+        .where((map) => map[r'$id'] == id)
+        .single;
     // The source may be enveloped, but its annotation payload is unchanged.
     final properties =
         resource['properties'] ??
-        _maps(
-          resource,
-        ).firstWhere((map) => map.containsKey('properties'))['properties'];
+        _maps(resource)
+            .firstWhere((map) => map.containsKey('properties'))['properties'];
     expect(properties, annotation);
   });
 
@@ -438,9 +437,9 @@ void main() {
     );
     final exported = schema.toJsonSchema();
     expect(schema.toJsonSchema(), exported);
-    final originalDialect = _maps(
-      exported,
-    ).where((map) => map[r'$id'] == canonical).single;
+    final originalDialect = _maps(exported)
+        .where((map) => map[r'$id'] == canonical)
+        .single;
     expect(originalDialect[r'$vocabulary'], originalVocabulary);
 
     for (final testCase in [

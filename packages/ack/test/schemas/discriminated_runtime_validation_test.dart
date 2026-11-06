@@ -315,9 +315,9 @@ void main() {
 
     for (final outputShape in ['directly', 'inside anyOf', 'inside lazy']) {
       test('preserves permissive intermediate codec outputs $outputShape', () {
-        final output = Ack.object({
-          'name': Ack.string(),
-        }).passthrough().refine((map) => map['kind'] == 'internal');
+        final output = Ack.object({'name': Ack.string()})
+            .passthrough()
+            .refine((map) => map['kind'] == 'internal');
         final inner = Ack.object({'name': Ack.string()}).codec<Object>(
           decode: (map) => {'name': map['name'], 'kind': 'internal'},
           encode: (value) => {'name': (value as JsonMap)['name']},

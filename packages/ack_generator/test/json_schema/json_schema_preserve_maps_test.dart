@@ -118,9 +118,8 @@ void main() {
                 },
             ];
             final prefix = 'variant${imports.length}';
-            await File(
-              p.join(temporary.path, '$prefix.dart'),
-            ).writeAsString(library.source);
+            await File(p.join(temporary.path, '$prefix.dart'))
+                .writeAsString(library.source);
             imports.add("import '$prefix.dart' as $prefix;");
             probes.add(
               '${jsonEncode(label)}: [for (final value in values) '
@@ -154,9 +153,8 @@ void main() {
 }
 ''');
     var repository = Directory.current;
-    while (!File(
-      p.join(repository.path, '.dart_tool', 'package_config.json'),
-    ).existsSync()) {
+    while (!File(p.join(repository.path, '.dart_tool', 'package_config.json'))
+        .existsSync()) {
       repository = repository.parent;
     }
     final result = await Process.run(Platform.resolvedExecutable, [

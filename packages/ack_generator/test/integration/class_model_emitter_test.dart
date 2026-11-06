@@ -1,6 +1,5 @@
 import 'package:ack_generator/src/builder.dart';
 import 'package:build/build.dart';
-import 'package:build/experiments.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
@@ -144,14 +143,11 @@ final class Documented with _\$DocumentedAck {
     );
   });
 
-  test(
-    'primary constructor declaring parameters support @description and rule annotations',
-    () async {
-      await withEnabledExperiments(
-        () => _build(
-          {
-            'primary_doc.dart':
-                '''
+  test('primary constructor declaring parameters support @description and rule annotations', () async {
+    await _build(
+      {
+        'primary_doc.dart':
+            '''
 // @dart=3.13
 $_imports
 part 'primary_doc.g.dart';
@@ -170,22 +166,19 @@ final class const PrimaryTask({
   static final schema = _primaryTaskSchema;
 }
 ''',
-          },
-          outputs: {
-            'test_pkg|lib/primary_doc.g.dart': decodedMatches(
-              allOf(
-                _containsCode(
-                  "'title': Ack.string().minLength(1).describe('The item title.')",
-                ),
-                _containsCode(".withDefault('general')"),
-              ),
+      },
+      outputs: {
+        'test_pkg|lib/primary_doc.g.dart': decodedMatches(
+          allOf(
+            _containsCode(
+              "'title': Ack.string().minLength(1).describe('The item title.')",
             ),
-          },
+            _containsCode(".withDefault('general')"),
+          ),
         ),
-        const ['primary-constructors'],
-      );
-    },
-  );
+      },
+    );
+  });
 
   test('description tags describe the object and its codec', () async {
     const task = r"'A task the person\'s \$team can complete.'";
@@ -845,12 +838,10 @@ final class Account with _\$AccountAck {
     );
   });
 
-  test(
-    'rule annotations work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
-    () async {
-      await _build(
-        {
-          'check_models.dart': '''
+  test('rule annotations work with single package:ack/ack.dart import alongside same-named types and constructor parameters', () async {
+    await _build(
+      {
+        'check_models.dart': '''
 import 'package:ack/ack.dart';
 
 part 'check_models.g.dart';
@@ -933,38 +924,35 @@ final class CheckedRecord with _\$CheckedRecordAck {
   final String handle;
 }
 ''',
-        },
-        outputs: {
-          'test_pkg|lib/check_models.g.dart': decodedMatches(
-            allOf([
-              _containsCode("'email': Ack.string().email()"),
-              _containsCode("'id': Ack.string().uuid()"),
-              _containsCode("'website': Ack.string().url()"),
-              _containsCode("'resourceUri': Ack.string().uri()"),
-              _containsCode("'birthDate': Ack.string().date()"),
-              _containsCode("'createdAt': Ack.string().datetime()"),
-              _containsCode("'clientIp': Ack.string().ip(version: 4)"),
-              _containsCode("'anyIp': Ack.string().ip()"),
-              _containsCode("'v6': Ack.string().ip(version: 6)"),
-              _containsCode(
-                r"'code': Ack.string().notEmpty().matches('^[A-Z]+\$')",
-              ),
-              _containsCode(
-                "'score': Ack.integer().min(0).max(100).multipleOf(5).positive()",
-              ),
-              _containsCode("'debt': Ack.double().negative()"),
-              _containsCode(
-                "'tags': Ack.list(Ack.string()).notEmpty().minItems(1).maxItems(5).unique()",
-              ),
-              _containsCode(
-                "'handle': Ack.string().minLength(2).maxLength(20)",
-              ),
-            ]),
-          ),
-        },
-      );
-    },
-  );
+      },
+      outputs: {
+        'test_pkg|lib/check_models.g.dart': decodedMatches(
+          allOf([
+            _containsCode("'email': Ack.string().email()"),
+            _containsCode("'id': Ack.string().uuid()"),
+            _containsCode("'website': Ack.string().url()"),
+            _containsCode("'resourceUri': Ack.string().uri()"),
+            _containsCode("'birthDate': Ack.string().date()"),
+            _containsCode("'createdAt': Ack.string().datetime()"),
+            _containsCode("'clientIp': Ack.string().ip(version: 4)"),
+            _containsCode("'anyIp': Ack.string().ip()"),
+            _containsCode("'v6': Ack.string().ip(version: 6)"),
+            _containsCode(
+              r"'code': Ack.string().notEmpty().matches('^[A-Z]+\$')",
+            ),
+            _containsCode(
+              "'score': Ack.integer().min(0).max(100).multipleOf(5).positive()",
+            ),
+            _containsCode("'debt': Ack.double().negative()"),
+            _containsCode(
+              "'tags': Ack.list(Ack.string()).notEmpty().minItems(1).maxItems(5).unique()",
+            ),
+            _containsCode("'handle': Ack.string().minLength(2).maxLength(20)"),
+          ]),
+        ),
+      },
+    );
+  });
 
   test(
     'emits JsonMaybe<T> decode and encode presence checks for PATCH models',

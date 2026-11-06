@@ -83,6 +83,19 @@ the experiment continues separately on `release/2.0-augmentations`.
 
 Requirements: [installation](docs/getting-started/installation.mdx).
 
+## Dart 3.13 floor
+
+Date: 2026-11-05. Status: current. History: [#255](https://github.com/btwld/ack/pull/255).
+
+Ack 2.0 requires Dart 3.13.0, and Flutter 3.47.0, the first Flutter release
+that bundles it. Dart 3.13 adds primary constructors, and every class-first
+example uses them: the declaring parameters carry the rule annotations and
+`@AckKey` directly, so a model is one declaration instead of a constructor plus
+a field list. Classic constructors still work and generate identical code. The
+cost is that apps on Flutter 3.41 to 3.46 cannot use Ack 2.0.
+
+Requirements: [installation](docs/getting-started/installation.mdx).
+
 ## Codec boundaries and failures
 
 Date: 2026-10-10. Status: current. History: [2.0 cleanup](https://github.com/btwld/ack/commit/b66b26f), following [#155](https://github.com/btwld/ack/pull/155).

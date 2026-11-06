@@ -408,10 +408,8 @@ void main() {
     });
 
     test('AnyOf encode runs root runtime refinements', () {
-      final schema = Ack.anyOf([
-        Ack.string(),
-        Ack.integer(),
-      ]).refine((value) => value != 'blocked', message: 'blocked');
+      final schema = Ack.anyOf([Ack.string(), Ack.integer()])
+          .refine((value) => value != 'blocked', message: 'blocked');
 
       expect(schema.safeParse('blocked').isFail, true);
       expect(schema.safeEncode('blocked').isFail, true);

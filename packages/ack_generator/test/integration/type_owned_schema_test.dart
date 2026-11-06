@@ -339,11 +339,9 @@ final class Color {
     );
   });
 
-  test(
-    'a Schemable class may expose its backing schema or facade as a static schema',
-    () async {
-      await expectOutput(
-        r'''
+  test('a Schemable class may expose its backing schema or facade as a static schema', () async {
+    await expectOutput(
+      r'''
 @Schemable()
 final class Habit with _$HabitAck {
   const Habit({required this.name});
@@ -360,13 +358,12 @@ final class Routine with _$RoutineAck {
   final List<Habit> habits;
 }
 ''',
-        allOf(
-          containsCode("Ack.object({'habits': Ack.list(HabitSchema.schema)})"),
-          isNot(contains('Habit.schema')),
-        ),
-      );
-    },
-  );
+      allOf(
+        containsCode("Ack.object({'habits': Ack.list(HabitSchema.schema)})"),
+        isNot(contains('Habit.schema')),
+      ),
+    );
+  });
 
   test('a Schemable class rejects a static schema of another type', () async {
     final errors = await generationErrors(r'''
@@ -569,11 +566,9 @@ final class Metric<A> {
     );
   });
 
-  test(
-    'a generic type-owned schema enforces parameter boundary types',
-    () async {
-      final errors = await generationErrors(
-        r'''
+  test('a generic type-owned schema enforces parameter boundary types', () async {
+    final errors = await generationErrors(
+      r'''
 @Schemable()
 final class Section with _$SectionAck {
   const Section({required this.record});
@@ -581,7 +576,7 @@ final class Section with _$SectionAck {
   final RecordBox<int> record;
 }
 ''',
-        types: '''
+      types: '''
 import 'package:ack/ack.dart';
 
 final class RecordBox<A extends Object> {
@@ -593,20 +588,19 @@ final class RecordBox<A extends Object> {
   ) => throw UnimplementedError();
 }
 ''',
-      );
+    );
 
-      expect(
-        errors,
+    expect(
+      errors,
+      contains(
         contains(
-          contains(
-            'Section.record resolves to RecordBox.schema, whose parameter value '
-            'expects boundary type Map<String, Object?>, but the schema '
-            'inferred for int has boundary type num.',
-          ),
+          'Section.record resolves to RecordBox.schema, whose parameter value '
+          'expects boundary type Map<String, Object?>, but the schema '
+          'inferred for int has boundary type num.',
         ),
-      );
-    },
-  );
+      ),
+    );
+  });
 
   test('an enum with a static schema resolves to it', () async {
     await expectOutput(

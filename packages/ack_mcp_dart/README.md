@@ -16,7 +16,7 @@ Transport, negotiation, cancellation, and lifecycle remain in `mcp_dart`.
 ```yaml
 dependencies:
   ack: ^2.0.0-beta.2
-  ack_mcp_dart: ^2.0.0-beta.2
+  ack_mcp_dart: ^2.0.0-beta.3
   mcp_dart: ^2.4.2
 ```
 
@@ -140,7 +140,7 @@ New emitted keywords require revisiting this dialect assumption.
 
 | Component | Supported / exercised |
 | --- | --- |
-| Dart | `>=3.11.0 <4.0.0` |
+| Dart | `>=3.13.0 <4.0.0` |
 | ACK | `^2.0.0-beta.2` |
 | mcp_dart | `^2.4.2` |
 | MCP stable discovery | `2026-07-28` |

@@ -39,15 +39,10 @@ final settingsSchema = Ack.object({
 /// schema from this hand-written class, which applies the generated
 /// `_$ProductAck` mixin once the parts are in place.
 @Schemable(caseStyle: AckCaseStyle.snake)
-final class Product {
-  const Product({required this.displayName, required this.priceCents});
-
-  @IsNotEmpty()
-  final String displayName;
-
-  @HasMin(0)
-  final int priceCents;
-}
+final class const Product({
+  @IsNotEmpty() required final String displayName,
+  @HasMin(0) required final int priceCents,
+});
 
 void main() {
   // Ack validates against the same schema before any code is generated. The

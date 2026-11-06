@@ -1,3 +1,11 @@
+## 2.0.0-beta.3
+
+### Breaking
+
+* **Breaking:** Require Dart `>=3.13.0` and Flutter `>=3.47.0`, which bundles
+  Dart 3.13.0. Dart 3.13 adds the primary constructors that the class-first
+  examples use. Apps on Flutter 3.41 to 3.46 cannot use Ack 2.0.
+
 ## 2.0.0-beta.2
 
 ### Breaking

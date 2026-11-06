@@ -5,12 +5,8 @@ import 'package:meta/meta_meta.dart';
 ///
 /// ```dart
 /// @Schemable()
-/// final class Account with _$AccountAck {
-///   const Account({required this.imageUrl});
-///
-///   @AckKey('avatar')
-///   final Uri imageUrl;
-/// }
+/// final class const Account({@AckKey('avatar') required final Uri imageUrl})
+///     with _$AccountAck;
 /// ```
 @Target({TargetKind.field, TargetKind.parameter})
 final class AckKey {

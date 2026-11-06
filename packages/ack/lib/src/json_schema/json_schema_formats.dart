@@ -435,9 +435,8 @@ bool _isValidContextJ(List<int> runes, int index) {
 }
 
 bool _isEmail(String value, {required bool international}) {
-  final match = RegExp(
-    r'^("(?:[^"\\]|\\[\s\S])*"|[^@]+)@(.+)$',
-  ).firstMatch(value);
+  final match = RegExp(r'^("(?:[^"\\]|\\[\s\S])*"|[^@]+)@(.+)$')
+      .firstMatch(value);
   if (match == null) return false;
   final local = match[1]!;
   final domain = match[2]!;
@@ -553,9 +552,8 @@ bool _isUri(
       }
       final literal = value.substring(firstBracket + 1, lastBracket);
       if (!_isIpv6(literal) &&
-          !RegExp(
-            r"^[vV][0-9A-Fa-f]+\.[A-Za-z0-9._~!$&'()*+,;=:-]+$",
-          ).hasMatch(literal)) {
+          !RegExp(r"^[vV][0-9A-Fa-f]+\.[A-Za-z0-9._~!$&'()*+,;=:-]+$")
+              .hasMatch(literal)) {
         return false;
       }
     }

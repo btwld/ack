@@ -13,14 +13,9 @@ void main() {
       'unevaluatedProperties.json',
       'unevaluatedItems.json',
     ])
-      for (final group
-          in (jsonDecode(
-                    File(
-                      '$fixtureRoot/draft2020-12/$filename',
-                    ).readAsStringSync(),
-                  )
-                  as List)
-              .cast<Map<String, Object?>>())
+      for (final group in (jsonDecode(
+        File('$fixtureRoot/draft2020-12/$filename').readAsStringSync(),
+      ) as List).cast<Map<String, Object?>>())
         if (filename == 'dynamicRef.json' ||
             (group['description'] as String).contains(r'$dynamicRef'))
           {...group, 'description': '$filename: ${group['description']}'},

@@ -105,9 +105,8 @@ final class DiscriminatedObjectSchema<T extends Object>
 
     final discValueRaw = mapValue[discriminatorKey];
     if (discValueRaw is! String) {
-      final constraintError = InvalidTypeConstraint(
-        expectedType: String,
-      ).validate(discValueRaw);
+      final constraintError = InvalidTypeConstraint(expectedType: String)
+          .validate(discValueRaw);
 
       return SchemaResult.fail(
         SchemaConstraintsError(
@@ -124,9 +123,8 @@ final class DiscriminatedObjectSchema<T extends Object>
 
     if (!schemas.containsKey(discValueRaw)) {
       final allowed = schemas.keys.toList(growable: false);
-      final enumError = PatternConstraint.enumString(
-        allowed,
-      ).validate(discValueRaw);
+      final enumError = PatternConstraint.enumString(allowed)
+          .validate(discValueRaw);
 
       return SchemaResult.fail(
         SchemaConstraintsError(
@@ -319,9 +317,8 @@ final class DiscriminatedObjectSchema<T extends Object>
         for (final branch in schema.schemas)
           _withRuntimeDiscriminator(branch, discriminatorValue),
       ];
-      if (const ListEquality<AnyAckSchema>(
-        IdentityEquality(),
-      ).equals(branches, schema.schemas)) {
+      if (const ListEquality<AnyAckSchema>(IdentityEquality())
+          .equals(branches, schema.schemas)) {
         return schema;
       }
       return AnyOfSchema(

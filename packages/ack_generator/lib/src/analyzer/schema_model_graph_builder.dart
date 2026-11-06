@@ -921,9 +921,8 @@ final class SchemaModelGraphBuilder extends ModelGraphBuilderBase {
         }
       case 'anyOf':
         final arguments = argumentExpressions(base!.argumentList);
-        if (arguments.firstOrNull case ListLiteral(
-          :final elements,
-        ) when elements.isNotEmpty) {
+        if (arguments.firstOrNull case ListLiteral(:final elements)
+            when elements.isNotEmpty) {
           for (final (index, branch) in elements.indexed) {
             final branchPath = '$path.anyOf[$index]';
             if (branch is! Expression) {

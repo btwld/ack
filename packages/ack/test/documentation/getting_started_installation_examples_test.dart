@@ -18,9 +18,8 @@ void main() {
     });
 
     test('generator setup documents both generation directions', () async {
-      final content = await File(
-        '../../docs/getting-started/installation.mdx',
-      ).readAsString();
+      final content = await File('../../docs/getting-started/installation.mdx')
+          .readAsString();
 
       expect(content, isNot(contains('ack_annotations')));
       expect(content, contains('@Schemable()'));
