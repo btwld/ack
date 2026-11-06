@@ -1,7 +1,10 @@
 # Ack
 
-[![CI](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
+[![CI](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/btwld/ack/actions/workflows/ci.yml?query=branch%3Amain)
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
+[![License](https://img.shields.io/github/license/btwld/ack)](https://github.com/btwld/ack/blob/main/LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-documentation-blue)](https://concepta.dev/ack)
+[![llms.txt](https://img.shields.io/badge/llms.txt-available-8A2BE2)](https://concepta.dev/documentation/ack/reference/llms-txt)
 
 Ack validates data in Dart and Flutter. This branch documents **2.0.0-beta.3**;
 see the [migration guide](docs/getting-started/migration-guide.mdx) for 1.x changes.
