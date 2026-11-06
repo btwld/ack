@@ -1,3 +1,11 @@
+## Unreleased
+
+### Fixed
+
+* Report a nonproductive JSON Schema reference cycle at the `$ref` that
+  closes it. The diagnostic pointer no longer names a `$ref` on the schema
+  the reference points to when that schema does not contain one.
+
 ## 2.0.0-beta.3
 
 ### Breaking
