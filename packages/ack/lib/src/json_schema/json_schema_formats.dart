@@ -1,0 +1,600 @@
+part of '../schemas/schema.dart';
+
+const _jsonSchemaFormats = {
+  'date',
+  'time',
+  'date-time',
+  'duration',
+  'email',
+  'idn-email',
+  'hostname',
+  'idn-hostname',
+  'ipv4',
+  'ipv6',
+  'uri',
+  'uri-reference',
+  'iri',
+  'iri-reference',
+  'uri-template',
+  'json-pointer',
+  'relative-json-pointer',
+  'regex',
+  'uuid',
+  'int32',
+  'int64',
+  'uint32',
+  'uint64',
+  'float',
+  'double',
+};
+
+final _jsonSchemaBigIntInt64Min = BigInt.parse('-9223372036854775808');
+final _jsonSchemaBigIntInt64Max = BigInt.parse('9223372036854775807');
+final _jsonSchemaBigIntUint64Max = BigInt.parse('18446744073709551615');
+
+bool _isSupportedJsonSchemaFormat(String format) =>
+    _jsonSchemaFormats.contains(format);
+
+bool _isValidJsonSchemaFormat(String format, String value) => switch (format) {
+  'date' => _isFullDate(value),
+  'time' => _isFullTime(value),
+  'date-time' => isValidRfc3339DateTime(value),
+  'duration' => _isDuration(value),
+  'email' => _isEmail(value, international: false),
+  'idn-email' => _isEmail(value, international: true),
+  'hostname' => _isHostname(value, international: false),
+  'idn-hostname' => _isHostname(value, international: true),
+  'ipv4' => StringIpConstraint.isIpv4(value),
+  'ipv6' => _isIpv6(value),
+  'uri' => _isUri(value, absolute: true, international: false),
+  'uri-reference' => _isUri(value, absolute: false, international: false),
+  'iri' => _isUri(value, absolute: true, international: true),
+  'iri-reference' => _isUri(value, absolute: false, international: true),
+  'uri-template' => _isUriTemplate(value),
+  'json-pointer' => _isJsonPointer(value),
+  'relative-json-pointer' => _isRelativeJsonPointer(value),
+  'regex' => _isRegex(value),
+  'uuid' => RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  ).hasMatch(value),
+  'int32' || 'int64' || 'uint32' || 'uint64' || 'float' || 'double' => true,
+  _ => false,
+};
+
+bool _isValidJsonSchemaNumericFormat(String format, num value) {
+  switch (format) {
+    case 'int32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= -2147483648 && value <= 2147483647;
+    case 'uint32':
+      if (!value.isFinite || value % 1 != 0) return false;
+      return value >= 0 && value <= 4294967295;
+    case 'int64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= _jsonSchemaBigIntInt64Min &&
+          intVal <= _jsonSchemaBigIntInt64Max;
+    case 'uint64':
+      final intVal = _integralBigInt(value);
+      if (intVal == null) return false;
+      return intVal >= BigInt.zero && intVal <= _jsonSchemaBigIntUint64Max;
+    case 'float':
+      if (!value.isFinite) return false;
+      final d = value.toDouble();
+      return d.abs() <= 3.4028234663852886e+38;
+    case 'double':
+      return value.isFinite;
+    default:
+      // String formats do not constrain numeric instances.
+      return true;
+  }
+}
+
+BigInt? _integralBigInt(num value) {
+  if (!value.isFinite || value % 1 != 0) return null;
+  if (value is int) return BigInt.from(value);
+  final (:coefficient, :scale) = decimalParts(value);
+  if (scale == 0) return coefficient;
+  final divisor = BigInt.from(10).pow(scale);
+  if (coefficient % divisor != BigInt.zero) return null;
+  return coefficient ~/ divisor;
+}
+
+bool _isFullDate(String value) {
+  final match = RegExp(r'^([0-9]{4})-([0-9]{2})-([0-9]{2})$').firstMatch(value);
+  if (match == null) return false;
+  final year = int.parse(match[1]!);
+  final month = int.parse(match[2]!);
+  final day = int.parse(match[3]!);
+  if (year == 0 || month < 1 || month > 12 || day < 1) return false;
+  final leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+  final days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= days[month - 1];
+}
+
+final _fullTimePattern = RegExp(
+  r'^([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?([Zz]|([+-])([0-9]{2}):([0-9]{2}))$',
+);
+
+bool _isFullTime(String value) {
+  final match = _fullTimePattern.firstMatch(value);
+  if (match == null) return false;
+  final hour = int.parse(match[1]!);
+  final minute = int.parse(match[2]!);
+  final second = int.parse(match[3]!);
+  final offsetHour = match[7] == null ? 0 : int.parse(match[7]!);
+  final offsetMinute = match[8] == null ? 0 : int.parse(match[8]!);
+  if (hour > 23 ||
+      minute > 59 ||
+      second > 60 ||
+      offsetHour > 23 ||
+      offsetMinute > 59) {
+    return false;
+  }
+  if (second == 60) {
+    final signedOffset =
+        (offsetHour * 60 + offsetMinute) * (match[6] == '-' ? -1 : 1);
+    final utcMinute = (hour * 60 + minute - signedOffset) % (24 * 60);
+    if (utcMinute != 23 * 60 + 59) return false;
+  }
+  return true;
+}
+
+bool _isDuration(String value) {
+  if (RegExp(r'^P[0-9]+W$').hasMatch(value)) return true;
+  final match = RegExp(
+    r'^P(?:([0-9]+)Y)?(?:([0-9]+)M)?(?:([0-9]+)D)?(?:T(?:([0-9]+)H)?(?:([0-9]+)M)?(?:([0-9]+)S)?)?$',
+  ).firstMatch(value);
+  if (match == null) return false;
+  final present = [for (var i = 1; i <= 6; i++) match[i] != null];
+  if (!present.contains(true)) return false;
+  if (value.contains('T') && !present.sublist(3).contains(true)) return false;
+  if (present[0] && present[2] && !present[1]) return false;
+  if (present[3] && present[5] && !present[4]) return false;
+  return true;
+}
+
+bool _isIpv6(String value) {
+  // Uri.parseIPv6Address differs across supported Dart SDKs (notably for
+  // whitespace and IPv4 tails), so validate the RFC 3986 grammar ourselves.
+  if (value.isEmpty || RegExp(r'[^0-9A-Fa-f:.]').hasMatch(value)) {
+    return false;
+  }
+  var address = value;
+  var embeddedGroups = 0;
+  if (value.contains('.')) {
+    final separator = value.lastIndexOf(':');
+    if (separator < 0) return false;
+    final tail = value.substring(separator + 1);
+    if (!StringIpConstraint.isIpv4(tail)) return false;
+    address = value.substring(0, separator);
+    if (address.endsWith(':')) address += ':';
+    if (address.contains('.')) return false;
+    embeddedGroups = 2;
+  }
+  final compressed = address.contains('::');
+  if (compressed) {
+    if (address.contains(':::') ||
+        address.indexOf('::', address.indexOf('::') + 2) >= 0 ||
+        (address.startsWith(':') && !address.startsWith('::')) ||
+        (address.endsWith(':') && !address.endsWith('::'))) {
+      return false;
+    }
+  } else if (address.startsWith(':') || address.endsWith(':')) {
+    return false;
+  }
+  final groups = address.split(':').where((group) => group.isNotEmpty).toList();
+  if (groups.any((group) => group.length > 4)) return false;
+  final expectedGroups = 8 - embeddedGroups;
+  return compressed
+      ? groups.length < expectedGroups
+      : groups.length == expectedGroups;
+}
+
+bool _isJsonPointer(String value) {
+  if (value.isEmpty) return true;
+  if (!value.startsWith('/')) return false;
+  return !RegExp(r'~(?![01])').hasMatch(value);
+}
+
+bool _isRelativeJsonPointer(String value) {
+  final match = RegExp(
+    r'^(0|[1-9][0-9]*)(#|(?:/.*)?)$',
+    dotAll: true,
+  ).firstMatch(value);
+  if (match == null) return false;
+  final suffix = match[2]!;
+  return suffix == '#' || _isJsonPointer(suffix);
+}
+
+bool _isRegex(String value) {
+  try {
+    RegExp(value, unicode: true);
+    return true;
+  } on FormatException {
+    return false;
+  }
+}
+
+bool _isHostname(String value, {required bool international}) {
+  if (!international && value.runes.any((rune) => rune > 127)) return false;
+  final mapped = international
+      ? unorm
+            .nfkc(
+              value.replaceAll(RegExp('[。．｡]'), '.').replaceAll('\u200b', ''),
+            )
+            .toLowerCase()
+      : value.toLowerCase();
+  if (mapped.isEmpty) return false;
+  final asciiLabels = <String>[];
+  final unicodeLabels = <String>[];
+  for (final rawLabel in mapped.split('.')) {
+    if (rawLabel.isEmpty ||
+        rawLabel.startsWith('-') ||
+        rawLabel.endsWith('-')) {
+      return false;
+    }
+    if (!international && rawLabel.runes.any((rune) => rune > 127)) {
+      return false;
+    }
+    var label = rawLabel;
+    if (rawLabel.startsWith('xn--')) {
+      try {
+        label = punycoder.punycode.decode(rawLabel.substring(4));
+      } on FormatException {
+        return false;
+      } on RangeError {
+        return false;
+      }
+      if (label.isEmpty || label.runes.every((rune) => rune < 128)) {
+        return false;
+      }
+      label = unorm.nfkc(label).toLowerCase();
+      if (punycoder.punycode.encode(label).toLowerCase() !=
+          rawLabel.substring(4)) {
+        return false;
+      }
+    }
+    final isAscii = label.runes.every((rune) => rune < 128);
+    if (isAscii
+        ? !RegExp(r'^[a-z0-9-]+$').hasMatch(label)
+        : !_isIdnaLabel(label)) {
+      return false;
+    }
+    final ascii = isAscii
+        ? label
+        : 'xn--${punycoder.punycode.encode(label).toLowerCase()}';
+    if (ascii.length > 63) return false;
+    asciiLabels.add(ascii);
+    unicodeLabels.add(label);
+  }
+  if (asciiLabels.join('.').length > 253) return false;
+  final bidiLabels = [
+    for (final label in unicodeLabels)
+      label.runes.map(_unicodeBidiClass).toList(),
+  ];
+  // RFC 5893 applies to every label in a domain containing R, AL or AN,
+  // including decoded A-labels and otherwise plain ASCII labels.
+  if (bidiLabels.any(
+    (label) => label.any(
+      (type) => const {
+        _UnicodeBidiClass.r,
+        _UnicodeBidiClass.al,
+        _UnicodeBidiClass.an,
+      }.contains(type),
+    ),
+  )) {
+    if (!bidiLabels.every(_isValidBidiLabel)) return false;
+  }
+  return true;
+}
+
+// RFC 5893 section 2, rules 1-6. The last character's class ignores any
+// trailing nonspacing marks; spacing marks can have class L and must retain it.
+bool _isValidBidiLabel(List<_UnicodeBidiClass> label) {
+  final rtl =
+      label.first == _UnicodeBidiClass.r || label.first == _UnicodeBidiClass.al;
+  if (!rtl && label.first != _UnicodeBidiClass.l) return false;
+  const common = {
+    _UnicodeBidiClass.en,
+    _UnicodeBidiClass.es,
+    _UnicodeBidiClass.cs,
+    _UnicodeBidiClass.et,
+    _UnicodeBidiClass.on,
+    _UnicodeBidiClass.bn,
+    _UnicodeBidiClass.nsm,
+  };
+  for (final type in label) {
+    if (common.contains(type)) continue;
+    if (rtl
+        ? type != _UnicodeBidiClass.r &&
+              type != _UnicodeBidiClass.al &&
+              type != _UnicodeBidiClass.an
+        : type != _UnicodeBidiClass.l) {
+      return false;
+    }
+  }
+  final last = label.lastWhere((type) => type != _UnicodeBidiClass.nsm);
+  if (rtl) {
+    if (!const {
+      _UnicodeBidiClass.r,
+      _UnicodeBidiClass.al,
+      _UnicodeBidiClass.en,
+      _UnicodeBidiClass.an,
+    }.contains(last)) {
+      return false;
+    }
+    if (label.contains(_UnicodeBidiClass.en) &&
+        label.contains(_UnicodeBidiClass.an)) {
+      return false;
+    }
+  } else if (last != _UnicodeBidiClass.l && last != _UnicodeBidiClass.en) {
+    return false;
+  }
+  return true;
+}
+
+bool _isIdnaLabel(String label) {
+  final runes = label.runes.toList();
+  if (runes.isEmpty ||
+      _isIdnaMark(runes.first) ||
+      (runes.length >= 4 && runes[2] == 0x2d && runes[3] == 0x2d) ||
+      label.startsWith('-') ||
+      label.endsWith('-')) {
+    return false;
+  }
+  var hasJapanese = false;
+  var hasKatakanaDot = false;
+  var hasArabicIndic = false;
+  var hasExtendedArabicIndic = false;
+  for (var i = 0; i < runes.length; i++) {
+    final rune = runes[i];
+    hasJapanese =
+        hasJapanese ||
+        const {
+          _IdnaScript.hiragana,
+          _IdnaScript.katakana,
+          _IdnaScript.han,
+        }.contains(_idnaScript(rune));
+    if (rune == 0x30fb) {
+      hasKatakanaDot = true;
+      continue;
+    }
+    if (rune >= 0x0660 && rune <= 0x0669) {
+      hasArabicIndic = true;
+      if (hasExtendedArabicIndic) return false;
+      continue;
+    }
+    if (rune >= 0x06f0 && rune <= 0x06f9) {
+      hasExtendedArabicIndic = true;
+      if (hasArabicIndic) return false;
+      continue;
+    }
+    switch (_idnaProperty(rune)) {
+      case _IdnaProperty.pvalid:
+        continue;
+      case _IdnaProperty.contextj:
+        if (!_isValidContextJ(runes, i)) return false;
+        break;
+      case _IdnaProperty.contexto:
+        if (!_isValidContextO(runes, i)) return false;
+        break;
+      case _IdnaProperty.disallowed:
+        return false;
+    }
+  }
+  return !hasKatakanaDot || hasJapanese;
+}
+
+// RFC 5892 Appendix A.3-A.9. Script means the Unicode Script property,
+// including assignments outside the script's named blocks. Unknown contextual
+// characters fail closed rather than being admitted without a registered rule.
+bool _isValidContextO(List<int> runes, int index) {
+  final rune = runes[index];
+  switch (rune) {
+    case 0x00b7:
+      return index > 0 &&
+          index + 1 < runes.length &&
+          runes[index - 1] == 0x6c &&
+          runes[index + 1] == 0x6c;
+    case 0x0375:
+      return index + 1 < runes.length &&
+          _idnaScript(runes[index + 1]) == _IdnaScript.greek;
+    case 0x05f3 || 0x05f4:
+      return index > 0 && _idnaScript(runes[index - 1]) == _IdnaScript.hebrew;
+    default:
+      return false;
+  }
+}
+
+// RFC 5892 Appendix A.1/A.2: either join control may immediately follow a
+// Virama. Otherwise only ZWNJ is permitted, in the joining context
+// (L|D) T* ZWNJ T* (R|D). Join-causing (C) characters are not transparent.
+bool _isValidContextJ(List<int> runes, int index) {
+  if (index == 0) return false;
+  if (_isVirama(runes[index - 1])) return true;
+  if (runes[index] == 0x200d) return false;
+  var before = index - 1;
+  while (before >= 0 &&
+      _unicodeJoiningType(runes[before]) == _UnicodeJoiningType.t) {
+    before--;
+  }
+  if (before < 0) return false;
+  final left = _unicodeJoiningType(runes[before]);
+  if (left != _UnicodeJoiningType.l && left != _UnicodeJoiningType.d) {
+    return false;
+  }
+  var after = index + 1;
+  while (after < runes.length &&
+      _unicodeJoiningType(runes[after]) == _UnicodeJoiningType.t) {
+    after++;
+  }
+  if (after == runes.length) return false;
+  final right = _unicodeJoiningType(runes[after]);
+  return right == _UnicodeJoiningType.r || right == _UnicodeJoiningType.d;
+}
+
+bool _isEmail(String value, {required bool international}) {
+  final match = RegExp(r'^("(?:[^"\\]|\\[\s\S])*"|[^@]+)@(.+)$')
+      .firstMatch(value);
+  if (match == null) return false;
+  final local = match[1]!;
+  final domain = match[2]!;
+  if (!international && !local.runes.every((rune) => rune < 128)) {
+    return false;
+  }
+  if (local.startsWith('"')) {
+    if (!local.endsWith('"')) return false;
+    if (RegExp(r'[\u0000-\u001f\u007f]').hasMatch(local)) return false;
+  } else {
+    final atom = international
+        ? RegExp(r'^[^\s@\x00-\x20\x7f(),:;<>\[\]"\\]+$')
+        : RegExp(r"^[A-Za-z0-9!#\$%&'*+/=?^_`{|}~.-]+$");
+    if (!atom.hasMatch(local) ||
+        local.startsWith('.') ||
+        local.endsWith('.') ||
+        local.contains('..')) {
+      return false;
+    }
+  }
+  if (domain.startsWith('[') && domain.endsWith(']')) {
+    final literal = domain.substring(1, domain.length - 1);
+    if (literal.toLowerCase().startsWith('ipv6:')) {
+      return _isIpv6(literal.substring(5));
+    }
+    return StringIpConstraint.isIpv4(literal);
+  }
+  return _isHostname(domain, international: international);
+}
+
+bool _hasValidPercents(String value) {
+  for (var i = 0; i < value.length; i++) {
+    if (value[i] != '%') continue;
+    if (i + 2 >= value.length ||
+        !RegExp(r'^[0-9a-fA-F]{2}$').hasMatch(value.substring(i + 1, i + 3))) {
+      return false;
+    }
+    i += 2;
+  }
+  return true;
+}
+
+bool _hasValidIriCharacters(String value) {
+  var inQuery = false;
+  var inFragment = false;
+  for (final rune in value.runes) {
+    if (rune == 0x23) {
+      inFragment = true;
+      inQuery = false;
+    } else if (rune == 0x3f && !inFragment) {
+      inQuery = true;
+    }
+    if (rune < 0x80) continue;
+
+    // RFC 3987 section 2.2: ucschar excludes surrogates, noncharacters,
+    // and private-use ranges; only iquery additionally permits iprivate.
+    final isUcsChar =
+        (rune >= 0xa0 && rune <= 0xd7ff) ||
+        (rune >= 0xf900 && rune <= 0xfdcf) ||
+        (rune >= 0xfdf0 && rune <= 0xffef) ||
+        (((rune >= 0x10000 && rune <= 0xdfffd) ||
+                (rune >= 0xe1000 && rune <= 0xefffd)) &&
+            (rune & 0xffff) <= 0xfffd);
+    final isPrivate =
+        (rune >= 0xe000 && rune <= 0xf8ff) ||
+        (rune >= 0xf0000 && rune <= 0xffffd) ||
+        (rune >= 0x100000 && rune <= 0x10fffd);
+    if (!isUcsChar && !(inQuery && isPrivate)) return false;
+  }
+  return true;
+}
+
+bool _isUri(
+  String value, {
+  required bool absolute,
+  required bool international,
+}) {
+  if (!_hasValidPercents(value)) return false;
+  final fragmentStart = value.indexOf('#');
+  if (fragmentStart >= 0 && value.indexOf('#', fragmentStart + 1) >= 0) {
+    return false;
+  }
+  if (RegExp(r'[\u0000-\u0020\u007f<>"{}|\\^`]').hasMatch(value)) {
+    return false;
+  }
+  if (!international && value.runes.any((rune) => rune > 127)) return false;
+  if (international && !_hasValidIriCharacters(value)) return false;
+  if (absolute && !RegExp(r'^[A-Za-z][A-Za-z0-9+.-]*:').hasMatch(value)) {
+    return false;
+  }
+  if (!absolute &&
+      RegExp(r'^[^/?#]*:').hasMatch(value) &&
+      !RegExp(r'^[A-Za-z][A-Za-z0-9+.-]*:').hasMatch(value)) {
+    return false;
+  }
+  try {
+    final firstBracket = value.indexOf('[');
+    final lastBracket = value.lastIndexOf(']');
+    if (firstBracket >= 0 || lastBracket >= 0) {
+      final authorityMarker = value.indexOf('//');
+      if (authorityMarker < 0) return false;
+      final authorityStart = authorityMarker + 2;
+      var authorityEnd = value.length;
+      for (final delimiter in ['/', '?', '#']) {
+        final next = value.indexOf(delimiter, authorityStart);
+        if (next >= 0 && next < authorityEnd) authorityEnd = next;
+      }
+      if (firstBracket < authorityStart ||
+          firstBracket >= authorityEnd ||
+          lastBracket < firstBracket ||
+          lastBracket >= authorityEnd) {
+        return false;
+      }
+      final literal = value.substring(firstBracket + 1, lastBracket);
+      if (!_isIpv6(literal) &&
+          !RegExp(r"^[vV][0-9A-Fa-f]+\.[A-Za-z0-9._~!$&'()*+,;=:-]+$")
+              .hasMatch(literal)) {
+        return false;
+      }
+    }
+    final uri = Uri.parse(value);
+    if (absolute && !uri.hasScheme) return false;
+    if (uri.path.contains('[') || uri.path.contains(']')) return false;
+    if (uri.hasAuthority &&
+        uri.host.contains(':') &&
+        !value.contains('[${uri.host}]')) {
+      return false;
+    }
+    return true;
+  } on FormatException {
+    return false;
+  }
+}
+
+bool _isUriTemplate(String value) {
+  var index = 0;
+  while (index < value.length) {
+    final char = value[index];
+    if (char == '}') return false;
+    if (char != '{') {
+      index++;
+      continue;
+    }
+    final end = value.indexOf('}', index + 1);
+    if (end < 0) return false;
+    var expression = value.substring(index + 1, end);
+    if (expression.isEmpty || expression.contains('{')) return false;
+    if ('+#./;?&'.contains(expression[0])) expression = expression.substring(1);
+    if (expression.isEmpty) return false;
+    for (final variable in expression.split(',')) {
+      if (variable.isEmpty) return false;
+      final match = RegExp(
+        r'^([A-Za-z0-9_]|%[0-9A-Fa-f]{2})+(?:\.(?:[A-Za-z0-9_]|%[0-9A-Fa-f]{2})+)*(?:\*|:[1-9][0-9]{0,3})?$',
+      ).firstMatch(variable);
+      if (match == null) return false;
+    }
+    index = end + 1;
+  }
+  return _hasValidPercents(value.replaceAll(RegExp(r'\{[^{}]*\}'), '')) &&
+      !RegExp(r'[\u0000-\u0020\u007f]').hasMatch(value);
+}

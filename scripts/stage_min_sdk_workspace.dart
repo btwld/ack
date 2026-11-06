@@ -9,11 +9,11 @@ import 'src/staging.dart';
 /// Copies the repository into a pure-Dart workspace that resolves on the
 /// minimum Dart SDK.
 ///
-/// The complete workspace cannot resolve on Dart 3.9, because `flutter_test`
-/// pins `test_api 0.7.6` while the root `test` constraint and the Analyzer 10
-/// dependency of `ack_generator` require a newer `test_api`. Removing the
-/// Flutter workspace members leaves a resolvable workspace that still covers
-/// every pure-Dart package. The Flutter packages get their own staged lane
+/// The complete workspace cannot resolve on the minimum SDK, because
+/// `flutter_test` pins an older `test_api` than the analyzer dependency of
+/// `ack_generator` allows. Removing the Flutter workspace members leaves a
+/// resolvable workspace that still covers every pure-Dart package. The Flutter
+/// packages get their own staged lane
 /// through `scripts/stage_package.dart`.
 ///
 /// Usage:

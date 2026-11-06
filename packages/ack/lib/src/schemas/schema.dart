@@ -1,11 +1,15 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:punycoder/punycoder.dart' as punycoder;
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 import '../common_types.dart';
 import '../constraints/comparison_constraint.dart';
 import '../constraints/constraint.dart';
+import '../constraints/list_unique_items_constraint.dart';
 import '../constraints/number_finite_constraint.dart';
 import '../constraints/pattern_constraint.dart';
 import '../constraints/string_ip_constraint.dart';
@@ -17,7 +21,14 @@ import '../validation/schema_error.dart';
 import '../validation/schema_result.dart';
 
 part '../json_schema/json_schema_compiler.dart';
+part '../json_schema/json_schema_resource_traversal.dart';
+part '../json_schema/json_schema_formats.dart';
 part '../json_schema/json_schema_import_error.dart';
+part '../json_schema/standard_meta_schemas.dart';
+part '../json_schema/unicode_bidi.dart';
+part '../json_schema/unicode_contextj.dart';
+part '../json_schema/unicode_idna.dart';
+part '../json_schema/unicode_idna_scripts.dart';
 part 'any_of_schema.dart';
 part 'any_schema.dart';
 part 'boundary_schema.dart';
@@ -36,7 +47,6 @@ part 'num_schema.dart';
 part 'object_schema.dart';
 part 'schema_type.dart';
 part 'string_schema.dart';
-part 'testing/testing_schemas.dart';
 part 'wrapper_schema.dart';
 
 typedef Refinement<T> = ({bool Function(T value) validate, String message});
@@ -71,17 +81,17 @@ enum SchemaOperation { parse, encode }
 /// methods. Subclasses override the three methods; they should not override
 /// the public wrappers.
 @immutable
-abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
+sealed class AckSchema<Boundary extends Object, Runtime extends Object> {
   final bool isNullable;
   final bool isOptional;
   final String? description;
   final List<Constraint<Runtime>> _constraints;
   final List<Refinement<Runtime>> _refinements;
 
-  /// Returns an unmodifiable view of the constraints for this schema.
+  /// An unmodifiable view of the constraints for this schema.
   List<Constraint<Runtime>> get constraints => List.unmodifiable(_constraints);
 
-  /// Returns an unmodifiable view of the refinements for this schema.
+  /// An unmodifiable view of the refinements for this schema.
   List<Refinement<Runtime>> get refinements => List.unmodifiable(_refinements);
 
   Iterable<Object?> get _constraintsForEquality => _constraints;
@@ -98,10 +108,27 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     this.isNullable = false,
     this.isOptional = false,
     this.description,
-    List<Constraint<Runtime>> constraints = const [],
-    List<Refinement<Runtime>> refinements = const [],
-  }) : _constraints = constraints,
-       _refinements = refinements;
+    this._constraints = const [],
+    this._refinements = const [],
+  });
+
+  /// Isolates a generated field's presence policy from its custom schema.
+  ///
+  /// The field declaration supplies optionality, nullability and defaults.
+  /// Non-null values retain the custom schema's validation and encoder.
+  @internal
+  static CodecSchema<B, R> forGeneratedField<
+    B extends Object,
+    R extends Object
+  >(AckSchema<B, R> schema) => CodecSchema._(
+    inputSchema: schema,
+    outputSchema: schema,
+    decoder: (value) => value as R,
+    encoder: (R value) => value,
+    decoderIdentity: forGeneratedField<B, R>,
+    isGeneratedField: true,
+    description: schema.description,
+  );
 
   // ---------------------------------------------------------------------------
   // Subclass-facing internal lifecycle
@@ -130,8 +157,10 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     SchemaContext context,
   );
 
-  /// Encodes a runtime value into a boundary value. The base class strips
-  /// `null` before calling this; subclasses receive a non-null [value].
+  /// Encodes a runtime value into a boundary value.
+  ///
+  /// The base class strips `null` before calling this; subclasses receive a
+  /// non-null [value].
   ///
   /// The default delegates to [encodeAsBoundary], which is correct for schemas
   /// where `Boundary == Runtime`. Schemas where the two types differ (codecs,
@@ -150,10 +179,12 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   @protected
   SchemaResult<Runtime> applyConstraintsAndRefinements(
     Runtime value,
-    SchemaContext context,
-  ) {
+    SchemaContext context, {
+    Iterable<Constraint<Runtime>>? constraints,
+    Iterable<Refinement<Runtime>>? refinements,
+  }) {
     final constraintViolations = <ConstraintError>[];
-    for (final constraint in _constraints) {
+    for (final constraint in constraints ?? _constraints) {
       if (constraint is! Validator<Runtime>) continue;
       try {
         final violation = constraint.validate(value);
@@ -175,11 +206,15 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
         ),
       );
     }
-    return _runRefinements(value, context);
+    return _runRefinements(value, context, refinements: refinements);
   }
 
-  SchemaResult<Runtime> _runRefinements(Runtime value, SchemaContext context) {
-    for (final refinement in _refinements) {
+  SchemaResult<Runtime> _runRefinements(
+    Runtime value,
+    SchemaContext context, {
+    Iterable<Refinement<Runtime>>? refinements,
+  }) {
+    for (final refinement in refinements ?? _refinements) {
       final bool isValid;
       try {
         isValid = refinement.validate(value);
@@ -223,9 +258,9 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Helper for schemas whose boundary == runtime: validates the runtime
-  /// value and, if it passes, returns it as the boundary value unchanged.
-  /// Only safe to call when `Boundary` and `Runtime` are the same type.
+  /// Validates [value] and returns it as the boundary value unchanged.
+  ///
+  /// Only safe to call when [Boundary] and [Runtime] are the same type.
   @protected
   SchemaResult<Boundary> encodeAsBoundary(
     Runtime value,
@@ -236,7 +271,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return SchemaResult.ok(value as Boundary);
   }
 
-  /// Runtime-side non-nullable failure.
+  /// Returns a runtime-side non-nullable failure.
   @protected
   SchemaResult<Runtime> failNonNullable(SchemaContext context) {
     final constraintError = NonNullableConstraint().validate(null);
@@ -248,15 +283,17 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Encode-side non-nullable failure.
+  /// Returns an encode-side non-nullable failure.
   @protected
   SchemaResult<Boundary> failNonNullableEncode(SchemaContext context) {
     return SchemaResult.fail(SchemaEncodeError.nonNullable(context: context));
   }
 
-  /// Centralized null gate for the parse/validate paths. Returns null when
-  /// [inputValue] is non-null; otherwise returns Ok(null) if [acceptsNull]
-  /// is true or a non-nullable failure.
+  /// Handles `null` input for the parse and runtime-validation paths.
+  ///
+  /// Returns `null` when [inputValue] is non-null; otherwise returns
+  /// `SchemaResult.ok(null)` when [acceptsNull] is `true`, or a non-nullable
+  /// failure.
   @protected
   SchemaResult<Runtime>? handleNullInput(
     Object? inputValue,
@@ -271,9 +308,11 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return failNonNullable(context);
   }
 
-  /// Whether `parse(null)` and `encode(null)` should accept null without
-  /// raising a non-nullable failure. Defaults to [isNullable]; subclasses with
-  /// branch-level null policies (e.g. [AnyOfSchema]) override this hook.
+  /// Whether `parse(null)` and `encode(null)` should accept `null` without
+  /// raising a non-nullable failure.
+  ///
+  /// Defaults to [isNullable]; subclasses with branch-level null policies (such
+  /// as [AnyOfSchema]) override this hook.
   @protected
   bool get acceptsNull => isNullable;
 
@@ -311,8 +350,11 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
   }
 
   /// Wraps this schema in a [DefaultSchema] that supplies [defaultValue] when
-  /// the parse input is null. Object encode also injects encoded defaults for
-  /// missing default-wrapped fields.
+  /// the parse input is `null`.
+  ///
+  /// As an object property, the default fills a missing key; a present null
+  /// requires a nullable property. Object encoding uses the validated default
+  /// for both missing and null default-wrapped fields.
   DefaultSchema<Boundary, Runtime> withDefault(Runtime defaultValue) {
     return DefaultSchema<Boundary, Runtime>(
       inner: this,
@@ -493,21 +535,12 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     );
   }
 
-  /// Converts this schema to a JSON Schema Draft-7 representation.
+  /// Converts this schema to a JSON Schema representation.
   ///
   /// Delegates to the sealed [AckSchemaModel] boundary so all renderers share
-  /// the same Draft-7 output. Subclasses should not override this directly;
-  /// instead they are dispatched in `ack_schema_model_builder.dart`.
+  /// the same output. Subclasses should not override this directly; instead
+  /// they are dispatched in `ack_schema_model_builder.dart`.
   Map<String, Object?> toJsonSchema() => toSchemaModel().toJsonSchema();
-
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': _constraints.map((c) => c.toMap()).toList(),
-    };
-  }
 
   /// Compares base schema fields for equality.
   @protected
@@ -526,7 +559,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
         );
   }
 
-  /// Computes hash code for base schema fields.
+  /// The hash code for the base schema fields.
   @protected
   int get baseFieldsHashCode {
     const iterableEq = IterableEquality<Object?>();
@@ -563,7 +596,7 @@ SchemaError _buildTypeMismatch({
   );
 }
 
-class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
+final class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
     with Validator<T>, JsonSchemaSpec<T> {
   _ConstraintMessageOverride(this.inner, this.customMessage)
     : super(constraintKey: inner.constraintKey, description: inner.description);
@@ -604,44 +637,28 @@ class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
   int get hashCode => Object.hash(runtimeType, inner, customMessage);
 }
 
-/// Returns [value] if it is composed entirely of JSON-safe primitives
+/// Returns `true` if [value] is composed entirely of JSON-safe primitives
 /// (`null`, finite `num`, `bool`, `String`, `List`, string-keyed `Map`),
-/// recursively.
-/// Returns `null` if any nested value is not JSON-safe. Used by
-/// [DefaultSchema] to avoid emitting runtime-only objects (e.g. raw
-/// `DateTime` instances) as JSON Schema defaults.
-Object? _jsonSafeOrNull(Object? value) {
-  if (value == null) return null;
-  if (value is num) return value.isFinite ? value : null;
-  if (value is bool || value is String) return value;
+/// recursively without allocating intermediate collections.
+bool _isJsonSafe(Object? value) {
+  if (value == null) return true;
+  if (value is num) return value.isFinite;
+  if (value is bool || value is String) return true;
   if (value is List) {
-    final result = <Object?>[];
     for (final item in value) {
-      if (item == null) {
-        result.add(null);
-        continue;
-      }
-      final converted = _jsonSafeOrNull(item);
-      if (converted == null) return null;
-      result.add(converted);
+      if (!_isJsonSafe(item)) return false;
     }
-    return result;
+    return true;
   }
   if (value is Map) {
-    final result = <String, Object?>{};
     for (final entry in value.entries) {
-      if (entry.key is! String) return null;
-      if (entry.value == null) {
-        result[entry.key as String] = null;
-        continue;
+      if (entry.key is! String || !_isJsonSafe(entry.value)) {
+        return false;
       }
-      final converted = _jsonSafeOrNull(entry.value);
-      if (converted == null) return null;
-      result[entry.key as String] = converted;
     }
-    return result;
+    return true;
   }
-  return null;
+  return false;
 }
 
 /// Safely converts a value into a [JsonMap]. Returns `null` if the value is

@@ -159,17 +159,6 @@ final class AnyOfSchema extends AckSchema<Object, Object>
   }
 
   @override
-  Map<String, Object?> toMap() {
-    return {
-      'type': schemaType.typeName,
-      'isNullable': isNullable,
-      'description': description,
-      'constraints': constraints.map((c) => c.toMap()).toList(),
-      'schemas': schemas.length,
-    };
-  }
-
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! AnyOfSchema) return false;

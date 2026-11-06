@@ -268,8 +268,6 @@ List<FirebaseAiResponseJsonSchemaCase> firebaseAiResponseJsonSchemaCases() => [
       minLength: 5,
       maxLength: 5,
       pattern: r'^[a-z]+$',
-      formatMinimum: 'ready',
-      formatMaximum: 'ready',
       extensions: {'x-ack-test': true},
     ),
   ),

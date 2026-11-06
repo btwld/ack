@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Listing": {
+      "type": "object",
+      "description": "A listing.\nWith a second line.",
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 8,
+          "description": "The key, with 'quotes', $dollars, and \\backslashes\\."
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}-\\d+$",
+          "examples": ["AB-12"]
+        },
+        "rooms": { "type": "integer", "minimum": 1, "maximum": 9 },
+        "floors": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 4.5
+        },
+        "price": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 1000000.5
+        },
+        "active": { "type": "boolean" },
+        "status": { "enum": ["Active", "Closed", "Active", null] },
+        "kind": { "const": "residential" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "notes": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "nickname": { "type": ["string", "null"] },
+        "streetNumber": {
+          "anyOf": [
+            { "anyOf": [{ "type": "string" }, { "type": "number" }] },
+            { "type": "null" }
+          ]
+        },
+        "extra": {},
+        "labels": {
+          "type": "object",
+          "propertyNames": { "type": "string" },
+          "additionalProperties": { "type": "integer" }
+        },
+        "meta": { "type": "object", "additionalProperties": true },
+        "address": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"],
+          "additionalProperties": false
+        },
+        "photo": { "$ref": "#/$defs/Photo" },
+        "cover": { "anyOf": [{ "$ref": "#/$defs/Photo" }, { "type": "null" }] },
+        "photos": { "type": "array", "items": { "$ref": "#/$defs/Photo" } }
+      },
+      "required": ["key", "rooms", "active"],
+      "additionalProperties": false
+    },
+    "Photo": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "width": { "type": "integer" }
+      },
+      "required": ["url"]
+    }
+  }
+}

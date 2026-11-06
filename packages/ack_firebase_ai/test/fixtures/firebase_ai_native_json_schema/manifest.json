@@ -387,7 +387,7 @@
         "format"
       ],
       "status": "generated",
-      "comparison": "adapter_transform_needed",
+      "comparison": "exact",
       "fixture": "ack_schema_date_transform_constraints.json"
     },
     {
@@ -399,7 +399,7 @@
         "format"
       ],
       "status": "generated",
-      "comparison": "adapter_transform_needed",
+      "comparison": "exact",
       "fixture": "ack_schema_datetime_transform.json"
     },
     {
@@ -411,7 +411,7 @@
         "format"
       ],
       "status": "generated",
-      "comparison": "adapter_transform_needed",
+      "comparison": "exact",
       "fixture": "ack_schema_uri_transform.json"
     },
     {
@@ -425,7 +425,7 @@
         "maximum"
       ],
       "status": "generated",
-      "comparison": "adapter_transform_needed",
+      "comparison": "exact",
       "fixture": "ack_schema_duration_transform_constraints.json"
     },
     {

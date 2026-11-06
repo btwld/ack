@@ -93,8 +93,8 @@ final class _FirebaseAiResponseJsonSchemaFixtures {
     required this.ids,
     required this.fixtureCount,
     required this.featureCoverage,
-    required Map<String, _FirebaseAiResponseJsonSchemaFixture> fixtures,
-  }) : _fixtures = fixtures;
+    required this._fixtures,
+  });
 
   final List<String> ids;
   final int fixtureCount;

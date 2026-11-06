@@ -32,7 +32,7 @@ void main() {
     final dependency = AssetId('ack', 'lib/ack.dart');
     final removed = AssetId('ack', 'lib/annotations.dart');
     final fixture = AssetId('test_pkg', 'lib/schema.dart');
-    final output = AssetId('test_pkg', 'lib/schema.ack.dart');
+    final output = AssetId('test_pkg', 'lib/schema.g.dart');
     final originalBytes = List<int>.of(first.testing.readBytes(dependency));
 
     await first.readAsBytes(dependency);
@@ -74,44 +74,47 @@ void main() {
   );
 
   for (final validFirst in [true, false]) {
-    test('resolves fresh fixtures and outputs with valid case '
-        '${validFirst ? 'before' : 'after'} a missing JSON part', () async {
-      for (final valid in [validFirst, !validFirst]) {
-        final readerWriter = await createTestReaderWriter();
-        final errors = <String>[];
-        expect(
-          readerWriter.testing.assets.where((id) => id.package == 'test_pkg'),
-          isEmpty,
-        );
-        expect(readerWriter.testing.assetsRead, isEmpty);
-        expect(readerWriter.testing.assetsWritten, isEmpty);
+    test(
+      'resolves fresh fixtures and outputs with valid case '
+      '${validFirst ? 'before' : 'after'} a missing generated part',
+      () async {
+        for (final valid in [validFirst, !validFirst]) {
+          final readerWriter = await createTestReaderWriter();
+          final errors = <String>[];
+          expect(
+            readerWriter.testing.assets.where((id) => id.package == 'test_pkg'),
+            isEmpty,
+          );
+          expect(readerWriter.testing.assetsRead, isEmpty);
+          expect(readerWriter.testing.assetsWritten, isEmpty);
 
-        await testBuilder(
-          ackModelBuilder(BuilderOptions.empty),
-          {
-            'test_pkg|lib/schema.dart': valid
-                ? _source
-                : _source.replaceFirst("part 'schema.ack.g.dart';", ''),
-          },
-          generateFor: const {'test_pkg|lib/schema.dart'},
-          readerWriter: readerWriter,
-          outputs: valid
-              ? {
-                  'test_pkg|lib/schema.ack.dart': decodedMatches(
-                    contains('final class User'),
-                  ),
-                }
-              : const {},
-          onLog: (log) {
-            if (log.level.name == 'SEVERE') errors.add(log.message);
-          },
-        );
-        expect(
-          errors,
-          valid ? isEmpty : contains(contains("part 'schema.ack.g.dart';")),
-        );
-      }
-    });
+          await testBuilder(
+            ackModelBuilder(BuilderOptions.empty),
+            {
+              'test_pkg|lib/schema.dart': valid
+                  ? _source
+                  : _source.replaceFirst("part 'schema.g.dart';", ''),
+            },
+            generateFor: const {'test_pkg|lib/schema.dart'},
+            readerWriter: readerWriter,
+            outputs: valid
+                ? {
+                    'test_pkg|lib/schema.g.dart': decodedMatches(
+                      contains('final class User'),
+                    ),
+                  }
+                : const {},
+            onLog: (log) {
+              if (log.level.name == 'SEVERE') errors.add(log.message);
+            },
+          );
+          expect(
+            errors,
+            valid ? isEmpty : contains(contains("part 'schema.g.dart';")),
+          );
+        }
+      },
+    );
   }
 }
 
@@ -119,8 +122,7 @@ const _source = '''
 import 'package:ack/ack.dart';
 import 'package:ack/annotations.dart';
 
-part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @Schemable()
 final userSchema = Ack.object({'name': Ack.string()});

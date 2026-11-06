@@ -84,9 +84,10 @@ void main() {
         final tagsSchema = Ack.list(Ack.string());
         expect(tagsSchema.safeParse(['news', 'tech']).isOk, isTrue);
 
-        final itemsSchema = Ack.list(
-          Ack.string(),
-        ).minLength(1).maxLength(3).unique();
+        final itemsSchema = Ack.list(Ack.string())
+            .minLength(1)
+            .maxLength(3)
+            .unique();
         expect(itemsSchema.safeParse(['a', 'b']).isOk, isTrue);
         expect(itemsSchema.safeParse([]).isFail, isTrue);
 
@@ -259,6 +260,20 @@ void main() {
           schema.safeParse({'name': 'John', 'bio': 'Developer'}).isOk,
           isTrue,
         );
+      });
+
+      test('withDefault fills a missing key and a nullable null', () {
+        final userSchema = Ack.object({
+          'role': Ack.string().withDefault('member'),
+          'theme': Ack.string().nullable().withDefault('light'),
+        });
+
+        expect(userSchema.parse({}), {'role': 'member', 'theme': 'light'});
+        expect(userSchema.parse({'theme': null}), {
+          'role': 'member',
+          'theme': 'light',
+        });
+        expect(userSchema.safeParse({'role': null}).isFail, isTrue);
       });
     });
 
@@ -435,14 +450,12 @@ void main() {
         expect(upperSchema.safeParse('hello').getOrThrow(), equals('HELLO'));
 
         final userWithAgeSchema =
-            Ack.object({
-              'name': Ack.string(),
-              'birthYear': Ack.integer(),
-            }).transform((data) {
-              final birthYear = data['birthYear'] as int;
-              final age = DateTime.now().year - birthYear;
-              return {...data, 'age': age};
-            });
+            Ack.object({'name': Ack.string(), 'birthYear': Ack.integer()})
+                .transform((data) {
+                  final birthYear = data['birthYear'] as int;
+                  final age = DateTime.now().year - birthYear;
+                  return {...data, 'age': age};
+                });
 
         final transformed =
             userWithAgeSchema.safeParse({

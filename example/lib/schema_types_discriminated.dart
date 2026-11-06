@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 
-part 'schema_types_discriminated.ack.dart';
-part 'schema_types_discriminated.ack.g.dart';
+part 'schema_types_discriminated.g.dart';
 
 /// Discriminated schema example for immutable model generation with @Schemable.
 @Schemable()

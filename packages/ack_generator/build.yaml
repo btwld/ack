@@ -2,35 +2,18 @@ builders:
   ack_generator:
     import: "package:ack_generator/builder.dart"
     builder_factories: ["ackGenerator"]
-    build_extensions: {".dart": [".g.dart"]}
+    build_extensions: {".dart": [".ack.g.part"]}
     auto_apply: dependents
-    build_to: source
-    defaults:
-      generate_for:
-        exclude:
-          - "**/*.ack.dart"
-          - "**/*.ack.g.dart"
+    build_to: cache
+    applies_builders: ["source_gen|combining_builder"]
 
-  ack_models:
+  ack_json_schema:
     import: "package:ack_generator/builder.dart"
-    builder_factories: ["ackModelBuilder"]
-    build_extensions: {".dart": [".ack.dart"]}
-    auto_apply: dependents
-    build_to: source
-    runs_before:
-      - ack_generator|ack_model_json
-    applies_builders:
-      - ack_generator|ack_model_json
-    defaults:
-      generate_for:
-        exclude:
-          - "**/*.ack.dart"
-          - "**/*.ack.g.dart"
-
-  ack_model_json:
-    import: "package:ack_generator/builder.dart"
-    builder_factories: ["ackModelJsonBuilder"]
-    build_extensions: {".dart": [".ack.g.dart"]}
+    builder_factories: ["ackJsonSchemaBuilder"]
+    build_extensions: {".schema.json": [".schema.dart"]}
     auto_apply: none
     build_to: source
-    required_inputs: [".ack.dart"]
+    runs_before: ["ack_generator:ack_generator"]
+    defaults:
+      options:
+        unknown_properties: schema

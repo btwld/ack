@@ -1,3 +1,46 @@
+## 2.0.0-beta.3
+
+### Breaking
+
+* **Breaking:** Require Dart `>=3.13.0`. Dart 3.13 adds the primary
+  constructors that the class-first examples use. Apps on Flutter 3.41 to 3.46
+  cannot use Ack 2.0.
+
+## 2.0.0-beta.2
+
+### Breaking
+
+* **Breaking:** Require `ack: ^2.0.0-beta.2`. Object property defaults fill
+  omitted keys; explicit JSON null requires a nullable property. Missing or
+  null defaulted fields encode as their validated default. Review callers
+  against these core parsing and encoding changes.
+
+## 2.0.0-beta.1
+
+### Changed
+
+* Require `ack: ^2.0.0-beta.1` so consumers receive the corrected runtime
+  nullability, discriminated validation, and imported JSON Schema contracts.
+* Align with the coordinated 2.0.0-beta.1 release; the bridge public API is unchanged.
+
+## 2.0.0-alpha.1
+
+### Breaking
+
+* Requires `ack: ^2.0.0-alpha.1`.
+* `toAckSchema()` now defaults to `assertFormats: false` (matching
+  `Ack.fromJsonSchema()` and JSON Schema Draft 2020-12 default annotation
+  semantics); pass `assertFormats: true` to enforce format assertions (`#171`).
+* `toJsonSchemaBuilder()` now preserves imported Draft 2020-12 resources by
+  default; use `toJsonSchemaBuilderDraft7()` when legacy Draft-07 `definitions`
+  lowering is required (`#171`).
+* Remove `convertAckSchemaModelToBuilder` in favor of `schema.toJsonSchemaBuilder()`.
+
+### Added
+
+* Add `assertFormats` parameter to `toAckSchema()` and add
+  `toJsonSchemaBuilderDraft7()` on `AckSchema` (`#171`).
+
 ## 1.7.1
 
 ### Changed

@@ -41,7 +41,7 @@ N _requireFinite<N extends num>(N value, String name) {
 /// This versatile constraint handles comparisons like minimum/maximum length for strings/lists,
 /// min/max value for numbers, property counts for objects, etc., by using a
 /// [valueExtractor] function to get a numeric value from the input type [T].
-class ComparisonConstraint<T extends Object> extends Constraint<T>
+final class ComparisonConstraint<T extends Object> extends Constraint<T>
     with Validator<T>, JsonSchemaSpec<T> {
   final ComparisonType type;
   final num threshold;

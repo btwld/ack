@@ -6,7 +6,7 @@ import 'constraint.dart';
 /// Uses JSON instance equality to properly detect duplicates in collections
 /// and nested structures. In particular, numerically equal JSON numbers such
 /// as `1` and `1.0` are duplicates.
-class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
+final class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
     with Validator<List<T>>, JsonSchemaSpec<List<T>> {
   const ListUniqueItemsConstraint()
     : super(
@@ -15,9 +15,7 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
       );
 
   @override
-  bool isValid(List<T> value) {
-    return _findDuplicates(value) == null;
-  }
+  bool isValid(List<T> value) => hasUniqueJsonItems(value);
 
   @override
   String buildMessage(List<T> value) {
@@ -37,6 +35,23 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
   // No additional fields - base class equality is sufficient.
   // Explicitly not overriding == and hashCode as ListUniqueItemsConstraint
   // has no type-specific fields beyond constraintKey and description.
+}
+
+/// Returns whether all items in [value] are unique under JSON instance equality.
+bool hasUniqueJsonItems(List<Object?> value) {
+  if (value.length <= 1) return true;
+
+  final seenByHash = <int, List<Object?>>{};
+  for (final item in value) {
+    final hash = _jsonInstanceHashCode(item);
+    final bucket = seenByHash.putIfAbsent(hash, () => <Object?>[]);
+    if (bucket.any((seen) => _jsonInstanceEquals(seen, item))) {
+      return false;
+    }
+    bucket.add(item);
+  }
+
+  return true;
 }
 
 /// Finds duplicate items in [value] using JSON instance equality.
@@ -160,7 +175,7 @@ int _jsonInstanceHashCode(Object? value) {
   return deepHashCode(value);
 }
 
-class _DuplicateGroup<T> {
+final class _DuplicateGroup<T> {
   final T value;
 
   int count = 1;

@@ -287,6 +287,26 @@ final userSchema = Ack.object({
 {'name': 'John', 'bio': 'Developer'}
 ```
 
+**`.withDefault(value)`** — A missing field parses as `value`. A present `null`
+still fails unless the field is nullable:
+
+```dart
+final userSchema = Ack.object({
+  'role': Ack.string().withDefault('member'),
+  'theme': Ack.string().nullable().withDefault('light'),
+});
+
+userSchema.parse({});              // {'role': 'member', 'theme': 'light'}
+userSchema.parse({'theme': null}); // {'role': 'member', 'theme': 'light'}
+userSchema.safeParse({'role': null}); // ❌ role is not nullable
+userSchema.encode({'role': null, 'theme': null}); // defaults: member and light
+```
+
+In 2.0.0-beta.2, object encoding uses the default for both missing and null
+defaulted fields. Parsing a present null still requires a nullable property.
+
+> **Distinguishing omitted vs. `null` in generated models (`JsonMaybe<T>`):** In raw map schemas (`Ack.object`), `map.containsKey('bio')` tells you whether `'bio'` was omitted or set to `null`. In class-first `@Schemable()` models, declare the field as `JsonMaybe<String>` (`JsonAbsent` when omitted, `JsonValue(null)` when explicitly `null`, `JsonValue('...')` when present) so `PATCH` requests round-trip both states accurately. See [Model Code Generation](./typesafe-schemas.mdx).
+
 ## Object schema operations
 
 ### Extension

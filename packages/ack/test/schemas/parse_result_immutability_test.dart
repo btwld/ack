@@ -218,9 +218,8 @@ void main() {
       });
 
       test('list refinement works on unmodifiable list', () {
-        final schema = Ack.list(
-          Ack.string(),
-        ).refine((list) => list.isNotEmpty, message: 'must not be empty');
+        final schema = Ack.list(Ack.string())
+            .refine((list) => list.isNotEmpty, message: 'must not be empty');
         final result = schema.safeParse(['a', 'b', 'c']);
 
         expect(result.isOk, isTrue);

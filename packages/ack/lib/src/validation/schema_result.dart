@@ -105,7 +105,7 @@ sealed class SchemaResult<T extends Object> {
 
 /// Represents a successful validation outcome, optionally wrapping a [value].
 /// The [_value] can be `null` if the schema was nullable and the input was validly null.
-class Ok<T extends Object> extends SchemaResult<T> {
+final class Ok<T extends Object> extends SchemaResult<T> {
   final T? _value;
   const Ok(this._value);
 
@@ -114,7 +114,7 @@ class Ok<T extends Object> extends SchemaResult<T> {
 }
 
 /// Represents a failed validation outcome, containing a [SchemaError].
-class Fail<T extends Object> extends SchemaResult<T> {
+final class Fail<T extends Object> extends SchemaResult<T> {
   final SchemaError error;
   const Fail(this.error);
 }

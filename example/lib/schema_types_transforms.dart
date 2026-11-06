@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 
-part 'schema_types_transforms.ack.dart';
-part 'schema_types_transforms.ack.g.dart';
+part 'schema_types_transforms.g.dart';
 
 class Color {
   final String value;
@@ -45,7 +44,6 @@ final profileSchema = Ack.object({
       encode: (color) => color.value,
     ),
   ),
-  'tagList': Ack.list(
-    Ack.string(),
-  ).codec<TagList>(decode: TagList.new, encode: (tags) => tags.value),
+  'tagList': Ack.list(Ack.string())
+      .codec<TagList>(decode: TagList.new, encode: (tags) => tags.value),
 });

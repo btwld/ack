@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
 
-part 'schema_types_simple.ack.dart';
-part 'schema_types_simple.ack.g.dart';
+part 'schema_types_simple.g.dart';
 
 /// Simple example: Basic primitives
 @Schemable()

@@ -15,8 +15,10 @@ sealed class NumSchema<T extends num> extends AckSchema<T, T> {
   @protected
   SchemaResult<T> applyConstraintsAndRefinements(
     T value,
-    SchemaContext context,
-  ) {
+    SchemaContext context, {
+    Iterable<Constraint<T>>? constraints,
+    Iterable<Refinement<T>>? refinements,
+  }) {
     if (value is double && !value.isFinite) {
       final constraint = NumberFiniteConstraint<T>();
       final error = constraint.validate(value);
@@ -29,7 +31,12 @@ sealed class NumSchema<T extends num> extends AckSchema<T, T> {
       );
     }
 
-    return super.applyConstraintsAndRefinements(value, context);
+    return super.applyConstraintsAndRefinements(
+      value,
+      context,
+      constraints: constraints,
+      refinements: refinements,
+    );
   }
 }
 

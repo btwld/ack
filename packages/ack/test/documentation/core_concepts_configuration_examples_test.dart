@@ -34,6 +34,16 @@ void main() {
       );
     });
 
+    test('defaults fill missing fields and reject a non-nullable null', () {
+      final settingsSchema = Ack.object({
+        'theme': Ack.enumString(['light', 'dark']).withDefault('light'),
+        'pageSize': Ack.integer().min(1).max(100).withDefault(20),
+      });
+
+      expect(settingsSchema.parse({}), {'theme': 'light', 'pageSize': 20});
+      expect(settingsSchema.safeParse({'theme': null}).isFail, isTrue);
+    });
+
     test('additional properties toggle between strict and flexible modes', () {
       final flexible = Ack.object({
         'id': Ack.integer(),

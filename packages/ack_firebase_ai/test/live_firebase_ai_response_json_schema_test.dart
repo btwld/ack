@@ -64,20 +64,16 @@ void main() {
       });
 
       for (final schemaCase in _liveFirebaseAiSchemaCases()) {
-        test(
-          'generates valid JSON for ${schemaCase.name}',
-          () async {
-            final generatedJson = await _generateLiveFirebaseJson(
-              app: app,
-              config: liveConfig!,
-              schemaCase: schemaCase,
-            );
+        test('generates valid JSON for ${schemaCase.name}', () async {
+          final generatedJson = await _generateLiveFirebaseJson(
+            app: app,
+            config: liveConfig!,
+            schemaCase: schemaCase,
+          );
 
-            schemaCase.expectGeneratedJson(generatedJson);
-            _expectAckValid(schemaCase.schema, generatedJson);
-          },
-          timeout: const Timeout(Duration(minutes: 2)),
-        );
+          schemaCase.expectGeneratedJson(generatedJson);
+          _expectAckValid(schemaCase.schema, generatedJson);
+        }, timeout: const Timeout(Duration(minutes: 2)));
       }
     },
   );
@@ -151,9 +147,9 @@ List<_LiveFirebaseAiSchemaCase> _liveFirebaseAiSchemaCases() => [
     name: 'any JSON-compatible payload',
     schema: Ack.object({
       'id': Ack.string().uuid(),
-      'labels': Ack.list(
-        Ack.enumString(['alpha', 'beta', 'stable']),
-      ).minLength(2).maxLength(2),
+      'labels': Ack.list(Ack.enumString(['alpha', 'beta', 'stable']))
+          .minLength(2)
+          .maxLength(2),
       'payload': Ack.any(),
     }, additionalProperties: true).describe('Flexible event response'),
     prompt:

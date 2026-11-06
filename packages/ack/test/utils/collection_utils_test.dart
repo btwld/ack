@@ -2,6 +2,44 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('deepUnmodifiableCopy accepts null and preserves opaque leaves', () {
+    final opaque = Object();
+    final timestamp = DateTime.utc(2026, 10, 26);
+    expect(deepUnmodifiableCopy(null), isNull);
+    expect(deepUnmodifiableCopy(opaque), same(opaque));
+    expect(deepUnmodifiableCopy(timestamp), same(timestamp));
+    expect(deepUnmodifiableCopy(double.infinity), double.infinity);
+  });
+
+  test(
+    'deepUnmodifiableCopy snapshots arbitrary map keys, lists, and sets',
+    () {
+      final opaque = Object();
+      final nested = <Object?>[opaque, null];
+      final map = <Object?, Object?>{1: nested};
+      final set = <Object?>{map};
+      final source = <Object?>[map, set];
+      final snapshot = deepUnmodifiableCopy(source)! as List<Object?>;
+      nested.clear();
+      map[2] = 'later';
+      set.clear();
+      source.clear();
+
+      final copiedMap = snapshot.first! as Map<Object?, Object?>;
+      expect(copiedMap.keys, [1]);
+      final copiedList = copiedMap[1]! as List<Object?>;
+      expect(copiedList.first, same(opaque));
+      expect(copiedList.last, isNull);
+      final copiedSet = snapshot.last! as Set<Object?>;
+      expect(copiedSet, hasLength(1));
+      expect(deepEquals(copiedSet.single, copiedMap), isTrue);
+      expect(() => snapshot.clear(), throwsUnsupportedError);
+      expect(() => copiedMap.clear(), throwsUnsupportedError);
+      expect(() => copiedList.clear(), throwsUnsupportedError);
+      expect(() => copiedSet.clear(), throwsUnsupportedError);
+    },
+  );
+
   test('deepUnmodifiableJsonMap snapshots nested maps, lists, and sets', () {
     final nestedMap = <String, Object?>{'enabled': true};
     final nestedList = <Object?>[nestedMap];

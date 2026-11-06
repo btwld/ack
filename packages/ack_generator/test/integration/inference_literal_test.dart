@@ -6,6 +6,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 final class _PatternProbe implements Builder {
   const _PatternProbe();
 
@@ -68,8 +70,7 @@ void main() {
 
   for (final example in cases) {
     test('pattern literal preserves ${example.name}', () async {
-      final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-      await readerWriter.testing.loadIsolateSources();
+      final readerWriter = await createTestReaderWriter();
       await testBuilder(
         const _PatternProbe(),
         {
@@ -77,7 +78,7 @@ void main() {
               '''
 import 'package:ack/annotations.dart';
 
-void widget({@Matches(${example.literal}) required String value}) {}
+void widget({@HasMatch(${example.literal}) required String value}) {}
 ''',
         },
         generateFor: const {'test_pkg|lib/widget.dart'},
@@ -100,26 +101,4 @@ void widget({@Matches(${example.literal}) required String value}) {}
       );
     });
   }
-
-  test('the deprecated @Pattern spelling still adds matches', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
-    await testBuilder(
-      const _PatternProbe(),
-      {
-        'test_pkg|lib/widget.dart': '''
-import 'package:ack/annotations.dart';
-
-void widget({@Pattern('^a') required String value}) {}
-''',
-      },
-      generateFor: const {'test_pkg|lib/widget.dart'},
-      readerWriter: readerWriter,
-      outputs: {
-        'test_pkg|lib/widget.probe': decodedMatches(
-          "Ack.string().matches('^a')",
-        ),
-      },
-    );
-  });
 }

@@ -9,6 +9,8 @@ class SearchInput {
   const SearchInput(this.query, this.limit);
   final String query;
   final int limit;
+
+  static AckSchema<JsonMap, SearchInput> get schema => searchModel.modelSchema;
 }
 
 final searchModel = AckModelAdapter<JsonMap, JsonMap, SearchInput>(

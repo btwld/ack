@@ -2,7 +2,7 @@ import '../schemas/schema.dart';
 import '../schemas/extensions/ack_schema_extensions.dart';
 import '../validation/schema_result.dart';
 
-/// Connects a generated immutable model to an Ack schema.
+/// Adapter that connects a generated immutable model to an Ack schema.
 ///
 /// The schema owns boundary validation and codec behavior. Generated model
 /// classes only map between the schema's validated runtime value and their
@@ -17,21 +17,19 @@ final class AckModelAdapter<
   /// [schema] is a callback rather than a stored schema value so generated
   /// models can safely participate in recursive and mutually-recursive graphs.
   const AckModelAdapter({
-    required AckSchema<Boundary, Runtime> Function() schema,
-    required Model Function(Runtime value) fromRuntime,
-    required Runtime Function(Model value) toRuntime,
-  }) : _schema = schema,
-       _fromRuntime = fromRuntime,
-       _toRuntime = toRuntime;
+    required this._schema,
+    required this._fromRuntime,
+    required this._toRuntime,
+  });
 
   final AckSchema<Boundary, Runtime> Function() _schema;
   final Model Function(Runtime value) _fromRuntime;
   final Runtime Function(Model value) _toRuntime;
 
-  /// Resolves the source schema for this model.
+  /// The source schema for this model.
   AckSchema<Boundary, Runtime> get schema => _schema();
 
-  /// Resolves a schema that decodes to this model.
+  /// A schema that decodes boundary values to this model.
   ///
   /// The source schema keeps ownership of boundary validation and encoding.
   AckSchema<Boundary, Model> get modelSchema =>
