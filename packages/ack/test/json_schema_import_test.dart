@@ -1022,15 +1022,69 @@ void main() {
             r'$ref': r'#/$defs/a',
           }),
           throwsA(
-            isA<JsonSchemaImportException>().having(
-              (e) => e.diagnostics.single.code,
-              'code',
-              'nonproductive_reference_cycle',
-            ),
+            isA<JsonSchemaImportException>()
+                .having(
+                  (e) => e.diagnostics.single.code,
+                  'code',
+                  'nonproductive_reference_cycle',
+                )
+                .having(
+                  (e) => e.diagnostics.single.pointer,
+                  'pointer',
+                  '#/\$defs/a/$keyword/\$ref',
+                ),
           ),
           reason: keyword,
         );
       }
+    });
+
+    test('nonproductive dynamicRef cycle points at the dynamic reference', () {
+      expect(
+        () => Ack.fromJsonSchema({r'$dynamicRef': '#'}),
+        throwsA(
+          isA<JsonSchemaImportException>()
+              .having(
+                (error) => error.diagnostics.single.code,
+                'code',
+                'nonproductive_reference_cycle',
+              )
+              .having(
+                (error) => error.diagnostics.single.pointer,
+                'pointer',
+                r'#/$dynamicRef',
+              ),
+        ),
+      );
+    });
+
+    test('nonproductive cycle points at the closing reference', () {
+      expect(
+        () => Ack.fromJsonSchema({
+          r'$ref': r'#/$defs/a',
+          r'$defs': {
+            'a': {
+              'anyOf': [
+                {r'$ref': r'#/$defs/b'},
+              ],
+            },
+            'b': {r'$ref': r'#/$defs/a'},
+          },
+        }),
+        throwsA(
+          isA<JsonSchemaImportException>()
+              .having(
+                (error) => error.diagnostics.single.code,
+                'code',
+                'nonproductive_reference_cycle',
+              )
+              .having(
+                (error) => error.diagnostics.single.pointer,
+                'pointer',
+                r'#/$defs/b/$ref',
+              ),
+        ),
+      );
     });
 
     test('contains and then report their failure locations', () {

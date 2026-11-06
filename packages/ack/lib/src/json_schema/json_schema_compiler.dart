@@ -152,18 +152,23 @@ final class _ImportedNode {
   ];
 
   /// Sub-schemas applied to the same instance, for the cycle check.
-  List<_ImportedNode> get inPlaceDependencies => [
-    ?reference,
-    ?dynamicReference,
+  ///
+  /// Each entry is the keyword that reaches the sub-schema. A cycle is
+  /// reported on that keyword, which is the reference that closes it when
+  /// the edge is `$ref` or `$dynamicRef`.
+  List<(String, _ImportedNode)> get inPlaceDependencies => [
+    if (reference case final target?) (r'$ref', target),
+    if (dynamicReference case final target?) (r'$dynamicRef', target),
     if (applicatorVocabulary) ...[
-      ?not,
-      ?ifNode,
-      ?thenNode,
-      ?elseNode,
-      ...?anyOf,
-      ...?allOf,
-      ...?oneOf,
-      ...?dependentSchemas?.values,
+      if (not case final target?) ('not', target),
+      if (ifNode case final target?) ('if', target),
+      if (thenNode case final target?) ('then', target),
+      if (elseNode case final target?) ('else', target),
+      for (final target in anyOf ?? const <_ImportedNode>[]) ('anyOf', target),
+      for (final target in allOf ?? const <_ImportedNode>[]) ('allOf', target),
+      for (final target in oneOf ?? const <_ImportedNode>[]) ('oneOf', target),
+      for (final target in dependentSchemas?.values ?? const <_ImportedNode>[])
+        ('dependentSchemas', target),
     ],
   ];
 
@@ -505,17 +510,19 @@ final class _JsonSchemaCompiler {
     final visited = <_ImportedNode>{};
     final active = <_ImportedNode>{};
     void checkCycle(_ImportedNode node) {
-      if (active.contains(node)) {
-        _fail(
-          node,
-          r'$ref',
-          'Reference cycle does not descend into an instance.',
-          code: 'nonproductive_reference_cycle',
-        );
-      }
       if (!visited.add(node)) return;
       active.add(node);
-      for (final child in node.inPlaceDependencies) {
+      for (final (keyword, child) in node.inPlaceDependencies) {
+        // The re-entered schema is the target of this edge. The keyword
+        // that closes the cycle lives on [node], not on that target.
+        if (active.contains(child)) {
+          _fail(
+            node,
+            keyword,
+            'Reference cycle does not descend into an instance.',
+            code: 'nonproductive_reference_cycle',
+          );
+        }
         checkCycle(child);
       }
       active.remove(node);
