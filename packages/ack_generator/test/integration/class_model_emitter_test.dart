@@ -62,10 +62,10 @@ final class Email {
 final class Contact with _\$ContactAck {
   const Contact({required this.address, required this.id});
 
-  @ack.Validate.email()
+  @ack.IsEmail()
   final String address;
 
-  @ack.Validate.uuid()
+  @ack.IsUuid()
   final String id;
 }
 ''',
@@ -96,7 +96,7 @@ part 'grid.g.dart';
 final class Grid with _\$GridAck {
   const Grid({required this.cells});
 
-  @Validate.minItems(2)
+  @HasMinItems(2)
   final Set<Set<int>> cells;
 }
 ''',
@@ -145,7 +145,7 @@ final class Documented with _\$DocumentedAck {
   });
 
   test(
-    'primary constructor declaring parameters support @description and @Validate',
+    'primary constructor declaring parameters support @description and rule annotations',
     () async {
       await withEnabledExperiments(
         () => _build(
@@ -160,11 +160,11 @@ part 'primary_doc.g.dart';
 @Schemable()
 final class const PrimaryTask({
   /// @description The item title.
-  @Validate.minLength(1)
+  @HasMinLength(1)
   required final String title,
 
   /// @description The category id.
-  @Validate.minLength(1)
+  @HasMinLength(1)
   final String category = 'general',
 }) with _\$PrimaryTaskAck {
   static final schema = _primaryTaskSchema;
@@ -377,15 +377,15 @@ final class Formats with _\$FormatsAck {
     required this.timestamp,
   });
 
-  @Validate.url()
+  @IsUrl()
   final String url;
-  @Validate.uri()
+  @IsUri()
   final String uri;
-  @Validate.uuid()
+  @IsUuid()
   final String uuid;
-  @Validate.date()
+  @IsDate()
   final String date;
-  @Validate.dateTime()
+  @IsDateTime()
   final String timestamp;
 }
 ''',
@@ -426,7 +426,7 @@ final class Envelope with _\$EnvelopeAck {
   });
 
   final Object kind;
-  @Validate.optional()
+  @IsOptional()
   final Object? payload;
 
   final List<Object> items;
@@ -476,13 +476,13 @@ final class Profile with _\$ProfileAck {
     required this.tags,
   });
 
-  @Validate.minLength(1)
-  @Validate.maxLength(500)
+  @HasMinLength(1)
+  @HasMaxLength(500)
   final String bio;
   final Uri? website;
   final String? nickname;
   final String role;
-  @Validate.minItems(1)
+  @HasMinItems(1)
   final Set<String> tags;
 }
 ''',
@@ -731,8 +731,8 @@ sealed class Pet with _\$PetAck {
 @Schemable(discriminatorValue: 'cat')
 final class Cat extends Pet with _\$CatAck {
   const Cat({required super.id, required this.lives});
-  @Validate.min(1)
-  @Validate.max(9)
+  @HasMin(1)
+  @HasMax(9)
   final int lives;
 }
 
@@ -846,7 +846,7 @@ final class Account with _\$AccountAck {
   });
 
   test(
-    '@Validate.* constraints work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
+    'rule annotations work with single package:ack/ack.dart import alongside same-named types and constructor parameters',
     () async {
       await _build(
         {
@@ -875,59 +875,59 @@ final class CheckedRecord with _\$CheckedRecordAck {
     required this.birthDate,
     required this.createdAt,
     required this.clientIp,
-    required this.v4,
+    required this.anyIp,
     required this.v6,
     required this.code,
     required this.score,
     required this.debt,
     required this.tags,
-    @Validate.minLength(2) @Validate.maxLength(20) required this.handle,
+    @HasMinLength(2) @HasMaxLength(20) required this.handle,
   });
 
-  @Validate.email()
+  @IsEmail()
   final String email;
 
-  @Validate.uuid()
+  @IsUuid()
   final String id;
 
-  @Validate.url()
+  @IsUrl()
   final String website;
 
-  @Validate.uri()
+  @IsUri()
   final String resourceUri;
 
-  @Validate.date()
+  @IsDate()
   final String birthDate;
 
-  @Validate.dateTime()
+  @IsDateTime()
   final String createdAt;
 
-  @Validate.ip(version: 4)
+  @IsIp(version: 4)
   final String clientIp;
 
-  @Validate.ipv4()
-  final String v4;
+  @IsIp()
+  final String anyIp;
 
-  @Validate.ipv6()
+  @IsIp(version: 6)
   final String v6;
 
-  @Validate.notEmpty()
-  @Validate.matches(r'^[A-Z]+\$')
+  @IsNotEmpty()
+  @HasMatch(r'^[A-Z]+\$')
   final String code;
 
-  @Validate.min(0)
-  @Validate.max(100)
-  @Validate.multipleOf(5)
-  @Validate.positive()
+  @HasMin(0)
+  @HasMax(100)
+  @IsMultipleOf(5)
+  @IsPositive()
   final int score;
 
-  @Validate.negative()
+  @IsNegative()
   final double debt;
 
-  @Validate.notEmpty()
-  @Validate.minItems(1)
-  @Validate.maxItems(5)
-  @Validate.uniqueItems()
+  @IsNotEmpty()
+  @HasMinItems(1)
+  @HasMaxItems(5)
+  @HasUniqueItems()
   final List<String> tags;
 
   final String handle;
@@ -944,8 +944,8 @@ final class CheckedRecord with _\$CheckedRecordAck {
               _containsCode("'birthDate': Ack.string().date()"),
               _containsCode("'createdAt': Ack.string().datetime()"),
               _containsCode("'clientIp': Ack.string().ip(version: 4)"),
-              _containsCode("'v4': Ack.string().ipv4()"),
-              _containsCode("'v6': Ack.string().ipv6()"),
+              _containsCode("'anyIp': Ack.string().ip()"),
+              _containsCode("'v6': Ack.string().ip(version: 6)"),
               _containsCode(
                 r"'code': Ack.string().notEmpty().matches('^[A-Z]+\$')",
               ),
@@ -986,8 +986,8 @@ final class UserPatch with _$UserPatchAck {
 
   final JsonMaybe<String> nickname;
 
-  @Validate.notNull()
-  @Validate.notEmpty()
+  @IsNotNull()
+  @IsNotEmpty()
   final JsonMaybe<String> title;
 
 

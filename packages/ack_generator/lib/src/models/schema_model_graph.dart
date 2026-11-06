@@ -23,7 +23,7 @@ final class AckSchemaId {
 
 /// Input-presence semantics for an object field in the normalized graph.
 ///
-/// This is distinct from the public `@Validate.optional()` / `@Validate.required()`
+/// This is distinct from the public `@IsOptional()` / `@IsRequired()`
 /// annotations. Presence and nullability stay separate: a field can be required
 /// and nullable, optional and non-nullable, or defaulted by the schema.
 enum AckSchemaFieldPresence { required, optional, defaulted }
@@ -177,7 +177,7 @@ final class AckFieldNode {
   /// Whether a present JSON value may be `null`.
   ///
   /// This is independent of [nullable] Dart storage and of key [presence].
-  /// `@Validate.notNull()` sets it to false while leaving the Dart type unchanged.
+  /// `@IsNotNull()` sets it to false while leaving the Dart type unchanged.
   final bool acceptsNull;
 
   final AckInferRef runtimeRef;

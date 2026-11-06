@@ -24,12 +24,12 @@ final class WeatherQuery with _$WeatherQueryAck {
   const WeatherQuery({required this.city, this.units = 'celsius'});
 
   /// @description City and country, e.g. "Tokyo, JP".
-  @Validate.minLength(2)
+  @HasMinLength(2)
   final String city;
 
   final String units;
 
-  static final schema = _weatherQuerySchema;
+  static final schema = WeatherQuerySchema.schema;
   static final fromJson = WeatherQuerySchema.fromJson;
 }
 
@@ -40,7 +40,7 @@ final class WeatherReport with _$WeatherReportAck {
   final String city;
   final double temperatureC;
 
-  static final schema = _weatherReportSchema;
+  static final schema = WeatherReportSchema.schema;
   static final fromJson = WeatherReportSchema.fromJson;
 }
 ```

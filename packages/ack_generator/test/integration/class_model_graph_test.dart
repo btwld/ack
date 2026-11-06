@@ -104,13 +104,11 @@ final class Link with _\$LinkAck {
 final class Range with _\$RangeAck {
   const Range({required this.limit});
 
-  @Validate.max(double.infinity)
+  @HasMax(double.infinity)
   final double limit;
 }
 ''',
-      [
-        'Range.limit has @Validate.max(Infinity); the value must be a finite number.',
-      ],
+      ['Range.limit has @HasMax(Infinity); the value must be a finite number.'],
     );
     await _expectFailure(
       '''
@@ -118,13 +116,11 @@ final class Range with _\$RangeAck {
 final class Range with _\$RangeAck {
   const Range({required this.step});
 
-  @Validate.multipleOf(double.nan)
+  @IsMultipleOf(double.nan)
   final double step;
 }
 ''',
-      [
-        'Range.step has @Validate.multipleOf(NaN); the value must be a finite number.',
-      ],
+      ['Range.step has @IsMultipleOf(NaN); the value must be a finite number.'],
     );
   });
 
@@ -274,11 +270,11 @@ final class Item with _\$ItemAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Validate.min(1)
+  @HasMin(1)
   final String name;
 }
 ''',
-      ['@Validate.min', 'String', '@Validate.minLength'],
+      ['@HasMin', 'String', '@HasMinLength'],
     );
   });
 
@@ -289,11 +285,11 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.age});
 
-  @Validate.minLength(1)
+  @HasMinLength(1)
   final int age;
 }
 ''',
-      ['@Validate.minLength', 'int', '@Validate.min'],
+      ['@HasMinLength', 'int', '@HasMin'],
     );
   });
 
@@ -304,11 +300,11 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Validate.uniqueItems()
+  @HasUniqueItems()
   final String name;
 }
 ''',
-      ['@Validate.uniqueItems', 'String', 'List or Set'],
+      ['@HasUniqueItems', 'String', 'List or Set'],
     );
   });
 
@@ -1153,42 +1149,36 @@ final class User with _\$UserAck {
     );
   });
 
-  test(
-    'rejects @Validate.optional() on a required constructor parameter',
-    () async {
-      await _expectFailure(
-        '''
+  test('rejects @IsOptional() on a required constructor parameter', () async {
+    await _expectFailure(
+      '''
 @Schemable()
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Validate.optional()
+  @IsOptional()
   final String name;
 }
 ''',
-        ['User.name', 'optional', 'constructor'],
-      );
-    },
-  );
+      ['User.name', 'optional', 'constructor'],
+    );
+  });
 
-  test(
-    'rejects combining @Validate.optional() and @Validate.required()',
-    () async {
-      await _expectFailure(
-        '''
+  test('rejects combining @IsOptional() and @IsRequired()', () async {
+    await _expectFailure(
+      '''
 @Schemable()
 final class User with _\$UserAck {
   const User({this.name});
 
-  @Validate.optional()
-  @Validate.required()
+  @IsOptional()
+  @IsRequired()
   final String? name;
 }
 ''',
-        ['User.name', '@Validate.optional()', '@Validate.required()'],
-      );
-    },
-  );
+      ['User.name', '@IsOptional()', '@IsRequired()'],
+    );
+  });
 
   test('rejects an unmapped constructor parameter', () async {
     await _expectFailure(
@@ -1256,7 +1246,7 @@ final class Address with _\$AddressAck {
   );
 
   test(
-    'rejects invalid @Validate.* constraints on mismatched field types or values',
+    'rejects invalid rule annotations on mismatched field types or values',
     () async {
       await _expectFailure(
         '''
@@ -1264,11 +1254,11 @@ final class Address with _\$AddressAck {
 final class User with _\$UserAck {
   const User({required this.name});
 
-  @Validate.min(1)
+  @HasMin(1)
   final String name;
 }
 ''',
-        ['User.name', '@Validate.min', 'String', '@Validate.minLength'],
+        ['User.name', '@HasMin', 'String', '@HasMinLength'],
       );
       await _expectFailure(
         '''
@@ -1276,22 +1266,22 @@ final class User with _\$UserAck {
 final class User with _\$UserAck {
   const User({required this.ip});
 
-  @Validate.ip(version: 5)
+  @IsIp(version: 5)
   final String ip;
 }
 ''',
-        ['User.ip', '@Validate.ip(version: 5)', 'version must be 4 or 6.'],
+        ['User.ip', '@IsIp(version: 5)', 'version must be 4 or 6.'],
       );
       await _expectFailure(
         '''
 @Schemable()
 final class User with _\$UserAck {
-  const User({@Validate.minLength(1) required this.age});
+  const User({@HasMinLength(1) required this.age});
 
   final int age;
 }
 ''',
-        ['User.age', '@Validate.minLength', 'int', '@Validate.min'],
+        ['User.age', '@HasMinLength', 'int', '@HasMin'],
       );
     },
   );
@@ -1315,7 +1305,7 @@ final addressSchema = Ack.object({'city': Ack.string()});
 final class Order with _\$OrderAck {
   const Order({
     @AckKey('shipping_address') required this.shipping,
-    @Validate.minItems(1) this.history = const [],
+    @HasMinItems(1) this.history = const [],
   });
 
   final Address shipping;

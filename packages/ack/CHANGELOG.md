@@ -1,3 +1,22 @@
+## 2.0.0-beta.3 (unreleased)
+
+### Added
+
+* Add top-level rule annotations: `Is…` says what a value is and `Has…` says
+  a bound or property it has. `@IsOptional`, `@IsRequired`, `@IsNotNull`,
+  `@HasMin`, `@HasMax`, `@IsMultipleOf`, `@IsPositive`, `@IsNegative`,
+  `@HasMinLength`, `@HasMaxLength`, `@HasMatch`, `@IsNotEmpty`, `@IsEmail`,
+  `@IsUrl`, `@IsUri`, `@IsUuid`, `@IsDate`, `@IsDateTime`, `@IsIp`,
+  `@HasMinItems`, `@HasMaxItems`, and `@HasUniqueItems` keep the semantics of
+  the matching `Validate` constructors. `ipv4()` and `ipv6()` become
+  `@IsIp(version: 4)` and `@IsIp(version: 6)`.
+
+### Deprecated
+
+* Deprecate `Validate`, including the class. Each constructor redirects to
+  its rule annotation and names that replacement. `kind` and `value` stay
+  visible on those rules until `Validate` is removed before Ack 2.0.0.
+
 ## 2.0.0-beta.2
 
 ### Breaking

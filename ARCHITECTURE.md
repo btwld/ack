@@ -40,16 +40,25 @@ cost of a beta.2 break for schemas that relied on null selecting the default.
 Refines: [field presence and unknown keys](#field-presence-and-unknown-keys).
 Contract: [default values](docs/core-concepts/configuration.mdx#default-values).
 
-## Unified annotations
+## Is/Has rule annotations
 
-Date: 2026-10-14. Status: current. History: [#190](https://github.com/btwld/ack/pull/190), [Validate namespace](https://github.com/btwld/ack/commit/5b11c5a), and [AckKey consolidation](https://github.com/btwld/ack/commit/b4c4f05).
+Date: 2026-11-05. Status: current. History: [#254](https://github.com/btwld/ack/pull/254).
 
-`package:ack/ack.dart` owns `@Schemable`, `@AckKey`, and the `@Validate` namespace
-so generation shares an API without a separately versioned annotations package.
-Namespacing avoids the former top-level format and constraint-name collisions,
-at the cost of a source migration for 1.x users.
+`package:ack/ack.dart` owns `@Schemable`, `@AckKey`, and top-level rule
+annotations named by one rule: `Is…` says what the value is (`@IsEmail()`),
+`Has…` says a bound or property it has (`@HasMinLength(2)`). Bare names collide
+with common imports: `Pattern`, `Uri`, and `DateTime` in `dart:core`,
+`Required` in `meta`, `Uuid` in `uuid`, and `Optional` in `quiver`. A scan of the
+Dart SDK, Flutter, and 22 common packages found no collision for the `Is…`/`Has…`
+names; the only overlap is the small validator `luthor`, which uses the same
+scheme. `Key` would collide with Flutter, so `@AckKey` keeps its name, as does
+`@Schemable`. The cost is that annotation words differ from the fluent API
+(`@HasMinLength(3)` against `Ack.string().minLength(3)`). The `Validate`
+namespace remains as deprecated redirecting constructors in 2.0.0-beta.3 and
+is removed before Ack 2.0.0.
 
-Migration: [exact substitutions](docs/getting-started/migration-guide.mdx).
+Replaces: [unified annotations](#unified-annotations-superseded).
+Migration: [validation annotation table](docs/getting-started/migration-guide.mdx#validation-annotations).
 
 ## Single-part generation
 
@@ -153,5 +162,16 @@ The [last pre-deletion text](https://github.com/btwld/ack/blob/c3c21116fd554f33d
 remains historical evidence; restoring it would teach obsolete APIs.
 
 Replacements: [single-part generation](#single-part-generation),
-[unified annotations](#unified-annotations), and
+[unified annotations](#unified-annotations-superseded), and
 [validating wire views](#detached-validating-wire-views).
+
+## Unified annotations (superseded)
+
+Date: 2026-10-14. Status: superseded in 2.0.0-beta.3. History: [#190](https://github.com/btwld/ack/pull/190), [Validate namespace](https://github.com/btwld/ack/commit/5b11c5a), and [AckKey consolidation](https://github.com/btwld/ack/commit/b4c4f05).
+
+`package:ack/ack.dart` owns `@Schemable`, `@AckKey`, and the `@Validate` namespace
+so generation shares an API without a separately versioned annotations package.
+Namespacing avoids the former top-level format and constraint-name collisions,
+at the cost of a source migration for 1.x users.
+
+Replacement: [Is/Has rule annotations](#ishas-rule-annotations).

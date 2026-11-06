@@ -50,67 +50,32 @@ void main() {
     expect(key.name, 'wire_key');
   });
 
-  test(
-    'Validate.* constraint annotations are const and expose kind + value',
-    () {
-      const checks = <Validate>[
-        Validate.optional(),
-        Validate.required(),
-        Validate.notNull(),
-        Validate.min(1),
-        Validate.max(9.5),
-        Validate.multipleOf(2),
-        Validate.positive(),
-        Validate.negative(),
-        Validate.minLength(1),
-        Validate.maxLength(100),
-        Validate.matches(r'^[a-z]+$'),
-        Validate.notEmpty(),
-        Validate.email(),
-        Validate.url(),
-        Validate.uri(),
-        Validate.uuid(),
-        Validate.date(),
-        Validate.dateTime(),
-        Validate.ip(),
-        Validate.ip(version: 4),
-        Validate.ipv4(),
-        Validate.ipv6(),
-        Validate.minItems(1),
-        Validate.maxItems(10),
-        Validate.uniqueItems(),
-      ];
+  test('rule annotations are const and expose their arguments', () {
+    const presence = <Object>[IsOptional(), IsRequired(), IsNotNull()];
+    const flags = <Object>[
+      IsPositive(),
+      IsNegative(),
+      IsNotEmpty(),
+      IsEmail(),
+      IsUrl(),
+      IsUri(),
+      IsUuid(),
+      IsDate(),
+      IsDateTime(),
+      HasUniqueItems(),
+    ];
 
-      expect(
-        checks.map((c) => (c.kind, c.value)).toList(),
-        const <(String, Object?)>[
-          ('optional', null),
-          ('required', null),
-          ('notNull', null),
-          ('min', 1),
-          ('max', 9.5),
-          ('multipleOf', 2),
-          ('positive', null),
-          ('negative', null),
-          ('minLength', 1),
-          ('maxLength', 100),
-          ('matches', r'^[a-z]+$'),
-          ('notEmpty', null),
-          ('email', null),
-          ('url', null),
-          ('uri', null),
-          ('uuid', null),
-          ('date', null),
-          ('dateTime', null),
-          ('ip', null),
-          ('ip', 4),
-          ('ipv4', null),
-          ('ipv6', null),
-          ('minItems', 1),
-          ('maxItems', 10),
-          ('uniqueItems', null),
-        ],
-      );
-    },
-  );
+    expect([...presence, ...flags], everyElement(isA<AckRule>()));
+    expect(const HasMin(1).min, 1);
+    expect(const HasMax(9.5).max, 9.5);
+    expect(const IsMultipleOf(2).divisor, 2);
+    expect(const HasMinLength(1).length, 1);
+    expect(const HasMaxLength(100).length, 100);
+    expect(const HasMatch(r'^[a-z]+$').pattern, r'^[a-z]+$');
+    expect(const IsIp().version, isNull);
+    expect(const IsIp(version: 4).version, 4);
+    expect(const IsIp(version: 6).version, 6);
+    expect(const HasMinItems(1).count, 1);
+    expect(const HasMaxItems(10).count, 10);
+  });
 }

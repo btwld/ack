@@ -11,8 +11,9 @@ from a Dart class, or start from a `.schema.json` document.
 | A Dart class or sealed union (`final class Account`) | `@Schemable()` | `_accountSchema` codec, `AccountSchema` facade, and `_$AccountAck` mixin in `<file>.g.dart` |
 | A JSON Schema asset (`lib/**/*.schema.json`) | `ack_generator:ack_json_schema` in `build.yaml` | `<name>.schema.dart` + `<name>.schema.g.dart` with typed `@Schemable()` models or validated value models |
 
-`@Schemable()`, `@AckKey`, and the `@Validate.*` constraint and presence
-namespace all come from `package:ack/ack.dart` (and `package:ack/annotations.dart`).
+`@Schemable()`, `@AckKey`, and the `Is…`/`Has…` rule annotations (such as
+`@IsRequired()` and `@HasMinLength(2)`) all come from `package:ack/ack.dart`
+(and `package:ack/annotations.dart`).
 There is no `@AckSchema()` annotation; `AckSchema<Boundary, Runtime>` is the
 runtime type returned by factories such as `Ack.string()` and `Ack.object()`.
 
@@ -53,7 +54,7 @@ final orderSchema = Ack.object({
   'total': Ack.double().positive(),
 });
 
-// Class-first: write Account; Ack generates _accountSchema and AccountSchema.
+// Class-first: write Account; Ack generates AccountSchema.
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {
   const Account({
@@ -64,17 +65,17 @@ final class Account with _$AccountAck {
     this.role = 'member',
   });
 
-  @Validate.minLength(2)
+  @HasMinLength(2)
   final String displayName;
 
-  @Validate.email()
+  @IsEmail()
   final String email;
 
   final String? middleName;
   final Uri? website;
   final String role;
 
-  static final schema = _accountSchema;
+  static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
@@ -178,24 +179,24 @@ generates a codec schema whose runtime value is your class:
 ```dart
 @Schemable(caseStyle: AckCaseStyle.snake)
 final class Profile({
-  @Validate.minLength(2) required final String displayName,
-  @Validate.email() required final String email,
+  @HasMinLength(2) required final String displayName,
+  @IsEmail() required final String email,
   final String role = 'member',
 }) with _$ProfileAck {
-  static final schema = _profileSchema;
+  static final schema = ProfileSchema.schema;
   static final fromJson = ProfileSchema.fromJson;
 }
 ```
 
-Ack generates a library-private `_profileSchema` codec variable and a public
-`ProfileSchema` facade:
+Ack generates a public `ProfileSchema` facade backed by a library-private codec
+variable:
 
 - `ProfileSchema.parse` and `safeParse` validate input;
 - `ProfileSchema.fromJson` is the one-argument map convenience;
 - `ProfileSchema.encode` and `safeEncode` validate while encoding;
 - `ProfileSchema.toJsonSchema()` exports the boundary JSON Schema;
 - `ProfileSchema.toSchemaModel()` exports Ack's canonical schema model;
-- `ProfileSchema.schema` is the typed model codec (`_profileSchema`) used for composition;
+- `ProfileSchema.schema` is the typed model codec used for composition;
 - `ProfileSchema.wireSchema` validates like `schema` and returns the JSON map
   instead of the model.
 
@@ -219,12 +220,12 @@ facade. Ack cannot inject static members or constructors into a hand-written
 class, so the recommended conventions are one-line static tear-offs/fields:
 
 ```dart
-static final schema = _profileSchema;
+static final schema = ProfileSchema.schema;
 static final fromJson = ProfileSchema.fromJson;
 ```
 
-`static final schema = _profileSchema;` (or `ProfileSchema.schema`) attaches the
-generated codec directly to `Profile.schema` so callers can write
+`static final schema = ProfileSchema.schema;` attaches the generated codec
+directly to `Profile.schema` so callers can write
 `Profile.schema.parse(...)`, `Profile.schema.toJsonSchema()`, or
 `Ack.list(Profile.schema)`, and other libraries only need to import `Profile`.
 Both lines are optional: if omitted, `ProfileSchema` still provides every static
@@ -288,13 +289,12 @@ generated.
 
 In 2.0.0-beta.2, a constructor default fills an omitted key. A present JSON
 `null` is rejected for `T`, including defaulted fields. Declare `T?` to accept
-it, or use the existing `@Validate.notNull()` to reject it on a nullable field.
+it, or use the existing `@IsNotNull()` to reject it on a nullable field.
 With `String? label` and `this.label = 'fallback'`, missing input and JSON
 `null` both parse as `'fallback'`. A directly constructed `label: null` now
 encodes as `'fallback'` too. With `this.label = null`, missing input and JSON
 `null` parse as null and the encoded object keeps the key with a null value.
-These changes are breaking relative to beta.1. `@Validate.*`, including
-`@Validate.required()`, remains the public annotation API.
+These changes are breaking relative to beta.1.
 
 Presence and nullability rules also apply to fields backed by registered or
 type-owned custom schemas. A custom schema's own default does not become a
@@ -309,34 +309,34 @@ unannotated fields keep constructor inference.
 
 | Annotation | Effect |
 | --- | --- |
-| `@Validate.optional()` | The key may be omitted. Valid when the constructor can accept a missing value: an optional or defaulted parameter, or `required T?` (a missing key then parses as `null` and encoding omits a null value). On `required T` generation fails. |
-| `@Validate.required()` | The key must be present. On an optional `T?` field JSON `null` is still accepted and encoding writes the key even when the value is null. On a defaulted field, input no longer falls back to the default. |
-| `@Validate.notNull()` | A present JSON `null` is rejected; key presence is unchanged. Use it on `T?` and `JsonMaybe<T>` fields; non-nullable fields such as `Map<String, V>` already reject JSON `null`. A missing optional key still parses as `null`. Encoding uses a non-null constructor default when one is inferred; otherwise it omits a null Dart value. |
+| `@IsOptional()` | The key may be omitted. Valid when the constructor can accept a missing value: an optional or defaulted parameter, or `required T?` (a missing key then parses as `null` and encoding omits a null value). On `required T` generation fails. |
+| `@IsRequired()` | The key must be present. On an optional `T?` field JSON `null` is still accepted and encoding writes the key even when the value is null. On a defaulted field, input no longer falls back to the default. |
+| `@IsNotNull()` | A present JSON `null` is rejected; key presence is unchanged. Use it on `T?` and `JsonMaybe<T>` fields; non-nullable fields such as `Map<String, V>` already reject JSON `null`. A missing optional key still parses as `null`. Encoding uses a non-null constructor default when one is inferred; otherwise it omits a null Dart value. |
 
-`@Validate.optional()` is not a no-op on a defaulted field. Without it,
+`@IsOptional()` is not a no-op on a defaulted field. Without it,
 `this.tools = const []` generates `.withDefault(const [])`. With it, the field
 generates `.optional()`: a missing key still gets the constructor default, but
 JSON `null` is rejected for a non-nullable type and the exported JSON Schema
 carries no `default`.
 
-`@Validate.optional()` alone on `String?` still accepts JSON `null`. Add
-`@Validate.notNull()` when a present value must not be `null`:
+`@IsOptional()` alone on `String?` still accepts JSON `null`. Add
+`@IsNotNull()` when a present value must not be `null`:
 
 ```dart
 @Schemable()
 final class Example with _$ExampleAck {
   const Example({this.label});
 
-  @Validate.optional()
-  @Validate.notNull()
+  @IsOptional()
+  @IsNotNull()
   final String? label;
 }
 ```
 
 `ExampleSchema.parse({})` yields `label: null`, `{"label": "hello"}` succeeds,
 and `{"label": null}` fails. Encoding omits a null Dart value. Here
-`@Validate.optional()` only restates what the constructor already infers;
-`@Validate.notNull()` is the annotation that changes null acceptance.
+`@IsOptional()` only restates what the constructor already infers;
+`@IsNotNull()` is the annotation that changes null acceptance.
 
 The generator infers `String`, `bool`, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, nested lists, and sets. Sets use a list codec. Open JSON
@@ -363,7 +363,7 @@ final class ProfilePatch with _$ProfilePatchAck {
 
   final JsonMaybe<String> bio;
 
-  static final schema = _profilePatchSchema;
+  static final schema = ProfilePatchSchema.schema;
   static final fromJson = ProfilePatchSchema.fromJson;
 }
 
@@ -381,16 +381,19 @@ Map values may be `null` only when the value type is nullable. `List<Object?>`
 stays rejected because `Ack.list` has no nullable-item contract. Parsed
 `Object` values are recursively unmodifiable, like other stored collections.
 
-Validation annotations use `@Validate.*` and follow the field type:
+Rule annotations follow the field type. `Is…` names what the value is, and
+`Has…` names a bound or property it has:
 
-- presence & nullability: `@Validate.required`, `@Validate.optional`, `@Validate.notNull`;
-- numeric: `@Validate.min`, `@Validate.max`, `@Validate.multipleOf`, `@Validate.positive`, `@Validate.negative`;
-- strings: `@Validate.minLength`, `@Validate.maxLength`, `@Validate.matches`, `@Validate.email`, `@Validate.notEmpty`;
-- string formats: `@Validate.url`, `@Validate.uri`, `@Validate.uuid`, `@Validate.date`, `@Validate.dateTime`, `@Validate.ip`, `@Validate.ipv4`, `@Validate.ipv6`;
-- lists and sets: `@Validate.notEmpty`, `@Validate.minItems`, `@Validate.maxItems`, `@Validate.uniqueItems`.
+- presence & nullability: `@IsRequired`, `@IsOptional`, `@IsNotNull`;
+- numeric: `@HasMin`, `@HasMax`, `@IsMultipleOf`, `@IsPositive`, `@IsNegative`;
+- strings: `@HasMinLength`, `@HasMaxLength`, `@HasMatch`, `@IsEmail`, `@IsNotEmpty`;
+- string formats: `@IsUrl`, `@IsUri`, `@IsUuid`, `@IsDate`, `@IsDateTime`, `@IsIp` (`version: 4` or `6` for one family);
+- lists and sets: `@IsNotEmpty`, `@HasMinItems`, `@HasMaxItems`, `@HasUniqueItems`.
 
 
-`@Validate.matches` is the annotation form of `Ack.string().matches(...)`. Numeric
+`@HasMatch` is the annotation form of `Ack.string().matches(...)`. Like
+`matches()`, it is not anchored: the pattern may match anywhere in the string,
+so use `^...$` for a full-string match. Numeric
 constraint values must be finite. On a `Set<Set<T>>` field the collection
 constraints apply to the outer set.
 
@@ -638,7 +641,7 @@ visible in the annotated library itself. A type reached only through a
 did not import, fails generation with the library to import.
 
 When importing with `show` / `hide` combinators, if a class-first model declares
-`static final schema = _addressSchema;`, importing libraries only need to expose
+`static final schema = AddressSchema.schema;`, importing libraries only need to expose
 `Address`:
 
 ```dart
@@ -696,7 +699,7 @@ targets:
 - Remove `ack_annotations`, `json_serializable`, and `json_annotation` from `pubspec.yaml` (unless used by non-Ack classes), and import `package:ack/ack.dart`.
 - Replace `part '<file>.ack.dart';` + `part '<file>.ack.g.dart';` with a single `part '<file>.g.dart';`.
 - Replace `@AckType()`, `@AckInfer()`, and `@AckModel()` with `@Schemable()`.
-- Replace top-level presence and constraint annotations (`@Optional`, `@Required`, `@NotNull`, `@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with `@Validate.*` (`@Validate.optional`, `@Validate.required`, `@Validate.notNull`, `@Validate.min`, `@Validate.max`, `@Validate.minLength`, `@Validate.matches`, `@Validate.email`, `@Validate.dateTime`, etc.).
+- Replace top-level presence and constraint annotations (`@Optional`, `@Required`, `@NotNull`, `@Min`, `@Max`, `@MinLength`, `@Matches`, `@Email`, `@DateTime`, etc.) with the rule annotations (`@IsOptional`, `@IsRequired`, `@IsNotNull`, `@HasMin`, `@HasMax`, `@HasMinLength`, `@HasMatch`, `@IsEmail`, `@IsDateTime`, etc.).
 - Replace `@JsonKey(name: '...')` on `@Schemable` fields with `@AckKey('...')`.
 
 See the [What's New & Migration Guide](../getting-started/migration-guide.mdx) for the complete substitution tables and side-by-side before/after examples.

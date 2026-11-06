@@ -3,7 +3,8 @@
 `ack_generator` supports two directions through `@Schemable()`:
 it turns a top-level Ack schema into an immutable model and derives an Ack
 codec schema from a hand-written class. `@Schemable()`, `@AckKey()`, and the
-`@Validate.*` validation namespace are all exported from `package:ack/ack.dart`.
+`Is…`/`Has…` rule annotations (such as `@IsEmail()` and `@HasMinLength(2)`) are
+all exported from `package:ack/ack.dart`.
 
 
 ## Generate models from JSON Schema
@@ -155,10 +156,10 @@ part 'account.g.dart';
 final class Account with _$AccountAck {
   const Account({required this.name});
 
-  @Validate.minLength(2)
+  @HasMinLength(2)
   final String name;
 
-  static final schema = _accountSchema;
+  static final schema = AccountSchema.schema;
   static final fromJson = AccountSchema.fromJson;
 }
 ```
@@ -231,7 +232,7 @@ or `Command.schema<void>()`. A `schema<A>()` that declares one positional
 argument's inferred schema, as in `Box.schema<Row>(RowSchema.schema)`. An enum
 with a static `schema` or a `@Schemable(schemas: [...])` entry resolves to it
 instead of `Ack.enumValues`. A class may also expose its own generated codec
-with `static final schema = _accountSchema;` (or `AccountSchema.schema`).
+with `static final schema = AccountSchema.schema;`.
 
 Use `@Schemable(description: ...)` for class descriptions and a single-line
 `@description` tag in a `///` or `/** */` doc comment on a class, field, or
@@ -324,13 +325,13 @@ shared by all `@Schemable` classes in that library and any library that imports 
 
 On a class, `@Schemable()` annotates public, constructable `final class` declarations whose
 stored fields are final. Annotated sealed union bases remain supported, and
-their concrete branches must also be final. Use `@Validate.optional()` or
-`@Validate.required()` to override inferred key presence, `@Validate.notNull()`
+their concrete branches must also be final. Use `@IsOptional()` or
+`@IsRequired()` to override inferred key presence, `@IsNotNull()`
 to reject JSON `null` without requiring the key, `JsonMaybe<T>` to distinguish
 omitted keys from explicit `null` on both parse and encode, and
-`@AckKey('wire_name')` to override a single field's JSON key. Validation
-annotations use `@Validate.*` (such as `@Validate.matches(pattern)` for
-`Ack.string().matches(pattern)`). See the
+`@AckKey('wire_name')` to override a single field's JSON key. Rule
+annotations add constraints (such as `@HasMatch(pattern)` for
+`Ack.string().matches(pattern)`, which is not anchored). See the
 [Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas)
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.
@@ -349,12 +350,12 @@ means a JSON-safe value, not an arbitrary Dart instance:
 | `dynamic` | rejected; use `Object?` |
 
 For a hand-written `Account`, class-first generation exposes an
-`AccountSchema` facade backed by a private `_accountSchema` codec. The facade
+`AccountSchema` facade backed by a private codec variable. The facade
 provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
 typed `schema`, and a `wireSchema` that validates like `schema` but returns the
 JSON map. Instantiable models apply the generated
 `_$AccountAck` mixin, which supplies `toJson`, `safeToJson`, a typed `copyWith`,
-and deep collection-aware equality. Add `static final schema = _accountSchema;`
+and deep collection-aware equality. Add `static final schema = AccountSchema.schema;`
 and `static final fromJson = AccountSchema.fromJson;` when the class should
 expose the schema and one-argument JSON constructor directly. Imported nested
 models compose as `prefix.AddressSchema.schema` (or `prefix.Address.schema` when
@@ -366,10 +367,8 @@ be split across multiple imports that use the same prefix.
 
 ### Beta.2 defaults and null
 
-`@Validate.*` remains the field and parameter annotation API, including
-`@Validate.required()` and `@Validate.notNull()`. Non-nullable fields reject an
-explicit JSON null even with a constructor default; `T?` accepts it unless
-marked `@Validate.notNull()`. An omitted key uses its constructor default, and a
-null defaulted field encodes as that default. Regenerate model parts after
-upgrading `ack` and `ack_generator` to 2.0.0-beta.2; these rules break beta.1
-behavior. See the [migration guide](../../docs/getting-started/migration-guide.mdx).
+Non-nullable fields reject an explicit JSON null even with a constructor
+default; `T?` accepts it unless marked `@IsNotNull()`. An omitted key uses its
+constructor default, and a null defaulted field encodes as that default.
+Regenerate model parts after upgrading `ack` and `ack_generator` to
+2.0.0-beta.2; these rules break beta.1 behavior. See the [migration guide](../../docs/getting-started/migration-guide.mdx).

@@ -54,10 +54,10 @@ void main() {
 @Schemable(${custom ? 'schemas: [matrix$source]' : ''})
 final class $name with _\$${name}Ack {
   const $name({$parameter})${optionalNonNullable ? ' : value = value ?? $defaultCode' : ''};
-  ${required ? '@Validate.required()' : ''}
-  ${presence == 'Optional' ? '@Validate.optional()' : ''}
-  ${nullPolicy == 'NotNull' ? '@Validate.notNull()' : ''}
-  ${custom ? '' : '@Validate.minLength(2)'}
+  ${required ? '@IsRequired()' : ''}
+  ${presence == 'Optional' ? '@IsOptional()' : ''}
+  ${nullPolicy == 'NotNull' ? '@IsNotNull()' : ''}
+  ${custom ? '' : '@HasMinLength(2)'}
   final $type${nullable ? '?' : ''} value;
 }
 ''');

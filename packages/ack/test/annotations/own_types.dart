@@ -35,3 +35,13 @@ final class Pattern {
   const Pattern(this.source);
   final String source;
 }
+
+final class Required {
+  const Required(this.reason);
+  final String reason;
+}
+
+final class Optional {
+  const Optional(this.value);
+  final Object? value;
+}

@@ -4,14 +4,22 @@ import 'package:test/test.dart';
 
 @Schemable(name: 'Endpoint')
 final class _Endpoint {
-  const _Endpoint({required this.uri, required this.createdAt});
+  const _Endpoint({
+    required this.uri,
+    required this.createdAt,
+    required this.path,
+  });
 
   @AckKey('endpoint_uri')
-  @Validate.uri()
+  @IsUri()
   final Uri uri;
 
-  @Validate.dateTime()
+  @IsDateTime()
   final DateTime createdAt;
+
+  @IsRequired()
+  @HasMatch('^/')
+  final String path;
 }
 
 void main() {
@@ -23,11 +31,13 @@ void main() {
       final endpoint = _Endpoint(
         uri: Uri.parse('https://example.com'),
         createdAt: DateTime.utc(2026, 10, 1),
+        path: '/v1',
       );
 
       expect(pattern.allMatches(annotation.name!.toLowerCase()), hasLength(3));
       expect(endpoint.uri.host, 'example.com');
       expect(endpoint.createdAt.year, 2026);
+      expect('/'.allMatches(endpoint.path), hasLength(1));
     },
   );
 }
