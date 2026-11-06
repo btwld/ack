@@ -8,7 +8,11 @@ on:
     branches: [main]
   # No `branches:` filter. A stacked pull request targets its parent
   # branch, not main, and would otherwise run no checks at all.
+  # Include `ready_for_review` so marking a draft ready runs CI.
+  # Every job below skips while the pull request is a draft.
+  # Push, workflow_dispatch, and workflow_call still run every job.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
   workflow_call:
 
@@ -31,6 +35,7 @@ env:
 jobs:
   minimum-dart-sdk:
     name: Minimum Dart SDK
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -92,6 +97,7 @@ jobs:
 
   minimum-flutter-sdk:
     name: Minimum Flutter SDK
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -126,6 +132,7 @@ jobs:
 
   json-schema-draft7:
     name: JSON Schema Draft-7 batch validation
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -153,6 +160,7 @@ jobs:
 
   api-compatibility:
     name: API compatibility
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -178,6 +186,7 @@ jobs:
 
   deterministic-generation:
     name: Deterministic generation
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -212,6 +221,7 @@ jobs:
 
   publish-dry-run:
     name: Publish dry run
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

@@ -9,7 +9,11 @@ on:
       - 'llms.txt'
   # No `branches:` filter. A stacked pull request targets its parent
   # branch, not main, and would otherwise run no checks at all.
+  # Include `ready_for_review` so marking a draft ready runs CI.
+  # Every job below skips while the pull request is a draft.
+  # Pushes to main still run every job.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'docs/**'
       - 'docs.json'
@@ -25,6 +29,7 @@ concurrency:
 jobs:
   validate:
     name: validate
+    if: "github.event_name != 'pull_request' || github.event.pull_request.draft == false"
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
