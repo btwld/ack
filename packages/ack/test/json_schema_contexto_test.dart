@@ -1,6 +1,4 @@
-import 'package:ack/ack.dart';
-import 'package:punycoder/punycoder.dart' as pc;
-import 'package:test/test.dart';
+import 'support/idna_labels.dart';
 
 void main() {
   // RFC 5892 Appendix A.4-A.7 use Script, not Script_Extensions or blocks.
@@ -48,30 +46,5 @@ void main() {
       name: 'rejects non-Hebrew before geresh',
     ),
   ];
-  for (final format in ['idn-hostname', 'idn-email', 'hostname', 'email']) {
-    for (final operation in ['parse', 'encode']) {
-      for (final example in examples) {
-        test('$format $operation ${example.name}', () {
-          final schema = Ack.fromJsonSchema({
-            'type': 'string',
-            'format': format,
-          }, assertFormats: true);
-          final restored = Ack.fromJsonSchema(schema.toJsonSchema());
-          for (final label in [
-            if (format.startsWith('idn-')) example.label,
-            'xn--${pc.punycode.encode(example.label)}',
-          ]) {
-            final host = '$label.example';
-            final input = format.endsWith('email') ? 'user@$host' : host;
-            for (final candidate in [schema, restored]) {
-              final result = operation == 'parse'
-                  ? candidate.safeParse(input)
-                  : candidate.safeEncode(input);
-              expect(result.isOk, example.valid, reason: input);
-            }
-          }
-        });
-      }
-    }
-  }
+  testIdnaLabels(examples);
 }

@@ -7,6 +7,8 @@ import 'package:build_test/build_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import '../test_utils/isolate_sources.dart';
+
 void main() {
   test('build.yaml encodes the single-builder Ack 2.0 contract', () {
     var directory = Directory.current;
@@ -37,8 +39,7 @@ void main() {
   });
 
   test('Ack model builder exits immediately for ordinary libraries', () async {
-    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
-    await readerWriter.testing.loadIsolateSources();
+    final readerWriter = await createTestReaderWriter();
     await testBuilder(
       ackModelBuilder(BuilderOptions.empty),
       {'test_pkg|lib/plain.dart': 'final value = 1;'},

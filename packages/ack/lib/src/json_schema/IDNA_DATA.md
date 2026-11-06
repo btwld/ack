@@ -5,6 +5,9 @@ A-labels against the complete RFC 5892 derived-property registry published by
 IANA for **Unicode 12.0.0**. `PVALID`, `CONTEXTJ`, and `CONTEXTO` come directly
 from that registry. `DISALLOWED` and `UNASSIGNED` are rejected. Characters
 assigned after Unicode 12 are therefore unsupported until this pin is updated.
+The pin is 12.0.0 because it was IANA's most recent reviewed IDNA2008 table
+when the data was generated, and a fixed version keeps results independent of
+the Dart SDK's Unicode data.
 
 Joining_Type, Canonical_Combining_Class=Virama, General_Category (leading
 marks), Bidi_Class, and contextual Script properties use the same Unicode
@@ -40,4 +43,5 @@ dart scripts/generate_unicode_idna_scripts.dart Scripts.txt
 The IANA generator requires complete, ordered coverage of U+0000–U+10FFFF,
 including rejected ranges. All generated files are private library parts.
 Keep the registry, contextual properties, documentation, and tests pinned to
-the same version when updating the data.
+the same version when updating the data. Re-pin the test fixtures, including
+`test/fixtures/idna/iana_12_sample.dart`, with any upgrade.

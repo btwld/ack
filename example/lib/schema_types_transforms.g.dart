@@ -74,7 +74,7 @@ final class ColorModel {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'ColorModel(value: $value)';
+  String toString() => 'ColorModel(value: ${value})';
 
   static ColorModel _fromAckRuntime(Color value) => ColorModel(value);
 
@@ -222,7 +222,7 @@ final class Profile {
 
   @override
   String toString() =>
-      'Profile(homepage: $homepage, birthday: $birthday, lastLogin: $lastLogin, timeout: $timeout, links: $links, favoriteColor: $favoriteColor, slug: $slug, accent: $accent, colors: $colors, customColors: $customColors, tagList: $tagList)';
+      'Profile(homepage: ${homepage}, birthday: ${birthday}, lastLogin: ${lastLogin}, timeout: ${timeout}, links: ${links}, favoriteColor: ${favoriteColor}, slug: ${slug}, accent: ${accent}, colors: ${colors}, customColors: ${customColors}, tagList: ${tagList})';
 
   static Profile _fromAckRuntime(Map<String, Object?> value) => Profile(
     homepage: value['homepage'] as Uri,

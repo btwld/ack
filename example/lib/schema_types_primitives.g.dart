@@ -74,7 +74,7 @@ final class Password {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'Password(value: $value)';
+  String toString() => 'Password(value: ${value})';
 
   static Password _fromAckRuntime(String value) => Password(value);
 
@@ -162,7 +162,7 @@ final class Age {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'Age(value: $value)';
+  String toString() => 'Age(value: ${value})';
 
   static Age _fromAckRuntime(int value) => Age(value);
 
@@ -250,7 +250,7 @@ final class Price {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'Price(value: $value)';
+  String toString() => 'Price(value: ${value})';
 
   static Price _fromAckRuntime(double value) => Price(value);
 
@@ -338,7 +338,7 @@ final class Active {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'Active(value: $value)';
+  String toString() => 'Active(value: ${value})';
 
   static Active _fromAckRuntime(bool value) => Active(value);
 
@@ -427,7 +427,7 @@ final class Tags {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'Tags(value: $value)';
+  String toString() => 'Tags(value: ${value})';
 
   static Tags _fromAckRuntime(List<String> value) => Tags(value);
 
@@ -517,7 +517,7 @@ final class Scores {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'Scores(value: $value)';
+  String toString() => 'Scores(value: ${value})';
 
   static Scores _fromAckRuntime(List<int> value) => Scores(value);
 
@@ -608,7 +608,7 @@ final class StatusLiteral {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'StatusLiteral(value: $value)';
+  String toString() => 'StatusLiteral(value: ${value})';
 
   static StatusLiteral _fromAckRuntime(String value) => StatusLiteral(value);
 
@@ -697,7 +697,7 @@ final class Role {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'Role(value: $value)';
+  String toString() => 'Role(value: ${value})';
 
   static Role _fromAckRuntime(String value) => Role(value);
 
@@ -787,7 +787,7 @@ final class UserRoleModel {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'UserRoleModel(value: $value)';
+  String toString() => 'UserRoleModel(value: ${value})';
 
   static UserRoleModel _fromAckRuntime(UserRole value) => UserRoleModel(value);
 
@@ -878,7 +878,7 @@ final class StatusEnum {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'StatusEnum(value: $value)';
+  String toString() => 'StatusEnum(value: ${value})';
 
   static StatusEnum _fromAckRuntime(Status value) => StatusEnum(value);
 
@@ -968,7 +968,7 @@ final class OptionalStatus {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'OptionalStatus(value: $value)';
+  String toString() => 'OptionalStatus(value: ${value})';
 
   static OptionalStatus _fromAckRuntime(String value) => OptionalStatus(value);
 
@@ -1060,7 +1060,7 @@ final class DefaultedEnum {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'DefaultedEnum(value: $value)';
+  String toString() => 'DefaultedEnum(value: ${value})';
 
   static DefaultedEnum _fromAckRuntime(UserRole value) => DefaultedEnum(value);
 
@@ -1152,7 +1152,7 @@ final class ChainedEnumString {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'ChainedEnumString(value: $value)';
+  String toString() => 'ChainedEnumString(value: ${value})';
 
   static ChainedEnumString _fromAckRuntime(String value) =>
       ChainedEnumString(value);
@@ -1244,7 +1244,7 @@ final class RefinedAge {
   int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
 
   @override
-  String toString() => 'RefinedAge(value: $value)';
+  String toString() => 'RefinedAge(value: ${value})';
 
   static RefinedAge _fromAckRuntime(int value) => RefinedAge(value);
 
