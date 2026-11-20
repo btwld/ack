@@ -1,0 +1,35 @@
+{
+  "name": "ack",
+  "version": "2.0.0-beta.3",
+  "description": "Agent skills for Ack 2.0, the Dart schema validation library: runtime schemas, @Schemable data classes, and schemas for MCP and Gemini.",
+  "author": {
+    "name": "Ack contributors"
+  },
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "dart",
+    "flutter",
+    "ack",
+    "validation",
+    "json-schema",
+    "codegen",
+    "mcp",
+    "gemini"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Ack",
+    "shortDescription": "Ack 2.0 schemas, data classes, and AI provider schemas for Dart",
+    "longDescription": "Agent skills for Ack 2.0, the Dart schema validation library: runtime schemas, @Schemable data classes, and schemas for MCP and Gemini.",
+    "developerName": "Ack contributors",
+    "category": "Coding",
+    "capabilities": [
+      "Skills"
+    ],
+    "defaultPrompt": [
+      "Validate this JSON payload with an Ack schema.",
+      "Add an @Schemable data class with validation rules.",
+      "Expose this Dart function as an MCP tool with an Ack input schema."
+    ]
+  }
+}

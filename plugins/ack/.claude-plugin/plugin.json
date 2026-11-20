@@ -1,0 +1,10 @@
+{
+  "name": "ack",
+  "version": "2.0.0-beta.3",
+  "description": "Agent skills for Ack 2.0, the Dart schema validation library: runtime schemas, @Schemable data classes, and schemas for MCP and Gemini.",
+  "author": { "name": "Ack contributors" },
+  "homepage": "https://github.com/btwld/ack",
+  "repository": "https://github.com/btwld/ack",
+  "license": "BSD-3-Clause",
+  "keywords": ["dart", "flutter", "ack", "validation", "json-schema", "codegen", "mcp", "gemini"]
+}

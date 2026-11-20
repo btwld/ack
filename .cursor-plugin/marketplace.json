@@ -1,0 +1,7 @@
+{
+  "name": "ack",
+  "owner": { "name": "Ack contributors" },
+  "plugins": [
+    { "name": "ack", "source": "plugins/ack", "description": "Agent skills for Ack 2.0 (Dart schema validation)." }
+  ]
+}
