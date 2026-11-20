@@ -1,9 +1,11 @@
 # MCP tools with ack_mcp_dart
 
-Source: https://github.com/btwld/ack/blob/main/packages/ack_mcp_dart/README.md (verified against `ack_mcp_dart` 2.0.0-beta.3 and `mcp_dart` 2.4.x)
+Source: [MCP adapter README](https://github.com/btwld/ack/blob/v2.0.0-beta.3/packages/ack_mcp_dart/README.md) (examples use `mcp_dart` 2.4.x).
+
+Replace `<constraint>` with the matching 2.x constraint from [the Ack version check](../../using-ack/SKILL.md#1-check-the-installed-version-first).
 
 ```bash
-dart pub add ack:^2.0.0-beta.3 ack_mcp_dart:^2.0.0-beta.3 mcp_dart
+dart pub add 'ack:<constraint>' 'ack_mcp_dart:<constraint>' mcp_dart
 ```
 
 ## Input-only tool: `registerAckTool`

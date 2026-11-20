@@ -5,17 +5,17 @@ description: Ack 2.0 runtime schemas for Dart. Use when validating JSON or maps 
 
 # Using Ack
 
-> **Ack 2.0 card.** Pin `ack: ^2.0.0-beta.3` and the same pin for every `ack_*` package; a bare `dart pub add ack` selects the stable release. Dart >=3.13, Flutter >=3.47. Use the [repository API index](https://github.com/btwld/ack/blob/main/llms.txt) and check that examples match your installed version. Untrusted JSON goes through `safeParse`; constructors and schema exports do not run validation. Native `toJsonSchema()` emits Draft-7.
-
 ## 1. Check the installed version first
+
+Use `^2.0.0-beta.3` or any later 2.x constraint. Keep `ack` and the `ack_*` packages you use on the same release. The examples were checked against the release in the [tagged API index](https://github.com/btwld/ack/blob/v2.0.0-beta.3/llms.txt); for a newer install, use the docs and SDK requirements for the installed release. The baseline requires Dart >=3.13 (Flutter >=3.47 for Flutter apps).
 
 Run `dart pub deps --style=compact | grep -E '^- ack'` (or read `pubspec.lock`).
 
-- **Already 2.0.0-beta.3:** continue.
-- **No ack yet:** `dart pub add ack:^2.0.0-beta.3` (`flutter pub add` in a Flutter app).
-- **On 1.x or an earlier 2.0 prerelease:** ask the user to confirm the move to `2.0.0-beta.3` and its SDK requirements before changing dependencies or source. A request like “update to the latest Ack” is not approval to switch from stable to a major prerelease. Wait for their answer; after they confirm, follow [references/migrate-1x.md](references/migrate-1x.md).
+- **On the baseline or a later 2.x release:** keep the installed version. When adding a companion package, constrain it to the matching release line.
+- **No ack yet:** use `dart pub add 'ack:<constraint>'` (`flutter pub add` in a Flutter app), replacing `<constraint>` with the chosen 2.x constraint. Use an explicit constraint rather than relying on the default solver to pick the desired prerelease.
+- **On 1.x or an earlier 2.0 prerelease:** ask the user to confirm the target and its SDK requirements before changing dependencies or source. “Update to the latest Ack” does not authorize switching from stable to a prerelease. After confirming, follow [the migration reference](references/migrate-1x.md).
 
-Done when `dart pub deps` shows `ack 2.0.0-beta.3`, or the user declined the upgrade and you are working within their version.
+Done when `dart pub deps` resolves to the baseline or a later 2.x release, or the user declined the upgrade and you are working within their version.
 
 ## 2. Build the schema
 
@@ -48,6 +48,8 @@ Done when `dart pub deps` shows `ack 2.0.0-beta.3`, or the user declined the upg
 
 ## 3. Parse at the boundary
 
+Use `safeParse` for untrusted JSON; neither model constructors nor schema export validate it.
+
 ```dart
 final result = schema.safeParse(jsonDecode(body));
 switch (result) {
@@ -55,7 +57,9 @@ switch (result) {
   case Fail(:final error):
     for (final leaf in leafErrors(error)) log(leaf.path, leaf.message); // #/address/city
 }
+```
 
+```dart
 Iterable<SchemaError> leafErrors(SchemaError error) sync* {
   switch (error) {
     case SchemaNestedError(:final errors):
@@ -81,6 +85,6 @@ A failing field comes back wrapped: the top error is a `SchemaNestedError` at `#
 
 - `dart analyze` reports no issues and no deprecation warnings from ack.
 - Every schema you wrote or changed has a test that parses one valid payload and, for each rule (constraint, presence choice, refine, codec), one payload that breaks it and asserts the expected leaf path in `leafErrors(error)` (the top `error.path` is `#` for any field failure). Make sure each failing test actually fails before you count it.
-- If you exported a schema, you read every warning in its schema model (walk the tree, see [references/json-schema.md](references/json-schema.md)) and acted on each one.
+- If you exported a schema, you acted on warnings from the [reachable model nodes](references/json-schema.md#export), including map values, and separately tested runtime rules inside any lazy targets against their exported shapes.
 
 Siblings: `build-data-classes-with-ack` (generated `@Schemable` models), `ack-provider-schemas` (schemas for MCP and Gemini).

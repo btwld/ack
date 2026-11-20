@@ -64,7 +64,7 @@ After a successful parse, `dueDate` is a local-midnight `DateTime` (not UTC), or
 
 ## Keywords Gemini ignores
 
-Gemini strips `minLength`, `maxLength`, `minProperties`, `maxProperties`, `uniqueItems`, and `contains` without an error. It honors `type`, `properties`, `required`, `additionalProperties`, `enum`, `format`, `minimum`/`maximum`, `minItems`/`maxItems`, `anyOf`, and `description`. Ack's nullable `anyOf: [..., {type: null}]` is accepted. Every ignored keyword and every refine is enforced only by your `safeParse`.
+Gemini strips `minLength`, `maxLength`, `minProperties`, `maxProperties`, `uniqueItems`, and `contains` without an error. It honors `type`, `properties`, `required`, `additionalProperties`, `enum`, `format`, `minimum`/`maximum`, `minItems`/`maxItems`, `anyOf`, and `description`. Ack's nullable `anyOf: [..., {type: null}]` is accepted. The [documented structured-output subset](https://ai.google.dev/gemini-api/docs/structured-output) does not list `const`, so don't rely on Gemini to enforce Ack's exact union discriminators. Validate them, ignored keywords, and refinements with `safeParse`.
 
 ## Newer Interactions API
 

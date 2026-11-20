@@ -5,17 +5,23 @@ description: Generate Dart data classes with Ack 2.0's @Schemable and ack_genera
 
 # Build data classes with Ack
 
-> **Ack 2.0 card.** Pin `ack: ^2.0.0-beta.3` and the same pin for every `ack_*` package; a bare `dart pub add ack` selects the stable release. Dart >=3.13, Flutter >=3.47. Use the [repository API index](https://github.com/btwld/ack/blob/main/llms.txt) and check that examples match your installed version. Untrusted JSON goes through `safeParse`; constructors and schema exports do not run validation. Native `toJsonSchema()` emits Draft-7.
-
 The class is the source of truth: you write a `final class` and the generator writes its schema, JSON mapping, `copyWith`, and equality. The fluent schema API itself (presence, constraints, codecs, errors) belongs to the `using-ack` skill.
 
 ## 1. Set up the package
 
-1. Check `dart pub deps --style=compact | grep ack`. If ack is 1.x or an earlier 2.0 prerelease, ask the user to confirm `2.0.0-beta.3` and the SDK requirements. “Update to the latest” does not confirm the prerelease. Wait for confirmation before editing dependencies or source, then follow `using-ack`'s migration reference.
-2. Add `dart pub add ack:^2.0.0-beta.3 dev:ack_generator:^2.0.0-beta.3 dev:build_runner`.
-3. In a large package, optionally scope the generator in `build.yaml` with `ack_generator:ack_generator: generate_for: [lib/models/**.dart]`.
+1. Follow [the Ack version check](../using-ack/SKILL.md#1-check-the-installed-version-first) before changing dependencies or source.
+2. If needed, run `dart pub add 'ack:<constraint>' 'dev:ack_generator:<constraint>' dev:build_runner`, substituting the same chosen 2.x constraint for both Ack packages.
+3. In a large package, optionally scope the generator in `build.yaml`:
 
-Done when `dart pub deps` shows `ack 2.0.0-beta.3` and `ack_generator 2.0.0-beta.3`.
+   ```yaml
+   targets:
+     $default:
+       builders:
+         ack_generator:ack_generator:
+           generate_for: [lib/models/**.dart]
+   ```
+
+Done when `dart pub deps` shows `ack` and `ack_generator` on the same supported 2.x release.
 
 ## 2. Write the class
 
@@ -61,7 +67,7 @@ Run `dart run build_runner build`. For a class-first model the build writes `<fi
 
 - Load untrusted input with `Invoice.schema.safeParse(json)` (or `InvoiceSchema.safeParse` when there is no refine) and handle `Fail`. `fromJson` / `parse` throw `AckException`.
 - **A refine lives only on the static you attached it to.** `InvoiceSchema.parse`, `InvoiceSchema.fromJson`, and anything wired to them skip it. Route every load through `Invoice.schema` when the class has a refine. A refine failure is a `SchemaValidationError` at path `#`.
-- **Generated constructors don't validate.** `Invoice(amount: -1, ...)` compiles and runs. Values built in code are checked when you encode them: `toJson()` throws, `safeToJson()` returns `Fail`. Both encode through `InvoiceSchema`, so they check field rules but **not** a class-level refine; `Invoice.schema.safeEncode(invoice)` checks both. Run a form or user edit through `Invoice.schema.safeEncode(...)` before you store it.
+- **Generated constructors don't validate.** `Invoice(amount: -1, ...)` compiles and runs. For invalid fields, `toJson()` throws and `safeToJson()` returns `Fail`. Until [#263](https://github.com/btwld/ack/issues/263) lands, both encode through `InvoiceSchema` and skip a class-level refine. Use `Invoice.schema.safeEncode(invoice)` to check both field rules and the refine before storing a form or user edit.
 - Build `JsonMaybe` fields with `const JsonMaybe.absent()` (key omitted), `JsonMaybe.value(0.1)`, or `JsonMaybe<double>.value(null)` (explicit `null` on the wire).
 - `copyWith(notes: null)` clears a nullable field; leaving the argument out keeps it.
 - Compose: `Ack.list(Invoice.schema)`, or a field typed `Invoice` inside another `@Schemable` class.
@@ -75,6 +81,6 @@ Run `dart run build_runner build`. For a class-first model the build writes `<fi
 
 - `dart run build_runner build` succeeds and `dart analyze` reports no issues and no ack deprecations.
 - Every model you added or changed has tests that: parse a valid payload and assert typed fields; round-trip `toJson()` back through `Model.schema.parse` to an equal value; and, for each rule annotation, presence choice, and refine, parse a payload that breaks it and assert `isFail` with the expected leaf path (walk `SchemaNestedError.errors`, see `using-ack`; the top `error.path` is `#`). Watch each failing case actually fail.
-- No load path for a refined model goes through `<Class>Schema.fromJson` / `.parse`.
+- Every load path for a refined model uses the refined `Model.schema`; every encode path that must enforce the refine uses `Model.schema.encode` / `.safeEncode` until [#263](https://github.com/btwld/ack/issues/263) is fixed.
 
 Siblings: `using-ack` (fluent schemas, errors, JSON Schema, migration), `ack-provider-schemas` (schemas for MCP and Gemini).

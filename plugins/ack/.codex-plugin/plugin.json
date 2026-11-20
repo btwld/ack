@@ -23,9 +23,6 @@
     "longDescription": "Agent skills for Ack 2.0, the Dart schema validation library: runtime schemas, @Schemable data classes, and schemas for MCP and Gemini.",
     "developerName": "Ack contributors",
     "category": "Coding",
-    "capabilities": [
-      "Skills"
-    ],
     "defaultPrompt": [
       "Validate this JSON payload with an Ack schema.",
       "Add an @Schemable data class with validation rules.",

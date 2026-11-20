@@ -61,7 +61,10 @@ References: [Melos versioning](https://melos.invertase.dev/commands/version),
 
 4. Review generated changelogs and retain substantive release notes; move only
    unreleased notes into the new section, preserving every published section.
-   Update installation snippets to match each package's version.
+   Update installation snippets to match each package's version. Under
+   `plugins/ack`, bump the Claude, Codex, and Cursor `plugin.json` versions,
+   the baseline constraint in `skills/using-ack/SKILL.md`, and the version-matched
+   repository links in the skills to the new release tag.
 5. Compare against the most recent coordinated stable release in
    `API_BASELINE_VERSION` in `.github/workflows/preflight.yml` (currently
    `1.7.0`). Keep that stable baseline for prereleases, so a prerelease cannot hide a

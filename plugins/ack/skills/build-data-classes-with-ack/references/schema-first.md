@@ -1,6 +1,6 @@
 # Schema-first models and .schema.json codegen
 
-Owning docs: https://github.com/btwld/ack/blob/main/docs/core-concepts/typesafe-schemas.mdx and https://github.com/btwld/ack/blob/main/packages/ack_generator/README.md
+Owning docs: [Type-safe schemas](https://github.com/btwld/ack/blob/v2.0.0-beta.3/docs/core-concepts/typesafe-schemas.mdx) and the [generator README](https://github.com/btwld/ack/blob/v2.0.0-beta.3/packages/ack_generator/README.md).
 
 ## @Schemable on a top-level schema
 
@@ -44,7 +44,7 @@ The generator rejects:
 
 Recursion uses named `Ack.lazy('Node', () => nodeSchema)`.
 
-Check a union's export: each branch exports `{"method": {"const": "card"}}`, and `Ack.datetime()` exports `format: date-time`. A `.min(DateTime)` on a date codec is enforced by `safeParse` only and is absent from the export; the root's warnings stay empty, so walk the model tree (`using-ack`'s json-schema reference) to see `datetime_constraint_not_draft7`, and put the bound in `.describe(...)`.
+Check the union's export: each branch exports its own `const` discriminator (for example, `{"method": {"const": "card"}}`), and `Ack.datetime()` exports `format: date-time`. The `.min(DateTime)` bound is absent from the export. Use the [warning walk](../../using-ack/references/json-schema.md#export) to find `datetime_constraint_not_draft7` on the reachable field node, and put the bound in `.describe(...)`. For rules inside lazy targets, inspect the exported shape and test the runtime rule separately; the walk cannot reach their warnings.
 
 ## Models from `.schema.json` (opt-in builder)
 

@@ -5,7 +5,7 @@ description: Hand Ack 2.0 schemas to AI providers and validate what comes back. 
 
 # Ack provider schemas
 
-> **Ack 2.0 card.** Pin `ack: ^2.0.0-beta.3` and the same pin for every `ack_*` package; a bare `dart pub add ack` selects the stable release. Dart >=3.13, Flutter >=3.47. Use the [repository API index](https://github.com/btwld/ack/blob/main/llms.txt) and check that examples match your installed version. Untrusted JSON goes through `safeParse`; constructors and schema exports do not run validation. Native `toJsonSchema()` emits Draft-7.
+Before adding packages, follow [the Ack version check](../using-ack/SKILL.md#1-check-the-installed-version-first).
 
 ## The rule: the schema is a hint, `safeParse` is the gate
 
@@ -25,20 +25,9 @@ So every payload coming in from a provider or client goes through `safeParse` on
    - Gemini API over REST or another SDK, with function declarations or a response schema: [references/gemini-api.md](references/gemini-api.md)
 
    Done when you have read the matching reference.
-2. **Shape the schema for the provider.** The root is an `Ack.object` (tools and function parameters require an object root, and a discriminated or nullable root exports as `anyOf`). Keep it focused, because schema size costs input tokens. Add `.describe(...)` or `/// @description` on fields the model has to fill in. A `@Schemable` class's `Model.schema` works anywhere a schema does. Done when `schema.toJsonSchema()['type'] == 'object'` and you have read every export warning in the schema model tree (`using-ack`'s json-schema reference shows the walk).
+2. **Shape the schema for the provider.** The root is an `Ack.object` (tools and function parameters require an object root, and a discriminated or nullable root exports as `anyOf`). Keep it focused, because schema size costs input tokens. Add `.describe(...)` or `/// @description` on fields the model has to fill in. A `@Schemable` class's `Model.schema` works anywhere a schema does. Done when `schema.toJsonSchema()['type'] == 'object'`, you have reviewed warnings from all [reachable model nodes](../using-ack/references/json-schema.md#export), and you have checked lazy targets separately for runtime rules missing from the export.
 3. **Export it the way the reference says, and send it.** Use the adapter call or the `toJsonSchema()` map unchanged. Don't hand-edit the map to fit a provider unless the reference says to.
-4. **Gate what comes back.** Decode the JSON, then call `schema.safeParse(decoded)` (for a generated class, use `Model.schema.safeParse`). Use the parsed value, never the raw map. On `Fail`, a hand-written gate reports leaf errors as `path: message`. Never surface the top error's `toString()` or an `AckException`, which echo the whole payload. `ack_mcp_dart` already reports leaf lines. For a hand-written gate, use this helper with `package:ack/ack.dart`:
-
-   ```dart
-   Iterable<SchemaError> leafErrors(SchemaError error) sync* {
-     switch (error) {
-       case SchemaNestedError(:final errors):
-         for (final child in errors) yield* leafErrors(child);
-       default:
-         yield error;
-     }
-   }
-   ```
+4. **Gate what comes back.** Decode the JSON, then call `schema.safeParse(decoded)` (for a generated class, use `Model.schema.safeParse`). Use the parsed value, never the raw map. On `Fail`, report `path: message` using [`leafErrors`](../using-ack/SKILL.md#3-parse-at-the-boundary). Never surface the top error's `toString()` or an `AckException`, which echo the whole payload. `ack_mcp_dart` already reports leaf lines.
 
 ## Done when
 

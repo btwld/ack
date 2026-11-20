@@ -1,6 +1,6 @@
 # Custom field types in @Schemable classes
 
-Owning guide: https://github.com/btwld/ack/blob/main/docs/core-concepts/typesafe-schemas.mdx ("Custom schemas and types that own their schema").
+Owning guide: [Type-safe schemas](https://github.com/btwld/ack/blob/v2.0.0-beta.3/docs/core-concepts/typesafe-schemas.mdx) ("Custom schemas and types that own their schema").
 
 A field whose type the generator can't infer needs a schema that **produces that type**, usually a codec. Ack looks for one in this order:
 
