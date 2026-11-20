@@ -68,6 +68,7 @@ See [installation](docs/getting-started/installation.mdx) for SDK requirements,
 ## Documentation and contributing
 
 - [Guides](docs/index.mdx) and the branch-local [agent API index](llms.txt)
+- [Ack agent skills plugin](plugins/ack) for Claude Code, Codex, and Cursor
 - [Architecture decisions](ARCHITECTURE.md): rationale and superseded choices
 - [CONTRIBUTING.md](CONTRIBUTING.md): setup, checks, and generator resource limits
 - [PUBLISHING.md](PUBLISHING.md): coordinated releases and tag-only publication

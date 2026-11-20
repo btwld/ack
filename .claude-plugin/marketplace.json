@@ -1,0 +1,16 @@
+{
+  "name": "ack",
+  "owner": {
+    "name": "Ack contributors"
+  },
+  "metadata": {
+    "description": "Agent skills for the Ack Dart schema validation library."
+  },
+  "plugins": [
+    {
+      "name": "ack",
+      "source": "./plugins/ack",
+      "description": "Agent skills for Ack 2.0 (Dart schema validation)."
+    }
+  ]
+}

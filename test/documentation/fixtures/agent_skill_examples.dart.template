@@ -1,0 +1,113 @@
+import 'dart:convert';
+
+import 'package:ack/ack.dart';
+import 'package:ack_skill_examples/firebase.dart' as firebase;
+import 'package:ack_skill_examples/gemini.dart' as gemini;
+import 'package:ack_skill_examples/mcp.dart' as mcp;
+import 'package:ack_skill_examples/models/custom.dart' as custom;
+import 'package:ack_skill_examples/models/invoice.dart';
+import 'package:ack_skill_examples/models/payment.dart';
+import 'package:ack_skill_examples/validation.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core_platform_interface/test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:mcp_dart/mcp_dart.dart';
+
+void main() {
+  test('map and list warnings include the schema path', () {
+    final schema = Ack.object({
+      'dates/~ %': Ack.map(Ack.datetime().min(DateTime.utc(2026))),
+      'names': Ack.list(Ack.string().trim().minLength(3)),
+    });
+    final model = schema.toSchemaModel();
+    expect(model.warnings, isEmpty);
+    final warnings = allWarnings(model).toList();
+    expect(
+      warnings.map((entry) => (entry.$1, entry.$2.code)),
+      unorderedEquals([
+        (
+          '#/properties/dates~1~0%20%25/additionalProperties',
+          'datetime_constraint_not_draft7',
+        ),
+        ('#/properties/names/items', 'codec_runtime_constraint_not_exported'),
+      ]),
+    );
+    expect(warnings.map((entry) => entry.$2.path), everyElement(isNull));
+  });
+
+  test('normalizer constraints validate at runtime but are not exported', () {
+    final schema = Ack.string().trim().minLength(3);
+    expect(schema.toJsonSchema(), {'type': 'string'});
+    expect(schema.safeParse('  ab  ').isFail, isTrue);
+  });
+
+  test('boundary check reports the leaf path', () {
+    final errors = <String>[];
+    validate(
+      Ack.object({'name': Ack.string()}),
+      '{"name":9}',
+      (_) => fail('expected invalid payload'),
+      (path, message) => errors.add(path),
+    );
+    expect(errors, ['#/name']);
+  });
+
+  test('generated class and schema examples use typed values', () {
+    final invoice = Invoice.schema.parse({
+      'invoice_id': '1',
+      'customer_email': 'customer@example.com',
+      'amount': 1,
+      'due': '2026-06-03T00:00:00Z',
+      'issued_at': '2026-06-01T00:00:00Z',
+    })!;
+    expect(invoice.toJson()['currency'], 'usd');
+    expect(
+      Payment.parse({
+        'method': 'card',
+        'last4': '1234',
+        'paidAt': '2026-06-01T00:00:00Z',
+      }),
+      isA<Card>(),
+    );
+    expect(custom.Money.schema.parse(50), const custom.Money(50));
+    expect(
+      custom.ThemeSchema.parse({'primary': '#abcdef'}).primary.hex,
+      '#abcdef',
+    );
+  });
+
+  test('MCP example applies defaults over an in-memory connection', () async {
+    final result = await mcp.callSearch();
+    expect(result.isError, isNot(true));
+    expect((result.content.single as TextContent).text, 'limit 5');
+  });
+
+  test('Gemini REST example advertises the Ack schema', () {
+    final request = gemini.buildRequest('test', gemini.createTaskInput);
+    final tools = request['tools'] as List;
+    final declarations = tools.single['functionDeclarations'] as List;
+    expect(
+      declarations.single['parametersJsonSchema'],
+      gemini.createTaskInput.toJsonSchema(),
+    );
+  });
+
+  test('Firebase example sends the schema and rejects a bad reply', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    setupFirebaseCoreMocks();
+    await Firebase.initializeApp();
+    late Map<String, Object?> requestBody;
+    final result = http.runWithClient(
+      () => firebase.askReport(firebase.reportModel('test-model'), 'Weather'),
+      () => MockClient((request) async {
+        requestBody = jsonDecode(request.body) as Map<String, Object?>;
+        return http.Response(firebase.cannedBody, 200);
+      }),
+    );
+    await expectLater(result, throwsA(isA<FormatException>()));
+    final config = requestBody['generationConfig'] as Map;
+    expect(config['responseJsonSchema'], firebase.reportSchema.toJsonSchema());
+  });
+}

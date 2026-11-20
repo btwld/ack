@@ -1,0 +1,12 @@
+{
+  "name": "ack",
+  "interface": { "displayName": "Ack" },
+  "plugins": [
+    {
+      "name": "ack",
+      "source": { "source": "local", "path": "./plugins/ack" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Coding"
+    }
+  ]
+}
