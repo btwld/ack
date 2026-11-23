@@ -98,6 +98,31 @@ checks using matching Unicode data. Disallowed and unassigned code points,
 including characters assigned after Unicode 12, are rejected after hostname
 input mapping. The data is bundled; validation does not fetch it at runtime.
 
+Ack does not bundle Unicode normalization tables, so its core has no extra
+dependencies. ASCII hostnames and email addresses need nothing more, except
+that `xn--` A-labels are checked for normalized form only when a normalizer is
+given. For full IDNA normalization of international names, pass an NFKC
+function as `unicodeNormalizer`, for example from `package:unorm_dart`:
+
+```dart
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
+
+final host = Ack.fromJsonSchema(
+  {'type': 'string', 'format': 'idn-hostname'},
+  assertFormats: true,
+  unicodeNormalizer: unorm.nfkc,
+);
+host.parse('０１.example'); // Full-width digits map to "01.example".
+```
+
+Without a normalizer, Ack checks Unicode labels as given. The IDNA2008 code
+point, contextual and Bidi rules still apply. Compatibility forms that need
+mapping, such as full-width letters and digits, fail. A label that is not in
+normalized form, such as `a` followed by a combining accent, can pass. JSON
+Schema treats `format` checks as optional, so these results stay within the
+specification. The normalizer is not part of an exported JSON Schema; pass it
+again when you import the export.
+
 Export retains `format` in imported schemas. External JSON Schema validators may
 treat `format` as an annotation unless configured to assert it.
 

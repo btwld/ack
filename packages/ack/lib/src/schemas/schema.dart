@@ -3,8 +3,6 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-import 'package:punycoder/punycoder.dart' as punycoder;
-import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 import '../common_types.dart';
 import '../constraints/comparison_constraint.dart';
@@ -24,6 +22,7 @@ part '../json_schema/json_schema_compiler.dart';
 part '../json_schema/json_schema_resource_traversal.dart';
 part '../json_schema/json_schema_formats.dart';
 part '../json_schema/json_schema_import_error.dart';
+part '../json_schema/punycode.dart';
 part '../json_schema/standard_meta_schemas.dart';
 part '../json_schema/unicode_bidi.dart';
 part '../json_schema/unicode_contextj.dart';

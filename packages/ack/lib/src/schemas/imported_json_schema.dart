@@ -15,6 +15,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     Uri? baseUri,
     Map<Uri, Object> documents = const {},
     bool assertFormats = false,
+    String Function(String value)? unicodeNormalizer,
   }) {
     final compiler = _JsonSchemaCompiler(assertFormats: assertFormats);
     final base = baseUri ?? Uri.parse('ack-import:///root.json');
@@ -34,11 +35,18 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     if (compiler.diagnostics.isNotEmpty) {
       throw JsonSchemaImportException._(compiler.diagnostics);
     }
+    final indexedNodes = compiler.locations.values.toList(growable: false);
+    if (unicodeNormalizer != null) {
+      for (final node in indexedNodes) {
+        node.unicodeNormalizer = unicodeNormalizer;
+      }
+    }
     return ImportedJsonSchema._(
       root,
       externalRoots: externalRoots,
-      indexedNodes: compiler.locations.values.toList(growable: false),
+      indexedNodes: indexedNodes,
       assertFormats: assertFormats,
+      unicodeNormalizer: unicodeNormalizer,
     );
   }
 
@@ -47,6 +55,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     required this._externalRoots,
     required this._indexedNodes,
     required this.assertFormats,
+    this.unicodeNormalizer,
     bool? isNullable,
     super.isOptional,
     String? description,
@@ -61,6 +70,11 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   final List<_ImportedNode> _externalRoots;
   final List<_ImportedNode> _indexedNodes;
   final bool assertFormats;
+
+  /// The Unicode NFKC normalizer used by IDNA format checks, if any.
+  ///
+  /// It is runtime configuration: JSON Schema export does not carry it.
+  final String Function(String value)? unicodeNormalizer;
 
   Object get rawSchema => _root.source;
 
@@ -384,6 +398,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
     externalRoots: _externalRoots,
     indexedNodes: _indexedNodes,
     assertFormats: assertFormats,
+    unicodeNormalizer: unicodeNormalizer,
     isNullable: isNullable ?? this.isNullable,
     isOptional: isOptional ?? this.isOptional,
     description: description ?? this.description,
@@ -405,6 +420,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
 
     return baseFieldsEqual(other) &&
         assertFormats == other.assertFormats &&
+        unicodeNormalizer == other.unicodeNormalizer &&
         _root.documentUri == other._root.documentUri &&
         deepEquals(rawSchema, other.rawSchema) &&
         deepEquals(_externalDocuments, other._externalDocuments);
@@ -414,6 +430,7 @@ final class ImportedJsonSchema extends AckSchema<Object, Object>
   int get hashCode => Object.hash(
     baseFieldsHashCode,
     assertFormats,
+    unicodeNormalizer,
     _root.documentUri,
     deepHashCode(rawSchema),
     deepHashCode(_externalDocuments),
@@ -634,7 +651,11 @@ _ImportEvaluation _evaluateImportedNode(
       }
       if (node.formatAssertion) {
         if (node.format case final format?
-            when !_isValidJsonSchemaFormat(format, value)) {
+            when !_isValidJsonSchemaFormat(
+              format,
+              value,
+              node.unicodeNormalizer,
+            )) {
           return fail('format');
         }
       }

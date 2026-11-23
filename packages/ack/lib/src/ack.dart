@@ -14,16 +14,31 @@ final class Ack {
   /// a supplied dialect requiring the format-assertion vocabulary also enables
   /// them. Unknown asserted formats are rejected when compiling.
   /// Unsupported semantics throw [JsonSchemaImportException].
+  ///
+  /// [unicodeNormalizer] supplies Unicode NFKC normalization for the
+  /// international hostname checks used by `hostname`, `idn-hostname`,
+  /// `email` and `idn-email`. Ack has no built-in normalizer, so that its
+  /// core has no Unicode-table dependency. Without one, Unicode labels are
+  /// checked as given: IDNA2008 code point, context and Bidi rules still
+  /// apply, but compatibility forms (such as full-width letters) are
+  /// rejected instead of mapped, and labels that are not in normalized form
+  /// can pass. Without one, an `xn--` A-label whose decoded label is not
+  /// normalized can also pass; other ASCII hostnames and email addresses do
+  /// not need it. Pass a function such as `nfkc` from `package:unorm_dart`
+  /// for full IDNA normalization. The normalizer is not part of the exported
+  /// JSON Schema.
   static AckSchema<Object, Object> fromJsonSchema(
     Object document, {
     Uri? baseUri,
     Map<Uri, Object> documents = const {},
     bool assertFormats = false,
+    String Function(String value)? unicodeNormalizer,
   }) => ImportedJsonSchema.fromDocument(
     document,
     baseUri: baseUri,
     documents: documents,
     assertFormats: assertFormats,
+    unicodeNormalizer: unicodeNormalizer,
   );
 
   /// Creates a string schema where both boundary and runtime types are `String`.

@@ -1,5 +1,21 @@
 ## Unreleased
 
+### Breaking
+
+* **Breaking:** International hostname and email format checks no longer
+  apply NFKC normalization by default. Pass `unicodeNormalizer: nfkc` from
+  `package:unorm_dart` to `Ack.fromJsonSchema()` to keep the earlier
+  behavior. Without it, Unicode labels are checked as given: full-width forms
+  that need mapping fail, and labels that are not in normalized form can
+  pass. This includes `xn--` A-labels in plain `hostname` and `email` values.
+  Other ASCII hostnames and email addresses are not affected.
+
+### Changed
+
+* Remove the `punycoder` and `unorm_dart` dependencies. Ack now has only
+  `meta` and `collection` as runtime dependencies. Punycode conversion for
+  `xn--` labels is built in.
+
 ### Fixed
 
 * Report a nonproductive JSON Schema reference cycle at the `$ref` that

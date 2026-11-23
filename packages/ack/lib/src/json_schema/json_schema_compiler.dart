@@ -60,6 +60,7 @@ final class _ImportedNode {
   bool contentVocabulary = true;
   bool formatAnnotationVocabulary = true;
   bool formatAssertion = false;
+  _UnicodeNormalizer? unicodeNormalizer;
   final keywords = <String, Object?>{};
   final children = <String, _ImportedNode>{};
   final maps = <String, Map<String, _ImportedNode>>{};
