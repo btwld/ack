@@ -27,6 +27,10 @@ dart run melos run analyze
 dart run melos run test
 ```
 
+The full test flow checks the agent skill manifests and compiles the Dart
+snippets from Markdown. To run just those checks with Flutter on `PATH`, use
+`dart test test/documentation` after bootstrap.
+
 For code generation changes, also run:
 
 ```bash

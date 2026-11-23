@@ -11,6 +11,7 @@ and dependency constraints.
 - [Core concepts and packages](README.md)
 - [Architecture choices and superseded designs](ARCHITECTURE.md)
 - [Agent workflow and generator safeguards](AGENTS.md)
+- [Ack agent skills plugin](plugins/ack) for runtime validation, model generation, and provider schemas
 - [Installation](docs/getting-started/installation.mdx)
 - [Schema types and composition](docs/core-concepts/schemas.mdx)
 - [Presence, null, defaults, configuration](docs/core-concepts/configuration.mdx)
