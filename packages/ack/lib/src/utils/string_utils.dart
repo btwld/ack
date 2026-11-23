@@ -108,8 +108,8 @@ int _levenshteinDistance(String s1, String s2) {
   if (s1.isEmpty) return s2.length;
   if (s2.isEmpty) return s1.length;
 
-  List<int> v0 = List.filled(s2.length + 1, 0, growable: false);
-  List<int> v1 = List.filled(s2.length + 1, 0, growable: false);
+  final List<int> v0 = List.filled(s2.length + 1, 0, growable: false);
+  final List<int> v1 = List.filled(s2.length + 1, 0, growable: false);
 
   for (int i = 0; i <= s2.length; i++) {
     v0[i] = i;
@@ -118,7 +118,7 @@ int _levenshteinDistance(String s1, String s2) {
   for (int i = 0; i < s1.length; i++) {
     v1[0] = i + 1;
     for (int j = 0; j < s2.length; j++) {
-      int cost = (s1[i] == s2[j]) ? 0 : 1;
+      final int cost = (s1[i] == s2[j]) ? 0 : 1;
       v1[j + 1] = min(v1[j] + 1, min(v0[j + 1] + 1, v0[j] + cost));
     }
     for (int j = 0; j <= s2.length; j++) {

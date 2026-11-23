@@ -38,7 +38,7 @@ enum SchemaType {
     Enum() => SchemaType.enum_,
     String() => SchemaType.string,
     bool() => SchemaType.boolean,
-    num value when value.isFinite && value.remainder(1) == 0 =>
+    final num value when value.isFinite && value.remainder(1) == 0 =>
       SchemaType.integer,
     num() => SchemaType.number,
     _ => null,

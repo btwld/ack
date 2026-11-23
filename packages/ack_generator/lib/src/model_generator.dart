@@ -1,6 +1,6 @@
-import 'package:ack/annotations.dart';
 import 'package:ack/ack.dart'
     show Ack, AckModelAdapter, AckSchema, AckSchemaModel, SchemaResult;
+import 'package:ack/annotations.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';

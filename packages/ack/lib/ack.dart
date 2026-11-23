@@ -6,51 +6,6 @@ library;
 
 // Main API
 export 'src/ack.dart';
-// Common types
-export 'src/common_types.dart' show JsonMap;
-// Generated model support
-export 'src/models/ack_model_adapter.dart';
-export 'src/models/json_maybe.dart';
-export 'src/utils/collection_utils.dart'
-    show
-        deepEquals,
-        deepHashCode,
-        deepUnmodifiableCopy,
-        deepUnmodifiableJsonMap;
-// Constraints
-export 'src/constraints/constraint.dart';
-export 'src/constraints/duration_constraint.dart';
-// Context
-export 'src/context.dart';
-// Extensions
-export 'src/schemas/extensions/ack_schema_extensions.dart';
-export 'src/schemas/extensions/duration_schema_extensions.dart';
-export 'src/schemas/extensions/datetime_schema_extensions.dart';
-export 'src/schemas/extensions/list_schema_extensions.dart';
-export 'src/schemas/extensions/numeric_extensions.dart';
-export 'src/schemas/extensions/object_schema_extensions.dart';
-export 'src/schemas/extensions/string_schema_extensions.dart';
-// JSON Schema
-export 'src/json_schema.dart';
-// Core schemas
-// `WrapperSchema` is internal infrastructure; users compose wrappers via
-// `withDefault`, `codec`, `transform`, etc., not by implementing the mixin.
-// `Refinement`, `SchemaOperation`, and `AnyAckSchema` are traversal
-// plumbing for subclasses; consumers use `.refine(...)`, `safeParse`, and
-// concrete schema types instead.
-export 'src/schemas/schema.dart'
-    hide
-        AnyAckSchema,
-        ImportedJsonSchema,
-        Refinement,
-        SchemaOperation,
-        WrapperSchema,
-        createCodecSchemaInternal,
-        jsonMapOrNull;
-export 'src/validation/ack_exception.dart';
-export 'src/validation/schema_error.dart';
-// Validation results
-export 'src/validation/schema_result.dart';
 // Model annotations
 export 'src/annotations/ack_field.dart';
 export 'src/annotations/constraints.dart'
@@ -79,3 +34,48 @@ export 'src/annotations/constraints.dart'
         IsUuid,
         Validate;
 export 'src/annotations/schemable.dart';
+// Common types
+export 'src/common_types.dart' show JsonMap;
+// Constraints
+export 'src/constraints/constraint.dart';
+export 'src/constraints/duration_constraint.dart';
+// Context
+export 'src/context.dart';
+// JSON Schema
+export 'src/json_schema.dart';
+// Generated model support
+export 'src/models/ack_model_adapter.dart';
+export 'src/models/json_maybe.dart';
+// Extensions
+export 'src/schemas/extensions/ack_schema_extensions.dart';
+export 'src/schemas/extensions/datetime_schema_extensions.dart';
+export 'src/schemas/extensions/duration_schema_extensions.dart';
+export 'src/schemas/extensions/list_schema_extensions.dart';
+export 'src/schemas/extensions/numeric_extensions.dart';
+export 'src/schemas/extensions/object_schema_extensions.dart';
+export 'src/schemas/extensions/string_schema_extensions.dart';
+// Core schemas
+// `WrapperSchema` is internal infrastructure; users compose wrappers via
+// `withDefault`, `codec`, `transform`, etc., not by implementing the mixin.
+// `Refinement`, `SchemaOperation`, and `AnyAckSchema` are traversal
+// plumbing for subclasses; consumers use `.refine(...)`, `safeParse`, and
+// concrete schema types instead.
+export 'src/schemas/schema.dart'
+    hide
+        AnyAckSchema,
+        ImportedJsonSchema,
+        Refinement,
+        SchemaOperation,
+        WrapperSchema,
+        createCodecSchemaInternal,
+        jsonMapOrNull;
+export 'src/utils/collection_utils.dart'
+    show
+        deepEquals,
+        deepHashCode,
+        deepUnmodifiableCopy,
+        deepUnmodifiableJsonMap;
+export 'src/validation/ack_exception.dart';
+export 'src/validation/schema_error.dart';
+// Validation results
+export 'src/validation/schema_result.dart';

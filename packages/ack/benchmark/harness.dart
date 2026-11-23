@@ -12,6 +12,8 @@ const draft = 'https://json-schema.org/draft/2020-12/schema';
 
 /// Throws when a benchmark case does not succeed, so a failing case cannot be
 /// timed as if it were the success path.
+// An assertion-style guard: the condition reads best positionally.
+// ignore: bitwild_lints/prefer_named_boolean_parameters
 void check(String name, bool ok) {
   if (!ok) throw StateError('$name did not validate');
 }

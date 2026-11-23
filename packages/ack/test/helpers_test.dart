@@ -5,7 +5,7 @@ void main() {
   group('prettyJson', () {
     test('should format a valid map', () {
       final map = {'b': 2, 'a': 1};
-      final expected = '''
+      const expected = '''
 {
   "b": 2,
   "a": 1
@@ -15,7 +15,7 @@ void main() {
 
     test('should format a valid list', () {
       final list = [1, 'two', true];
-      final expected = '''
+      const expected = '''
 [
   1,
   "two",

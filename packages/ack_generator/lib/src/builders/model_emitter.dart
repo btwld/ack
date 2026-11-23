@@ -65,7 +65,10 @@ final class AckModelEmitter {
             _schemaShorthand(node),
         ])
         ..constructors.addAll([
-          _objectConstructor(fields, node.additionalProperties),
+          _objectConstructor(
+            fields,
+            additionalProperties: node.additionalProperties,
+          ),
           _parseFactory(),
           _fromJsonFactory(_objectJsonType),
         ])
@@ -253,7 +256,10 @@ return switch (value[${dartStringLiteral(node.discriminatorKey)}]) {
             _schemaShorthand(node),
         ])
         ..constructors.addAll([
-          _objectConstructor(fields, node.additionalProperties),
+          _objectConstructor(
+            fields,
+            additionalProperties: node.additionalProperties,
+          ),
           _parseFactory(),
           _fromJsonFactory(_objectJsonType),
         ])
@@ -350,9 +356,9 @@ ${_ack('AckModelAdapter')}(
   );
 
   Constructor _objectConstructor(
-    List<AckFieldNode> fields,
-    bool additionalProperties,
-  ) => Constructor((c) {
+    List<AckFieldNode> fields, {
+    required bool additionalProperties,
+  }) => Constructor((c) {
     c.docs.addAll([
       '/// Creates a model without validating it.',
       '///',

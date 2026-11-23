@@ -97,7 +97,7 @@ void _writeNativeFixtures(FirebaseAiNativeSchemaFixtureFamily family) {
       'features': schemaCase.features,
       'status': schemaCase.status,
       'comparison': schemaCase.comparison,
-      if (fixtureName != null) 'fixture': fixtureName,
+      'fixture': ?fixtureName,
       if (schemaCase.unsupportedReason != null)
         'unsupportedReason': schemaCase.unsupportedReason,
     });

@@ -249,7 +249,7 @@ void main() {
     group('Retry and Recovery Strategies', () {
       test('should implement retry logic with exponential backoff', () async {
         var attemptCount = 0;
-        final maxAttempts = 3;
+        const maxAttempts = 3;
 
         Future<bool> validateWithRetry(String input, AckSchema schema) async {
           for (var attempt = 1; attempt <= maxAttempts; attempt++) {

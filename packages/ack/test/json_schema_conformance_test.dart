@@ -805,11 +805,11 @@ Map<String, Object?> _canonicalAnySchema(Map<String, Object?> schema) {
       'object',
       'array',
     ])
-      {'type': type, if (description != null) 'description': description},
+      {'type': type, 'description': ?description},
   ];
 
   return {
-    if (description != null) 'description': description,
+    'description': ?description,
     if (schema.containsKey('default')) 'default': schema['default'],
     'anyOf': nullable
         ? [

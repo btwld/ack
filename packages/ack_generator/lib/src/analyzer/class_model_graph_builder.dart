@@ -954,7 +954,7 @@ final class ClassModelGraphBuilder extends ModelGraphBuilderBase {
     if (direct != null) return direct;
     final resolved = inputResolved;
     if (resolved == null) return null;
-    for (final element in [field, if (parameter != null) parameter]) {
+    for (final element in [field, ?parameter]) {
       final node = declarationNode(resolved, element);
       if (node is FormalParameter) {
         final comment = node.documentationComment;

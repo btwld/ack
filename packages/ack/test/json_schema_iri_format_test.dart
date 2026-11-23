@@ -10,6 +10,8 @@ void main() {
       }, assertFormats: true);
       final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
 
+      // Reads like expect(actual, matcher).
+      // ignore: bitwild_lints/prefer_named_boolean_parameters
       void expectValidity(String value, bool valid) {
         expect(schema.safeParse(value).isOk, valid, reason: value);
         expect(

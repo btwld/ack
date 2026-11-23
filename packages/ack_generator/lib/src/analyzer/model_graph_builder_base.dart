@@ -636,8 +636,7 @@ abstract base class ModelGraphBuilderBase {
 
   /// Names of all top-level declarations in the current [library].
   Set<String> localDeclarationNames() => {
-    for (final element in library.allElements)
-      if (element.name case final name?) name,
+    for (final element in library.allElements) ?element.name,
   };
 
   /// Validates that generated `copyWith` helper types for [className] do not
