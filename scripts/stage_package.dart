@@ -67,17 +67,21 @@ void main(List<String> args) {
     ],
   );
 
+  final rootPubspec = File('pubspec.yaml').readAsStringSync();
   for (final name in staged) {
     final pubspec = File(p.join(output, 'packages', name, 'pubspec.yaml'));
     final source = pubspec.readAsStringSync();
     pubspec.writeAsStringSync(
-      overrideWithStagedPackages(detachFromWorkspace(source), {
-        for (final dependency in directDependenciesAmong(
-          source,
-          publishableAckPackages,
-        ))
-          if (staged.contains(dependency)) dependency: '../$dependency',
-      }),
+      overrideWithStagedPackages(
+        withRootLintDependency(detachFromWorkspace(source), rootPubspec),
+        {
+          for (final dependency in directDependenciesAmong(
+            source,
+            publishableAckPackages,
+          ))
+            if (staged.contains(dependency)) dependency: '../$dependency',
+        },
+      ),
     );
   }
 
