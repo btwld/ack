@@ -47,7 +47,9 @@ melos:
 
   scripts:
     analyze:
-      run: dart run melos exec -- "dart analyze . --fatal-infos"
+      # One package at a time: parallel analysis servers race to build the
+      # shared bitwild_lints plugin snapshot, and the loser fails to load it.
+      run: dart run melos exec -c 1 -- "dart analyze . --fatal-infos"
       description: Run analyzer on all packages
       packageFilters:
         scope:
