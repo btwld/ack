@@ -17,17 +17,18 @@ workspace:
   - example
 
 dev_dependencies:
+  bitwild_analysis:
+    git:
+      url: https://github.com/btwld/lints.git
+      path: packages/bitwild_analysis
+      ref: v0.3.0
   melos: ^8.7.0
   # Release tooling under /scripts reads and rewrites pubspecs.
   path: ^1.9.0
   pub_semver: ^2.2.0
   test: ^1.25.15
-  very_good_analysis: ^9.0.0
   yaml: ^3.1.2
   yaml_edit: ^2.2.1
-  # Shared lint config consumed by /analysis_options.yaml (workspace-wide).
-  lints: ^5.0.0
-  dart_code_metrics_presets: ^2.22.0
 
 melos:
   ide:

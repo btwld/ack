@@ -15,27 +15,25 @@ environment:
 
 
 dependencies:
+  # Ack packages (versions are overridden locally by Melos)
+  ack: ^2.0.0-beta.3
   # Core code generation dependencies
   analyzer: ">=13.0.0 <14.0.0"
   build: ^4.0.0
-  source_gen: ^4.2.4
   code_builder: ^4.10.0
   dart_style: ^3.1.0
   pub_semver: ^2.1.4
-
-  # Ack packages (versions are overridden locally by Melos)
-  ack: ^2.0.0-beta.3
+  source_gen: ^4.2.4
 
 dev_dependencies:
   build_runner: ^2.1.7
   build_test: ^3.1.0
   json_annotation: ^4.12.0
   json_serializable: ^6.14.1
+  logging: ^1.3.0
+  path: ^1.9.0
+  # Code quality
   # 6.14.1 does not compile against source_helper 1.4.0. The build fixtures
   # pub get --offline, so this bound has to be in the cache.
   source_helper: '>=1.3.10 <1.4.0'
-  logging: ^1.3.0
   test: ^1.25.15
-  path: ^1.9.0
-  # Code quality
-  lints: ^5.0.0
