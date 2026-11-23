@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   group('StringIpConstraint', () {
     group('IPv4', () {
-      final ipv4Constraint = const StringIpConstraint(version: 4);
+      const ipv4Constraint = StringIpConstraint(version: 4);
 
       test('accepts valid IPv4 addresses', () {
         expect(ipv4Constraint.isValid('0.0.0.0'), isTrue);
@@ -49,7 +49,7 @@ void main() {
     });
 
     group('IPv6', () {
-      final ipv6Constraint = const StringIpConstraint(version: 6);
+      const ipv6Constraint = StringIpConstraint(version: 6);
 
       test('accepts valid IPv6 addresses - full form', () {
         expect(
@@ -107,7 +107,7 @@ void main() {
     });
 
     group('Any version (IPv4 or IPv6)', () {
-      final anyIpConstraint = const StringIpConstraint();
+      const anyIpConstraint = StringIpConstraint();
 
       test('accepts valid IPv4 addresses', () {
         expect(anyIpConstraint.isValid('192.168.0.1'), isTrue);

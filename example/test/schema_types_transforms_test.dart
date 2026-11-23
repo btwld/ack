@@ -1,6 +1,5 @@
-import 'package:test/test.dart';
-
 import 'package:ack_example/schema_types_transforms.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('Codec schema examples', () {

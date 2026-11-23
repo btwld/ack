@@ -8,9 +8,9 @@ void main() {
 
       // Test various types
       expect(schema.safeParse(42).getOrThrow(), equals(42));
-      expect(schema.safeParse("hello").getOrThrow(), equals("hello"));
+      expect(schema.safeParse('hello').getOrThrow(), equals('hello'));
       expect(schema.safeParse([1, 2, 3]).getOrThrow(), equals([1, 2, 3]));
-      expect(schema.safeParse({"a": 1}).getOrThrow(), equals({"a": 1}));
+      expect(schema.safeParse({'a': 1}).getOrThrow(), equals({'a': 1}));
       expect(schema.safeParse(true).getOrThrow(), equals(true));
       expect(schema.safeParse(3.14).getOrThrow(), equals(3.14));
     });
@@ -90,30 +90,30 @@ void main() {
     });
 
     test('should use default value when provided', () {
-      final schema = Ack.any().withDefault("default");
+      final schema = Ack.any().withDefault('default');
       final result = schema.safeParse(null);
 
       expect(result.isOk, isTrue);
-      expect(result.getOrThrow(), equals("default"));
+      expect(result.getOrThrow(), equals('default'));
     });
 
     test('should support refinements on Object type', () {
       final schema = Ack.any().refine(
         (value) => value.toString().length > 5,
         message:
-            "Value must have string representation longer than 5 characters",
+            'Value must have string representation longer than 5 characters',
       );
 
-      expect(schema.safeParse("hello world").isOk, isTrue);
-      expect(schema.safeParse("hi").isFail, isTrue);
+      expect(schema.safeParse('hello world').isOk, isTrue);
+      expect(schema.safeParse('hi').isFail, isTrue);
       expect(schema.safeParse(123456).isOk, isTrue);
       expect(schema.safeParse(123).isFail, isTrue);
     });
 
     test('should generate correct JSON schema', () {
       final schema = Ack.any()
-          .describe("Accepts any value")
-          .withDefault("fallback");
+          .describe('Accepts any value')
+          .withDefault('fallback');
 
       final jsonSchema = schema.toJsonSchema();
 
@@ -124,11 +124,11 @@ void main() {
     });
 
     test('should work with copyWith', () {
-      final original = Ack.any().describe("Original");
-      final copied = original.copyWith(description: "Modified");
+      final original = Ack.any().describe('Original');
+      final copied = original.copyWith(description: 'Modified');
 
-      expect(original.description, equals("Original"));
-      expect(copied.description, equals("Modified"));
+      expect(original.description, equals('Original'));
+      expect(copied.description, equals('Modified'));
     });
   });
 }

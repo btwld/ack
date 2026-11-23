@@ -52,7 +52,7 @@ void main() {
       'should propagate TypeError when a non-nullable transform returns null',
       () {
         final schema = Ack.string().transform<int>((val) {
-          return (null as dynamic);
+          return null as dynamic;
         });
 
         expect(() => schema.safeParse('value'), throwsA(isA<TypeError>()));

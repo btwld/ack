@@ -113,7 +113,7 @@ void main() {
 
     test('preserves exactly representable integers beyond the safe range', () {
       const maxSafeInteger = 9007199254740991;
-      final exactBeyondSafeInteger = maxSafeInteger + 3;
+      const exactBeyondSafeInteger = maxSafeInteger + 3;
 
       final integerResult = Ack.integer().safeParse(exactBeyondSafeInteger);
       final doubleResult = Ack.double().safeParse(exactBeyondSafeInteger);
@@ -127,7 +127,7 @@ void main() {
       'rejects lossy native numeric conversions',
       () {
         const maxSafeInteger = 9007199254740991;
-        final nonRepresentableAsDouble = maxSafeInteger + 2;
+        const nonRepresentableAsDouble = maxSafeInteger + 2;
 
         expect(Ack.integer().safeParse(1e20).isFail, isTrue);
         expect(Ack.double().safeParse(nonRepresentableAsDouble).isFail, isTrue);

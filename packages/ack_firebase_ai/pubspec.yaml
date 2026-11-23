@@ -30,5 +30,4 @@ dev_dependencies:
   firebase_core_platform_interface: 7.1.0
   flutter_test:
     sdk: flutter
-  lints: ^5.0.0
   test: ^1.25.15

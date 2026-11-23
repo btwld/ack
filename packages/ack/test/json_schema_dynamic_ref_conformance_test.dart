@@ -43,7 +43,8 @@ void main() {
           documents: documents,
         );
         final exported = Ack.fromJsonSchema(schema.toJsonSchema());
-        for (final example in group['tests']! as List) {
+        for (final example
+            in (group['tests']! as List).cast<Map<String, Object?>>()) {
           final value = example['data'];
           final expected = example['valid'] as bool;
           final reason = example['description'] as String;

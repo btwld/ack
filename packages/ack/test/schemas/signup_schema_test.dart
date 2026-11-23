@@ -288,7 +288,7 @@ void main() {
       });
 
       test('should handle special characters in passwords', () {
-        final specialPassword = r'P@$$w0rd!#$%^&*()';
+        const specialPassword = r'P@$$w0rd!#$%^&*()';
         final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': specialPassword,
@@ -299,7 +299,7 @@ void main() {
       });
 
       test('should handle unicode characters in passwords', () {
-        final unicodePassword = 'пароль123😊';
+        const unicodePassword = 'пароль123😊';
         final result = signupSchema.safeParse({
           'email': 'user@example.com',
           'password': unicodePassword,

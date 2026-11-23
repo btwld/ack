@@ -380,6 +380,8 @@ final class AckSchemaInference {
     Element declaration,
     DartType type,
     String annotation,
+    // An assertion-style guard: the condition reads best positionally.
+    // ignore: bitwild_lints/prefer_named_boolean_parameters
     bool valid,
     String alternative,
   ) {

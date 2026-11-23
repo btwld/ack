@@ -82,10 +82,14 @@ void main() {
               ),
               'total': Ack.double(),
             }).refine((order) {
-              final calculated = (order['items'] as List).fold(
-                0.0,
-                (sum, item) => sum + item['price'] * item['quantity'],
-              );
+              final calculated = (order['items'] as List)
+                  .cast<Map<String, Object?>>()
+                  .fold(
+                    0.0,
+                    (sum, item) =>
+                        sum +
+                        (item['price']! as double) * (item['quantity']! as int),
+                  );
               return ((order['total'] as double) - calculated).abs() < 0.01;
             }, message: 'Total doesn\'t match item prices!');
 

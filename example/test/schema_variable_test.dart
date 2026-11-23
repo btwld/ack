@@ -1,7 +1,6 @@
 import 'package:ack/ack.dart';
-import 'package:test/test.dart';
-
 import 'package:ack_example/schema_types_simple.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('Schema variable models', () {

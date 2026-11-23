@@ -1,7 +1,7 @@
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
-import 'data_class_emitter.dart';
 import '../utils/string_literal.dart';
+import 'data_class_emitter.dart';
 
 /// Emits class-first schema codecs and top-level JSON/runtime glue.
 final class AckClassModelEmitter {
@@ -419,7 +419,7 @@ Map<String, Object?> $function(${node.className} model) {
 
   Set<String> _declaredKeys(AckObjectModelNode node) => {
     for (final field in node.fields) field.jsonKey,
-    if (node.discriminatorKey case final discriminator?) discriminator,
+    ?node.discriminatorKey,
   };
 
   AckClassModelMetadata _metadata(AckModelGraph graph, AckModelNode node) {

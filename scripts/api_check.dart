@@ -7,7 +7,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'src/workspace_packages.dart';
 
-final ackPackages = publishableAckPackages;
+const ackPackages = publishableAckPackages;
 const dartApiToolVersion = '0.23.0';
 
 Future<void> main(List<String> args) async {

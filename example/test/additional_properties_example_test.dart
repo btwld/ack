@@ -1,6 +1,5 @@
-import 'package:test/test.dart';
-
 import 'package:ack_example/additional_properties_example.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('Additional properties examples', () {

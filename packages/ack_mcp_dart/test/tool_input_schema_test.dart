@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:ack_mcp_dart/ack_mcp_dart.dart';
-import 'package:test/test.dart';
 import 'package:mcp_dart/mcp_dart.dart';
+import 'package:test/test.dart';
 
 import 'support/fixtures.dart';
 

@@ -1,5 +1,5 @@
-import '../schemas/schema.dart';
 import '../schemas/extensions/ack_schema_extensions.dart';
+import '../schemas/schema.dart';
 import '../validation/schema_result.dart';
 
 /// Adapter that connects a generated immutable model to an Ack schema.

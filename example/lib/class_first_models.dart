@@ -15,7 +15,7 @@ final class const Account({
   final String role = 'member',
 }) with _$AccountAck {
   static final schema = AccountSchema.schema;
-  static final fromJson = AccountSchema.fromJson;
+  static const fromJson = AccountSchema.fromJson;
 }
 
 /// A pet, identified by its `type`.

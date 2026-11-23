@@ -104,7 +104,7 @@ void main() {
         'age': Ack.integer(),
       });
 
-      final jsonString =
+      const jsonString =
           '{"name": "Alice", "email": "alice@example.com", "age": 30}';
       final jsonData = jsonDecode(jsonString);
 

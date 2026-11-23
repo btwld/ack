@@ -271,12 +271,12 @@ final class CustomSchemaResolver {
     final fieldOwner = field.enclosingElement;
     for (final scope in [
       if (activeClass != null) ...[
-        if (_classSchemas[activeClass] case final classList?) classList,
+        ?_classSchemas[activeClass],
         if (unionBaseByBranch[activeClass] case final base?)
-          if (_classSchemas[base] case final baseList?) baseList,
+          ?_classSchemas[base],
       ],
       if (fieldOwner is ClassElement && fieldOwner != activeClass)
-        if (_classSchemas[fieldOwner] case final ownerList?) ownerList,
+        ?_classSchemas[fieldOwner],
       _librarySchemas,
     ]) {
       for (final entry in scope) {

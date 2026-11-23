@@ -64,6 +64,49 @@ dependencies:
     });
   });
 
+  group('withRootLintDependency', () {
+    const root = '''
+name: ack_workspace
+dev_dependencies:
+  bitwild_analysis:
+    git:
+      url: https://github.com/btwld/lints.git
+      path: packages/bitwild_analysis
+      ref: v0.3.0
+''';
+
+    test('copies the root lint dev dependency', () {
+      const pubspec = 'name: ack\ndev_dependencies:\n  test: ^1.25.0\n';
+
+      final staged = loadYaml(withRootLintDependency(pubspec, root)) as Map;
+      final devDependencies = staged['dev_dependencies'] as Map;
+
+      expect(devDependencies['test'], '^1.25.0');
+      expect((devDependencies['bitwild_analysis'] as Map)['git'], {
+        'url': 'https://github.com/btwld/lints.git',
+        'path': 'packages/bitwild_analysis',
+        'ref': 'v0.3.0',
+      });
+    });
+
+    test('adds a dev_dependencies section when the package has none', () {
+      const pubspec = 'name: ack\n';
+
+      final staged = loadYaml(withRootLintDependency(pubspec, root)) as Map;
+
+      expect(
+        (staged['dev_dependencies'] as Map).containsKey('bitwild_analysis'),
+        isTrue,
+      );
+    });
+
+    test('keeps the pubspec unchanged when the root has no lint package', () {
+      const pubspec = 'name: ack\n';
+
+      expect(withRootLintDependency(pubspec, 'name: root\n'), pubspec);
+    });
+  });
+
   group('toPureDartWorkspace', () {
     test('drops the Flutter members and the Flutter SDK constraint', () {
       const pubspec = '''

@@ -1,4 +1,4 @@
-# Inherits the shared workspace config (lints + DCM presets/rules).
+# Inherits the shared workspace config (bitwild_analysis presets).
 # See /analysis_options.yaml at the workspace root.
 include: ../../analysis_options.yaml
 

@@ -90,6 +90,40 @@ String overrideWithStagedPackages(
   return editor.toString();
 }
 
+/// Copies the root [rootPubspec]'s `bitwild_analysis` dev dependency into
+/// [pubspec].
+///
+/// Each package's analysis_options.yaml includes the root file, which includes
+/// the `bitwild_analysis` presets. A staged package resolves on its own, so it
+/// needs that dev dependency too. Published pubspecs leave it out: only the
+/// workspace root declares it.
+String withRootLintDependency(String pubspec, String rootPubspec) {
+  final root = loadYaml(rootPubspec);
+  if (root is! Map) return pubspec;
+  final devDependencies = root['dev_dependencies'];
+  if (devDependencies is! Map) return pubspec;
+  final spec = devDependencies[_lintPackage];
+  if (spec == null) return pubspec;
+
+  final editor = YamlEditor(pubspec);
+  if (_valueAt(editor, ['dev_dependencies']) == null) {
+    editor.update(['dev_dependencies'], <String, Object?>{});
+  }
+  editor.update(['dev_dependencies', _lintPackage], _plain(spec));
+
+  return editor.toString();
+}
+
+const _lintPackage = 'bitwild_analysis';
+
+Object? _plain(Object? node) => switch (node) {
+  Map() => {
+    for (final entry in node.entries) '${entry.key}': _plain(entry.value),
+  },
+  List() => [for (final item in node) _plain(item)],
+  _ => node,
+};
+
 /// Removes the [flutterMembers] workspace entries and the Flutter SDK
 /// constraint from a workspace root [pubspec].
 ///

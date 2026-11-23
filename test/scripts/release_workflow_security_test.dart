@@ -282,8 +282,8 @@ Set<String> _dependencyClosure(Map<String, Object?> jobs, String job) {
     if (current is! Map) continue;
     final needs = current['needs'];
     final names = switch (needs) {
-      String name => <String>[name],
-      List list => list.map((name) => '$name').toList(),
+      final String name => <String>[name],
+      final List list => list.map((name) => '$name').toList(),
       _ => const <String>[],
     };
     for (final name in names) {
