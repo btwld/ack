@@ -141,8 +141,12 @@ void main() {
           final schema = Ack.fromJsonSchema(
             group['schema']!,
             assertFormats: true,
+            unicodeNormalizer: unorm.nfkc,
           );
-          final roundTrip = Ack.fromJsonSchema(schema.toJsonSchema());
+          final roundTrip = Ack.fromJsonSchema(
+            schema.toJsonSchema(),
+            unicodeNormalizer: unorm.nfkc,
+          );
           final mismatches = <String>[];
           for (final example in group['tests']! as List) {
             final testCase = example as Map<String, Object?>;
@@ -163,6 +167,88 @@ void main() {
         });
       }
     }
+  });
+
+  group('without a unicodeNormalizer', () {
+    AckSchema<Object, Object> schemaFor(String format) => Ack.fromJsonSchema({
+      'type': 'string',
+      'format': format,
+    }, assertFormats: true);
+
+    test('ASCII hostnames and email addresses without A-label normalization issues are unchanged', () {
+      for (final (format, value, valid) in [
+        ('hostname', 'www.example.com', true),
+        // RFC 3492 sample strings (L) Japanese and (B) Chinese.
+        ('hostname', 'xn--3B-ww4c5e180e575a65lsy2b.example', true),
+        ('hostname', 'xn--ihqwcrb4cv8a8dqg056pqjye.example', true),
+        ('hostname', 'xn--X.example', false),
+        ('hostname', '-a.example', false),
+        ('email', 'joe.bloggs@example.com', true),
+        ('email', 'joe..bloggs@example.com', false),
+        ('idn-hostname', 'www.example.com', true),
+        ('idn-email', 'joe.bloggs@example.com', true),
+      ]) {
+        expect(schemaFor(format).safeParse(value).isOk, valid, reason: value);
+      }
+    });
+
+    test('Unicode labels are checked as given, without mapping', () {
+      for (final (format, value, valid) in [
+        // IDNA2008 code point, context and Bidi rules still apply.
+        ('idn-hostname', '実例.テスト', true),
+        ('idn-email', 'josé@exemplo.com', true),
+        ('idn-hostname', '\u0301a.example', false),
+        ('idn-hostname', '\u05d0\u03b1.example', false),
+        // Full-width forms need NFKC mapping, so they are rejected.
+        ('idn-hostname', '\uff10\uff11.example', false),
+        // A decomposed label is not normalized, so its A-label passes.
+        (
+          'hostname',
+          'xn--${punycoder.punycode.encode('a\u0301')}.example',
+          true,
+        ),
+      ]) {
+        expect(schemaFor(format).safeParse(value).isOk, valid, reason: value);
+      }
+    });
+
+    test('a supplied normalizer maps and normalizes labels', () {
+      AckSchema<Object, Object> normalized(String format) => Ack.fromJsonSchema(
+        {'type': 'string', 'format': format},
+        assertFormats: true,
+        unicodeNormalizer: unorm.nfkc,
+      );
+      expect(
+        normalized('idn-hostname').safeParse('\uff10\uff11.example').isOk,
+        isTrue,
+      );
+      expect(
+        normalized('hostname')
+            .safeParse('xn--${punycoder.punycode.encode('a\u0301')}.example')
+            .isOk,
+        isFalse,
+      );
+    });
+
+    test('the normalizer is part of schema equality', () {
+      final schema = schemaFor('idn-hostname');
+      final normalized = Ack.fromJsonSchema(
+        {'type': 'string', 'format': 'idn-hostname'},
+        assertFormats: true,
+        unicodeNormalizer: unorm.nfkc,
+      );
+      expect(schema, equals(schemaFor('idn-hostname')));
+      expect(schema, isNot(equals(normalized)));
+      expect(
+        normalized.hashCode,
+        Ack.fromJsonSchema(
+          {'type': 'string', 'format': 'idn-hostname'},
+          assertFormats: true,
+          unicodeNormalizer: unorm.nfkc,
+        ).hashCode,
+      );
+      expect(normalized.nullable().safeParse('０１.example').isOk, isTrue);
+    });
   });
 
   group('official 2020-12 format-assertion vocabulary', () {

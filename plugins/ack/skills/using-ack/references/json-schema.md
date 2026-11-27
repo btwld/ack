@@ -69,10 +69,11 @@ A date bound has no Draft-7 keyword, so the export carries only `format`. State 
 
 ## Import
 
-`Ack.fromJsonSchema(decodedMap, {baseUri, documents, assertFormats})` compiles a decoded 2020-12 or Draft-7 document (a map or a bool, not a JSON string) into `AckSchema<Object, Object>`.
+`Ack.fromJsonSchema(decodedMap, {baseUri, documents, assertFormats, unicodeNormalizer})` compiles a decoded 2020-12 or Draft-7 document (a map or a bool, not a JSON string) into `AckSchema<Object, Object>`.
 
 - References resolve only from the `documents` map (`Uri` mapped to the decoded document), relative to `baseUri`. Nothing is fetched or read from disk.
 - `format` is only an annotation unless you pass `assertFormats: true` (or the dialect declares `format-assertion`).
+- Ack bundles no Unicode normalizer. For full IDNA checks of international hostnames and emails, pass an NFKC function, such as `unicodeNormalizer: unorm.nfkc` from `package:unorm_dart`. Without one, full-width forms fail and unnormalized labels can pass. ASCII names need nothing, except that an `xn--` A-label for an unnormalized label can also pass.
 - An imported `pattern` uses ECMA-262 Unicode mode (`\p{Lu}` works). A native `.matches` uses Dart `RegExp`, so the same pattern can behave differently after a round trip. Imported `minLength` counts code points; native counts UTF-16 units.
 - Imports never fill in defaults or coerce values. A failure is a `JsonSchemaValidationError`: `path` is the instance location (`#/b`) and `pointer` the schema location (`#/additionalProperties`). It reports only the first failing keyword. `keyword` can be empty (an `additionalProperties: false` failure has `keyword == ''`), so branch on `pointer`.
 - `toJsonSchema()` on an imported schema keeps 2020-12 (`$defs`, `unevaluatedProperties`, ...). `toJsonSchemaDraft7()` / `toSchemaModelDraft7()` convert it down and throw `UnsupportedError` when the meaning would change. Catch that rather than dropping keywords by hand.

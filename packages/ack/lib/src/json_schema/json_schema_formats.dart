@@ -35,15 +35,33 @@ final _jsonSchemaBigIntUint64Max = BigInt.parse('18446744073709551615');
 bool _isSupportedJsonSchemaFormat(String format) =>
     _jsonSchemaFormats.contains(format);
 
-bool _isValidJsonSchemaFormat(String format, String value) => switch (format) {
+/// Applies Unicode NFKC normalization for IDNA checks. Ack has no built-in
+/// normalizer; see the `unicodeNormalizer` parameter of `Ack.fromJsonSchema`.
+typedef _UnicodeNormalizer = String Function(String value);
+
+String _identityNormalizer(String value) => value;
+
+bool _isValidJsonSchemaFormat(
+  String format,
+  String value, [
+  _UnicodeNormalizer? normalizer,
+]) => switch (format) {
   'date' => _isFullDate(value),
   'time' => _isFullTime(value),
   'date-time' => isValidRfc3339DateTime(value),
   'duration' => _isDuration(value),
-  'email' => _isEmail(value, international: false),
-  'idn-email' => _isEmail(value, international: true),
-  'hostname' => _isHostname(value, international: false),
-  'idn-hostname' => _isHostname(value, international: true),
+  'email' => _isEmail(value, international: false, normalizer: normalizer),
+  'idn-email' => _isEmail(value, international: true, normalizer: normalizer),
+  'hostname' => _isHostname(
+    value,
+    international: false,
+    normalizer: normalizer,
+  ),
+  'idn-hostname' => _isHostname(
+    value,
+    international: true,
+    normalizer: normalizer,
+  ),
   'ipv4' => StringIpConstraint.isIpv4(value),
   'ipv6' => _isIpv6(value),
   'uri' => _isUri(value, absolute: true, international: false),
@@ -216,13 +234,18 @@ bool _isRegex(String value) {
   }
 }
 
-bool _isHostname(String value, {required bool international}) {
+// Without a normalizer, Unicode input is checked as given: IDNA2008 code point
+// rules, CONTEXTJ/CONTEXTO and Bidi rules still apply, but compatibility
+// mappings (such as full-width letters) and composition are not applied.
+bool _isHostname(
+  String value, {
+  required bool international,
+  _UnicodeNormalizer? normalizer,
+}) {
   if (!international && value.runes.any((rune) => rune > 127)) return false;
+  final nfkc = normalizer ?? _identityNormalizer;
   final mapped = international
-      ? unorm
-            .nfkc(
-              value.replaceAll(RegExp('[。．｡]'), '.').replaceAll('\u200b', ''),
-            )
+      ? nfkc(value.replaceAll(RegExp('[。．｡]'), '.').replaceAll('\u200b', ''))
             .toLowerCase()
       : value.toLowerCase();
   if (mapped.isEmpty) return false;
@@ -240,18 +263,15 @@ bool _isHostname(String value, {required bool international}) {
     var label = rawLabel;
     if (rawLabel.startsWith('xn--')) {
       try {
-        label = punycoder.punycode.decode(rawLabel.substring(4));
+        label = _punycodeDecode(rawLabel.substring(4));
       } on FormatException {
-        return false;
-      } on RangeError {
         return false;
       }
       if (label.isEmpty || label.runes.every((rune) => rune < 128)) {
         return false;
       }
-      label = unorm.nfkc(label).toLowerCase();
-      if (punycoder.punycode.encode(label).toLowerCase() !=
-          rawLabel.substring(4)) {
+      label = nfkc(label).toLowerCase();
+      if (_punycodeEncode(label) != rawLabel.substring(4)) {
         return false;
       }
     }
@@ -261,9 +281,7 @@ bool _isHostname(String value, {required bool international}) {
         : !_isIdnaLabel(label)) {
       return false;
     }
-    final ascii = isAscii
-        ? label
-        : 'xn--${punycoder.punycode.encode(label).toLowerCase()}';
+    final ascii = isAscii ? label : 'xn--${_punycodeEncode(label)}';
     if (ascii.length > 63) return false;
     asciiLabels.add(ascii);
     unicodeLabels.add(label);
@@ -434,7 +452,11 @@ bool _isValidContextJ(List<int> runes, int index) {
   return right == _UnicodeJoiningType.r || right == _UnicodeJoiningType.d;
 }
 
-bool _isEmail(String value, {required bool international}) {
+bool _isEmail(
+  String value, {
+  required bool international,
+  _UnicodeNormalizer? normalizer,
+}) {
   final match = RegExp(r'^("(?:[^"\\]|\\[\s\S])*"|[^@]+)@(.+)$')
       .firstMatch(value);
   if (match == null) return false;
@@ -464,7 +486,11 @@ bool _isEmail(String value, {required bool international}) {
     }
     return StringIpConstraint.isIpv4(literal);
   }
-  return _isHostname(domain, international: international);
+  return _isHostname(
+    domain,
+    international: international,
+    normalizer: normalizer,
+  );
 }
 
 bool _hasValidPercents(String value) {

@@ -31,11 +31,13 @@ Entry point for creating schemas. See [Schema Types](../core-concepts/schemas.md
 - `Ack.any()`: Creates an `AnySchema` that accepts any non-null JSON-safe
   value. Chain `.nullable()` to allow `null`.
 - `Ack.fromJsonSchema(Object document, {Uri? baseUri, Map<Uri, Object>
-  documents = const {}, bool assertFormats = false})`: Strictly imports a
+  documents = const {}, bool assertFormats = false, String Function(String)?
+  unicodeNormalizer})`: Strictly imports a
   decoded draft 2020-12 or Draft-7 JSON Schema. Referenced documents must be
   supplied explicitly; Ack never fetches files or URLs. `format` is treated as
   an annotation by default unless `assertFormats: true` (or the schema's
-  `$vocabulary` requires `format-assertion`); see
+  `$vocabulary` requires `format-assertion`). `unicodeNormalizer` supplies
+  NFKC normalization for international hostname and email checks; see
   [format import](../guides/json-schema-integration.mdx#importing-format).
 - `Ack.map(AckSchema valueSchema)`: Creates a `MapSchema` for a JSON object
   with arbitrary string keys whose values all match `valueSchema`. Use

@@ -20,10 +20,7 @@ void main() {
             match.group(1),
       ];
 
-      expect(
-        dependencies,
-        unorderedEquals(['meta', 'collection', 'punycoder', 'unorm_dart']),
-      );
+      expect(dependencies, unorderedEquals(['meta', 'collection']));
     },
   );
 }
